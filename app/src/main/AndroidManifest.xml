@@ -15,22 +15,26 @@
             android:theme="@style/Theme.SYLUEOA"
             tools:targetApi="31">
         <activity
-                android:name=".sub_activity.ProfileDetailsActivity"
-                android:parentActivityName=".MainActivity"
-                android:label="@string/profile"
-                android:exported="false"/>
-        <activity
-                android:name=".sub_activity.LoginActivity"
-                android:exported="false"
-                android:label="@string/title_activity_login"/>
-        <activity
-                android:name=".MainActivity"
+                android:name=".LauncherActivity"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+        </activity>
+        <activity
+                android:name=".sub_activity.ProfileDetailsActivity"
+                android:exported="false"
+                android:label="@string/profile"
+                android:parentActivityName=".MainActivity"/>
+        <activity
+                android:name=".sub_activity.LoginActivity"
+                android:exported="false"
+                android:label="@string/title_activity_login"/>
+        <activity
+                android:name=".MainActivity"
+                android:exported="false">
         </activity>
     </application>
 

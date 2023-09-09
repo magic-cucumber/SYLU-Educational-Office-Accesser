@@ -6,6 +6,7 @@ import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.alibaba.fastjson2.reader.ObjectReader;
 import com.kagg886.sylu_eoa.model.ClassUnit;
+import com.kagg886.sylu_eoa.model.SchoolCalender;
 import lombok.Data;
 
 import java.lang.reflect.Type;
@@ -20,6 +21,10 @@ import java.util.stream.Collectors;
 public class CacheController {
     @JSONField(deserializeUsing = Descriptor.class)
     private List<ClassUnit> course;
+    private long courseOutOfDateTimeStamp;
+
+    private SchoolCalender calender;
+    private long calenderOutOfDateTimeStamp;
 
 
     public static class Descriptor implements ObjectReader<List<ClassUnit>> {

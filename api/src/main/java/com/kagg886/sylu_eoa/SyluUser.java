@@ -60,7 +60,7 @@ public class SyluUser {
         auth.setPublicKey(publicKey);
         auth.setPassWord(pwd);
         auth.setCaptcha(captcha);
-        setCookie(ISylu.getInstance().login(auth));
+        this.cookie = ISylu.getInstance().login(auth);
     }
 
     @SneakyThrows
@@ -77,16 +77,24 @@ public class SyluUser {
         return createUser(id, ISylu.getInstance().initCookie());
     }
 
+    @SuppressWarnings("all")
     public boolean isCookieOutOfDate() {
-        try {
-            ISylu.getInstance().assertLogin(cookie);
-        } catch (Exception e) {
-            if (e instanceof LoginException.CookieOutOfDate) {
-                return true;
+        RuntimeException r = null;
+        for (int i = 0; i < 4; i++) {
+            try {
+                ISylu.getInstance().assertLogin(cookie);
+                return false;
+            } catch (Exception e) {
+                if (e instanceof LoginException.CookieOutOfDate) {
+                    continue;
+                }
+                r = new RuntimeException(e);
             }
-            throw e;
         }
-        return false;
+        if (r != null) {
+            throw r;
+        }
+        return true;
     }
 
     public static SyluUser createUser(String id, String cookie) {

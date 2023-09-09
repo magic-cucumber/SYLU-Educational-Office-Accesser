@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.JSONWriter;
 import com.kagg886.sylu_eoa.util.LogCatcher;
@@ -15,6 +16,8 @@ import com.tencent.mmkv.MMKV;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Connection;
+import org.jsoup.helper.HttpConnection;
 import top.canyie.pine.Pine;
 import top.canyie.pine.callback.MethodHook;
 
@@ -23,6 +26,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,8 +72,12 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         T t = (T) configs.get(key);
         if (t == null) {
             String point = mmkv.getString(key, null);
-            t = JSON.parseObject(point, tClass, JSONReader.Feature.FieldBased);
-            Log.d(MainApplication.class.getName(), "mmkv readObject:" + point);
+            try { //玄学错误，只能这么写顶着
+                t = JSON.parseObject(point, tClass, JSONReader.Feature.FieldBased);
+            } catch (JSONException e) {
+                t = JSON.parseObject(point, tClass);
+            }
+            Log.d(MainApplication.class.getName(), "mmkv readObject:" + key + "->" + point);
             if (t == null) {
                 t = tClass.getDeclaredConstructor().newInstance();
             }
@@ -100,6 +108,72 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         super.onCreate();
         MMKV.initialize(this);
         ISylu.setInstance(new ISyluImpl());
+
+
+        registerDynamicAOP();
+        registerLogCatcher();
+
+        Thread.setDefaultUncaughtExceptionHandler(this);
+        new Handler(Looper.getMainLooper()).post(this);
+    }
+
+    @SneakyThrows
+    private void registerDynamicAOP() {
+        //对网络请求AOP
+        Pine.hook(HttpConnection.class.getMethod("execute"), new MethodHook() {
+            @Override
+            public void beforeCall(Pine.CallFrame callFrame) throws Throwable {
+                Connection.Request c = ((Connection) callFrame.thisObject).request();
+                Log.d(MainApplication.class.getName(),
+                        String.format("prepare executing:%s,data:%s,cookie:%s",
+                                c.url(),
+                                c.data(),
+                                c.header("Cookie")
+                        )
+                );
+            }
+
+            @Override
+            public void afterCall(Pine.CallFrame callFrame) {
+                if (callFrame.getThrowable() != null) {
+                    Log.e(MainApplication.class.getName(), "executing:%s failed", callFrame.getThrowable());
+                    return;
+                }
+
+                Connection.Response c = ((Connection) callFrame.thisObject).response();
+
+                String body;
+                try {
+                    body = c.body();
+                } catch (Exception e) {
+                    Log.e(MainApplication.class.getName(), "executing:%s failed", e);
+                    return;
+                }
+
+                byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                short bin = 0;
+                for (int i = 0; i < Math.max(500, bytes.length); i++) {
+                    char it = (char) bytes[i];
+                    if (!Character.isWhitespace(it) && Character.isISOControl(it)) {
+                        bin++;
+                    }
+                    if (bin >= 5) {
+                        break;
+                    }
+                }
+
+                Log.d(MainApplication.class.getName(),
+                        String.format("executing:%s completed:(%d),%s",
+                                c.url(),
+                                c.statusCode(),
+                                bin == 5 ? "blob" : body
+                        )
+                );
+            }
+        });
+    }
+
+    private void registerLogCatcher() {
         //设置日志记录器
         File logRoot = getLoggerBase();
         logRoot.mkdirs();
@@ -118,9 +192,6 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
             System.out.println(log.getAbsolutePath());
             throw new RuntimeException(e);
         }
-
-        Thread.setDefaultUncaughtExceptionHandler(this);
-        new Handler(Looper.getMainLooper()).post(this);
     }
 
     @SuppressLint({"DiscouragedPrivateApi", "PrivateApi"})

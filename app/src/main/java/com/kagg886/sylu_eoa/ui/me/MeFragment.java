@@ -23,7 +23,6 @@ import com.kagg886.sylu_eoa.model.Profile;
 import com.kagg886.sylu_eoa.sub_activity.LoginActivity;
 import com.kagg886.sylu_eoa.sub_activity.ProfileDetailsActivity;
 import com.kagg886.sylu_eoa.util.UIUtil;
-import com.tencent.mmkv.MMKV;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -77,7 +76,7 @@ public class MeFragment extends Fragment {
             return user.isCookieOutOfDate();
         }).thenAccept((needLogin) -> {
             if (needLogin) {
-                MMKV.defaultMMKV().remove("account").apply();
+//                MMKV.defaultMMKV().remove("account").apply();
                 Intent i = new Intent(MainApplication.getApp(), LoginActivity.class);
                 loginLauncher.launch(i);
                 return;
@@ -90,7 +89,7 @@ public class MeFragment extends Fragment {
                     Toast.makeText(getContext(), "登录会话过期,请重新登录", Toast.LENGTH_LONG).show();
                 });
 
-                MMKV.defaultMMKV().remove("account").apply();
+//                MMKV.defaultMMKV().remove("account").apply();
                 Intent i = new Intent(MainApplication.getApp(), LoginActivity.class);
                 loginLauncher.launch(i);
                 return null;
