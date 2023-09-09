@@ -71,9 +71,12 @@ public class CourseFragment extends Fragment {
                 controller.setCourse(units);
                 return units;
             }
-            if (user.isCookieOutOfDate()) {
-                UIUtil.showToast(getActivity(), "课表可能已经过时,请重新登录以拉取最新的课表缓存!");
-            }
+            //这个阶段应该是异步的
+            CompletableFuture.runAsync(() -> {
+                if (user.isCookieOutOfDate()) {
+                    UIUtil.showToast(getActivity(), "课表可能已经过时,请重新登录以拉取最新的课表缓存!");
+                }
+            });
             return controller.getCourse();
         }).thenAccept((kb) -> {
             if (kb == null) {
@@ -81,6 +84,7 @@ public class CourseFragment extends Fragment {
             }
             Log.i(CourseFragment.class.getName(), JSON.toJSONString(kb));
             UIUtil.showToast(getActivity(), "OK!");
+            //在这里编写UI Parse
         });
 
 
