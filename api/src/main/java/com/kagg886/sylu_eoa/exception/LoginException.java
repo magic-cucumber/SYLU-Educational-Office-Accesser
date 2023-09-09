@@ -2,13 +2,15 @@ package com.kagg886.sylu_eoa.exception;
 
 import lombok.Getter;
 
+import java.io.IOException;
+
 /**
  * 登录过程中出现的异常
  *
  * @author kagg886
  * @date 2023/9/3 17:28
  **/
-public class LoginException extends RuntimeException {
+public class LoginException extends IOException {
     public LoginException() {
 
     }
@@ -31,14 +33,14 @@ public class LoginException extends RuntimeException {
         }
     }
 
+    @Getter
     public static class NeedCaptcha extends LoginException {
 
-        @Getter
-        private final String captchaLink;
+        private final byte[] image;
 
-        public NeedCaptcha(String captchaLink) {
-            super("需要验证码,验证码地址:" + captchaLink);
-            this.captchaLink = captchaLink;
+        public NeedCaptcha(byte[] image) {
+            super("需要验证码");
+            this.image = image;
         }
     }
 }

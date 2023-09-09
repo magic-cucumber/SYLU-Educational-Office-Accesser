@@ -8,6 +8,8 @@ import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONReader;
+import com.alibaba.fastjson2.JSONWriter;
 import com.kagg886.sylu_eoa.util.LogCatcher;
 import com.tencent.mmkv.MMKV;
 import lombok.Getter;
@@ -62,19 +64,24 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
 
     @SneakyThrows
     public <T> T getConfig(String key, Class<T> tClass) {
+        MMKV mmkv = MMKV.defaultMMKV();
         T t = (T) configs.get(key);
         if (t == null) {
-            t = tClass.getDeclaredConstructor().newInstance();
-
+            String point = mmkv.getString(key, null);
+            t = JSON.parseObject(point, tClass, JSONReader.Feature.FieldBased);
+            Log.d(MainApplication.class.getName(), "mmkv readObject:" + point);
+            if (t == null) {
+                t = tClass.getDeclaredConstructor().newInstance();
+            }
             for (Method m : tClass.getDeclaredMethods()) {
                 m.setAccessible(true);
                 if (m.getName().startsWith("set")) {
                     Pine.hook(m, new MethodHook() {
                         @Override
                         public void afterCall(Pine.CallFrame callFrame) {
-                            MMKV mmkv = MMKV.defaultMMKV();
-                            mmkv.putString(key,JSON.toJSONString(callFrame.thisObject)).apply();
-                            Log.d(MainApplication.class.getName(),"mmkv saveObject:" + tClass.getName());
+                            String pz = JSON.toJSONString(callFrame.thisObject, JSONWriter.Feature.IgnoreNonFieldGetter, JSONWriter.Feature.FieldBased);
+                            mmkv.putString(key, pz).apply();
+                            Log.d(MainApplication.class.getName(), "mmkv saveObject:" + pz);
                         }
                     });
                 }
@@ -92,7 +99,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
     public void onCreate() {
         super.onCreate();
         MMKV.initialize(this);
-
+        ISylu.setInstance(new ISyluImpl());
         //设置日志记录器
         File logRoot = getLoggerBase();
         logRoot.mkdirs();

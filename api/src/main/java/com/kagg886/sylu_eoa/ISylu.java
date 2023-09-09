@@ -3,7 +3,7 @@ package com.kagg886.sylu_eoa;
 import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.*;
 import com.kagg886.sylu_eoa.util.HTTPUtil;
-import org.jsoup.Jsoup;
+import lombok.SneakyThrows;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
@@ -11,9 +11,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.kagg886.sylu_eoa.util.HTTPUtil.compile;
-
-interface ISylu {
+public interface ISylu {
     AtomicReference<ISylu> INSTANCE = new AtomicReference<>();
 
     String login(LoginAuthorization authorization) throws IOException;
@@ -75,28 +73,24 @@ interface ISylu {
         return new YearAndSemestersPicker(years, semesters, term);
     }
 
-    default void assertLogin(String str) {
-        Document d = Jsoup.parse(str);
-        assertLogin(d);
-    }
-
-    default void assertLogin(Document doc) {
+    default void assertLogin(Document doc) throws IOException {
         for (Element e : doc.getElementsByTag("h5")) {
             if (e.text().equals("用户登录")) {
 
                 Element test = doc.getElementById("tips");
 
                 if (test != null) {
-                    Element captcha = doc.getElementById("yzmPic");
-                    if (captcha != null) {
-                        String captchaLink = compile("/kaptcha?time=" + new Date().getTime());
-                        throw new LoginException.NeedCaptcha(captchaLink);
-                    }
                     throw new LoginException.CookieOutOfDate(test.text());
                 }
 
                 throw new LoginException.CookieOutOfDate();
             }
         }
+    }
+
+    @SneakyThrows
+    default void assertLogin(String cookie) {
+        assertLogin(HTTPUtil.newSession("/xtgl/index_initMenu.html")
+                .header("Cookie", cookie).get());
     }
 }

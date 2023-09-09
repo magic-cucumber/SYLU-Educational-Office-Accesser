@@ -1,7 +1,6 @@
 package com.kagg886.sylu_eoa;
 
 import com.kagg886.sylu_eoa.model.LoginAuthorization;
-import com.kagg886.sylu_eoa.model.Profile;
 import com.kagg886.sylu_eoa.model.RSAPublicKey;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,6 +14,13 @@ class ISyluTest {
         ISylu.setInstance(new ISyluImpl());
         System.out.println("ISylu init success");
 
+    }
+
+    @Test
+    void testCookie() {
+        Assertions.assertDoesNotThrow(() -> {
+            ISylu.getInstance().assertLogin("JSESSIONID=4933F0B1D6621BDD0CE32626D1060837");
+        });
     }
 
     @Test

@@ -2,13 +2,10 @@ package com.kagg886.sylu_eoa.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 无
@@ -29,13 +26,20 @@ public class ClassUnit {
     private List<Range> weekAsMinMax;
     private String weekEachLesson;
 
-    private ClassUnit(
-            @JSONField(name = "kcmc") String name,
-            @JSONField(name = "xm") String teacher,
-            @JSONField(name = "cdmc") String room,
-            @JSONField(name = "zcd") String weekEachLesson,
-            @JSONField(name = "jcs") String lesson,
-            @JSONField(name = "xqj") String dayInWeek) {
+    public ClassUnit(
+            @JSONField(name = "name") String name,
+            @JSONField(name = "teacher") String teacher,
+            @JSONField(name = "room") String room,
+            @JSONField(name = "weekEachLesson") String weekEachLesson,
+            @JSONField(name = "lesson") String lesson,
+            @JSONField(name = "dayInWeek") String dayInWeek
+//            @JSONField(name = "kcmc") String name,
+//            @JSONField(name = "xm") String teacher,
+//            @JSONField(name = "cdmc") String room,
+//            @JSONField(name = "zcd") String weekEachLesson,
+//            @JSONField(name = "jcs") String lesson,
+//            @JSONField(name = "xqj") String dayInWeek
+    ) {
         if (name == null) {
             return;
         }
@@ -70,8 +74,8 @@ public class ClassUnit {
         this.weekAsMinMax = rtn;
     }
 
-    @Getter
-    @Setter
+
+    @Data
     @ToString
     public static class Range {
         private int start;

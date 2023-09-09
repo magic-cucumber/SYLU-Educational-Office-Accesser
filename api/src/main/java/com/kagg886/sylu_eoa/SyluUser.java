@@ -1,24 +1,29 @@
 package com.kagg886.sylu_eoa;
 
+import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.*;
+import lombok.Getter;
 import lombok.SneakyThrows;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * 代表一个沈理user
- *
- * @author kagg886
- * @date 2023/9/4 10:19
- **/
 public class SyluUser {
+    @Getter
     private String userID;
-
     private String cookie;
 
-    private SyluUser() {
+    private String getCookie() {
+        return cookie;
+    }
 
+    private void setCookie(String cookie) {
+        this.cookie = cookie;
+    }
+
+    //响应式更新需要
+    private void setUserID(String userID) {
+        this.userID = userID;
     }
 
     @SneakyThrows
@@ -55,7 +60,7 @@ public class SyluUser {
         auth.setPublicKey(publicKey);
         auth.setPassWord(pwd);
         auth.setCaptcha(captcha);
-        cookie = ISylu.getInstance().login(auth);
+        setCookie(ISylu.getInstance().login(auth));
     }
 
     @SneakyThrows
@@ -70,6 +75,18 @@ public class SyluUser {
 
     public static SyluUser createUser(String id) {
         return createUser(id, ISylu.getInstance().initCookie());
+    }
+
+    public boolean isCookieOutOfDate() {
+        try {
+            ISylu.getInstance().assertLogin(cookie);
+        } catch (Exception e) {
+            if (e instanceof LoginException.CookieOutOfDate) {
+                return true;
+            }
+            throw e;
+        }
+        return false;
     }
 
     public static SyluUser createUser(String id, String cookie) {

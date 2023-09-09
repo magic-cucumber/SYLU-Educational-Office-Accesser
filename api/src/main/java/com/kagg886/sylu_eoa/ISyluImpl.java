@@ -7,6 +7,7 @@ import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.*;
 import com.kagg886.sylu_eoa.util.HTTPUtil;
 import com.kagg886.sylu_eoa.util.RSA;
+import lombok.SneakyThrows;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,15 +19,13 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.kagg886.sylu_eoa.util.HTTPUtil.compile;
-
 /**
  * Sylu的API层集合
  *
  * @author kagg886
  * @date 2023/9/3 17:03
  **/
-class ISyluImpl implements ISylu {
+public class ISyluImpl implements ISylu {
 
     @Override
     public String login(LoginAuthorization auth) throws IOException {
@@ -49,8 +48,9 @@ class ISyluImpl implements ISylu {
         if (test != null) {
             Element captcha = doc.getElementById("yzmPic");
             if (captcha != null) {
-                String captchaLink = compile("/kaptcha?time=" + new Date().getTime());
-                throw new LoginException.NeedCaptcha(captchaLink);
+                byte[] image = HTTPUtil.newSession("/kaptcha?time=" + new Date().getTime())
+                        .header("Cookie", auth.getCookie()).execute().bodyAsBytes();
+                throw new LoginException.NeedCaptcha(image);
             }
             throw new LoginException(test.text());
         }
@@ -72,7 +72,7 @@ class ISyluImpl implements ISylu {
                 .method(Connection.Method.POST).execute();
 
         String body = resp.body();
-        assertLogin(body);
+        assertLogin(Jsoup.parse(body));
 
 
         JSONArray array = JSON.parseObject(body).getJSONArray("kbList");
@@ -80,7 +80,17 @@ class ISyluImpl implements ISylu {
             throw new IllegalStateException("该学年学期的课表尚未开放!");
         }
         return array.stream()
-                .map((v) -> JSON.parseObject(v.toString(), ClassUnit.class))
+                .map((v) -> {
+                    JSONObject a = (JSONObject) v;
+                    return new ClassUnit(
+                            a.getString("kcmc"),
+                            a.getString("xm"),
+                            a.getString("cdmc"),
+                            a.getString("zcd"),
+                            a.getString("jcs"),
+                            a.getString("xqj")
+                    );
+                })
                 .collect(Collectors.toList());
     }
 
@@ -105,12 +115,12 @@ class ISyluImpl implements ISylu {
                 .data("time", "0")
                 .execute();
         String body = resp.body();
-        assertLogin(body);
+        assertLogin(Jsoup.parse(body));
         JSON.parseObject(body).getJSONArray("items").forEach((i) -> {
             JSONObject object = (JSONObject) i;
             String name = object.getString("xmlbmc");
             try {
-                map.put(name, getInnovationByTag(cookie,stuID,name));
+                map.put(name, getInnovationByTag(cookie, stuID, name));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -121,12 +131,12 @@ class ISyluImpl implements ISylu {
     @Override
     public List<GPAScore> getInnovationByTag(String cookie, String stuID, String name) throws IOException {
         Connection.Response resp = HTTPUtil.newSession("/xmfzgl/xshdfzcx_cxXmfzqr.html?gnmkdm=N4780&su=", stuID)
-                .header("Cookie",cookie)
+                .header("Cookie", cookie)
                 .data("xmlbmc", name)
                 .method(Connection.Method.POST).execute();
 
         String body = resp.body();
-        assertLogin(body);
+        assertLogin(Jsoup.parse(body));
 
         return JSON.parseObject(body).getJSONArray("items")
                 .stream()
@@ -173,22 +183,42 @@ class ISyluImpl implements ISylu {
         Objects.requireNonNull(userID);
         Objects.requireNonNull(cookie);
 
-        Connection client = HTTPUtil.newSession("/xtgl/index_cxYhxxIndex.html?xt=jw&localeKey=zh_CN&_=", new Date().getTime(), "&gnmkdm=index&su=", userID);
+        Connection client = HTTPUtil.newSession("/xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su=", userID);
         client.header("Cookie", cookie);
 //        client.header("Referer", "https://jxw.sylu.edu.cn/xtgl/login_slogin.html?kickout=1");
         client.method(Connection.Method.GET);
 
-        Connection.Response resp = client.execute();
-        Document document = Jsoup.parse(resp.body());
-
+        Document document = client.get();
         assertLogin(document);
 
-        String avt = document.getElementsByTag("img").attr("src");
-        String name = document.getElementsByTag("h4").text();
-        String clazz = document.getElementsByTag("p").text();
-        return new Profile(name, compile(avt), clazz.split(" ")[0]);
+        String avt = document.getElementsByTag("img").get(0).attr("src");
+        byte[] a = HTTPUtil.newSession(avt).header("Cookie", cookie).execute().bodyAsBytes();
+
+        Elements ele = document.getElementsByClass("form-control-static");
+
+        //public Profile(     String name,
+        //    String collegeName,
+        //    String studyName,
+        //    byte[] avatar,
+        //    String email,
+        //    String phone,
+        //    String id,
+        //    String policy,
+        //    String language )
+        return new Profile(
+                ele.get(1).text(),
+                ele.get(14).text(),
+                ele.get(15).text(),
+                a,
+                ele.get(26).text(),
+                ele.get(27).text(),
+                ele.get(7).text(),
+                ele.get(10).text(),
+                ele.get(24).text()
+        );
     }
 
+    @SneakyThrows
     @Override
     public String initCookie() {
         String cookie;
@@ -232,7 +262,7 @@ class ISyluImpl implements ISylu {
         Connection.Response resp = conn.method(Connection.Method.POST).execute();
         String body = resp.body();
 
-        assertLogin(body);
+        assertLogin(Jsoup.parse(body));
         JSONArray array = JSON.parseObject(body).getJSONArray("items");
 
         return array.stream().map(k -> (JSONObject) k).map(v -> JSON.parseObject(v.toString(), ExamResult.class)).collect(Collectors.toList());
@@ -254,7 +284,7 @@ class ISyluImpl implements ISylu {
 
         List<List<String>> rtn = new ArrayList<>();
         String body = resp.body();
-        assertLogin(body);
+        assertLogin(Jsoup.parse(body));
         Elements tr = Jsoup.parse(body).getElementsByTag("tr");
         for (int j = 1; j < tr.size(); j++) {
             List<String> trs = new ArrayList<>();
