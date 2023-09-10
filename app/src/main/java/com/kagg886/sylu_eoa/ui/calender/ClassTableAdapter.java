@@ -11,13 +11,14 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.R;
 import com.kagg886.sylu_eoa.model.ClassUnit;
+import com.kagg886.sylu_eoa.sub_activity.adapter.DetailsAdapter;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author kagg886
@@ -108,7 +109,15 @@ public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.Ta
         holder.name.setText(u.getName());
         holder.room.setText(u.getRoom());
         if (u != ClassUnit.EMPTY) {
-            holder.rootView.setBackgroundColor(Color.argb(60, (int) (Math.random() * 255), (int) (Math.random() * 255), (int) (Math.random() * 255)));
+
+            //相同课程颜色相同
+            Random ran = new Random(holder.name.hashCode());
+
+            int r, g, b;
+            r = ran.nextInt(255);
+            g = ran.nextInt(255);
+            b = ran.nextInt(255);
+            holder.rootView.setBackgroundColor(Color.argb(60, r, g, b));
             holder.rootView.setTag(u);
             holder.rootView.setOnClickListener(this); //复用布局...
         }
@@ -124,7 +133,27 @@ public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.Ta
         ClassUnit u = (ClassUnit) view.getTag();
         AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
         builder.setTitle(u.getName() + "的详细信息");
-        builder.setMessage(String.format("节数:%s\n教室:%s\n老师:%s\n上课时间:%s", u.getLesson(), u.getRoom(), u.getTeacher(), u.getWeekEachLesson()));
+
+        Map<String, String> e = new LinkedHashMap<>();
+
+        e.put("节数", u.getLesson());
+        e.put("教室", u.getRoom());
+        e.put("老师", u.getTeacher());
+        e.put("上课时间", u.getWeekEachLesson());
+        e.put("上课周数", u.getWeekAsMinMax()
+                .stream()
+                .map(ClassUnit.Range::formatToString)
+                .collect(Collectors.joining(","))
+        );
+        DetailsAdapter adapter = new DetailsAdapter(e.entrySet(), view.getContext());
+        adapter.setKSize(20);
+        adapter.setVSize(16);
+        builder.setAdapter(adapter, null);
+//        builder.setMessage(String.format("节数:%s\n教室:%s\n老师:%s\n上课时间:%s",
+//        u.getLesson(),
+//        u.getRoom(),
+//        u.getTeacher(),
+//        u.getWeekEachLesson()));
         builder.create().show();
     }
 

@@ -28,7 +28,7 @@
                 android:layout_marginStart="10dp"
                 android:textSize="25sp"
                 android:textStyle="bold"
-                android:text="@string/loading"
+                android:text="@string/not_login_msg"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/name"
@@ -47,7 +47,6 @@
                 app:layout_constraintTop_toTopOf="parent"
                 android:contentDescription="@string/loading"/>
         <TextView
-                android:text="@string/loading"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/desc"

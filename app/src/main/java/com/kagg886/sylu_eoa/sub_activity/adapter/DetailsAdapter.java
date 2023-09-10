@@ -8,11 +8,13 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 import com.kagg886.sylu_eoa.R;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 
 /**
  * @author kagg886
@@ -21,6 +23,10 @@ import java.util.Set;
 public class DetailsAdapter extends BaseAdapter {
     private final List<Map.Entry<String, String>> data;
     private final Context context;
+    @Setter
+    private float kSize = -1;
+    @Setter
+    private float vSize = -1;
 
     public DetailsAdapter(Set<Map.Entry<String, String>> data, Context context) {
         this.data = new ArrayList<>(data);
@@ -46,8 +52,17 @@ public class DetailsAdapter extends BaseAdapter {
     @SuppressLint({"ViewHolder", "InflateParams"})
     public View getView(int i, View view, ViewGroup viewGroup) {
         View v = LayoutInflater.from(context).inflate(R.layout.adapter_detail, null);
-        ((TextView) v.findViewById(R.id.key)).setText(data.get(i).getKey());
-        ((TextView) v.findViewById(R.id.value)).setText(data.get(i).getValue());
+        TextView view1 = v.findViewById(R.id.key);
+        if (kSize != -1) {
+            view1.setTextSize(kSize);
+        }
+        view1.setText(data.get(i).getKey());
+
+        view1 = v.findViewById(R.id.value);
+        if (vSize != -1) {
+            view1.setTextSize(vSize);
+        }
+        view1.setText(data.get(i).getValue());
         return v;
     }
 }

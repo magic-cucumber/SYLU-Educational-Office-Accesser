@@ -25,14 +25,8 @@ public class SettingAdapter extends BaseAdapter {
         add(new Item(R.drawable.ic_download, "检查更新", (c) -> {
             Toast.makeText(c, "OK!", Toast.LENGTH_LONG).show();
         }));
-        add(new Item(R.drawable.ic_download, "检查更新", (c) -> {
-            Toast.makeText(c, "OK!", Toast.LENGTH_LONG).show();
-        }));
-        add(new Item(R.drawable.ic_download, "检查更新", (c) -> {
-            Toast.makeText(c, "OK!", Toast.LENGTH_LONG).show();
-        }));
-        add(new Item(R.drawable.ic_download, "检查更新", (c) -> {
-            Toast.makeText(c, "OK!", Toast.LENGTH_LONG).show();
+        add(new Item(R.drawable.ic_money, "赞助我", (c) -> {
+
         }));
     }};
 

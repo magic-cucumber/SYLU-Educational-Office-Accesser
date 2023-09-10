@@ -91,6 +91,19 @@ public class ClassUnit {
         public Range() {
 
         }
+
+        public static String formatToString(Range r) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("第").append(r.start);
+            if (r.start == r.end) {
+                return builder.append("周").toString();
+            }
+            builder.append("周---第").append(r.end).append("周");
+            if (r.getType() != FilterType.ALL) {
+                builder.append("(").append(r.getType() == FilterType.SINGULAR ? "单" : "双").append("周)");
+            }
+            return builder.toString();
+        }
     }
 
     public enum FilterType {
