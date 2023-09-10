@@ -66,6 +66,7 @@ public class CourseFragment extends Fragment {
                 }
             }
         });
+
         LoginConfig config = MainApplication.getApp().getConfig("account", LoginConfig.class);
         SyluUser user = config.getUser();
 

@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -18,11 +17,11 @@ import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.SyluUser;
 import com.kagg886.sylu_eoa.data.LoginConfig;
 import com.kagg886.sylu_eoa.databinding.FragmentMeBinding;
-import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.Profile;
 import com.kagg886.sylu_eoa.sub_activity.LoginActivity;
 import com.kagg886.sylu_eoa.sub_activity.ProfileDetailsActivity;
 import com.kagg886.sylu_eoa.util.UIUtil;
+import com.tencent.mmkv.MMKV;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -76,24 +75,17 @@ public class MeFragment extends Fragment {
             return user.isCookieOutOfDate();
         }).thenAccept((needLogin) -> {
             if (needLogin) {
-//                MMKV.defaultMMKV().remove("account").apply();
+                MMKV.defaultMMKV().remove("account").apply();
                 Intent i = new Intent(MainApplication.getApp(), LoginActivity.class);
+                if (user != null) {
+                    UIUtil.showToast(getActivity(), "登录会话过期，请重新登录");
+                    i.putExtra("user", user.getUserID());
+                }
                 loginLauncher.launch(i);
                 return;
             }
             profileRegister.accept(user.getProfile());
         }).exceptionally((ex) -> {
-            ex = ex.getCause();
-            if (ex instanceof LoginException.CookieOutOfDate) {
-                getActivity().runOnUiThread(() -> {
-                    Toast.makeText(getContext(), "登录会话过期,请重新登录", Toast.LENGTH_LONG).show();
-                });
-
-//                MMKV.defaultMMKV().remove("account").apply();
-                Intent i = new Intent(MainApplication.getApp(), LoginActivity.class);
-                loginLauncher.launch(i);
-                return null;
-            }
             //Fragment被销毁后，getContext()为null
             if (getActivity() != null) {
                 UIUtil.showDialog(getActivity(), "发生了一个错误:", ex.getMessage());

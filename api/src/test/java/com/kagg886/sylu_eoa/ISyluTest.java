@@ -19,7 +19,7 @@ class ISyluTest {
     @Test
     void testCookie() {
         Assertions.assertDoesNotThrow(() -> {
-            SyluUser user = SyluUser.createUser("2203050528", "JSESSIONID=7B61231170BD93756095F25C1177A8AA");
+            SyluUser user = SyluUser.createUser("2203050528", "JSESSIONID=6BA1D1ADD5D6FDD59BF6E755C23A8E4A");
 
             Assertions.assertFalse(user.isCookieOutOfDate());
         });

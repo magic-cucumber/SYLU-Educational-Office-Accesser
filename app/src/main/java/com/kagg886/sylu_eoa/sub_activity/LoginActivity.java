@@ -36,8 +36,8 @@ public class LoginActivity extends AppCompatActivity implements TextWatcher {
         final EditText userEdit = binding.username;
         final EditText passEdit = binding.password;
 
-        if (config.getUser() != null) {
-            userEdit.setText(config.getUser().getUserID());
+        if (getIntent().getStringExtra("user") != null) {
+            userEdit.setText(getIntent().getStringExtra("user"));
         }
         //userEdit.setText(Optional.ofNullable(MainApplication.getApp().getConfig("userSession", SyluUser.class).getUserID()).orElse(""));
 

@@ -2,6 +2,7 @@ package com.kagg886.sylu_eoa;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,7 +36,7 @@ public class LauncherActivity extends AppCompatActivity {
                         c.getUser().getProfile();
                     }
                 } catch (Exception ignored) {
-                    runOnUiThread(() -> v.setText(v.getEditableText().append(".")));
+                    runOnUiThread(() -> v.setText(String.format("%s.", v.getText())));
                     continue;
                 }
                 return true;
@@ -47,6 +48,10 @@ public class LauncherActivity extends AppCompatActivity {
             }
             Intent i = new Intent(LauncherActivity.this, MainActivity.class);
             startActivity(i);
+        }).exceptionally((ex) -> {
+            Log.e(LauncherActivity.class.getName(), "Check SYLU failed:", ex);
+            UIUtil.showToast(LauncherActivity.this, "发生了未知错误");
+            return null;
         });
     }
 }
