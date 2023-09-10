@@ -11,9 +11,9 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONReader;
 import com.alibaba.fastjson2.JSONWriter;
-import com.kagg886.sylu_eoa.util.HexUtil;
 import com.kagg886.sylu_eoa.util.LogCatcher;
 import com.tencent.mmkv.MMKV;
+import com.tencent.mmkv.MMKVLogLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -22,16 +22,12 @@ import org.jsoup.helper.HttpConnection;
 import top.canyie.pine.Pine;
 import top.canyie.pine.callback.MethodHook;
 
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,6 +90,8 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                         public void afterCall(Pine.CallFrame callFrame) {
                             String pz = JSON.toJSONString(callFrame.thisObject, JSONWriter.Feature.IgnoreNonFieldGetter, JSONWriter.Feature.FieldBased);
                             mmkv.encode(key, pz);
+                            //FIXME: not sync!
+                            mmkv.async();
                             Log.d(MainApplication.class.getName(), "mmkv saveObject:" + pz);
                         }
                     });
@@ -112,30 +110,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
     public void onCreate() {
         super.onCreate();
         MMKV.initialize(this);
-
-        String key = getSharedPreferences("key", MODE_PRIVATE).getString("crypt", null);
-        if (key == null) {
-            KeyGenerator kgen;
-            SecureRandom secureRandom;
-            try {
-                secureRandom = SecureRandom.getInstance("SHA1PRNG");
-            } catch (NoSuchAlgorithmException e) {
-                secureRandom = new SecureRandom();
-            } finally {
-                try {
-                    kgen = KeyGenerator.getInstance("AES");
-                } catch (NoSuchAlgorithmException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            kgen.init(128, secureRandom);
-            // kgen.init(128, new SecureRandom(password.getBytes()));
-            SecretKey secretKey = kgen.generateKey();
-            key = HexUtil.bytesToHex(secretKey.getEncoded());
-
-            getSharedPreferences("key", MODE_PRIVATE).edit().putString("crypt", key).apply();
-        }
-        MMKV.defaultMMKV().reKey(key);
+        MMKV.setLogLevel(MMKVLogLevel.LevelDebug);
         ISylu.setInstance(new ISyluImpl());
 
 
