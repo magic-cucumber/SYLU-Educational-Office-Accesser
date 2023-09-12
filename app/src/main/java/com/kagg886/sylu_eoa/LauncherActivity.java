@@ -25,7 +25,7 @@ public class LauncherActivity extends AppCompatActivity {
 
         CompletableFuture.supplyAsync(() -> {
             //尽最大努力防止教务抽风
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 5; i++) {
                 try {
                     LoginConfig c = MainApplication.getApp().getConfig("account", LoginConfig.class);
                     if (c.getUser() == null) {

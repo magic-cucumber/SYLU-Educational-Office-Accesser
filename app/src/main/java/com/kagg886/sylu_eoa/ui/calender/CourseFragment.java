@@ -8,9 +8,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 import com.alibaba.fastjson2.JSON;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
 import com.kagg886.sylu_eoa.SyluUser;
@@ -44,19 +45,23 @@ public class CourseFragment extends Fragment {
 
     private ContentPagerAdapter adapter;
 
+    @SuppressLint("ClickableViewAccessibility")
     @Nullable
     @org.jetbrains.annotations.Nullable
     @Override
     public View onCreateView(@NonNull @NotNull LayoutInflater inflater, @Nullable @org.jetbrains.annotations.Nullable ViewGroup container, @Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         binding = FragmentCourseBinding.inflate(inflater, container, false);
-        adapter = new ContentPagerAdapter(getActivity());
+
+        //这里必须传入ChildFragmentManager
+        adapter = new ContentPagerAdapter(getChildFragmentManager(), getActivity().getLifecycle());
+
         binding.content.setAdapter(adapter);
         binding.content.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 
             @SuppressLint("SetTextI18n")
             @Override
             public void onPageSelected(int position) {
-                binding.counter.setSelection(position);
+                binding.broad.setText("第" + (position + 1) + "周");
             }
 
             @Override
@@ -144,22 +149,33 @@ public class CourseFragment extends Fragment {
             new Handler(Looper.getMainLooper()).post(() -> {
                 List<String> titles = new ArrayList<>();
                 for (int i = 0; i < len; i++) {
-                    titles.add("第" + (i + 1) + "周");
+                    titles.add("第" + (i + 1) + "周(点我切换课表)");
                 }
-                binding.counter.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
-                binding.counter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                binding.broad.setOnClickListener((view0) -> {
+                    BottomSheetDialog dialog = new BottomSheetDialog(getActivity(), R.style.BottomSheetDialog);
+
+                    ListView v = new ListView(getActivity());
+                    v.setBackgroundResource(R.drawable.bg_dialog_course);
+                    v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
+
+                    dialog.setContentView(v);
+
+                    //解决滑动冲突
+                    v.setOnTouchListener((v1, event) -> {
+                        //canScrollVertically(-1)的值表示是否能向下滚动，false表示已经滚动到顶部
+                        ((ViewGroup) v1).requestDisallowInterceptTouchEvent(v1.canScrollVertically(-1));
+                        return false;
+                    });
+
+                    v.setOnItemClickListener((parent, view, position, id) -> {
                         if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
                             binding.content.setCurrentItem(position, false);
                         }
                         isDrag = false;
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) {
-
-                    }
+                        dialog.cancel();
+                    });
+                    dialog.show();
                 });
 
                 LocalDate now = LocalDate.now();

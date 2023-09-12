@@ -42,6 +42,7 @@ public class CoursePageFragment extends Fragment {
     public void onSaveInstanceState(@NonNull @NotNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString("list", JSON.toJSONString(perWeek));
+        outState.putSerializable("local", startTime);
     }
 
     @Override
@@ -49,7 +50,9 @@ public class CoursePageFragment extends Fragment {
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
             this.perWeek = JSON.parseObject(savedInstanceState.getString("list"), ClassTable.class);
+            this.startTime = ((LocalDate) savedInstanceState.getSerializable("local"));
         }
+
     }
 
     @Nullable
