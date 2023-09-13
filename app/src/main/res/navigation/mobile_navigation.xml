@@ -13,7 +13,7 @@
 
     <fragment
             android:id="@+id/navigation_exam"
-            android:name="com.kagg886.sylu_eoa.ui.exam.ExamDetailsFragment"
+            android:name="com.kagg886.sylu_eoa.ui.exam.ExamFragment"
             android:label="@string/title_exam"
             tools:layout="@layout/fragment_exam"/>
 

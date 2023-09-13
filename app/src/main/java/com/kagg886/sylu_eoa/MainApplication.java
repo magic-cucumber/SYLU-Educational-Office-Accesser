@@ -92,7 +92,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                             mmkv.encode(key, pz);
                             //FIXME: not sync!
                             mmkv.async();
-                            Log.d(MainApplication.class.getName(), "mmkv saveObject:" + pz);
+                            Log.d(MainApplication.class.getName(), "mmkv saveObject:" + key + "->" + pz);
                         }
                     });
                 }

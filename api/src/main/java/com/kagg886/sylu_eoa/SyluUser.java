@@ -42,6 +42,16 @@ public class SyluUser {
     }
 
     @SneakyThrows
+    public YearAndSemestersPicker getPicker() {
+        return ISylu.getInstance().getPicker(cookie, userID);
+    }
+
+    @SneakyThrows
+    public List<ExamResult> getExamListByTerm(Term term) {
+        return ISylu.getInstance().getExamList(userID, cookie, term);
+    }
+
+    @SneakyThrows
     public Profile getProfile() {
         return ISylu.getInstance().getUserProfile(userID, cookie);
     }

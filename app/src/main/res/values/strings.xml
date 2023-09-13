@@ -14,4 +14,6 @@
     <string name="confirm">确定</string>
     <string name="prompt_captcha">验证码\n</string>
     <string name="title_exam">考试</string>
+    <string name="exam_year">选择学年\n</string>
+    <string name="exam_term">选择学期\n</string>
 </resources>

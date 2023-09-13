@@ -27,7 +27,6 @@ import com.kagg886.sylu_eoa.data.ClassTable;
 import com.kagg886.sylu_eoa.data.LoginConfig;
 import com.kagg886.sylu_eoa.databinding.FragmentCourseBinding;
 import com.kagg886.sylu_eoa.exception.LoginException;
-import com.kagg886.sylu_eoa.model.ClassUnit;
 import com.kagg886.sylu_eoa.model.SchoolCalender;
 import com.kagg886.sylu_eoa.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
@@ -77,39 +76,19 @@ public class CourseFragment extends Fragment {
 
         CacheController controller = MainApplication.getApp().getConfig("cache", CacheController.class);
 
-
         CompletableFuture.supplyAsync(() -> {
-            List<ClassUnit> units = controller.getCourse();
-            if (units == null) {
-                if (user == null) { //无课表，未登录
-                    UIUtil.showToast(getActivity(), "请登录以拉取最新的课表缓存!");
-                    return null;
-                }
-                //无课表，已登录
-                SchoolCalender calender = user.getSchoolCalender();
-                controller.setCalender(calender);
-                controller.setCourseOutOfDateTimeStamp(System.currentTimeMillis() + 604800000L);
-
-                units = user.getClassTableByTerm(calender.getCurrentTerm());
-                controller.setCourse(units);
-                return units;
+            if (user == null) {
+                UIUtil.showToast(getActivity(), "登录后才能获取最新的课程表缓存!");
             }
-            //有课表，先检查缓存
-            if (System.currentTimeMillis() - controller.getCourseOutOfDateTimeStamp() > 0) { //缓存过期，拉取最新课表
-                try {
-                    units = user.getClassTableByTerm(user.getSchoolCalender().getCurrentTerm());
-                    controller.setCourse(units);
-                    controller.setCourseOutOfDateTimeStamp(System.currentTimeMillis() + 604800000L); //7天刷新一次
-                    return units;
-                } catch (RuntimeException e) {
-                    if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
-                        UIUtil.showToast(getActivity(), "课表可能已经过时,请重新登录以拉取最新的课表缓存!");
-                        return units;
-                    }
+            try {
+                controller.getSchoolCalenderBeforeOutOfDate(user);
+                return controller.getCourseBeforeOutOfDate(user);
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
+                    UIUtil.showToast(getActivity(), "课表可能已经过时,请重新登录以拉取最新的课表缓存!");
                 }
+                return controller.getCourse();
             }
-            //缓存未过期，直接使用读取的课表缓存
-            return controller.getCourse();
         }).thenAccept((kb) -> {
             if (kb == null) {
                 return;
@@ -117,14 +96,7 @@ public class CourseFragment extends Fragment {
             Log.i(CourseFragment.class.getName(), JSON.toJSONString(kb));
             //在这里编写UI Parse
 
-            SchoolCalender calender;
-            if (System.currentTimeMillis() - controller.getCourseOutOfDateTimeStamp() > 0) {
-                calender = user.getSchoolCalender();
-                controller.setCalender(calender);
-                controller.setCourseOutOfDateTimeStamp(System.currentTimeMillis() + 604800000L);
-            } else {
-                calender = controller.getCalender();
-            }
+            SchoolCalender calender = controller.getSchoolCalenderBeforeOutOfDate(user);
 
             int a = 0;
             int currentWeek = -1;
@@ -154,36 +126,33 @@ public class CourseFragment extends Fragment {
             for (int i = 0; i < len; i++) {
                 titles.add("第" + (i + 1) + "周" + (currentWeek == i + 1 ? "(当前周)" : ""));
             }
+            int finalCurrentWeek = currentWeek;
+            getActivity().runOnUiThread(() -> {
+                binding.broad.setOnClickListener((view0) -> {
+                    BottomSheetDialog dialog = new BottomSheetDialog(getActivity(), R.style.BottomSheetDialog);
 
-            binding.broad.setOnClickListener((view0) -> {
-                BottomSheetDialog dialog = new BottomSheetDialog(getActivity(), R.style.BottomSheetDialog);
+                    ListView v = new ListView(getActivity());
+                    v.setBackgroundResource(R.drawable.bg_dialog_course);
+                    v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
+                    //解决滑动冲突
+                    v.setOnTouchListener((v1, event) -> {
+                        //canScrollVertically(-1)的值表示是否能向下滚动，false表示已经滚动到顶部
+                        ((ViewGroup) v1).requestDisallowInterceptTouchEvent(v1.canScrollVertically(-1));
+                        return false;
+                    });
 
-                ListView v = new ListView(getActivity());
-                v.setBackgroundResource(R.drawable.bg_dialog_course);
-                v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
-                //解决滑动冲突
-                v.setOnTouchListener((v1, event) -> {
-                    //canScrollVertically(-1)的值表示是否能向下滚动，false表示已经滚动到顶部
-                    ((ViewGroup) v1).requestDisallowInterceptTouchEvent(v1.canScrollVertically(-1));
-                    return false;
+                    v.setOnItemClickListener((parent, view, position, id) -> {
+                        if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
+                            binding.content.setCurrentItem(position, false);
+                        }
+                        isDrag = false;
+                        dialog.cancel();
+                    });
+
+                    dialog.setContentView(v);
+                    dialog.show();
                 });
-
-                v.setOnItemClickListener((parent, view, position, id) -> {
-                    if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
-                        binding.content.setCurrentItem(position, false);
-                    }
-                    isDrag = false;
-                    dialog.cancel();
-                });
-
-                dialog.setContentView(v);
-                dialog.show();
-            });
-
-            LocalDate now = LocalDate.now();
-            int index = (now.getDayOfYear() - calender.getStart().getDayOfYear()) / 7;
-            new Handler(Looper.getMainLooper()).post(() -> {
-                binding.content.setCurrentItem(index, false); //防止一瞬间滑动n次造成的卡顿
+                binding.content.setCurrentItem(finalCurrentWeek - 1, false); //防止一瞬间滑动n次造成的卡顿
             });
         }).exceptionally((e) -> {
             Log.e(CourseFragment.class.getName(), "Read Class Error:", e);
