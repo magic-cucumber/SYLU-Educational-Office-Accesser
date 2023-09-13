@@ -14,6 +14,7 @@ import com.kagg886.sylu_eoa.SyluUser;
 import com.kagg886.sylu_eoa.data.LoginConfig;
 import com.kagg886.sylu_eoa.databinding.ActivityLoginBinding;
 import com.kagg886.sylu_eoa.exception.LoginException;
+import com.kagg886.sylu_eoa.util.UIUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -64,6 +65,12 @@ public class LoginActivity extends AppCompatActivity implements TextWatcher {
             }).exceptionally((throwable -> {
                 throwable = throwable.getCause();
                 if (throwable instanceof LoginException) {
+                    if (throwable instanceof LoginException.NeedCaptcha) {
+                        //清除无效cookie
+                        config.setUser(SyluUser.createUser(userEdit.getText().toString()));
+                        UIUtil.showDialog(LoginActivity.this, "登陆失败!", "服务器要求验证码，本客户端已经清除凭证\n请再试一次");
+                        return null;
+                    }
                     Throwable finalThrowable = throwable;
                     runOnUiThread(() -> new AlertDialog.Builder(LoginActivity.this).setTitle("登陆失败!").setMessage(finalThrowable.getMessage()).show());
                 }

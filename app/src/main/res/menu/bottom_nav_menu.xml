@@ -5,6 +5,10 @@
             android:id="@+id/navigation_calender"
             android:icon="@drawable/ic_calender"
             android:title="@string/title_course"/>
+    <item
+            android:id="@+id/navigation_exam"
+            android:icon="@drawable/ic_exam"
+            android:title="@string/title_exam"/>
 
     <item
             android:id="@+id/navigation_dashboard"

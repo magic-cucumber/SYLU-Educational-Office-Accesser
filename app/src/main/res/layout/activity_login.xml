@@ -12,32 +12,87 @@
         android:paddingTop="@dimen/activity_vertical_margin"
         tools:context=".sub_activity.LoginActivity">
 
-    <EditText
-            android:id="@+id/username"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="96dp"
-            android:autofillHints="@string/prompt_email"
-            android:hint="@string/prompt_email"
-            android:inputType="number"
-            android:selectAllOnFocus="true"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
 
-    <EditText
-            android:id="@+id/password"
-            android:layout_width="0dp"
+    <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_0"
+            android:layout_width="match_parent"
+            app:errorEnabled="true"
+            app:errorTextColor="#FF0000"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:autofillHints="@string/prompt_password"
-            android:hint="@string/prompt_password"
-            android:imeOptions="actionDone"
-            android:inputType="textPassword"
-            android:selectAllOnFocus="true"
+            app:layout_constraintBottom_toTopOf="@+id/til"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/username"/>
+            app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/username"
+                app:errorEnabled="true"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/prompt_email"
+                android:imeOptions="actionNext"
+                android:drawablePadding="8dp"
+                android:drawableStart="@drawable/ic_me"
+                android:maxLength="128"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:textColorHint="#B6B6B6"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til"
+            android:layout_width="match_parent"
+            app:errorEnabled="true"
+            app:errorTextColor="#FF0000"
+            app:endIconMode="password_toggle"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toTopOf="@+id/login"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/password"
+                app:errorEnabled="true"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:hint="@string/prompt_password"
+                android:imeOptions="actionNext"
+                android:drawablePadding="8dp"
+                android:drawableStart="@drawable/ic_password"
+                android:maxLength="128"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:textColorHint="#B6B6B6"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!--    <EditText-->
+    <!--            android:id="@+id/username"-->
+    <!--            android:layout_width="0dp"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_marginTop="96dp"-->
+    <!--            android:autofillHints="@string/prompt_email"-->
+    <!--            android:hint="@string/prompt_email"-->
+    <!--            android:inputType="number"-->
+    <!--            android:selectAllOnFocus="true"-->
+    <!--            app:layout_constraintEnd_toEndOf="parent"-->
+    <!--            app:layout_constraintStart_toStartOf="parent"-->
+    <!--            app:layout_constraintTop_toTopOf="parent"/>-->
+
+    <!--    <EditText-->
+    <!--            android:id="@+id/password"-->
+    <!--            android:layout_width="0dp"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_marginTop="8dp"-->
+    <!--            android:autofillHints="@string/prompt_password"-->
+    <!--            android:hint="@string/prompt_password"-->
+    <!--            android:imeOptions="actionDone"-->
+    <!--            android:inputType="textPassword"-->
+    <!--            android:selectAllOnFocus="true"-->
+    <!--            app:layout_constraintEnd_toEndOf="parent"-->
+    <!--            app:layout_constraintStart_toStartOf="parent"-->
+    <!--            app:layout_constraintTop_toBottomOf="@+id/username"/>-->
 
     <Button
             android:id="@+id/login"
@@ -45,27 +100,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="64dp"
             android:text="@string/action_sign_in"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/password"
-            app:layout_constraintVertical_bias="0.2"/>
+            app:layout_constraintTop_toTopOf="parent"/>
 
     <ProgressBar
-            android:id="@+id/loading"
             android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:id="@+id/loading"
+            android:layout_width="74dp"
+            android:layout_height="74dp"
             android:layout_gravity="center"
-            android:layout_marginTop="64dp"
-            android:layout_marginBottom="64dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/password"
-            app:layout_constraintStart_toStartOf="@+id/password"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.3"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/til" app:layout_constraintBottom_toTopOf="@+id/login"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

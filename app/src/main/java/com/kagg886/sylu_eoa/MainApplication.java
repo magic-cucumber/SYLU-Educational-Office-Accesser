@@ -114,7 +114,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         ISylu.setInstance(new ISyluImpl());
 
 
-        registerDynamicAOP();
+//        registerDynamicAOP();
         registerLogCatcher();
 
         Thread.setDefaultUncaughtExceptionHandler(this);
@@ -122,8 +122,8 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
     }
 
     @SneakyThrows
+    //DEBUG模式下闪退
     private void registerDynamicAOP() {
-
         //对网络请求AOP
         Pine.hook(HttpConnection.class.getMethod("execute"), new MethodHook() {
             @Override
@@ -154,17 +154,21 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                     Log.e(MainApplication.class.getName(), "executing:%s failed", e);
                     return;
                 }
-
-                byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
                 short bin = 0;
-                for (int i = 0; i < Math.max(500, bytes.length); i++) {
-                    char it = (char) bytes[i];
-                    if (!Character.isWhitespace(it) && Character.isISOControl(it)) {
-                        bin++;
+                try {
+                    byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+
+                    for (int i = 0; i < Math.max(500, bytes.length); i++) {
+                        char it = (char) bytes[i];
+                        if (!Character.isWhitespace(it) && Character.isISOControl(it)) {
+                            bin++;
+                        }
+                        if (bin >= 5) {
+                            break;
+                        }
                     }
-                    if (bin >= 5) {
-                        break;
-                    }
+                } catch (Throwable e) {
+                    bin = 10;
                 }
 
                 Log.d(MainApplication.class.getName(),

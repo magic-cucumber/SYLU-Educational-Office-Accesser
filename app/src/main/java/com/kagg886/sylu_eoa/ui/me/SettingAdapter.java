@@ -3,15 +3,19 @@ package com.kagg886.sylu_eoa.ui.me;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import com.kagg886.sylu_eoa.R;
 import com.kagg886.sylu_eoa.databinding.AdapterSettingBinding;
 import lombok.Data;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -25,8 +29,17 @@ public class SettingAdapter extends BaseAdapter {
         add(new Item(R.drawable.ic_download, "检查更新", (c) -> {
             Toast.makeText(c, "OK!", Toast.LENGTH_LONG).show();
         }));
-        add(new Item(R.drawable.ic_money, "赞助我", (c) -> {
 
+        add(new Item(R.drawable.ic_money, "赞助我", (c) -> {
+            ImageView view = new ImageView(c);
+            try {
+                view.setImageBitmap(BitmapFactory.decodeStream(c.getAssets().open("pay.png")));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            new AlertDialog.Builder(c)
+                    .setTitle("截图保存二维码以捐赠")
+                    .setView(view).create().show();
         }));
     }};
 

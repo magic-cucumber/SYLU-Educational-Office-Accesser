@@ -61,7 +61,7 @@ public class CourseFragment extends Fragment {
             @SuppressLint("SetTextI18n")
             @Override
             public void onPageSelected(int position) {
-                binding.broad.setText("第" + (position + 1) + "周");
+                binding.broad.setText("第" + (position + 1) + "周(点我切换课表)");
             }
 
             @Override
@@ -127,6 +127,7 @@ public class CourseFragment extends Fragment {
             }
 
             int a = 0;
+            int currentWeek = -1;
             ClassTable table = new ClassTable(kb);
 
             ClassTable perWeek;
@@ -140,46 +141,48 @@ public class CourseFragment extends Fragment {
                     new Handler(Looper.getMainLooper()).post(() -> adapter.getData().add(new CoursePageFragment(perWeek0, date0)));
                 }
                 a++;
+                if (date.isBefore(LocalDate.now()) && date.plusDays(7).isAfter(LocalDate.now())) {
+                    currentWeek = a;
+                }
                 date = date.plusDays(7);
 //                break; //仅仅拿第一周做测试
             }
 
             //设置到正确的周数
             final int len = a;
-            new Handler(Looper.getMainLooper()).post(() -> {
-                List<String> titles = new ArrayList<>();
-                for (int i = 0; i < len; i++) {
-                    titles.add("第" + (i + 1) + "周(点我切换课表)");
-                }
+            List<String> titles = new ArrayList<>();
+            for (int i = 0; i < len; i++) {
+                titles.add("第" + (i + 1) + "周" + (currentWeek == i + 1 ? "(当前周)" : ""));
+            }
 
-                binding.broad.setOnClickListener((view0) -> {
-                    BottomSheetDialog dialog = new BottomSheetDialog(getActivity(), R.style.BottomSheetDialog);
+            binding.broad.setOnClickListener((view0) -> {
+                BottomSheetDialog dialog = new BottomSheetDialog(getActivity(), R.style.BottomSheetDialog);
 
-                    ListView v = new ListView(getActivity());
-                    v.setBackgroundResource(R.drawable.bg_dialog_course);
-                    v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
-
-                    dialog.setContentView(v);
-
-                    //解决滑动冲突
-                    v.setOnTouchListener((v1, event) -> {
-                        //canScrollVertically(-1)的值表示是否能向下滚动，false表示已经滚动到顶部
-                        ((ViewGroup) v1).requestDisallowInterceptTouchEvent(v1.canScrollVertically(-1));
-                        return false;
-                    });
-
-                    v.setOnItemClickListener((parent, view, position, id) -> {
-                        if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
-                            binding.content.setCurrentItem(position, false);
-                        }
-                        isDrag = false;
-                        dialog.cancel();
-                    });
-                    dialog.show();
+                ListView v = new ListView(getActivity());
+                v.setBackgroundResource(R.drawable.bg_dialog_course);
+                v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
+                //解决滑动冲突
+                v.setOnTouchListener((v1, event) -> {
+                    //canScrollVertically(-1)的值表示是否能向下滚动，false表示已经滚动到顶部
+                    ((ViewGroup) v1).requestDisallowInterceptTouchEvent(v1.canScrollVertically(-1));
+                    return false;
                 });
 
-                LocalDate now = LocalDate.now();
-                int index = (now.getDayOfYear() - calender.getStart().getDayOfYear()) / 7;
+                v.setOnItemClickListener((parent, view, position, id) -> {
+                    if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
+                        binding.content.setCurrentItem(position, false);
+                    }
+                    isDrag = false;
+                    dialog.cancel();
+                });
+
+                dialog.setContentView(v);
+                dialog.show();
+            });
+
+            LocalDate now = LocalDate.now();
+            int index = (now.getDayOfYear() - calender.getStart().getDayOfYear()) / 7;
+            new Handler(Looper.getMainLooper()).post(() -> {
                 binding.content.setCurrentItem(index, false); //防止一瞬间滑动n次造成的卡顿
             });
         }).exceptionally((e) -> {
