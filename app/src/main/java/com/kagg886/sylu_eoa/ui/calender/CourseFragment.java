@@ -17,8 +17,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
-import com.alibaba.fastjson2.JSON;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
 import com.kagg886.sylu_eoa.SyluUser;
@@ -28,6 +26,7 @@ import com.kagg886.sylu_eoa.data.LoginConfig;
 import com.kagg886.sylu_eoa.databinding.FragmentCourseBinding;
 import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.SchoolCalender;
+import com.kagg886.sylu_eoa.util.ItemChooseDialog;
 import com.kagg886.sylu_eoa.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -93,8 +92,7 @@ public class CourseFragment extends Fragment {
             if (kb == null) {
                 return;
             }
-            Log.i(CourseFragment.class.getName(), JSON.toJSONString(kb));
-            //在这里编写UI Parse
+            //UI Parse
 
             SchoolCalender calender = controller.getSchoolCalenderBeforeOutOfDate(user);
 
@@ -129,18 +127,12 @@ public class CourseFragment extends Fragment {
             int finalCurrentWeek = currentWeek;
             getActivity().runOnUiThread(() -> {
                 binding.broad.setOnClickListener((view0) -> {
-                    BottomSheetDialog dialog = new BottomSheetDialog(getActivity(), R.style.BottomSheetDialog);
+                    ItemChooseDialog dialog = new ItemChooseDialog(getActivity());
 
                     ListView v = new ListView(getActivity());
-                    v.setBackgroundResource(R.drawable.bg_dialog_course);
                     v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
                     //解决滑动冲突
-                    v.setOnTouchListener((v1, event) -> {
-                        //canScrollVertically(-1)的值表示是否能向下滚动，false表示已经滚动到顶部
-                        ((ViewGroup) v1).requestDisallowInterceptTouchEvent(v1.canScrollVertically(-1));
-                        return false;
-                    });
-
+                    dialog.setContentView(v);
                     v.setOnItemClickListener((parent, view, position, id) -> {
                         if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
                             binding.content.setCurrentItem(position, false);

@@ -16,4 +16,7 @@
     <string name="title_exam">考试</string>
     <string name="exam_year">选择学年\n</string>
     <string name="exam_term">选择学期\n</string>
+    <string name="tip_year">点我选择学年学期</string>
+    <string name="picker_year">选择学年</string>
+    <string name="pick_sem">选择学期</string>
 </resources>

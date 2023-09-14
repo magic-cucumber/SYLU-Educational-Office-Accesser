@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:gravity="top|center"
+        android:weightSum="1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    <LinearLayout android:weightSum="1"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_weight="1"
+                  android:baselineAligned="false">
+
+        <LinearLayout android:layout_width="0dp"
+                      android:orientation="vertical"
+                      android:gravity="top|center"
+                      android:layout_height="match_parent"
+                      android:layout_weight="0.5">
+
+
+            <TextView
+                    android:text="@string/picker_year"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/textView2"/>
+            <ListView
+                    android:id="@+id/picker_year"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+        </LinearLayout>
+
+        <LinearLayout android:layout_width="0dp"
+                      android:orientation="vertical"
+                      android:gravity="top|center"
+                      android:layout_height="match_parent"
+                      android:layout_weight="0.5">
+
+
+            <TextView
+                    android:text="@string/pick_sem"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/textView3"/>
+            <ListView
+                    android:id="@+id/picker_sem"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!--    TODO 需要解决按钮跳出屏幕-->
+    <Button
+            android:id="@+id/btn_confirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/confirm"/>
+</LinearLayout>
