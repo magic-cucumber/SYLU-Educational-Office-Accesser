@@ -7,22 +7,23 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONException;
-import com.alibaba.fastjson2.JSONReader;
-import com.alibaba.fastjson2.JSONWriter;
+import com.alibaba.fastjson2.*;
+import com.kagg886.sylu_eoa.data.AppSetting;
 import com.kagg886.sylu_eoa.util.LogCatcher;
 import com.tencent.mmkv.MMKV;
 import com.tencent.mmkv.MMKVLogLevel;
+import dalvik.system.DexClassLoader;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Connection;
+import org.jsoup.Jsoup;
 import org.jsoup.helper.HttpConnection;
 import top.canyie.pine.Pine;
 import top.canyie.pine.callback.MethodHook;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * 主应用示例，提供全局状态管理
@@ -121,6 +123,55 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         new Handler(Looper.getMainLooper()).post(this);
     }
 
+    @SuppressLint({"DiscouragedPrivateApi", "PrivateApi"})
+    public static Activity getCurrentActivity() {
+        Activity current = null;
+        try {
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Object activityThread = activityThreadClass.getMethod("currentActivityThread").invoke(
+                    null);
+            Field activitiesField = activityThreadClass.getDeclaredField("mActivities");
+            activitiesField.setAccessible(true);
+            Map<?, ?> activities = (Map<?, ?>) activitiesField.get(activityThread);
+            for (Object activityRecord : activities.values()) {
+                Class<?> activityRecordClass = activityRecord.getClass();
+                Field pausedField = activityRecordClass.getDeclaredField("paused");
+                pausedField.setAccessible(true);
+                if (!pausedField.getBoolean(activityRecord)) {
+                    Field activityField = activityRecordClass.getDeclaredField("activity");
+                    activityField.setAccessible(true);
+                    current = (Activity) activityField.get(activityRecord);
+                }
+            }
+        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | NoSuchFieldException |
+                 IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        Log.d(MainApplication.class.getName(), "access getCurrentActivity:" + current);
+        return current;
+    }
+
+    private void registerLogCatcher() {
+        //设置日志记录器
+        File logRoot = getLoggerBase();
+        logRoot.mkdirs();
+        int i = 0;
+        File log;
+        do {
+            LocalDate date = LocalDate.now();
+            log = new File(logRoot, String.format("%d-%d-%d_%d.log", date.getYear(), date.getMonth().getValue(), date.getDayOfMonth(), i));
+            i++;
+        } while (log.exists());
+        try {
+            log.createNewFile();
+            catcher = new LogCatcher(log);
+            catcher.start();
+        } catch (IOException e) {
+            System.out.println(log.getAbsolutePath());
+            throw new RuntimeException(e);
+        }
+    }
+
     @SneakyThrows
     //DEBUG模式下闪退
     private void registerDynamicAOP() {
@@ -180,55 +231,36 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                 );
             }
         });
-    }
 
-    private void registerLogCatcher() {
-        //设置日志记录器
-        File logRoot = getLoggerBase();
-        logRoot.mkdirs();
-        int i = 0;
-        File log;
-        do {
-            LocalDate date = LocalDate.now();
-            log = new File(logRoot, String.format("%d-%d-%d_%d.log", date.getYear(), date.getMonth().getValue(), date.getDayOfMonth(), i));
-            i++;
-        } while (log.exists());
         try {
-            log.createNewFile();
-            catcher = new LogCatcher(log);
-            catcher.start();
-        } catch (IOException e) {
-            System.out.println(log.getAbsolutePath());
-            throw new RuntimeException(e);
-        }
-    }
+            //拉取热补丁
+            JSONObject o = JSON.parseObject(Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/summary.json").execute().body());
+            AppSetting setting = MainApplication.getApp().getConfig("setting", AppSetting.class);
 
-    @SuppressLint({"DiscouragedPrivateApi", "PrivateApi"})
-    public static Activity getCurrentActivity() {
-        Activity current = null;
-        try {
-            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
-            Object activityThread = activityThreadClass.getMethod("currentActivityThread").invoke(
-                    null);
-            Field activitiesField = activityThreadClass.getDeclaredField("mActivities");
-            activitiesField.setAccessible(true);
-            Map<?, ?> activities = (Map<?, ?>) activitiesField.get(activityThread);
-            for (Object activityRecord : activities.values()) {
-                Class<?> activityRecordClass = activityRecord.getClass();
-                Field pausedField = activityRecordClass.getDeclaredField("paused");
-                pausedField.setAccessible(true);
-                if (!pausedField.getBoolean(activityRecord)) {
-                    Field activityField = activityRecordClass.getDeclaredField("activity");
-                    activityField.setAccessible(true);
-                    current = (Activity) activityField.get(activityRecord);
+            File f = new File(getFilesDir(), "core.apk");
+            if (o.getIntValue("ver") != setting.getHotFixVersion()) {
+                setting.setHotFixVersion(o.getIntValue("ver"));
+                if (!f.exists()) {
+                    f.createNewFile();
+                }
+                byte[] apk = Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/core.apk").execute().bodyAsBytes();
+                try (FileOutputStream stream = new FileOutputStream(f)) {
+                    stream.write(apk);
                 }
             }
-        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | NoSuchFieldException |
-                 IllegalAccessException e) {
-            e.printStackTrace();
+
+            if (f.exists()) {
+                //String dexPath, String optimizedDirectory, String librarySearchPath, ClassLoader parent
+                DexClassLoader loader = new DexClassLoader(f.getAbsolutePath(), new File(getCacheDir(), "dexOpt").getAbsolutePath(), null, getClassLoader());
+
+                Class<? extends Callable<Boolean>> clazz = (Class<? extends Callable<Boolean>>) loader.loadClass("com.kagg886.sylu_eoa.hotfix.HotFixExecutor");
+                Boolean rtn = clazz.getDeclaredConstructor().newInstance().call();
+
+                Log.i(MainApplication.class.getName(), "Hotfix inject status:" + rtn);
+            }
+        } catch (Throwable e) {
+            Log.e(MainApplication.class.getName(), "Hotfix inject failed", e);
         }
-        Log.d("SeikoApplication", "access getCurrentActivity:" + current);
-        return current;
     }
 
     @Override

@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.kagg886.sylu_eoa.data.AppSetting;
 import com.kagg886.sylu_eoa.data.LoginConfig;
 import com.kagg886.sylu_eoa.util.UIUtil;
+import com.kagg886.sylu_eoa.util.UpdateChecker;
 import org.jsoup.Jsoup;
 
 import java.io.IOException;
@@ -88,7 +89,22 @@ public class LauncherActivity extends AppCompatActivity {
             return null;
         });
 
-        CompletableFuture.allOf(taskCheckAvailable, taskCheckBroadCast).thenAccept((p) -> {
+        CompletableFuture<Void> taskCheckUpdate = CompletableFuture.supplyAsync(() -> {
+            CountDownLatch latch = new CountDownLatch(1);
+
+            if (!UpdateChecker.getInstance().checkUpdate()) {
+                latch.countDown(); //没更新就打破死循环
+            }
+
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        });
+
+        CompletableFuture.allOf(taskCheckAvailable, taskCheckBroadCast, taskCheckUpdate).thenAccept((p) -> {
             Intent i = new Intent(LauncherActivity.this, MainActivity.class);
             startActivity(i);
             finish();

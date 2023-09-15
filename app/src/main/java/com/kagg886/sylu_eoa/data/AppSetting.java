@@ -9,4 +9,8 @@ import lombok.Data;
 @Data
 public class AppSetting {
     private String broadCast;
+
+    private int hotFixVersion;
+
+
 }

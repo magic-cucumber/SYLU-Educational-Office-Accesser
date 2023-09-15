@@ -18,3 +18,4 @@ rootProject.name = "SYLU-EOA"
 include ':app'
 include 'api'
 
+include ':Hotfix'
