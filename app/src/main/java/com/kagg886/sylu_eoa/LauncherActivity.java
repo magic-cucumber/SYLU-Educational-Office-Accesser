@@ -104,7 +104,11 @@ public class LauncherActivity extends AppCompatActivity {
             return null;
         });
 
-        CompletableFuture.allOf(taskCheckAvailable, taskCheckBroadCast, taskCheckUpdate).thenAccept((p) -> {
+        CompletableFuture.allOf(
+                taskCheckAvailable,
+                taskCheckBroadCast
+                , taskCheckUpdate
+        ).thenAccept((p) -> {
             Intent i = new Intent(LauncherActivity.this, MainActivity.class);
             startActivity(i);
             finish();

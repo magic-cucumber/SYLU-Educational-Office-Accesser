@@ -18,8 +18,8 @@ android {
         applicationId "com.kagg886.sylu_eoa"
         minSdk 28
         targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        versionCode 13
+        versionName "2.0-pre-1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

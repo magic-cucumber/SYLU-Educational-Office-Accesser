@@ -236,17 +236,23 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         CompletableFuture.supplyAsync(() -> {
             try {
                 //拉取热补丁
-                JSONObject o = JSON.parseObject(Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/summary.json")
-                        .ignoreContentType(true).execute().body());
+                JSONObject o = JSON.parseObject(
+                        Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/summary.json")
+                                .ignoreContentType(true)
+                                .execute()
+                                .body()
+                );
                 AppSetting setting = MainApplication.getApp().getConfig("setting", AppSetting.class);
 
-                File f = new File(getFilesDir(), "core.apk");
+                File f = new File(getFilesDir(), o.getString("name"));
                 if (o.getIntValue("ver") != setting.getHotFixVersion()) {
                     setting.setHotFixVersion(o.getIntValue("ver"));
                     if (!f.exists()) {
                         f.createNewFile();
                     }
-                    byte[] apk = Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/" + o.getString("name")).execute().bodyAsBytes();
+                    byte[] apk = Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/" + o.getString("name"))
+                            .ignoreContentType(true)
+                            .execute().bodyAsBytes();
                     try (FileOutputStream stream = new FileOutputStream(f)) {
                         stream.write(apk);
                     }
