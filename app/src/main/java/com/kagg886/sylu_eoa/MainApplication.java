@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 主应用示例，提供全局状态管理
@@ -232,35 +233,39 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
             }
         });
 
-        try {
-            //拉取热补丁
-            JSONObject o = JSON.parseObject(Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/summary.json").execute().body());
-            AppSetting setting = MainApplication.getApp().getConfig("setting", AppSetting.class);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                //拉取热补丁
+                JSONObject o = JSON.parseObject(Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/summary.json")
+                        .ignoreContentType(true).execute().body());
+                AppSetting setting = MainApplication.getApp().getConfig("setting", AppSetting.class);
 
-            File f = new File(getFilesDir(), "core.apk");
-            if (o.getIntValue("ver") != setting.getHotFixVersion()) {
-                setting.setHotFixVersion(o.getIntValue("ver"));
-                if (!f.exists()) {
-                    f.createNewFile();
+                File f = new File(getFilesDir(), "core.apk");
+                if (o.getIntValue("ver") != setting.getHotFixVersion()) {
+                    setting.setHotFixVersion(o.getIntValue("ver"));
+                    if (!f.exists()) {
+                        f.createNewFile();
+                    }
+                    byte[] apk = Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/" + o.getString("name")).execute().bodyAsBytes();
+                    try (FileOutputStream stream = new FileOutputStream(f)) {
+                        stream.write(apk);
+                    }
                 }
-                byte[] apk = Jsoup.connect("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-2.0/runtime/hotfix/core.apk").execute().bodyAsBytes();
-                try (FileOutputStream stream = new FileOutputStream(f)) {
-                    stream.write(apk);
+
+                if (f.exists()) {
+                    //String dexPath, String optimizedDirectory, String librarySearchPath, ClassLoader parent
+                    DexClassLoader loader = new DexClassLoader(f.getAbsolutePath(), new File(getCacheDir(), "dexOpt").getAbsolutePath(), null, getClassLoader());
+
+                    Class<? extends Callable<Boolean>> clazz = (Class<? extends Callable<Boolean>>) loader.loadClass("com.kagg886.sylu_eoa.hotfix.HotFixExecutor");
+                    Boolean rtn = clazz.getDeclaredConstructor().newInstance().call();
+
+                    Log.i(MainApplication.class.getName(), "Hotfix inject status:" + rtn);
                 }
+            } catch (Throwable e) {
+                Log.e(MainApplication.class.getName(), "Hotfix inject failed", e);
             }
-
-            if (f.exists()) {
-                //String dexPath, String optimizedDirectory, String librarySearchPath, ClassLoader parent
-                DexClassLoader loader = new DexClassLoader(f.getAbsolutePath(), new File(getCacheDir(), "dexOpt").getAbsolutePath(), null, getClassLoader());
-
-                Class<? extends Callable<Boolean>> clazz = (Class<? extends Callable<Boolean>>) loader.loadClass("com.kagg886.sylu_eoa.hotfix.HotFixExecutor");
-                Boolean rtn = clazz.getDeclaredConstructor().newInstance().call();
-
-                Log.i(MainApplication.class.getName(), "Hotfix inject status:" + rtn);
-            }
-        } catch (Throwable e) {
-            Log.e(MainApplication.class.getName(), "Hotfix inject failed", e);
-        }
+            return null;
+        });
     }
 
     @Override
