@@ -6,23 +6,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import com.kagg886.sylu_eoa.databinding.FragmentToolboxBinding;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.kagg886.sylu_eoa.R;
+import com.kagg886.sylu_eoa.util.GridItemDecoration;
 
 public class ToolBoxFragment extends Fragment {
 
-    private FragmentToolboxBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        RecyclerView root = new RecyclerView(getContext());
+        root.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        root.setAdapter(new ToolsAdapter());
 
-        binding = FragmentToolboxBinding.inflate(inflater, container, false);
+        GridItemDecoration gridItemDecoration = new GridItemDecoration(GridLayoutManager.VERTICAL);
+        gridItemDecoration.setColor(getContext().getColor(R.color.purple_200));
+        root.addItemDecoration(gridItemDecoration);
 
-        return binding.getRoot();
+        return root;
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-    }
 }

@@ -1,0 +1,71 @@
+package com.kagg886.sylu_eoa.ui.toolbox;
+
+import android.annotation.SuppressLint;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.kagg886.sylu_eoa.MainApplication;
+import com.kagg886.sylu_eoa.R;
+import com.kagg886.sylu_eoa.ui.toolbox.impl.PhotoDesign;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @projectName: 掌上沈理青春版
+ * @package: com.qlstudio.lite_kagg886.adapter
+ * @className: ClassTableAdapter
+ * @author: kagg886
+ * @description: 装载课程表条目的适配器，横向装配
+ * @date: 2023/5/15 10:43
+ * @version: 1.0
+ */
+public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
+
+    private static final List<Tool> list = new ArrayList<Tool>() {{
+        add(new PhotoDesign());
+    }};
+
+    @NonNull
+    @NotNull
+    @Override
+    public TableUnit onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
+        return new TableUnit(LayoutInflater.from(parent.getContext()).inflate(R.layout.warning, null));
+    }
+
+
+    @SuppressLint("SetTextI18n")
+    @Override
+    public void onBindViewHolder(@NonNull @NotNull TableUnit holder, int position) {
+        holder.txt.setText(list.get(position).getName());
+        holder.img.setImageResource(list.get(position).getImageResourceId());
+        holder.root.setOnClickListener((a) -> {
+            MainApplication.getCurrentActivity().startActivity(list.get(position).callActivity());
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
+
+    public static class TableUnit extends RecyclerView.ViewHolder {
+        public final ImageView img;
+        public final TextView txt;
+
+        private final View root;
+
+        public TableUnit(@NonNull @NotNull View itemView) {
+            super(itemView);
+            this.root = itemView;
+            img = itemView.findViewById(R.id.image);
+            txt = itemView.findViewById(R.id.msg);
+        }
+    }
+}
+

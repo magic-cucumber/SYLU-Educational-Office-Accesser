@@ -1,13 +1,10 @@
 package com.kagg886.sylu_eoa.ui.exam;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
@@ -25,6 +22,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static com.kagg886.sylu_eoa.util.UIUtil.showDetailDialog;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -60,8 +59,9 @@ public class ExamDetailsAdapter extends RecyclerView.Adapter<ExamDetailsAdapter.
             new Thread(() -> {
                 try {
                     List<List<String>> data = user.getInfo(info);
+                    data.add(0, Arrays.asList("成绩分项", "成绩分项比例", "成绩"));
                     MainApplication.getCurrentActivity().runOnUiThread(() -> {
-                        showDetailDialog(holder.root.getContext(), info.getName(), data);
+                        showDetailDialog(holder.root.getContext(), "课程: '" + info.getName() + "' 详细信息", data, 3);
                     });
                 } catch (RuntimeException e) {
                     if (e.getCause() instanceof LoginException.CookieOutOfDate) {
@@ -105,24 +105,6 @@ public class ExamDetailsAdapter extends RecyclerView.Adapter<ExamDetailsAdapter.
             return 1;
         }
         return mValues.size();
-    }
-
-    private void showDetailDialog(Context context, String name, List<List<String>> data) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("课程: '" + name + "' 详细信息");
-
-        RecyclerView view = new RecyclerView(context);
-        GridLayoutManager layoutManager = new GridLayoutManager(context, 3);
-        view.setLayoutManager(layoutManager);
-
-        TextViewAdapter adapter = new TextViewAdapter(17);
-
-        adapter.getStrings().addAll(Arrays.asList("成绩分项", "成绩分项比例", "成绩"));
-        data.forEach((line) -> line.forEach((col) -> adapter.getStrings().add(col)));
-        view.setAdapter(adapter);
-
-        builder.setView(view);
-        builder.create().show();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
