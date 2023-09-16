@@ -56,7 +56,6 @@ public class LoginActivity extends AppCompatActivity implements TextWatcher {
                     config.setUser(SyluUser.createUser(userEdit.getText().toString()));
                 }
                 config.getUser().loginByPwd(passEdit.getText().toString());
-                //TODO 手动触发响应式更新，待深层响应式更新开发完毕后移除
                 config.setUser(config.getUser());
                 return config.getUser();
             }).thenAccept((session) -> {

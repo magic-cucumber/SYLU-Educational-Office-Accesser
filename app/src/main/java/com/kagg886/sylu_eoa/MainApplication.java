@@ -93,7 +93,6 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                         public void afterCall(Pine.CallFrame callFrame) {
                             String pz = JSON.toJSONString(callFrame.thisObject, JSONWriter.Feature.IgnoreNonFieldGetter, JSONWriter.Feature.FieldBased);
                             mmkv.encode(key, pz);
-                            //FIXME: not sync!
                             mmkv.async();
                             Log.d(MainApplication.class.getName(), "mmkv saveObject:" + key + "->" + pz);
                         }

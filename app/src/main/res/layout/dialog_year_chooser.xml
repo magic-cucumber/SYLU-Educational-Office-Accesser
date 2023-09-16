@@ -47,8 +47,6 @@
                     android:layout_height="match_parent"/>
         </LinearLayout>
     </LinearLayout>
-
-    <!--    TODO 需要解决按钮跳出屏幕-->
     <Button
             android:id="@+id/btn_confirm"
             android:layout_width="wrap_content"

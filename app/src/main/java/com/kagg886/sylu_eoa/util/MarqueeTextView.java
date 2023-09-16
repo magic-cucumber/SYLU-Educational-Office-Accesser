@@ -48,7 +48,6 @@ public class MarqueeTextView extends TextView {
 
     @Override
     public boolean isFocused() {
-        // TODO Auto-generated method stub
         return true;
     }
 
