@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.kagg886.sylu_eoa.MainActivity;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
 import com.kagg886.sylu_eoa.data.CacheController;
@@ -47,17 +48,33 @@ import java.util.function.Consumer;
  */
 public class ExamFragment extends Fragment {
 
+    private FragmentExamBinding binding;
+
     private RecyclerView container;
     private ExamDetailsAdapter adapter;
+    private boolean isRefreshing = false;
 
     @SuppressLint("NotifyDataSetChanged")
     @Nullable
     @org.jetbrains.annotations.Nullable
     @Override
     public View onCreateView(@NonNull @NotNull LayoutInflater inflater, @Nullable @org.jetbrains.annotations.Nullable ViewGroup container, @Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
-        FragmentExamBinding binding = FragmentExamBinding.inflate(inflater, null, false);
+        binding = FragmentExamBinding.inflate(inflater, null, false);
         this.container = binding.fragmentExamContainer;
+        binding.refresh.setOnRefreshListener(this::insertExamData);
 
+        insertExamData();
+
+        return binding.getRoot();
+    }
+
+    private void insertExamData() {
+        if (isRefreshing) {
+            UIUtil.showToast(requireActivity(), "正在获取考试信息，请等待");
+            return;
+        }
+
+        isRefreshing = true;
         LoginConfig config = MainApplication.getApp().getConfig("account", LoginConfig.class);
         CacheController controller = MainApplication.getApp().getConfig("cache", CacheController.class);
 
@@ -87,10 +104,11 @@ public class ExamFragment extends Fragment {
 
                 //选定选择器
                 YearAndSemestersPicker picker = controller.getPickerBeforeOutOfDate(config.getUser());
+                ((MainActivity) requireActivity()).getSupportActionBar().setTitle(String.format("考试(%s,第%s学期)", picker.getDefaultTerm().getYearsOfSchooling(), picker.getDefaultTerm().getSemesterNumber()));
 
                 ItemChooseDialog dialog = new ItemChooseDialog(requireActivity());
 
-                DialogYearChooserBinding binding1 = DialogYearChooserBinding.inflate(inflater, null, false);
+                DialogYearChooserBinding binding1 = DialogYearChooserBinding.inflate(LayoutInflater.from(requireContext()), null, false);
                 dialog.setContentView(binding1.getRoot());
 
                 AtomicReference<String> select_year = new AtomicReference<>();
@@ -117,7 +135,9 @@ public class ExamFragment extends Fragment {
                         List<ExamResult> info;
                         try {
                             info = config.getUser().getExamListByTerm(new Term(select_year.get(), select_sem.get()));
-                            Log.d(ExamFragment.class.getName(), info.toString());
+                            requireActivity().runOnUiThread(() -> {
+                                ((MainActivity) requireActivity()).getSupportActionBar().setTitle(String.format("考试(%s,第%s学期)", select_year.get(), select_sem.get()));
+                            });
                         } catch (RuntimeException e) {
                             if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
                                 UIUtil.showToast(getActivity(), "凭证失效，请重新登录以使用最新的功能!");
@@ -136,11 +156,17 @@ public class ExamFragment extends Fragment {
                 });
             });
         }).exceptionally((ex) -> {
+            if (ex.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
+                UIUtil.showToast(getActivity(), "请重新登录以拉取最新的缓存!");
+                return null;
+            }
             Log.e(ExamFragment.class.getName(), "Get Exam Wrong!", ex);
             UIUtil.showToast(requireActivity(), "获取成绩出现了未知错误，请查看日志");
             return null;
+        }).thenAccept((v) -> {
+            isRefreshing = false;
+            requireActivity().runOnUiThread(() -> binding.refresh.setRefreshing(false));
         });
-        return binding.getRoot();
     }
 
     private void registerListView(ListView list, String[] str, Consumer<Integer> onClick) {

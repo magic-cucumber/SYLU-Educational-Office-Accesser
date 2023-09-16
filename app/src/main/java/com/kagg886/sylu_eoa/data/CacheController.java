@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
  **/
 @Data
 public class CacheController {
+    @JSONField(deserialize = false, serialize = false)
+    private static final long outDateTimeMills = 604800000L;
+
     @JSONField(deserializeUsing = Descriptor.class)
     private List<ClassUnit> course;
     private long courseOutOfDateTimeStamp;
@@ -36,7 +39,7 @@ public class CacheController {
         if (System.currentTimeMillis() - getCourseOutOfDateTimeStamp() > 0 && user != null) { //缓存过期，拉取最新课表
             List<ClassUnit> units = user.getClassTableByTerm(user.getSchoolCalender().getCurrentTerm());
             setCourse(units);
-            setCourseOutOfDateTimeStamp(System.currentTimeMillis() + 604800000L); //7天刷新一次
+            setCourseOutOfDateTimeStamp(System.currentTimeMillis() + outDateTimeMills); //7天刷新一次
             return units;
         }
         return getCourse();
@@ -46,7 +49,7 @@ public class CacheController {
         if (System.currentTimeMillis() - getCalenderOutOfDateTimeStamp() > 0 && user != null) { //缓存过期，拉取最新课表
             SchoolCalender calender = user.getSchoolCalender();
             setCalender(calender);
-            setCalenderOutOfDateTimeStamp(System.currentTimeMillis() + 604800000L); //7天刷新一次
+            setCalenderOutOfDateTimeStamp(System.currentTimeMillis() + outDateTimeMills); //7天刷新一次
             return calender;
         }
         return getCalender();
@@ -56,7 +59,7 @@ public class CacheController {
         if (System.currentTimeMillis() - getPickerOutOfDateTimeStamp() > 0 && user != null) { //缓存过期，拉取最新课表
             YearAndSemestersPicker exam = user.getPicker();
             setPicker(exam);
-            setPickerOutOfDateTimeStamp(System.currentTimeMillis() + 604800000L); //7天刷新一次
+            setPickerOutOfDateTimeStamp(System.currentTimeMillis() + outDateTimeMills); //7天刷新一次
             return exam;
         }
         return getPicker();

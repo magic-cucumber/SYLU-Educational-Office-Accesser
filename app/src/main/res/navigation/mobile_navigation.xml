@@ -18,10 +18,10 @@
             tools:layout="@layout/fragment_exam"/>
 
     <fragment
-            android:id="@+id/navigation_dashboard"
-            android:name="com.kagg886.sylu_eoa.ui.dashboard.DashboardFragment"
-            android:label="@string/title_dashboard"
-            tools:layout="@layout/fragment_dashboard"/>
+            android:id="@+id/navigation_toolbox"
+            android:name="com.kagg886.sylu_eoa.ui.toolbox.ToolBoxFragment"
+            android:label="@string/title_toolbox"
+            tools:layout="@layout/fragment_toolbox"/>
 
 
     <fragment

@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">SYLU-EOA</string>
     <string name="title_course">课程表</string>
-    <string name="title_dashboard">Dashboard</string>
+    <string name="title_toolbox">工具箱</string>
     <string name="title_me">我</string>
     <string name="loading">Loading…</string>
     <string name="title_activity_login">登录到教务网</string>

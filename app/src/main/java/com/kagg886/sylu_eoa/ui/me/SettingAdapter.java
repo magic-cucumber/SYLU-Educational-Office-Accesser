@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 import com.kagg886.sylu_eoa.MainApplication;
@@ -38,9 +37,7 @@ import java.util.zip.ZipOutputStream;
  **/
 public class SettingAdapter extends BaseAdapter {
     private final List<Item> i = new ArrayList<Item>() {{
-        add(new Item(R.drawable.ic_download, "检查更新", (c) -> {
-            Toast.makeText(c, "OK!", Toast.LENGTH_LONG).show();
-        }));
+
 
         add(new Item(R.drawable.ic_money, "赞助我", (c) -> {
             ImageView view = new ImageView(c);

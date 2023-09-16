@@ -1,4 +1,4 @@
-package com.kagg886.sylu_eoa.ui.dashboard;
+package com.kagg886.sylu_eoa.ui.toolbox;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -6,19 +6,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import com.kagg886.sylu_eoa.databinding.FragmentDashboardBinding;
+import com.kagg886.sylu_eoa.databinding.FragmentToolboxBinding;
 
-public class DashboardFragment extends Fragment {
+public class ToolBoxFragment extends Fragment {
 
-    private FragmentDashboardBinding binding;
+    private FragmentToolboxBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
-        binding = FragmentDashboardBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
+        binding = FragmentToolboxBinding.inflate(inflater, container, false);
 
-        return root;
+        return binding.getRoot();
     }
 
     @Override

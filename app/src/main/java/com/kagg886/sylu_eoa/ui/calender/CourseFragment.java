@@ -43,12 +43,15 @@ public class CourseFragment extends Fragment {
 
     private ContentPagerAdapter adapter;
 
+    private boolean isRefreshing = false;
+
     @SuppressLint("ClickableViewAccessibility")
     @Nullable
     @org.jetbrains.annotations.Nullable
     @Override
     public View onCreateView(@NonNull @NotNull LayoutInflater inflater, @Nullable @org.jetbrains.annotations.Nullable ViewGroup container, @Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         binding = FragmentCourseBinding.inflate(inflater, container, false);
+        binding.refresh.setOnRefreshListener(this::insertCourse);
 
         //这里必须传入ChildFragmentManager
         adapter = new ContentPagerAdapter(getChildFragmentManager(), getActivity().getLifecycle());
@@ -69,6 +72,18 @@ public class CourseFragment extends Fragment {
                 }
             }
         });
+        insertCourse();
+        return binding.getRoot();
+    }
+
+    private void insertCourse() {
+        if (isRefreshing) {
+            UIUtil.showToast(requireActivity(), "正在刷新中，请稍后再试");
+            return;
+        }
+        isRefreshing = true;
+        binding.refresh.setRefreshing(true);
+
 
         LoginConfig config = MainApplication.getApp().getConfig("account", LoginConfig.class);
         SyluUser user = config.getUser();
@@ -149,10 +164,10 @@ public class CourseFragment extends Fragment {
         }).exceptionally((e) -> {
             Log.e(CourseFragment.class.getName(), "Read Class Error:", e);
             return null;
+        }).thenAccept((p) -> {
+            isRefreshing = false;
+            requireActivity().runOnUiThread(() -> binding.refresh.setRefreshing(false));
         });
-
-
-        return binding.getRoot();
     }
 
 

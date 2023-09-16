@@ -1,9 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:orientation="vertical"
-              android:gravity="top|center"
-              android:layout_height="match_parent">
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:gravity="top|center"
+            android:layout_height="match_parent">
+
+        <TextView android:layout_width="wrap_content"
+                  android:textSize="30sp"
+                  android:id="@+id/broad"
+                  android:layout_height="wrap_content"
+                  android:text="@string/loading"/>
+
+        <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+
+    </LinearLayout>
 
     <!--    <Spinner-->
     <!--            android:text="@string/loading"-->
@@ -12,14 +33,5 @@
     <!--            android:layout_height="wrap_content"-->
     <!--            android:id="@+id/counter"/>-->
 
-    <TextView android:layout_width="wrap_content"
-              android:textSize="30sp"
-              android:id="@+id/broad"
-              android:layout_height="wrap_content"
-              android:text="@string/loading"/>
 
-    <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/content"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-</LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
