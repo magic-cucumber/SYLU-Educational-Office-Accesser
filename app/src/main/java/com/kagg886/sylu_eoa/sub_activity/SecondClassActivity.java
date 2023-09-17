@@ -39,7 +39,7 @@ public class SecondClassActivity extends AppCompatActivity {
     private DialogClass2Binding dialogClass2Binding;
     private AlertDialog dialog;
 
-    private SecondClassData data = MainApplication.getApp().getConfig("SecondClassData", SecondClassData.class);
+    private SecondClassData data;
 
 
     private final Handler twLoginResult = new Handler(Looper.getMainLooper()) {
@@ -70,6 +70,7 @@ public class SecondClassActivity extends AppCompatActivity {
     protected void onCreate(@Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         stuID = getIntent().getStringExtra("stuID");
+        data = MainApplication.getApp().getConfig("SecondClassData", SecondClassData.class);
         fragmentClass2Binding = FragmentClass2Binding.inflate(getLayoutInflater(), null, false);
         dialogClass2Binding = DialogClass2Binding.inflate(getLayoutInflater(), null, false);
 
