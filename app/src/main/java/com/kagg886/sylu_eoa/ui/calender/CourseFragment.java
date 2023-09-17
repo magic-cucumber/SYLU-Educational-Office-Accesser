@@ -51,7 +51,11 @@ public class CourseFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull @NotNull LayoutInflater inflater, @Nullable @org.jetbrains.annotations.Nullable ViewGroup container, @Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         binding = FragmentCourseBinding.inflate(inflater, container, false);
-        binding.refresh.setOnRefreshListener(this::insertCourse);
+        binding.refresh.setOnRefreshListener(() -> {
+            CacheController controller = MainApplication.getApp().getConfig("cache", CacheController.class);
+            controller.setCourseOutOfDateTimeStamp(0); //清空课表缓存
+            insertCourse();
+        });
 
         //这里必须传入ChildFragmentManager
         adapter = new ContentPagerAdapter(getChildFragmentManager(), getActivity().getLifecycle());

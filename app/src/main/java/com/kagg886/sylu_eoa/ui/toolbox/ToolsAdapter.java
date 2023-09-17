@@ -10,7 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
-import com.kagg886.sylu_eoa.ui.toolbox.impl.PhotoDesign;
+import com.kagg886.sylu_eoa.ui.toolbox.impl.SecondClass;
+import com.kagg886.sylu_eoa.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import java.util.List;
 public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
 
     private static final List<Tool> list = new ArrayList<Tool>() {{
-        add(new PhotoDesign());
+        add(new SecondClass());
     }};
 
     @NonNull
@@ -45,7 +46,11 @@ public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
         holder.txt.setText(list.get(position).getName());
         holder.img.setImageResource(list.get(position).getImageResourceId());
         holder.root.setOnClickListener((a) -> {
-            MainApplication.getCurrentActivity().startActivity(list.get(position).callActivity());
+            try {
+                MainApplication.getCurrentActivity().startActivity(list.get(position).callActivity());
+            } catch (RuntimeException e) {
+                UIUtil.showToast(MainApplication.getCurrentActivity(), e.getMessage());
+            }
         });
     }
 

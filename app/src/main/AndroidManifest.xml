@@ -37,6 +37,10 @@
                 android:exported="false">
         </activity>
 
+        <activity android:name=".sub_activity.SecondClassActivity"
+                  android:exported="false"
+                  android:label="@string/secondclass"/>
+
         <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="com.kagg886.sylu_eoa.fileprovider"

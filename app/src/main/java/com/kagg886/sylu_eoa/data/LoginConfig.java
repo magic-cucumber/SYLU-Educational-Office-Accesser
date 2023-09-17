@@ -9,6 +9,5 @@ import lombok.Data;
  **/
 @Data
 public class LoginConfig {
-    @DeepListener
     private SyluUser user;
 }
