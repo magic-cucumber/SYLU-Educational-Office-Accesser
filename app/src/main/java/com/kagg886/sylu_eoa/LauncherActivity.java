@@ -33,7 +33,7 @@ public class LauncherActivity extends AppCompatActivity {
         binding.include.image.setImageResource(R.drawable.ic_search);
 
         RotateAnimation rotateAnimation = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        rotateAnimation.setDuration(1000);
+        rotateAnimation.setDuration(500);
         rotateAnimation.setRepeatCount(Animation.INFINITE);
         rotateAnimation.setInterpolator(new AccelerateDecelerateInterpolator());
         binding.include.image.startAnimation(rotateAnimation);
