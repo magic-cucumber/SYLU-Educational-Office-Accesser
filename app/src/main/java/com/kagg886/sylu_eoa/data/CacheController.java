@@ -7,7 +7,6 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import com.alibaba.fastjson2.reader.ObjectReader;
 import com.kagg886.sylu_eoa.SyluUser;
 import com.kagg886.sylu_eoa.model.ClassUnit;
-import com.kagg886.sylu_eoa.model.ExamResult;
 import com.kagg886.sylu_eoa.model.SchoolCalender;
 import com.kagg886.sylu_eoa.model.YearAndSemestersPicker;
 import lombok.Data;
@@ -73,17 +72,6 @@ public class CacheController {
             return ((JSONArray) jsonReader.readArray())
                     .stream()
                     .map((v) -> JSON.parseObject(v.toString(), ClassUnit.class))
-                    .collect(Collectors.toList());
-        }
-    }
-
-    public static class Descriptor1 implements ObjectReader<List<ExamResult>> {
-
-        @Override
-        public List<ExamResult> readObject(JSONReader jsonReader, Type fieldType, Object fieldName, long features) {
-            return ((JSONArray) jsonReader.readArray())
-                    .stream()
-                    .map((v) -> JSON.parseObject(v.toString(), ExamResult.class))
                     .collect(Collectors.toList());
         }
     }

@@ -7,6 +7,7 @@ import android.graphics.Rect;
 import android.view.View;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
@@ -35,56 +36,46 @@ public class GridItemDecoration extends RecyclerView.ItemDecoration {
     }
 
     @Override
-    public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+    public void getItemOffsets(@NotNull Rect outRect, View view, RecyclerView parent, @NotNull RecyclerView.State state) {
         GridLayoutManager layoutManager = (GridLayoutManager) parent.getLayoutManager();
-        int itemCount = parent.getAdapter().getItemCount();
-        int viewLayoutPosition = ((RecyclerView.LayoutParams) view.getLayoutParams()).getViewLayoutPosition();
+        int pos = ((RecyclerView.LayoutParams) view.getLayoutParams()).getViewLayoutPosition();
+
 
         int left = 0;
         int top = 0;
-        int right = mDividerHeight;
-        int bottom = mDividerHeight;
-//        if (isLastRow(layoutManager, itemCount, viewLayoutPosition)) {
-//            // 如果是最后一行，则不需要绘制底部
-//            bottom = 0;
-//        }
-//        if (isLastCol(layoutManager, itemCount, viewLayoutPosition)) {
-//            // 如果是最后一列，则不需要绘制右边
-//            right = 0;
-//        }
 
-        outRect.set(left, top, right, bottom);
+        if (pos < layoutManager.getSpanCount()) {
+            top = mDividerHeight;
+        }
+        if (pos % layoutManager.getSpanCount() == 0) {
+            left = mDividerHeight;
+        }
+        outRect.set(left, top, mDividerHeight, mDividerHeight);
     }
 
-    /**
-     * 判断是否最后一列
-     */
-    private boolean isLastCol(GridLayoutManager layoutManager, int childCount, int itemPosition) {
+    private boolean isFirstRow(GridLayoutManager layoutManager, int itemPosition) {
         GridLayoutManager.SpanSizeLookup spanSizeLookup = layoutManager.getSpanSizeLookup();
         int spanCount = layoutManager.getSpanCount();
         int spanIndex = spanSizeLookup.getSpanIndex(itemPosition, spanCount);
         int spanSize = spanSizeLookup.getSpanSize(itemPosition);
 
         if (mOrientation == GridLayoutManager.VERTICAL) {
-            return spanIndex + spanSize == spanCount;
+            return spanIndex == 0;
         } else {
-            return (childCount - itemPosition) / (spanCount * 1.0f) <= 1;
+            return (itemPosition % spanCount) == 0;
         }
     }
 
-    /**
-     * 判断是否最后一行
-     */
-    private boolean isLastRow(GridLayoutManager layoutManager, int childCount, int itemPosition) {
+    private boolean isFirstCol(GridLayoutManager layoutManager, int itemPosition) {
         GridLayoutManager.SpanSizeLookup spanSizeLookup = layoutManager.getSpanSizeLookup();
         int spanCount = layoutManager.getSpanCount();
         int spanIndex = spanSizeLookup.getSpanIndex(itemPosition, spanCount);
         int spanSize = spanSizeLookup.getSpanSize(itemPosition);
 
         if (mOrientation == GridLayoutManager.VERTICAL) {
-            return (childCount - itemPosition) / (spanCount * 1.0f) <= 1;
+            return (itemPosition % spanCount) == 0;
         } else {
-            return spanIndex + spanSize == spanCount;
+            return spanIndex == 0;
         }
     }
 
@@ -92,12 +83,18 @@ public class GridItemDecoration extends RecyclerView.ItemDecoration {
     public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
         c.save();
         int childCount = parent.getChildCount();
-
+        int span = ((GridLayoutManager) Objects.requireNonNull(parent.getLayoutManager())).getSpanCount();
         for (int i = 0; i < childCount; i++) {
             View childAt = parent.getChildAt(i);
-            if (i <= ((GridLayoutManager) Objects.requireNonNull(parent.getLayoutManager())).getSpanCount()) {
-                c.drawLine(childAt.getX(), 0, childAt.getX() + childAt.getWidth(), 0, mPaint);
-                c.drawLine(childAt.getX(), 1, childAt.getX() + childAt.getWidth(), 1, mPaint);
+            if (i <= span) {
+                c.drawRect(childAt.getX(), 0, childAt.getX() + childAt.getWidth() + mDividerHeight, mDividerHeight, mPaint);
+            }
+            if (i == 0 || i % span == 0) {
+                float yStart = childAt.getY();
+                if (i == 0) {
+                    yStart -= mDividerHeight;
+                }
+                c.drawRect(0, yStart, mDividerHeight, childAt.getY() + childAt.getHeight() + mDividerHeight, mPaint);
             }
             drawHorizontal(c, childAt);
             drawVertical(c, childAt);

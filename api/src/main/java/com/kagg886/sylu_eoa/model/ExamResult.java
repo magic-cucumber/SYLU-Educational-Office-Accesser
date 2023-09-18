@@ -1,7 +1,13 @@
 package com.kagg886.sylu_eoa.model;
 
+import com.alibaba.fastjson2.JSONReader;
+import com.alibaba.fastjson2.JSONWriter;
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.alibaba.fastjson2.reader.ObjectReader;
+import com.alibaba.fastjson2.writer.ObjectWriter;
 import lombok.Data;
+
+import java.lang.reflect.Type;
 
 /**
  * 考试列表
@@ -38,6 +44,9 @@ public class ExamResult {
     @JSONField(name = "ksxzdm")
     private String completionCode; //挂科标识
 
+    @JSONField(name = "sfxwkc", serializeUsing = ConverterWrite.class, deserializeUsing = ConverterRead.class)
+    private boolean degreeProgram; //是否是学位课
+
     public Status getStatus() {
         if (Double.compare(Double.parseDouble(absoluteScore), 60) == -1) {
             return Status.FUCK_TEACHER;
@@ -54,5 +63,21 @@ public class ExamResult {
         SUCCESS, //考试一遍过
         FUCK_TEACHER, //老师不捞我，呜呜呜
         SUCCESS_RE //重修或补考成功
+    }
+
+    private static class ConverterWrite implements ObjectWriter<Boolean> {
+
+        @Override
+        public void write(JSONWriter jsonWriter, Object object, Object fieldName, Type fieldType, long features) {
+            jsonWriter.writeString(((Boolean) object) ? "是" : "否");
+        }
+    }
+
+    private static class ConverterRead implements ObjectReader<Boolean> {
+
+        @Override
+        public Boolean readObject(JSONReader jsonReader, Type fieldType, Object fieldName, long features) {
+            return "是".equals(jsonReader.readString());
+        }
     }
 }

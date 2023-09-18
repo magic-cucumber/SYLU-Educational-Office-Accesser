@@ -1,11 +1,11 @@
 package com.kagg886.sylu_eoa;
 
+import com.alibaba.fastjson2.JSON;
 import com.kagg886.sylu_eoa.model.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +56,8 @@ public class FunctionTest {
         List<ExamResult> results = ISylu.getInstance().getExamList(id, cookie, term);
 
         System.out.println(results);
+
+        System.out.println(JSON.toJSONString(results));
     }
 
     @Test

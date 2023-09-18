@@ -3,6 +3,7 @@ package com.kagg886.sylu_eoa;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.*;
 import com.kagg886.sylu_eoa.util.HTTPUtil;
@@ -263,9 +264,13 @@ public class ISyluImpl implements ISylu {
         String body = resp.body();
 
         assertLogin(Jsoup.parse(body));
-        JSONArray array = JSON.parseObject(body).getJSONArray("items");
 
-        return array.stream().map(k -> (JSONObject) k).map(v -> JSON.parseObject(v.toString(), ExamResult.class)).collect(Collectors.toList());
+        return JSON.parseArray(JSON.parseObject(body).getJSONArray("items").toString(), new TypeReference<ExamResult>() {
+        }.getType());
+//        return array.stream()
+//                .map(k -> (JSONObject) k)
+//                .map(v -> JSON.parseObject(v.toString(), ExamResult.class))
+//                .collect(Collectors.toList());
     }
 
     @Override

@@ -88,17 +88,15 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
             for (Method m : tClass.getDeclaredMethods()) {
                 m.setAccessible(true);
                 if (m.getName().startsWith("set")) {
-                    if (!Pine.isHooked(m)) {
-                        Pine.hook(m, new MethodHook() {
-                            @Override
-                            public void afterCall(Pine.CallFrame callFrame) {
-                                String pz = JSON.toJSONString(callFrame.thisObject, JSONWriter.Feature.IgnoreNonFieldGetter, JSONWriter.Feature.FieldBased);
-                                mmkv.encode(key, pz);
-                                mmkv.async();
-                                Log.d(MainApplication.class.getName(), "mmkv saveObject:" + key + "->" + pz);
-                            }
-                        });
-                    }
+                    Pine.hook(m, new MethodHook() {
+                        @Override
+                        public void afterCall(Pine.CallFrame callFrame) {
+                            String pz = JSON.toJSONString(callFrame.thisObject, JSONWriter.Feature.IgnoreNonFieldGetter, JSONWriter.Feature.FieldBased);
+                            mmkv.encode(key, pz);
+                            mmkv.async();
+                            Log.d(MainApplication.class.getName(), "mmkv saveObject:" + key + "->" + pz);
+                        }
+                    });
                 }
             }
         }
@@ -118,7 +116,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         ISylu.setInstance(new ISyluImpl());
 
 
-        registerDynamicAOP();
+        //registerDynamicAOP();
         registerLogCatcher();
 
         Thread.setDefaultUncaughtExceptionHandler(this);

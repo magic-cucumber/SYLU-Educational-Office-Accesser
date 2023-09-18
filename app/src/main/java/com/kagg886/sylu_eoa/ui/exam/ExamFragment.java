@@ -81,14 +81,16 @@ public class ExamFragment extends Fragment {
         CompletableFuture.supplyAsync(() -> {
             try {
                 if (config.getUser() == null) {
-                    UIUtil.showToast(getActivity(), "登录后才能执行操作!");
+                    UIUtil.showToast(requireActivity(), "登录后才能执行操作!");
                     return null;
                 }
+
+
                 controller.getPickerBeforeOutOfDate(config.getUser());
                 return config.getUser().getExamListByTerm(controller.getSchoolCalenderBeforeOutOfDate(config.getUser()).getCurrentTerm());
             } catch (RuntimeException e) {
                 if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
-                    UIUtil.showToast(getActivity(), "考试项已经过时,请重新登录以拉取最新的缓存!");
+                    UIUtil.showToast(requireActivity(), "考试项已经过时,请重新登录以拉取最新的缓存!");
                 }
                 return null;
             }

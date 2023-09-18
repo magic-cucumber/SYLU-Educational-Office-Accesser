@@ -1,5 +1,6 @@
 package com.kagg886.sylu_eoa.ui.exam;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -75,6 +76,10 @@ public class ExamDetailsAdapter extends RecyclerView.Adapter<ExamDetailsAdapter.
         holder.score.setText(info.getCredit());
         holder.gradePoint.setText(info.getGradePoint());
         holder.scTimeGr.setText(info.getCrTimesGp());
+
+        if (info.isDegreeProgram()) {
+            holder.className.setTextColor(Color.RED);
+        }
 
         switch (info.getStatus()) {
             case SUCCESS:
