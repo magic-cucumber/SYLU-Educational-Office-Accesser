@@ -62,7 +62,7 @@ public class ExamDetailsAdapter extends RecyclerView.Adapter<ExamDetailsAdapter.
                     List<List<String>> data = user.getInfo(info);
                     data.add(0, Arrays.asList("成绩分项", "成绩分项比例", "成绩"));
                     MainApplication.getCurrentActivity().runOnUiThread(() -> {
-                        showDetailDialog(holder.root.getContext(), "课程: '" + info.getName() + "' 详细信息", data, 3);
+                        showDetailDialog(holder.root.getContext(), "课程: '" + info.getName() + "' 详细信息(红字为学位课哦)", data, 3);
                     });
                 } catch (RuntimeException e) {
                     if (e.getCause() instanceof LoginException.CookieOutOfDate) {

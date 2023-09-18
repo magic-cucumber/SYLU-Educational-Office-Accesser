@@ -24,6 +24,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -111,10 +112,14 @@ public class SecondClassActivity extends AppCompatActivity {
                     data.setCookie(loginTW(pass));
                     fetchData();
                 } catch (RuntimeException e) {
-                    Message m = new Message();
-                    m.what = -1;
-                    m.getData().putString("cause", e.getMessage());
-                    twFetchResult.sendMessage(m);
+                    if (data.getCookie() == null) {
+                        Message m = new Message();
+                        m.what = -1;
+                        m.getData().putString("cause", e.getMessage());
+                        twFetchResult.sendMessage(m);
+                    } else {
+                        UIUtil.showToast(SecondClassActivity.this, "无法获取最新数据，请连接校园网后重试");
+                    }
                 }
                 return null;
             });
@@ -174,6 +179,9 @@ public class SecondClassActivity extends AppCompatActivity {
             }
         });
         cookie = resp.header("Set-Cookie").split("CenterSoft=")[2].split("; ")[0];
+        if (!isSuccess.get()) {
+            throw new IllegalStateException();
+        }
         return String.format("ASP.NET_SessionId=%s; CenterSoft=%s", sessionID, cookie);
     }
 
@@ -207,7 +215,9 @@ public class SecondClassActivity extends AppCompatActivity {
         try {
             //TODO 拉取数据并填充到data中，成功向Handler发送0，失败发送1
             Document dom = Jsoup.connect("http://xg.sylu.edu.cn/SyluTW/Sys/SystemForm/FinishExam/StuFinishStudentScore.aspx")
-                    .header("Cookie", data.getCookie()).get();
+                    .header("Cookie", data.getCookie())
+                    .timeout(5000)
+                    .get();
 
             for (char a = 'A'; a <= 'E'; a++) {
                 Double min = Double.parseDouble(dom.getElementById("Count" + a).text());
@@ -225,6 +235,13 @@ public class SecondClassActivity extends AppCompatActivity {
             data.setSum1(Double.parseDouble(e.isEmpty() ? "0.00" : e));
             twFetchResult.sendEmptyMessage(0);
         } catch (Exception e) {
+            if (e instanceof SocketTimeoutException) {
+                if (data.getCookie() != null) {
+                    UIUtil.showToast(this, "无法连接到团委网，已使用旧数据");
+                    twFetchResult.sendEmptyMessage(0);
+                }
+                return;
+            }
             Message m = new Message();
             m.what = -1;
             m.getData().putString("cause", e.getMessage());
