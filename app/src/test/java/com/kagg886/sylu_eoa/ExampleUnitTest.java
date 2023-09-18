@@ -2,7 +2,7 @@ package com.kagg886.sylu_eoa;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.io.IOException;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -11,7 +11,6 @@ import static org.junit.Assert.*;
  */
 public class ExampleUnitTest {
     @Test
-    public void addition_isCorrect() {
-        assertEquals(4, 2 + 2);
+    public void addition_isCorrect() throws IOException {
     }
 }

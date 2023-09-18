@@ -13,13 +13,20 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.data.SecondClassData;
+import com.kagg886.sylu_eoa.databinding.ActivityClass2Binding;
 import com.kagg886.sylu_eoa.databinding.DialogClass2Binding;
-import com.kagg886.sylu_eoa.databinding.FragmentClass2Binding;
+import com.kagg886.sylu_eoa.util.RSA;
 import com.kagg886.sylu_eoa.util.SpiderWebPropertyDiagram;
 import com.kagg886.sylu_eoa.util.UIUtil;
+import lombok.SneakyThrows;
+import org.jsoup.Connection;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 第二课堂不属于教务系统，直接排除在api模块外
@@ -35,14 +42,14 @@ public class SecondClassActivity extends AppCompatActivity {
             "D. 志愿公益",
             "E. 文体+技能"
     };
-    private FragmentClass2Binding fragmentClass2Binding;
+    private ActivityClass2Binding activityClass2Binding;
     private DialogClass2Binding dialogClass2Binding;
     private AlertDialog dialog;
 
     private SecondClassData data;
 
 
-    private final Handler twLoginResult = new Handler(Looper.getMainLooper()) {
+    private final Handler twFetchResult = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(@NonNull Message msg) {
             dialogClass2Binding.login.setEnabled(true);
@@ -71,16 +78,16 @@ public class SecondClassActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         stuID = getIntent().getStringExtra("stuID");
         data = MainApplication.getApp().getConfig("SecondClassData", SecondClassData.class);
-        fragmentClass2Binding = FragmentClass2Binding.inflate(getLayoutInflater(), null, false);
+        activityClass2Binding = ActivityClass2Binding.inflate(getLayoutInflater(), null, false);
         dialogClass2Binding = DialogClass2Binding.inflate(getLayoutInflater(), null, false);
-
+        setContentView(activityClass2Binding.getRoot());
         initDialog();
 
         String cookie = data.getCookie();
         if (TextUtils.isEmpty(cookie)) {
             dialog.show();
         } else {
-            new Thread(new FetchData().setCookie(cookie)).start();
+            new Thread(this::fetchData).start();
         }
     }
 
@@ -98,8 +105,19 @@ public class SecondClassActivity extends AppCompatActivity {
             dialogClass2Binding.login.setEnabled(false);
             dialogClass2Binding.exit.setEnabled(false); //我没想到会有人在登录的时候关闭弹窗，然后程序就会闪退。。。
             String pass = dialogClass2Binding.pass.getEditableText().toString();
-            //启动数据拉取
-            new Thread(new FetchData().setCookie(pass)).start();
+
+            CompletableFuture.supplyAsync(() -> {
+                try {
+                    data.setCookie(loginTW(pass));
+                    fetchData();
+                } catch (RuntimeException e) {
+                    Message m = new Message();
+                    m.what = -1;
+                    m.getData().putString("cause", e.getMessage());
+                    twFetchResult.sendMessage(m);
+                }
+                return null;
+            });
         });
         dialogClass2Binding.exit.setOnClickListener((v) -> {
             dialog.cancel();
@@ -112,9 +130,56 @@ public class SecondClassActivity extends AppCompatActivity {
                 .create();
     }
 
+    @SneakyThrows
+    public String loginTW(String pass) {
+        Connection.Response resp = Jsoup.connect("http://xg.sylu.edu.cn/SyluTW/Sys/UserLogin.aspx")
+                .ignoreContentType(true)
+                .execute();
+        Document dom = resp.parse();
+
+        String cookie = resp.header("Set-Cookie");
+
+        String sessionID = resp.cookie("ASP.NET_SessionId");
+
+        String pubKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC3hzrH91c0OKgtaSB7GWGfDuUJ" +
+                "sMrtiYThDXtJdrCr7exKt2fmIZngoFk71Dv/BPVQCHSuohNNvEV9VVDFSBhsP9xK" +
+                "EDAM4/2Lv+wlzN9CuZtLpV3Elo8VacjwMHcjTRmTchRBmijQzZRFrA2LM+qsH3U5" +
+                "tRM1uJFbfRMkBq24AwIDAQAB";
+        //---------------根据公钥加密-----------------
+        resp = Jsoup.connect("http://xg.sylu.edu.cn/SyluTW/Sys/UserLogin.aspx")
+                .header("Cookie", cookie)
+                .data("UserName", stuID)
+                .data("__VIEWSTATE", dom.getElementById("__VIEWSTATE").attr("value"))
+                .data("__VIEWSTATEGENERATOR", dom.getElementById("__VIEWSTATEGENERATOR").attr("value"))
+                .data("__EVENTVALIDATION", dom.getElementById("__EVENTVALIDATION").attr("value"))
+                .data("Password", pass)
+                .data("pwd", RSA.getInstance().encrypt(pass, pubKey))
+                .data("pubKey", pubKey)
+                .data("codeInput", "KHG6")
+                .data("queryBtn", "%B5%C7++++++++++%C2%BC")
+                .method(Connection.Method.POST).execute();
+
+        dom = resp.parse();
+        AtomicBoolean isSuccess = new AtomicBoolean(false);
+
+        dom.getElementsByTag("script").forEach((v) -> {
+            if (v.html().startsWith("layer.alert('")) {
+                int l = v.html().indexOf("'") + 1;
+                int r = v.html().indexOf("'", l);
+                throw new IllegalStateException(v.html().substring(l, r));
+            }
+
+            if (v.html().equals("window.location.href='SystemForm/main.htm';")) {
+                isSuccess.set(true);
+            }
+        });
+        cookie = resp.header("Set-Cookie").split("CenterSoft=")[2].split("; ")[0];
+        return String.format("ASP.NET_SessionId=%s; CenterSoft=%s", sessionID, cookie);
+    }
+
     @SuppressLint("DefaultLocale")
     private void insertData() {
-        SpiderWebPropertyDiagram diagram = fragmentClass2Binding.class2Diagram;
+        SpiderWebPropertyDiagram diagram = activityClass2Binding.class2Diagram;
 
         HashMap<String, SpiderWebPropertyDiagram.DiagramUnit> map = new HashMap<>();
         for (char i = 'A'; i <= 'E'; i++) {
@@ -130,22 +195,37 @@ public class SecondClassActivity extends AppCompatActivity {
         }
         diagram.setLabel(map);
 
-        TextView tx = fragmentClass2Binding.class2Text;
+        TextView tx = activityClass2Binding.class2Text;
         tx.setText(String.format("总分:%.2f/%.2f", data.getSum1(), data.getSum()));
 
     }
 
-    private static class FetchData implements Runnable {
-        private String cookie;
-
-        public FetchData setCookie(String cookie) {
-            this.cookie = cookie;
-            return this;
-        }
-
-        @Override
-        public void run() {
+    private void fetchData() {
+        try {
             //TODO 拉取数据并填充到data中，成功向Handler发送0，失败发送1
+            Document dom = Jsoup.connect("http://xg.sylu.edu.cn/SyluTW/Sys/SystemForm/FinishExam/StuFinishStudentScore.aspx")
+                    .header("Cookie", data.getCookie()).get();
+
+            for (char a = 'A'; a <= 'E'; a++) {
+                Double min = Double.parseDouble(dom.getElementById("Count" + a).text());
+                String e = dom.getElementById("Count" + a + "1").text();
+                Double now = Double.parseDouble(e.isEmpty() ? "0.00" : e);
+                try {
+                    SecondClassData.class.getMethod("set" + a, double.class).invoke(data, min);
+                    SecondClassData.class.getMethod("set" + a + "1", double.class).invoke(data, now);
+                } catch (Exception ignored) {
+                }
+            }
+            data.setSum(Double.parseDouble(dom.getElementById("SunCount").text()));
+
+            String e = dom.getElementById("SunCount1").text();
+            data.setSum1(Double.parseDouble(e.isEmpty() ? "0.00" : e));
+            twFetchResult.sendEmptyMessage(0);
+        } catch (Exception e) {
+            Message m = new Message();
+            m.what = -1;
+            m.getData().putString("cause", e.getMessage());
+            twFetchResult.sendMessage(m);
         }
     }
 }
