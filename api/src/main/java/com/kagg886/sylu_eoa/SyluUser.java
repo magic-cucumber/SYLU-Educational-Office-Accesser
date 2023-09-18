@@ -61,16 +61,10 @@ public class SyluUser {
         return ISylu.getInstance().getSchoolCalender(userID, cookie);
     }
 
-    @SneakyThrows
-    public void loginByPwdAndCaptcha(String pwd, String captcha) {
-        LoginAuthorization auth = new LoginAuthorization();
-        RSAPublicKey publicKey = ISylu.getInstance().initRSAPublicKey(cookie);
-        auth.setUser(userID);
-        auth.setCookie(cookie);
-        auth.setPublicKey(publicKey);
-        auth.setPassWord(pwd);
-        auth.setCaptcha(captcha);
-        this.cookie = ISylu.getInstance().login(auth);
+    public static SyluUser createUser(String id) {
+        SyluUser user = new SyluUser();
+        user.setUserID(id);
+        return user;
     }
 
     @SneakyThrows
@@ -83,8 +77,15 @@ public class SyluUser {
         ISylu.getInstance().logout(cookie);
     }
 
-    public static SyluUser createUser(String id) {
-        return createUser(id, ISylu.getInstance().initCookie());
+    @SneakyThrows
+    public void loginByPwdAndCaptcha(String pwd, String captcha) {
+        LoginAuthorization auth = ISylu.getInstance().initAuthorization();
+        RSAPublicKey publicKey = ISylu.getInstance().initRSAPublicKey(auth.getCookie());
+        auth.setUser(userID);
+        auth.setPublicKey(publicKey);
+        auth.setPassWord(pwd);
+        auth.setCaptcha(captcha);
+        this.cookie = ISylu.getInstance().login(auth);
     }
 
     @SuppressWarnings("all")

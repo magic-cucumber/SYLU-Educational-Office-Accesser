@@ -37,6 +37,7 @@ public class ISyluImpl implements ISylu {
 
         Connection conn = HTTPUtil.newSession("/xtgl/login_slogin.html?time=", new Date().getTime());
         conn.header("Cookie", auth.getCookie());
+        conn.header("csrftoken", auth.getCsrf());
         conn.data("yhm", auth.getUser())
                 .data("mm", RSA.getInstance().encrypt(auth.getPublicKey(), auth.getPassWord()));
         if (auth.getCaptcha() != null) {
@@ -221,17 +222,21 @@ public class ISyluImpl implements ISylu {
 
     @SneakyThrows
     @Override
-    public String initCookie() {
-        String cookie;
+    public LoginAuthorization initAuthorization() {
+        LoginAuthorization auth = new LoginAuthorization();
         try {
-            cookie = HTTPUtil.newSession("/xtgl/login_slogin.html").execute().header("Set-Cookie");
+            Connection.Response resp = HTTPUtil.newSession("/xtgl/login_slogin.html").execute();
+
+            String cookie = resp.header("Set-Cookie");
             if (cookie == null) {
                 throw new LoginException.CookieInitFailed();
             }
+            auth.setCookie(cookie.split(";")[0]);
+            auth.setCsrf(Jsoup.parse(resp.body()).getElementById("csrftoken").val());
         } catch (IOException e) {
             throw new LoginException.CookieInitFailed();
         }
-        return cookie.split(";")[0];
+        return auth;
     }
 
     @Override

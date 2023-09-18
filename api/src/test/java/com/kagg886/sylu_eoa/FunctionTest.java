@@ -26,10 +26,9 @@ public class FunctionTest {
         System.out.println("ISylu init success");
 
 
-        String cookie = ISylu.getInstance().initCookie();
+        LoginAuthorization authorization = ISylu.getInstance().initAuthorization();
         RSAPublicKey RSAKey = ISylu.getInstance().initRSAPublicKey(cookie);
 
-        LoginAuthorization authorization = new LoginAuthorization();
         authorization.setUser(id);
         authorization.setCookie(cookie);
         authorization.setPublicKey(RSAKey);

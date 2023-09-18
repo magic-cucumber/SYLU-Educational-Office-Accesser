@@ -28,7 +28,7 @@ public interface ISylu {
 
     Profile getUserProfile(String userID, String cookie) throws IOException;
 
-    String initCookie();
+    LoginAuthorization initAuthorization();
 
     List<ExamResult> getExamList(String stuID, String cookie, Term query) throws IOException;
 

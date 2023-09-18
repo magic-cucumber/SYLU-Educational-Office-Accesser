@@ -40,8 +40,6 @@ public class LoginActivity extends AppCompatActivity implements TextWatcher {
         if (getIntent().getStringExtra("user") != null) {
             userEdit.setText(getIntent().getStringExtra("user"));
         }
-        //userEdit.setText(Optional.ofNullable(MainApplication.getApp().getConfig("userSession", SyluUser.class).getUserID()).orElse(""));
-
         userEdit.addTextChangedListener(this);
         passEdit.addTextChangedListener(this);
         final Button loginButton = binding.login;
@@ -71,6 +69,7 @@ public class LoginActivity extends AppCompatActivity implements TextWatcher {
                         return null;
                     }
                     Throwable finalThrowable = throwable;
+                    config.setUser(null);
                     runOnUiThread(() -> new AlertDialog.Builder(LoginActivity.this).setTitle("登陆失败!").setMessage(finalThrowable.getMessage()).show());
                 }
                 runOnUiThread(() -> {

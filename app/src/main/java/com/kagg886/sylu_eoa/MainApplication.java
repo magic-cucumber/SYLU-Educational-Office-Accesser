@@ -116,7 +116,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         ISylu.setInstance(new ISyluImpl());
 
 
-        registerDynamicAOP();
+//        registerDynamicAOP();
         registerLogCatcher();
 
         Thread.setDefaultUncaughtExceptionHandler(this);

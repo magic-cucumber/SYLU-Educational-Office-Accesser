@@ -28,26 +28,17 @@ class ISyluTest {
     @Test
     void initCookie() {
         Assertions.assertDoesNotThrow(() -> {
-            System.out.println(ISylu.getInstance().initCookie());
-        });
-    }
-
-    @Test
-    void initRSAPublicKey() {
-        Assertions.assertDoesNotThrow(() -> {
-            RSAPublicKey key = ISylu.getInstance().initRSAPublicKey(ISylu.getInstance().initCookie());
-            System.out.println(key);
+            System.out.println(ISylu.getInstance().initAuthorization());
         });
     }
 
     @Test
     void login() {
-        String cookie = ISylu.getInstance().initCookie();
-        RSAPublicKey RSAKey = ISylu.getInstance().initRSAPublicKey(cookie);
 
-        LoginAuthorization authorization = new LoginAuthorization();
+        LoginAuthorization authorization = ISylu.getInstance().initAuthorization();
+        RSAPublicKey RSAKey = ISylu.getInstance().initRSAPublicKey(authorization.getCookie());
+
         authorization.setUser("2203050528");
-        authorization.setCookie(cookie);
         authorization.setPublicKey(RSAKey);
         authorization.setPassWord("Aa12345678");
 

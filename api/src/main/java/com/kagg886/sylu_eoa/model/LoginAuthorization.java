@@ -15,4 +15,5 @@ public class LoginAuthorization {
     private String captcha;
     private String cookie;
     private RSAPublicKey publicKey;
+    private String csrf;
 }

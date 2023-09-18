@@ -130,7 +130,8 @@ public class CourseFragment extends Fragment {
                     new Handler(Looper.getMainLooper()).post(() -> adapter.getData().add(new CoursePageFragment(perWeek0, date0)));
                 }
                 a++;
-                if (date.isBefore(LocalDate.now()) && date.plusDays(7).isAfter(LocalDate.now())) {
+                //2023-9-18.isBefore(2023-9-18) == false ?????????
+                if ((date.isBefore(LocalDate.now()) || date.equals(LocalDate.now())) && date.plusDays(7).isAfter(LocalDate.now())) {
                     currentWeek = a;
                 }
                 date = date.plusDays(7);
