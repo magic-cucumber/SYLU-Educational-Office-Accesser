@@ -191,7 +191,10 @@ public class SecondClassActivity extends AppCompatActivity {
             } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
-            map.put(SecondClassActivity.keys[i - 'A'] + "\n" + "最低达标:" + exp, new SpiderWebPropertyDiagram.DiagramUnit(exp, act));
+            map.put(SecondClassActivity.keys[i - 'A'] + "\n" + "最低达标:" + exp, new SpiderWebPropertyDiagram.DiagramUnit(exp, act, (p) -> {
+                //点击条目后弹出详情页面
+                UIUtil.showToast(SecondClassActivity.this, "Click:" + p);
+            }));
         }
         diagram.setLabel(map);
 

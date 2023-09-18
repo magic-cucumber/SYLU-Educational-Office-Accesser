@@ -1,15 +1,20 @@
 package com.kagg886.sylu_eoa.util;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.*;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.Nullable;
 import com.kagg886.sylu_eoa.R;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -292,16 +297,32 @@ public class SpiderWebPropertyDiagram extends View {
 
         this.mlables = unit.stream().map(Map.Entry::getKey).collect(Collectors.toList());
         this.data = unit.stream().map(Map.Entry::getValue).collect(Collectors.toList());
-
-//        this.mlables = list.keySet().stream().sorted(Comparator.comparingInt(o -> o.charAt(0)))
-//                .collect(Collectors.toList());
-//        this.data = list.values().stream().sorted(Comparator.comparingInt(o -> o.charAt(0)))
-//                .collect(Collectors.toList());
         this.dataSeries = data.stream().map((u) -> {
             double per = u.act / u.exp * 80;
             per = per > 80 ? 80 : per;
             return per + 20;
         }).collect(Collectors.toList());
+        setOnTouchListener(new OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() != MotionEvent.ACTION_DOWN) {
+                    return true;
+                }
+                for (int i = 0; i < mRingCount; i++) {
+                    float x = mArrayDotX[mRingCount][i];
+                    float y = mArrayDotY[mRingCount][i];
+
+                    //Log.i(getClass().getName(),String.format("Point:(%.2f,%.2f),Touch:(%.2f,%.2f)",x,y,event.getX(),event.getY()));
+                    if (Math.pow(x - event.getX(), 2) + Math.pow(y - event.getY(), 2) <= 10000) {
+                        data.get(i).getClick().accept(i);
+                    }
+                }
+                ;
+                return true;
+            }
+        });
+
         mCornerCount = data.size();
         postInvalidate();
     }
@@ -376,38 +397,11 @@ public class SpiderWebPropertyDiagram extends View {
     }
 
 
+    @Data
+    @AllArgsConstructor
     public static class DiagramUnit {
         double exp; //期望值
         double act; //实际值
-
-        public DiagramUnit(double exp, double act) {
-            this.exp = exp;
-            this.act = act;
-        }
-
-        public double getExp() {
-            return exp;
-        }
-
-        public void setExp(double exp) {
-            this.exp = exp;
-        }
-
-        public double getAct() {
-            return act;
-        }
-
-        public void setAct(double act) {
-            this.act = act;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("DiagramUnit{");
-            sb.append("exp=").append(exp);
-            sb.append(", act=").append(act);
-            sb.append('}');
-            return sb.toString();
-        }
+        Consumer<Integer> click;
     }
 }
