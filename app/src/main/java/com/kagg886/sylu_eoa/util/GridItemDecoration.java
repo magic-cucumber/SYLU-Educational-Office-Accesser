@@ -53,32 +53,6 @@ public class GridItemDecoration extends RecyclerView.ItemDecoration {
         outRect.set(left, top, mDividerHeight, mDividerHeight);
     }
 
-    private boolean isFirstRow(GridLayoutManager layoutManager, int itemPosition) {
-        GridLayoutManager.SpanSizeLookup spanSizeLookup = layoutManager.getSpanSizeLookup();
-        int spanCount = layoutManager.getSpanCount();
-        int spanIndex = spanSizeLookup.getSpanIndex(itemPosition, spanCount);
-        int spanSize = spanSizeLookup.getSpanSize(itemPosition);
-
-        if (mOrientation == GridLayoutManager.VERTICAL) {
-            return spanIndex == 0;
-        } else {
-            return (itemPosition % spanCount) == 0;
-        }
-    }
-
-    private boolean isFirstCol(GridLayoutManager layoutManager, int itemPosition) {
-        GridLayoutManager.SpanSizeLookup spanSizeLookup = layoutManager.getSpanSizeLookup();
-        int spanCount = layoutManager.getSpanCount();
-        int spanIndex = spanSizeLookup.getSpanIndex(itemPosition, spanCount);
-        int spanSize = spanSizeLookup.getSpanSize(itemPosition);
-
-        if (mOrientation == GridLayoutManager.VERTICAL) {
-            return (itemPosition % spanCount) == 0;
-        } else {
-            return spanIndex == 0;
-        }
-    }
-
     @Override
     public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
         c.save();

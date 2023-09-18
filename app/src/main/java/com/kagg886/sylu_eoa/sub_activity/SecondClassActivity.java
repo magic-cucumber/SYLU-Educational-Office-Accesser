@@ -84,8 +84,14 @@ public class SecondClassActivity extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void initDialog() {
-        dialogClass2Binding.tips.setText("使用此功能需要连接校园网。\n团委网初始密码为:SYLU+身份证后六位+!@#\n遗忘密码请寻找本班团支书。");
+        dialogClass2Binding.tips.setText("使用此功能需要连接校园网。\n" +
+                "团委网初始密码可能的组合有:" +
+                "1. SYLU+身份证后六位+!@#\n" +
+                "2. 学号\n" +
+                "3. 身份证后六位\n" +
+                "遗忘密码请寻找本班团支书。");
         dialogClass2Binding.goTW.setOnClickListener(v1 -> UIUtil.openUrlByBrowser("http://xg.sylu.edu.cn/SyluTW/Sys/SystemForm/main.htm"));
 
         dialogClass2Binding.login.setOnClickListener((v) -> {
