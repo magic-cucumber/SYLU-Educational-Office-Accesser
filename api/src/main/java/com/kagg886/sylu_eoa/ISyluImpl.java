@@ -253,7 +253,7 @@ public class ISyluImpl implements ISylu {
         } catch (NullPointerException e) {
             throw new IllegalStateException("学期值非法!");
         }
-        Connection conn = HTTPUtil.newSession("/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=sssss&su=", stuID)
+        Connection conn = HTTPUtil.newSession("/cjcx/cjcx_cxXsgrcj.html?doType=query&gnmkdm=N305005&su=", stuID)
                 .header("Cookie", cookie)
                 .data("xnm", xnm)
                 .data("xqm", xqm)
