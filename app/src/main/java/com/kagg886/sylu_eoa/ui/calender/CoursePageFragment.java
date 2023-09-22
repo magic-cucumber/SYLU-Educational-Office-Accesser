@@ -62,7 +62,7 @@ public class CoursePageFragment extends Fragment {
         //根布局的复杂程度与加载速度直接挂钩
 //        View v = LayoutInflater.from(getContext()).inflate(R.layout.fragment_classperweek, null);
 
-        contain = new RecyclerView(getActivity());
+        contain = new RecyclerView(requireActivity());
         contain.setRecycledViewPool(pool); //复用Pool缓存池，提高加载效率
         contain.setHasFixedSize(true); //不触发视图绘制，提高效率
         GridLayoutManager manager = new GridLayoutManager(getContext(), 8); //一周七天，外加一个显示第几节课的View，所以是8
@@ -76,15 +76,19 @@ public class CoursePageFragment extends Fragment {
         }
         for (int i = 1; i <= 11; i += 2) { //1-2 3-4 5-6 7-8 9-10 11-13
             @SuppressLint("DefaultLocale")
-            ClassTable a = perWeek.queryClassByLesson(String.format("%d-%d", i, i + 1));
+            ClassTable a = perWeek.queryClassByLesson(i, i + 1);
             adapter.getList().add(ClassUnit.EMPTY); //占位，保证一排有八个
             for (int j = 1; j <= 7; j++) { //礼拜一到礼拜七
                 ClassTable b = a.queryClassByDay(j);
-                if (b.size() == 0) { //这节没课
+                if (b.isEmpty()) { //这节没课
                     adapter.getList().add(ClassUnit.EMPTY);
                     continue;
                 }
-                adapter.getList().add(b.get(0));
+                try {
+                    adapter.getList().add(b.asSingleClassUnit());
+                } catch (IllegalStateException e) {
+                    adapter.getList().add(new ClassUnit.Conflict(b));
+                }
             }
         }
         contain.setAdapter(adapter);

@@ -5,6 +5,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -21,16 +22,13 @@ import java.util.List;
  */
 public class TextViewAdapter extends RecyclerView.Adapter<TextViewAdapter.TextViewHolder> {
 
-    private int size;
-    private List<String> strings = new ArrayList<>();
+    private final int size;
+    @Getter
+    private final List<String> strings = new ArrayList<>();
 
 
     public TextViewAdapter(int size) {
         this.size = size;
-    }
-
-    public List<String> getStrings() {
-        return strings;
     }
 
 

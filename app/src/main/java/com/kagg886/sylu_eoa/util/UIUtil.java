@@ -20,7 +20,6 @@ import java.util.List;
  **/
 public class UIUtil {
 
-
     public static void showDetailDialog(Context context, String name, List<List<String>> data, int span) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(context);
         builder.setTitle(name);

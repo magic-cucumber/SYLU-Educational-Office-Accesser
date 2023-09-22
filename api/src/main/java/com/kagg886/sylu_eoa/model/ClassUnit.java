@@ -2,6 +2,7 @@ package com.kagg886.sylu_eoa.model;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
+import lombok.Getter;
 import lombok.ToString;
 
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ public class ClassUnit {
     private String name;
     private String teacher;
     private String room;
-    private String lesson;
+    private Range lesson;
     private int dayInWeek;
     private List<Range> weekAsMinMax;
     private String weekEachLesson;
@@ -31,7 +32,7 @@ public class ClassUnit {
             @JSONField(name = "teacher") String teacher,
             @JSONField(name = "room") String room,
             @JSONField(name = "weekEachLesson") String weekEachLesson,
-            @JSONField(name = "lesson") String lesson,
+            @JSONField(name = "lesson") Range lesson,
             @JSONField(name = "dayInWeek") String dayInWeek
 //            @JSONField(name = "kcmc") String name,
 //            @JSONField(name = "xm") String teacher,
@@ -40,15 +41,15 @@ public class ClassUnit {
 //            @JSONField(name = "jcs") String lesson,
 //            @JSONField(name = "xqj") String dayInWeek
     ) {
-        if (name == null) {
+        if (teacher == null) {
+            this.name = name;
+            this.room = room;
             return;
         }
-        this.name = name;
         this.teacher = teacher;
-        this.room = room;
-        this.lesson = lesson;
         this.dayInWeek = Integer.parseInt(dayInWeek);
         this.weekEachLesson = weekEachLesson;
+        this.lesson = lesson;
 
         List<Range> rtn = new ArrayList<>();
         for (String a : weekEachLesson.split(",")) {
@@ -72,6 +73,16 @@ public class ClassUnit {
             rtn.add(new Range(Integer.parseInt(a), Integer.parseInt(a), FilterType.ALL));
         }
         this.weekAsMinMax = rtn;
+    }
+
+    @Getter
+    public static class Conflict extends ClassUnit {
+        private final List<ClassUnit> conflict;
+
+        public Conflict(List<ClassUnit> conflict) {
+            super("冲突课程", null, "点我查看", null, null, null);
+            this.conflict = conflict;
+        }
     }
 
 

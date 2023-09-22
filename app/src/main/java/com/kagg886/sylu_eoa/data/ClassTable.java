@@ -47,9 +47,19 @@ public class ClassTable extends ArrayList<ClassUnit> {
         return rtn;
     }
 
-    public ClassTable queryClassByLesson(String lesson) {
+    public ClassUnit asSingleClassUnit() {
+        if (size() == 1) {
+            return get(0);
+        }
+        throw new IllegalStateException("Not a single ClassUnit!");
+    }
+
+    public ClassTable queryClassByLesson(int min, int max) {
         ClassTable rtn = new ClassTable();
-        rtn.addAll(this.stream().filter(classUnit -> classUnit.getLesson().equals(lesson)).collect(Collectors.toList()));
+        rtn.addAll(this.stream()
+                .filter(classUnit ->
+                        min >= classUnit.getLesson().getStart() && max <= classUnit.getLesson().getEnd()
+                ).collect(Collectors.toList()));
         return rtn;
     }
 

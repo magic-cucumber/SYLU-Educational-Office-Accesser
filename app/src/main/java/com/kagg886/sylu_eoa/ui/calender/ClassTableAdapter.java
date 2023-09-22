@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.R;
 import com.kagg886.sylu_eoa.model.ClassUnit;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
  * @author kagg886
  * @date 2023/9/9 19:49
  **/
-public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.TableUnit> implements View.OnClickListener {
+public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.TableUnit> {
 
     @Getter
     private final List<ClassUnit> list = new ArrayList<ClassUnit>() {
@@ -55,6 +57,39 @@ public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.Ta
         return new TableUnit(LayoutInflater.from(parent.getContext()).inflate(R.layout.adapter_classunit, null));
     }
 
+
+    public static void click(View v0) {
+        ClassUnit u = (ClassUnit) v0.getTag();
+        if (u instanceof ClassUnit.Conflict) {
+            AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(v0.getContext());
+            builder.setTitle("冲突课程详情");
+
+            RecyclerView view = new RecyclerView(v0.getContext());
+            view.setLayoutManager(new LinearLayoutManager(v0.getContext(), LinearLayoutManager.HORIZONTAL, false));
+            view.setAdapter(new ConflictAdapter(((ClassUnit.Conflict) u).getConflict()));
+
+            builder.setView(view);
+            builder.create().show();
+//            ((ClassUnit.Conflict) u).getConflict();
+            return;
+        }
+        List<List<String>> lists = new ArrayList<List<String>>() {{
+            add(Arrays.asList("节数", u.getLesson().toString()));
+            add(Arrays.asList("教室", u.getRoom()));
+            add(Arrays.asList("老师", u.getTeacher()));
+            add(Arrays.asList("上课时间", u.getWeekEachLesson()));
+            add(Arrays.asList("上课周数", u.getWeekAsMinMax()
+                    .stream()
+                    .map(ClassUnit.Range::formatToString)
+                    .collect(Collectors.joining(","))));
+        }};
+        UIUtil.showDetailDialog(v0.getContext(), u.getName() + "的详细信息", lists, 2);
+    }
+
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -121,29 +156,8 @@ public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.Ta
             b = ran.nextInt(255);
             holder.rootView.setBackgroundColor(Color.argb(60, r, g, b));
             holder.rootView.setTag(u);
-            holder.rootView.setOnClickListener(this); //复用布局...
+            holder.rootView.setOnClickListener(ClassTableAdapter::click); //复用布局...
         }
-    }
-
-    @Override
-    public int getItemCount() {
-        return list.size();
-    }
-
-    @Override
-    public void onClick(View view) {
-        ClassUnit u = (ClassUnit) view.getTag();
-        List<List<String>> lists = new ArrayList<List<String>>() {{
-            add(Arrays.asList("节数", u.getLesson()));
-            add(Arrays.asList("教室", u.getRoom()));
-            add(Arrays.asList("老师", u.getTeacher()));
-            add(Arrays.asList("上课时间", u.getWeekEachLesson()));
-            add(Arrays.asList("上课周数", u.getWeekAsMinMax()
-                    .stream()
-                    .map(ClassUnit.Range::formatToString)
-                    .collect(Collectors.joining(","))));
-        }};
-        UIUtil.showDetailDialog(view.getContext(), u.getName() + "的详细信息", lists, 2);
     }
 
     public static class TableUnit extends RecyclerView.ViewHolder {

@@ -78,18 +78,21 @@ public class ISyluImpl implements ISylu {
 
 
         JSONArray array = JSON.parseObject(body).getJSONArray("kbList");
-        if (array.size() == 0) {
+        if (array.isEmpty()) {
             throw new IllegalStateException("该学年学期的课表尚未开放!");
         }
         return array.stream()
                 .map((v) -> {
                     JSONObject a = (JSONObject) v;
+                    String lesson = a.getString("jcs");
+                    String[] ls = lesson.split("-");
+
                     return new ClassUnit(
                             a.getString("kcmc"),
                             a.getString("xm"),
                             a.getString("cdmc"),
                             a.getString("zcd"),
-                            a.getString("jcs"),
+                            new ClassUnit.Range(Integer.parseInt(ls[0]), Integer.parseInt(ls[1]), ClassUnit.FilterType.ALL),
                             a.getString("xqj")
                     );
                 })
