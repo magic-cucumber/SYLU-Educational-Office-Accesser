@@ -41,9 +41,10 @@ public class ClassUnit {
 //            @JSONField(name = "jcs") String lesson,
 //            @JSONField(name = "xqj") String dayInWeek
     ) {
+
+        this.name = name;
+        this.room = room;
         if (teacher == null) {
-            this.name = name;
-            this.room = room;
             return;
         }
         this.teacher = teacher;

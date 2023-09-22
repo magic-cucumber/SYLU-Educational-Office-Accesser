@@ -23,5 +23,6 @@ public class SyluUserTest {
         String str = "{\"dayInWeek\":1,\"lesson\":{\"end\":2,\"start\":1,\"type\":\"ALL\"},\"name\":\"概率论与数理统计A\",\"room\":\"A-319\",\"teacher\":\"张伟科\",\"weekAsMinMax\":[{\"end\":5,\"start\":1,\"type\":\"ALL\"},{\"end\":12,\"start\":7,\"type\":\"ALL\"}],\"weekEachLesson\":\"1-5周,7-12周\"}";
         ClassUnit u = JSON.parseObject(str, ClassUnit.class);
         System.out.println(u);
+        System.out.println(JSON.toJSONString(u));
     }
 }
