@@ -114,10 +114,11 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
         MMKV.initialize(this);
         MMKV.setLogLevel(MMKVLogLevel.LevelDebug);
         ISylu.setInstance(new ISyluImpl());
-
-
-//        registerDynamicAOP();
+        if (!BuildConfig.DEBUG) {
+            registerDynamicAOP();
+        }
         registerLogCatcher();
+
 
         Thread.setDefaultUncaughtExceptionHandler(this);
         new Handler(Looper.getMainLooper()).post(this);
