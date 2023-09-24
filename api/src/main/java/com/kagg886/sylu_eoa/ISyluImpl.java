@@ -143,10 +143,12 @@ public class ISyluImpl implements ISylu {
         String body = resp.body();
         assertLogin(Jsoup.parse(body));
 
-        return JSON.parseObject(body).getJSONArray("items")
-                .stream()
-                .map((v) -> JSON.parseObject(v.toString(), GPAScore.class))
-                .collect(Collectors.toList());
+        return JSON.parseArray(JSON.parseObject(body).getJSONArray("items").toString(), new TypeReference<GPAScore>() {
+        }.getType());
+//        return JSON.parseObject(body).getJSONArray("items")
+//                .stream()
+//                .map((v) -> JSON.parseObject(v.toString(), GPAScore.class))
+//                .collect(Collectors.toList());
     }
 
     @Override

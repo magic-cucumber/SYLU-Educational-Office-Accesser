@@ -47,7 +47,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
 
     private LogCatcher catcher; //日志抓取器线程
 
-    private final Map<String, ?> configs = new HashMap<>();
+    private final Map<String, Object> configs = new HashMap<>();
 
     @SuppressLint("PrivateApi")
     public static MainApplication getApp() {
@@ -99,6 +99,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                     });
                 }
             }
+            configs.put(key, t);
         }
         return t;
     }
