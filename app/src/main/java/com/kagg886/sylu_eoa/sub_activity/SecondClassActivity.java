@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @date 2023/9/17 20:40
  **/
 public class SecondClassActivity extends AppCompatActivity {
-    private static String[] keys = {
+    private static final String[] keys = {
             "A. 思想成长",
             "B. 实践学习",
             "C. 创新创业",

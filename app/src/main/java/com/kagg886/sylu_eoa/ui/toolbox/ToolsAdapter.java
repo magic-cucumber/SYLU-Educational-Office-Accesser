@@ -10,12 +10,14 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
+import com.kagg886.sylu_eoa.ui.toolbox.impl.ImagePaste;
 import com.kagg886.sylu_eoa.ui.toolbox.impl.SecondClass;
 import com.kagg886.sylu_eoa.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @projectName: 掌上沈理青春版
@@ -30,6 +32,7 @@ public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
 
     private static final List<Tool> list = new ArrayList<Tool>() {{
         add(new SecondClass());
+        add(new ImagePaste());
     }};
 
     @NonNull
@@ -45,13 +48,14 @@ public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
     public void onBindViewHolder(@NonNull @NotNull TableUnit holder, int position) {
         holder.txt.setText(list.get(position).getName());
         holder.img.setImageResource(list.get(position).getImageResourceId());
-        holder.root.setOnClickListener((a) -> {
-            try {
-                MainApplication.getCurrentActivity().startActivity(list.get(position).callActivity());
-            } catch (RuntimeException e) {
-                UIUtil.showToast(MainApplication.getCurrentActivity(), e.getMessage());
-            }
-        });
+        holder.root.setOnClickListener((a) ->
+                CompletableFuture.runAsync(() ->
+                        MainApplication.getCurrentActivity().startActivity(list.get(position).callActivity())
+                ).exceptionally((e -> {
+                    //TODO 未测试
+                    UIUtil.showToast(MainApplication.getCurrentActivity(), e.getCause().getMessage());
+                    return null;
+                })));
     }
 
     @Override
