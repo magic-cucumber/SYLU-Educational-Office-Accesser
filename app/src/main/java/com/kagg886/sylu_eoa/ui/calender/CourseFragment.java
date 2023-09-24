@@ -89,6 +89,8 @@ public class CourseFragment extends Fragment {
         binding.refresh.setRefreshing(true);
 
 
+        binding.broad.setVisibility(View.VISIBLE);
+
         LoginConfig config = MainApplication.getApp().getConfig("account", LoginConfig.class);
         SyluUser user = config.getUser();
 
@@ -101,14 +103,18 @@ public class CourseFragment extends Fragment {
             try {
                 controller.getSchoolCalenderBeforeOutOfDate(user);
                 return controller.getCourseBeforeOutOfDate(user);
-            } catch (RuntimeException e) {
-                if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
-                    UIUtil.showToast(getActivity(), "课表可能已经过时,请重新登录以拉取最新的课表缓存!");
+            } catch (Exception e) {
+                if (e instanceof LoginException.CookieOutOfDate && controller.getCourse() == null) { //检查失败，使用旧课表
+                    UIUtil.showToast(getActivity(), "拉取最新课表失败,请重新登录");
                 }
                 return controller.getCourse();
             }
         }).thenAccept((kb) -> {
             if (kb == null) {
+                requireActivity().runOnUiThread(() -> {
+                    binding.broad.setVisibility(View.GONE);
+                    adapter.getData().add(new Empty("课表为空", R.drawable.ic_warn));
+                });
                 return;
             }
             //UI Parse

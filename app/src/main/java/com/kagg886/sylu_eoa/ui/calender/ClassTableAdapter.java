@@ -73,15 +73,16 @@ public class ClassTableAdapter extends RecyclerView.Adapter<ClassTableAdapter.Ta
 //            ((ClassUnit.Conflict) u).getConflict();
             return;
         }
+        @SuppressLint("DefaultLocale")
         List<List<String>> lists = new ArrayList<List<String>>() {{
-            add(Arrays.asList("节数", u.getLesson().toString()));
+            add(Arrays.asList("节数", String.format("%d-%d", u.getLesson().getStart(), u.getLesson().getEnd())));
             add(Arrays.asList("教室", u.getRoom()));
             add(Arrays.asList("老师", u.getTeacher()));
             add(Arrays.asList("上课时间", u.getWeekEachLesson()));
             add(Arrays.asList("上课周数", u.getWeekAsMinMax()
                     .stream()
                     .map(ClassUnit.Range::formatToString)
-                    .collect(Collectors.joining(","))));
+                    .collect(Collectors.joining("\n"))));
         }};
         UIUtil.showDetailDialog(v0.getContext(), u.getName() + "的详细信息", lists, 2);
     }
