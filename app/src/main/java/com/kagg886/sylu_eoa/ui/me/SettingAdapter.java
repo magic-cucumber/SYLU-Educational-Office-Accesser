@@ -86,7 +86,7 @@ public class SettingAdapter extends BaseAdapter {
                     intent.putExtra("android.intent.extra.STREAM",
                             FileProvider.getUriForFile(
                                     c,
-                                    "com.kagg886.sylu_eoa.fileprovider",
+                                    c.getPackageName() + ".fileprovider",
                                     target
                             )
                     );
