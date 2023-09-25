@@ -21,6 +21,10 @@ import java.util.List;
 public class UIUtil {
 
     public static void showDetailDialog(Context context, String name, List<List<String>> data, int span) {
+        showDetailDialog(context, name, data, span, 18);
+    }
+
+    public static void showDetailDialog(Context context, String name, List<List<String>> data, int span, int size) {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(context);
         builder.setTitle(name);
 
@@ -31,7 +35,7 @@ public class UIUtil {
         decoration.setColor(context.getColor(R.color.purple_200));
         view.addItemDecoration(decoration);
 
-        TextViewAdapter adapter = new TextViewAdapter(18);
+        TextViewAdapter adapter = new TextViewAdapter(size);
 
         data.forEach((line) -> line.forEach((col) -> adapter.getStrings().add(col)));
         view.setAdapter(adapter);

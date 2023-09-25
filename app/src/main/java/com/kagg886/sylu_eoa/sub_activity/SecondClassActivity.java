@@ -22,12 +22,18 @@ import lombok.SneakyThrows;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * 第二课堂不属于教务系统，直接排除在api模块外
@@ -37,11 +43,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  **/
 public class SecondClassActivity extends AppCompatActivity {
     private static final String[] keys = {
-            "A. 思想成长",
-            "B. 实践学习",
-            "C. 创新创业",
-            "D. 志愿公益",
-            "E. 文体+技能"
+            "思想成长",
+            "实践实习",
+            "创新创业",
+            "志愿公益",
+            "文体活动"
     };
     private ActivityClass2Binding activityClass2Binding;
     private DialogClass2Binding dialogClass2Binding;
@@ -199,9 +205,20 @@ public class SecondClassActivity extends AppCompatActivity {
             } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
+            char finalI = i;
             map.put(SecondClassActivity.keys[i - 'A'] + "\n" + "最低达标:" + exp, new SpiderWebPropertyDiagram.DiagramUnit(exp, act, (p) -> {
-                //点击条目后弹出详情页面
-                UIUtil.showToast(SecondClassActivity.this, "Click:" + p);
+//                //点击条目后弹出详情页面
+//                UIUtil.showToast(SecondClassActivity.this, "Click:" + p);
+                List<List<String>> data1 = data.getDetails().stream().filter((v) -> v.getType() == finalI - 'A')
+                        .map((point) -> Arrays.asList(
+                                point.getName(),
+                                point.getSponsor(),
+                                String.valueOf(point.getPeople()),
+                                String.valueOf(point.getScore()),
+                                point.getTime()))
+                        .collect(Collectors.toList());
+                data1.add(0, Arrays.asList("名称", "活动发布者", "参与人数", "学分", "日期"));
+                UIUtil.showDetailDialog(SecondClassActivity.this, String.format("得分详情(共%d条)", data1.size() - 1), data1, 5, 13);
             }));
         }
         diagram.setLabel(map);
@@ -213,6 +230,7 @@ public class SecondClassActivity extends AppCompatActivity {
 
     private void fetchData() {
         try {
+            //拉取概要
             //TODO 拉取数据并填充到data中，成功向Handler发送0，失败发送1
             Document dom = Jsoup.connect("http://xg.sylu.edu.cn/SyluTW/Sys/SystemForm/FinishExam/StuFinishStudentScore.aspx")
                     .header("Cookie", data.getCookie())
@@ -230,9 +248,41 @@ public class SecondClassActivity extends AppCompatActivity {
                 }
             }
             data.setSum(Double.parseDouble(dom.getElementById("SunCount").text()));
-
             String e = dom.getElementById("SunCount1").text();
             data.setSum1(Double.parseDouble(e.isEmpty() ? "0.00" : e));
+            //拉取详细信息
+
+            Connection.Response response = Jsoup.connect("http://xg.sylu.edu.cn/Sylutw/sys/SystemForm/StuAction/StuActionSearch.aspx")
+                    .ignoreContentType(true)
+                    .timeout(5000)
+                    .header("Cookie", data.getCookie())
+                    .execute();
+
+            List<SecondClassData.Detail> details = new LinkedList<>();
+
+            Document doc = response.parse();
+
+            Elements data = doc.getElementsByTag("tr");
+
+            for (int i = 2; i < data.size(); i++) {
+                Element info = data.get(i);
+
+                Elements elements = info.getElementsByTag("td");
+
+                details.add(new SecondClassData.Detail(
+                                elements.get(0).text(),
+                                elements.get(1).text(),//申请单位
+                                elements.get(2).text(), //时间
+                                Arrays.asList(keys).indexOf(elements.get(3).text()), //type
+                                elements.get(4).text(), //身份
+                                Integer.parseInt(elements.get(5).text()), //参与人数
+                                Double.parseDouble(elements.get(7).text())
+                        )
+                );
+            }
+            this.data.setDetails(details);
+
+            //发送通知
             twFetchResult.sendEmptyMessage(0);
         } catch (Exception e) {
             if (e instanceof SocketTimeoutException) {
