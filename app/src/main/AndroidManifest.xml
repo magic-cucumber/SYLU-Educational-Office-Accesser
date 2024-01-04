@@ -42,6 +42,10 @@
                   android:exported="false"
                   android:label="@string/secondclass"/>
 
+        <activity android:name=".sub_activity.GPAActivity"
+                  android:exported="false"
+                  android:label="@string/gpa"/>
+
 
         <activity android:name=".sub_activity.ImagePasteActivity"
                   android:exported="false"

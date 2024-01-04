@@ -28,6 +28,7 @@ android {
 dependencies {
 
     compileOnly project(':app')
+    compileOnly project(':api')
 
     compileOnly 'org.projectlombok:lombok:1.18.28'
     annotationProcessor 'org.projectlombok:lombok:1.18.28'

@@ -33,6 +33,7 @@ public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
     private static final List<Tool> list = new ArrayList<Tool>() {{
         add(new SecondClass());
         add(new ImagePaste());
+        add(new SecondClass());
     }};
 
     @NonNull
