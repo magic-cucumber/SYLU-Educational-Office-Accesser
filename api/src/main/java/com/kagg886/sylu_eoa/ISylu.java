@@ -99,4 +99,6 @@ public interface ISylu {
     ClassSelectHandle getSelectHandle(String cookie, String stuID, SelectableClasses selectableClasses);
 
     void selectClass(String cookie, String stuID, ClassSelectHandle info);
+
+    void unselectClass(String cookie, String stuID, ClassSelectHandle handle);
 }

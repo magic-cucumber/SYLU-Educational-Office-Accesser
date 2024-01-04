@@ -587,4 +587,57 @@ public class ISyluImpl implements ISylu {
             throw new IllegalAccessException(object.getString("msg"));
         }
     }
+
+    @SneakyThrows
+    @Override
+    public void unselectClass(String cookie, String stuID, ClassSelectHandle handle) {
+        Connection connection = HTTPUtil.newSession("/xsxk/zzxkyzb_xkJcInXksjZzxkYzb.html?gnmkdm=N253512&su=" + stuID);
+        connection.header("Cookie", cookie);
+        connection.data("xkzz_id", "0DA0379132547280E0630200050A35BC");
+        connection.data("jxb_id", handle.getLongID());
+        connection.data("xnm", handle.getContext().get("xkxnm"));
+        connection.data("xqm", handle.getContext().get("xkxqm"));
+
+        if (!connection.method(Connection.Method.POST).execute().body().equals("\"1\"")) {
+            throw new IllegalStateException("该课程未选择，请重新选择");
+        }
+
+        connection = HTTPUtil.newSession("/xsxk/zzxkyzb_tuikBcZzxkYzb.html?gnmkdm=N253512&su=" + stuID);
+        connection.header("Cookie", cookie);
+        connection.data("kch_id", handle.getContext().get("kch_id"));
+        connection.data("jxb_ids", handle.getLongID());
+        connection.data("xkxqm", handle.getContext().get("xkxnm"));
+        connection.data("xkxqm", handle.getContext().get("xkxqm"));
+        connection.data("0");
+
+        if (!connection.method(Connection.Method.POST).execute().body().equals("\"1\"")) {
+//            if(data=="1"){
+//                refreshDataDelZzxk(trObj,jxb_id,do_jxb_id,kch_id,jxbzls,wz);
+//            }else if(data=="2"){
+//                $.alert($.i18n.get("msg_tksbfwqm"));//退课失败！服务器繁忙！
+//            }else if(data=="3"){
+//                $.alert($.i18n.get("msg_tksbcxwzyc"));//退课失败！出现未知异常！
+//            }else if(data=="4"){
+//                $.alert($.i18n.get("msg_jgfffw"));//警告：你正在非法访问！
+//            }else if(data=="5"){
+//                $.alert($.i18n.get("msg_fwcs"));//校验不通过，您可以刷新本网页后重试！
+//            }
+            throw new IllegalStateException("该课程未选择，请重新选择");
+        }
+
+
+        //kch_id: 210000059
+        //jxb_ids: 297c345bca6ee890d9b03689bc39db50ef8891f13463b1c0d57f56eee6447b33c9a1fa4c3a6122ea9ca9c5980724789244b45f6745e2f59f06aacc27ef89f8f9de5a271764fc96d88e4fa0694aff171d1f0043b82c4cd726497500289c8226db707226592cda5bf4e58f447b6204c020563b11b54a4cb8189ac5ce2ed0b2d603
+        //xkxnm: 2023
+        //xkxqm: 12
+        //txbsfrl: 0
+
+
+        connection = HTTPUtil.newSession("/xsxk/zzxkyzb_xkBcZypxZzxkYzb.html?gnmkdm=N253512&su=" + stuID);
+        connection.header("Cookie", cookie);
+        String bdy = connection.method(Connection.Method.POST).execute().body();
+        if (!bdy.equals("\"success\"")) {
+            throw new IllegalStateException(bdy);
+        }
+    }
 }

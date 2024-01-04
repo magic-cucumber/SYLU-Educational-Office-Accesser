@@ -26,9 +26,8 @@ public class ClassSelectHandle {
 
     @JSONField(serialize = false, deserialize = false)
     private SelectableClasses classes;
-
-    @JSONField(serialize = false, deserialize = false)
-    private String shortID;
+    @JSONField(name = "do_jxb_id")
+    private String longID;
 
 //"bxbj": "0",
 //"date": "二○二四年一月四日",
