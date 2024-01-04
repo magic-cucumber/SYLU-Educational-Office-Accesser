@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
+import com.kagg886.sylu_eoa.ui.toolbox.impl.GPA;
 import com.kagg886.sylu_eoa.ui.toolbox.impl.ImagePaste;
 import com.kagg886.sylu_eoa.ui.toolbox.impl.SecondClass;
 import com.kagg886.sylu_eoa.util.UIUtil;
@@ -33,7 +34,7 @@ public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
     private static final List<Tool> list = new ArrayList<Tool>() {{
         add(new SecondClass());
         add(new ImagePaste());
-        add(new SecondClass());
+        add(new GPA());
     }};
 
     @NonNull

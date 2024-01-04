@@ -61,12 +61,12 @@ public class HotFixExecutor implements Callable<Boolean> {
 
                         @Override
                         public int getImageResourceId() {
-                            return com.kagg886.sylu_eoa.R.drawable.ic_exam;
+                            return com.kagg886.sylu_eoa.R.drawable.ic_search;
                         }
 
                         @Override
                         public Intent callActivity() {
-                            AlertDialog.Builder b = new AlertDialog.Builder(MainApplication.getApp());
+                            AlertDialog.Builder b = new AlertDialog.Builder(MainApplication.getCurrentActivity());
                             b.setTitle("大创学分");
 
                             CompletableFuture.runAsync(() -> {
@@ -85,9 +85,6 @@ public class HotFixExecutor implements Callable<Boolean> {
                                     b.show();
                                 });
                             });
-
-
-                            b.show();
                             return null;
                         }
                     });
