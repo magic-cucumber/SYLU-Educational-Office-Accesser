@@ -108,7 +108,7 @@ public class SyluUser {
     @SuppressWarnings("all")
     public boolean isCookieOutOfDate() {
         RuntimeException r = null;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 2; i++) {
             try {
                 ISylu.getInstance().assertLogin(cookie);
                 return false;
