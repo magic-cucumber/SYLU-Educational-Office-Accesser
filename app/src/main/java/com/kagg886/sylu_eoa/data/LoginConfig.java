@@ -1,5 +1,6 @@
 package com.kagg886.sylu_eoa.data;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import com.kagg886.sylu_eoa.SyluUser;
 import lombok.Data;
 
@@ -9,5 +10,9 @@ import lombok.Data;
  **/
 @Data
 public class LoginConfig {
+    @JSONField(serialize = false, deserialize = false)
     private SyluUser user;
+
+    private String id;
+    private String pass;
 }

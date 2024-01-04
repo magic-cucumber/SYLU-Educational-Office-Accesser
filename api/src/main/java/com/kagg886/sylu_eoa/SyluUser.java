@@ -52,6 +52,23 @@ public class SyluUser {
     }
 
     @SneakyThrows
+    public List<SelectableClasses> getSelectableClassList() {
+        return ISylu.getInstance().getAllSelectableClass(cookie, userID);
+    }
+
+    @SneakyThrows
+    public void select(SelectableClasses classes) {
+        ClassSelectHandle handle = ISylu.getInstance().getSelectHandle(cookie, userID, classes);
+        ISylu.getInstance().selectClass(cookie, userID, handle);
+    }
+
+    @SneakyThrows
+    public void unselect(SelectableClasses classes) {
+        ClassSelectHandle handle = ISylu.getInstance().getSelectHandle(cookie, userID, classes);
+        ISylu.getInstance().unselectClass(cookie, userID, handle);
+    }
+
+    @SneakyThrows
     public Profile getProfile() {
         return ISylu.getInstance().getUserProfile(userID, cookie);
     }

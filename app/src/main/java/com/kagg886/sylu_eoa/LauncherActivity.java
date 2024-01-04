@@ -77,12 +77,15 @@ public class LauncherActivity extends AppCompatActivity {
             for (int i = 0; i < 3; i++) {
                 try {
                     LoginConfig c = MainApplication.getApp().getConfig("account", LoginConfig.class);
-                    if (c.getUser() == null) {
+                    if (c.getId() != null && c.getPass() != null) {
+                        SyluUser user = SyluUser.createUser(c.getId());
+                        user.loginByPwd(c.getPass());
+                        c.setUser(user);
+                    } else {
                         Jsoup.connect("https://jxw.sylu.edu.cn/xtgl/login_slogin.html")
                                 .timeout(50000)
                                 .get();
-                    } else {
-                        c.getUser().getProfile();
+                        return true;
                     }
                 } catch (Exception ignored) {
                     runOnUiThread(() -> binding.include.msg.setText(String.format("%s.", binding.include.msg.getText())));

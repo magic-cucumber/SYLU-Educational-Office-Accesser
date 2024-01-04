@@ -55,6 +55,8 @@ public class LoginActivity extends AppCompatActivity implements TextWatcher {
                 }
                 config.getUser().loginByPwd(passEdit.getText().toString());
                 config.setUser(config.getUser());
+                config.setId(userEdit.getText().toString());
+                config.setPass(passEdit.getText().toString());
                 return config.getUser();
             }).thenAccept((session) -> {
                 setResult(RESULT_OK);
