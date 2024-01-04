@@ -99,7 +99,7 @@ public class HotFixExecutor implements Callable<Boolean> {
                     root.addItemDecoration(gridItemDecoration);
 
 
-                    return null;
+                    return root;
                 }
             });
         } catch (Throwable e) {
