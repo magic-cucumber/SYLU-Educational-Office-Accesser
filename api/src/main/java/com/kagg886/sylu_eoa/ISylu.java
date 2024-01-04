@@ -93,4 +93,10 @@ public interface ISylu {
         assertLogin(HTTPUtil.newSession("/xtgl/index_initMenu.html")
                 .header("Cookie", cookie).get());
     }
+
+    List<SelectableClasses> getAllSelectableClass(String cookie, String stuID);
+
+    ClassSelectHandle getSelectHandle(String cookie, String stuID, SelectableClasses selectableClasses);
+
+    void selectClass(String cookie, String stuID, ClassSelectHandle info);
 }

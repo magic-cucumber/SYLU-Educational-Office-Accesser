@@ -18,6 +18,7 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -326,5 +327,264 @@ public class ISyluImpl implements ISylu {
         }
 
         return JSON.parseObject(resp.body(), RSAPublicKey.class);
+    }
+
+    @SneakyThrows
+    @Override
+    public List<SelectableClasses> getAllSelectableClass(String cookie, String stuID) {
+        Connection client = HTTPUtil.newSession("/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su=" + stuID);
+        client.header("Cookie", cookie);
+
+        Document doc = client.get();
+
+        //全局上下文
+        HashMap<String, String> map = new HashMap<>();
+
+        //收集全局上下文
+        doc.getElementsByTag("input").stream().filter((v) -> v.attr("type").equals("hidden")).reduce(map, new BiFunction<HashMap<String, String>, Element, HashMap<String, String>>() {
+            @Override
+            public HashMap<String, String> apply(HashMap<String, String> stringStringHashMap, Element element) {
+                stringStringHashMap.put(element.attr("id"), element.attr("value"));
+                return stringStringHashMap;
+            }
+        }, (stringStringHashMap, stringStringHashMap2) -> stringStringHashMap);
+
+        //jg_id是个例外
+        map.put("jg_id", doc.getElementsByTag("input").stream().filter(v -> v.attr("id").equals("jg_id_1")).findFirst().get().attr("value"));
+
+
+        //收集选课上下文
+        client = HTTPUtil.newSession("/xsxk/zzxkyzb_cxZzxkYzbDisplay.html?gnmkdm=N253512&su=" + stuID);
+        client.header("Cookie", cookie);
+        client.requestBody("xkkz_id=0DA0379132547280E0630200050A35BC&xszxzt=1&kspage=0&jspage=0"); //0DA072DE12462DBAE0630200050AC73C为体育课
+
+        doc = client.post();
+        doc.getElementsByTag("input").stream().filter((v) -> v.attr("type").equals("hidden")).reduce(map, new BiFunction<HashMap<String, String>, Element, HashMap<String, String>>() {
+            @Override
+            public HashMap<String, String> apply(HashMap<String, String> stringStringHashMap, Element element) {
+                stringStringHashMap.put(element.attr("id"), element.attr("value").equals("null") ? "" : element.attr("value"));
+                return stringStringHashMap;
+            }
+        }, (stringStringHashMap, stringStringHashMap2) -> stringStringHashMap);
+
+
+        String[] queryModel = new String[]{
+                "rwlx",
+                "xkly",
+                "bklx_id",
+                "sfkkjyxdxnxq",
+                "xqh_id",
+                "njdm_id_1",
+                "zyh_id_1",
+                "zyh_id",
+                "zyfx_id",
+                "njdm_id",
+                "bh_id",
+                "jg_id",
+                "xbm",
+                "xslbdm",
+                "mzm",
+                "xz",
+                "ccdm",
+                "xsbj",
+                "sfkknj",
+                "sfkkzy",
+                "kzybkxy",
+                "sfznkx",
+                "zdkxms",
+                "sfkxq",
+                "sfkcfx",
+                "kkbk",
+                "kkbkdj",
+                "sfkgbcx",
+                "sfrxtgkcxd",
+                "tykczgxdcs",
+                "xkxnm",
+                "xkxqm",
+                "bbhzxjxb",
+                "rlkz",
+                "xkzgbj",
+                "jxbzb"
+        };
+
+
+        client = HTTPUtil.newSession("/xsxk/zzxkyzb_cxZzxkYzbPartDisplay.html?gnmkdm=N253512&su=" + stuID);
+        client.header("Cookie", cookie);
+
+        for (String s : queryModel) {
+            client.data(s, map.get(s));
+        }
+
+        client.data("kklxdm", "10");
+        client.data("kspage", "1");
+        client.data("jspage", "10000");
+
+        Connection.Response resp = client.method(Connection.Method.POST).execute();
+
+        List<SelectableClasses> selectableClasses = new ArrayList<>();
+        JSONArray array = JSON.parseObject(resp.body()).getJSONArray("tmpList");
+
+        for (Object o : array) {
+            JSONObject object = ((JSONObject) o);
+
+            SelectableClasses clazz = object.to(SelectableClasses.class);
+            clazz.setContext(new HashMap<>(map));
+            //将api返回的上下文补全
+            object.entrySet().forEach((v) -> {
+                clazz.getContext().put(v.getKey(), v.getValue().toString());
+            });
+            selectableClasses.add(clazz);
+
+        }
+
+        return selectableClasses;
+//        return JSON.parseObject(resp.body()).getList("tmpList", Classification.class).stream()
+//                .peek((v) -> v.setContext(new HashMap<>() {{
+//                    putAll(map);
+//                    putAll();
+//                }}))
+//                .collect(Collectors.toList());
+    }
+
+    @Override
+    @SneakyThrows
+    public ClassSelectHandle getSelectHandle(String cookie, String stuID, SelectableClasses selectableClasses) {
+
+//        curl 'https://jxw.sylu.edu.cn/xsxk/zzxkyzbjk_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512&su=2203050528' \
+//          -H 'Accept: application/json, text/javascript, */*; q=0.01' \
+//          -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6' \
+//          -H 'Cache-Control: no-cache' \
+//          -H 'Connection: keep-alive' \
+//          -H 'Content-Type: application/x-www-form-urlencoded;charset=UTF-8' \
+//          -H 'Cookie: clwz_blc_pst_xd0xc2xbdxccxcexf1WEBxb7xfexcexf1xc6xf7=218105098.20480; JSESSIONID=C36A4C1A30F21E875C50546D4C22F11A' \
+//          -H 'Origin: https://jxw.sylu.edu.cn' \
+//          -H 'Pragma: no-cache' \
+//          -H 'Referer: https://jxw.sylu.edu.cn/xsxk/zzxkyzb_cxZzxkYzbIndex.html?gnmkdm=N253512&layout=default&su=2203050528' \
+//          -H 'Sec-Fetch-Dest: empty' \
+//          -H 'Sec-Fetch-Mode: cors' \
+//          -H 'Sec-Fetch-Site: same-origin' \
+//          -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0' \
+//          -H 'X-Requested-With: XMLHttpRequest' \
+//          -H 'sec-ch-ua: "Not A(Brand";v="99", "Microsoft Edge";v="121", "Chromium";v="121"' \
+//          -H 'sec-ch-ua-mobile: ?0' \
+//          -H 'sec-ch-ua-platform: "Linux"' \
+//          --data-raw 'rwlx=2&xkly=0&bklx_id=0&sfkkjyxdxnxq=0&xqh_id=1&jg_id=03&zyh_id=0305&zyfx_id=wfx&njdm_id=2022&bh_id=E06E65BE0AA38F52E0530100050A6823&xbm=1&xslbdm=wlb&mzm=01&xz=4&bbhzxjxb=0&ccdm=3&xsbj=4294967296&sfkknj=0&sfkkzy=0&kzybkxy=0&sfznkx=0&zdkxms=0&sfkxq=0&sfkcfx=0&kkbk=0&kkbkdj=0&xkxnm=2023&xkxqm=12&xkxskcgskg=1&rlkz=0&kklxdm=10&kch_id=210000038&jxbzcxskg=0&xkkz_id=0DA0379132547280E0630200050A35BC&cxbj=0&fxbj=0' \
+//          --compressed
+
+
+        Connection client = HTTPUtil.newSession("/xsxk/zzxkyzbjk_cxJxbWithKchZzxkYzb.html?gnmkdm=N253512&su=" + stuID);
+        client.header("Cookie", cookie);
+
+        String[] queryModel = new String[]{
+                "rwlx",
+                "xkly",
+                "bklx_id",
+                "sfkkjyxdxnxq",
+                "xqh_id",
+                "jg_id",
+                "zyh_id",
+                "zyfx_id",
+                "njdm_id",
+                "bh_id",
+                "xbm",
+                "xslbdm",
+                "mzm",
+                "xz",
+                "bbhzxjxb",
+                "ccdm",
+                "xsbj",
+                "sfkknj",
+                "sfkkzy",
+                "kzybkxy",
+                "sfznkx",
+                "zdkxms",
+                "sfkxq",
+                "sfkcfx",
+                "kkbk",
+                "kkbkdj",
+                "xkxnm",
+                "xkxqm",
+                "xkxskcgskg",
+                "rlkz",
+                "kklxdm",
+                "kch_id",
+                "jxbzcxskg",
+//                "xkkz_id",
+                "cxbj",
+                "fxbj"
+        };
+
+        for (String s : queryModel) {
+            String con = selectableClasses.getContext().get(s);
+            if (con == null) {
+                System.out.println(s + ":null");
+                continue;
+            }
+            client.data(s, con);
+        }
+        client.data("xkkz_id", "0DA0379132547280E0630200050A35BC");
+        JSONArray array = JSON.parseArray(client.method(Connection.Method.POST).execute().body());
+
+        JSONObject object = ((JSONObject) array.stream().filter((v) -> {
+            JSONObject o = ((JSONObject) v);
+            return o.getString("jxb_id").equals(selectableClasses.getShortID());
+        }).findAny().get());
+
+        ClassSelectHandle clazz = object.to(ClassSelectHandle.class);
+        clazz.setContext(new HashMap<>(selectableClasses.getContext()));
+
+        object.entrySet().forEach((v) -> {
+            clazz.getContext().put(v.getKey(), v.getValue().toString());
+        });
+        return clazz;
+    }
+
+    @SneakyThrows
+    @Override
+    public void selectClass(String cookie, String stuID, ClassSelectHandle info) {
+        Connection conn = HTTPUtil.newSession("/xsxk/zzxkyzbjk_xkBcZyZzxkYzb.html?gnmkdm=N253512&su=" + stuID);
+        conn.header("Cookie", cookie);
+        String[] queryModel = {
+                "jxb_ids",
+                "kch_id",
+                "kcmc",
+                "rwlx",
+                "rlkz",
+                "rlzlkz",
+                "sxbj",
+                "xxkbj",
+                "qz",
+                "cxbj",
+//                "xkkz_id",
+                "njdm_id",
+                "zyh_id",
+                "kklxdm",
+                "xklc",
+                "xkxnm",
+                "xkxqm"
+        };
+
+        for (String s : queryModel) {
+            String con = info.getContext().get(s);
+            if (con == null) {
+                System.out.println(s + ":null");
+                continue;
+            }
+            conn.data(s, con);
+        }
+        //	if(rlkz=="1" || rlzlkz=="1"){
+        //		sxbj = "1";
+        //	}else{
+        //		sxbj = "0";
+        //	}
+        conn.data("xkkz_id", "0DA0379132547280E0630200050A35BC");
+        conn.data("jxb_ids", info.getContext().get("do_jxb_id"));
+        conn.data("sxbj", (info.getContext().get("rlkz").equals("1") || info.getContext().get("rlzlkz").equals("1")) ? "1" : "0");
+        conn.data("qz", "0");
+
+        JSONObject object = JSONObject.parseObject(conn.method(Connection.Method.POST).execute().body());
+        if (object.getInteger("flag") != 1) {
+            throw new IllegalAccessException(object.getString("msg"));
+        }
     }
 }

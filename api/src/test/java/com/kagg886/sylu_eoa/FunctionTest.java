@@ -47,6 +47,35 @@ public class FunctionTest {
     }
 
     @Test
+    void testSelectableClasses() {
+        List<SelectableClasses> classes = ISylu.getInstance().getAllSelectableClass(cookie, id);
+        System.out.println(classes);
+    }
+
+    @Test
+    void testCheckClassInfo() throws IOException {
+        var classifications = ISylu.getInstance().getAllSelectableClass(cookie, id).get(0);
+        System.out.println(classifications.getName());
+        System.out.println(classifications.getScore());
+        System.out.println(classifications.getModules());
+
+        var handle = ISylu.getInstance().getSelectHandle(cookie, id, classifications);
+        System.out.println(handle);
+    }
+
+    @Test
+    void testSelectClass() {
+        SelectableClasses classifications = ISylu.getInstance().getAllSelectableClass(cookie, id).get(0);
+        System.out.println(classifications.getName());
+        System.out.println(classifications.getScore());
+        System.out.println(classifications.getModules());
+        System.out.println("--------------");
+        ClassSelectHandle info = ISylu.getInstance().getSelectHandle(cookie, id, classifications);
+        System.out.println(info.getTeacher());
+        ISylu.getInstance().selectClass(cookie, id, info);
+    }
+
+    @Test
     void testExamResult() throws IOException {
         Term term = new Term("2022-2023", "1");
         List<ExamResult> results = ISylu.getInstance().getExamList(id, cookie, term);
