@@ -21,6 +21,7 @@ import top.canyie.pine.Pine;
 import top.canyie.pine.callback.MethodHook;
 import top.canyie.pine.callback.MethodReplacement;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +50,9 @@ public class HotFixExecutor implements Callable<Boolean> {
 
                     ToolsAdapter a = new ToolsAdapter();
 
-                    List<Tool> t = ((List<Tool>) a.getClass().getDeclaredField("list").get(null));
+                    Field f = a.getClass().getDeclaredField("list");
+                    f.setAccessible(true);
+                    List<Tool> t = ((List<Tool>) f.get(null));
                     t.add(new Tool() {
                         @Override
                         public String getName() {
