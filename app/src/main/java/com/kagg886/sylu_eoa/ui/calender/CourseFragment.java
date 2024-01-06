@@ -24,7 +24,6 @@ import com.kagg886.sylu_eoa.data.CacheController;
 import com.kagg886.sylu_eoa.data.ClassTable;
 import com.kagg886.sylu_eoa.data.LoginConfig;
 import com.kagg886.sylu_eoa.databinding.FragmentCourseBinding;
-import com.kagg886.sylu_eoa.exception.LoginException;
 import com.kagg886.sylu_eoa.model.SchoolCalender;
 import com.kagg886.sylu_eoa.util.ItemChooseDialog;
 import com.kagg886.sylu_eoa.util.UIUtil;
@@ -104,9 +103,6 @@ public class CourseFragment extends Fragment {
                 controller.getSchoolCalenderBeforeOutOfDate(user);
                 return controller.getCourseBeforeOutOfDate(user);
             } catch (Exception e) {
-                if (e instanceof LoginException.CookieOutOfDate && controller.getCourse() == null) { //检查失败，使用旧课表
-                    UIUtil.showToast(getActivity(), "拉取最新课表失败,请重新登录");
-                }
                 return controller.getCourse();
             }
         }).thenAccept((kb) -> {

@@ -40,10 +40,12 @@
 
         <activity android:name=".sub_activity.SecondClassActivity"
                   android:exported="false"
+                  android:parentActivityName=".MainActivity"
                   android:label="@string/secondclass"/>
 
         <activity android:name=".sub_activity.GPAActivity"
                   android:exported="false"
+                  android:parentActivityName=".MainActivity"
                   android:label="@string/gpa"/>
 
 

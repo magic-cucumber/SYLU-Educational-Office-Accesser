@@ -75,6 +75,10 @@ public class MeFragment extends Fragment {
             if (user == null) {
                 return true;
             }
+            if (user.isCookieOutOfDate()) {
+                //重新登录
+                user.loginByPwd(config.getPass());
+            }
             return user.isCookieOutOfDate();
         }).thenAccept((needLogin) -> {
             if (needLogin) {
