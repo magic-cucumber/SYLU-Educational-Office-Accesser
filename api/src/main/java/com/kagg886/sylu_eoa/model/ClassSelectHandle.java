@@ -29,6 +29,9 @@ public class ClassSelectHandle {
     @JSONField(name = "do_jxb_id")
     private String longID;
 
+    @JSONField(name = "sksj")
+    private String time;
+
 //"bxbj": "0",
 //"date": "二○二四年一月四日",
 //"dateDigit": "2024年1月4日",

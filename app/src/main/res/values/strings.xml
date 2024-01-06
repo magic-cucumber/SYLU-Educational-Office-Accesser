@@ -25,4 +25,9 @@
     <string name="exit">退出</string>
     <string name="imagepaste">图片加水印</string>
     <string name="gpa">大创学分</string>
+    <string name="quick_class_select">快速选课</string>
+    <string name="class_choice_v1">请在下方勾选你想选的课程!</string>
+    <string name="class_choice_v2">下面是选项设置</string>
+    <string name="no_8">禁用早八</string>
+    <string name="start">选课，启动！</string>
 </resources>

@@ -1,7 +1,9 @@
 package com.kagg886.sylu_eoa.ui.toolbox.impl;
 
 import android.content.Intent;
+import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
+import com.kagg886.sylu_eoa.sub_activity.QuickClassSelectActivity;
 import com.kagg886.sylu_eoa.ui.toolbox.Tool;
 
 /**
@@ -23,6 +25,6 @@ public class ClassQuickSelect implements Tool {
 
     @Override
     public Intent callActivity() {
-        return null;
+        return new Intent(MainApplication.getApp(), QuickClassSelectActivity.class);
     }
 }

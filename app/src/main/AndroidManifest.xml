@@ -53,6 +53,10 @@
                   android:exported="false"
                   android:label="@string/imagepaste"/>
 
+        <activity android:name=".sub_activity.QuickClassSelectActivity"
+                  android:exported="false"
+                  android:label="@string/quick_class_select"/>
+
         <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="${applicationId}.fileprovider"

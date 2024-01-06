@@ -77,9 +77,15 @@ public class MeFragment extends Fragment {
             }
             if (user.isCookieOutOfDate()) {
                 //重新登录
-                user.loginByPwd(config.getPass());
+                try {
+                    user.loginByPwd(config.getPass());
+                    return false;
+                } catch (Exception e) {
+                    return true;
+                }
+            } else {
+                return false;
             }
-            return user.isCookieOutOfDate();
         }).thenAccept((needLogin) -> {
             if (needLogin) {
                 MMKV.defaultMMKV().remove("account").apply();
