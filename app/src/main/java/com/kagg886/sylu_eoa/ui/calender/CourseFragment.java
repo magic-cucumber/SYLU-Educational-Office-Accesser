@@ -8,10 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.*;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -151,10 +148,11 @@ public class CourseFragment extends Fragment {
                 binding.broad.setOnClickListener((view0) -> {
                     ItemChooseDialog dialog = new ItemChooseDialog(getActivity());
 
+                    LinearLayout l = new LinearLayout(requireActivity());
                     ListView v = new ListView(getActivity());
+                    l.addView(v);
                     v.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, titles.toArray()));
                     //解决滑动冲突
-                    dialog.setContentView(v);
                     v.setOnItemClickListener((parent, view, position, id) -> {
                         if (!isDrag) { //如果是代码操作则切换pager，否则由recycler自行完成
                             binding.content.setCurrentItem(position, false);
@@ -162,8 +160,7 @@ public class CourseFragment extends Fragment {
                         isDrag = false;
                         dialog.cancel();
                     });
-
-                    dialog.setContentView(v);
+                    dialog.setContentView(l);
                     dialog.show();
                 });
                 binding.content.setCurrentItem(finalCurrentWeek - 1, false); //防止一瞬间滑动n次造成的卡顿
