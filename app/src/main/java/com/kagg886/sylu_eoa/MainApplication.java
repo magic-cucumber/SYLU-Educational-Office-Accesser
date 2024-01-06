@@ -242,7 +242,7 @@ public class MainApplication extends Application implements Thread.UncaughtExcep
                                 .body()
                 );
                 //版本不对直接停止拉取
-                if (o.getInteger("require") == null || o.getInteger("require") != BuildConfig.VERSION_CODE) {
+                if (o.getInteger("require") == null || o.getInteger("require") <= BuildConfig.VERSION_CODE) {
                     return null;
                 }
                 AppSetting setting = MainApplication.getApp().getConfig("setting", AppSetting.class);
