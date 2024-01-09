@@ -81,19 +81,13 @@ public class ExamFragment extends Fragment {
         CompletableFuture.supplyAsync(() -> {
             try {
                 if (config.getUser() == null) {
-                    UIUtil.showToast(requireActivity(), "登录后才能执行操作!");
                     return null;
                 }
-
-
                 controller.getPickerBeforeOutOfDate(config.getUser());
-                return config.getUser().getExamListByTerm(controller.getSchoolCalenderBeforeOutOfDate(config.getUser()).getCurrentTerm());
-            } catch (RuntimeException e) {
-                if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
-                    UIUtil.showToast(requireActivity(), "考试项已经过时,请重新登录以拉取最新的缓存!");
-                }
-                return null;
+            } catch (Exception e) {
+                config.getUser().loginByPwd(config.getPass());
             }
+            return config.getUser().getExamListByTerm(controller.getSchoolCalenderBeforeOutOfDate(config.getUser()).getCurrentTerm());
         }).thenAccept((result) -> {
             if (result == null) {
                 return;
@@ -137,18 +131,18 @@ public class ExamFragment extends Fragment {
                         List<ExamResult> info;
                         try {
                             info = config.getUser().getExamListByTerm(new Term(select_year.get(), select_sem.get()));
-                            requireActivity().runOnUiThread(() -> {
-                                ((MainActivity) requireActivity()).getSupportActionBar().setTitle(String.format("考试(%s,第%s学期)", select_year.get(), select_sem.get()));
-                            });
                         } catch (RuntimeException e) {
                             if (e.getCause() instanceof LoginException.CookieOutOfDate) { //检查失败，使用旧课表
-                                UIUtil.showToast(getActivity(), "凭证失效，请重新登录以使用最新的功能!");
+                                config.getUser().loginByPwd(config.getPass());
+                                info = config.getUser().getExamListByTerm(new Term(select_year.get(), select_sem.get()));
+                            } else {
+                                return;
                             }
-                            return;
                         }
-                        new Handler(Looper.getMainLooper()).post(() -> {
-                            adapter.getMValues().clear();
-                            info.forEach((a) -> adapter.getMValues().add(a));
+                        adapter.getMValues().clear();
+                        info.forEach((a) -> adapter.getMValues().add(a));
+                        requireActivity().runOnUiThread(() -> {
+                            ((MainActivity) requireActivity()).getSupportActionBar().setTitle(String.format("考试(%s,第%s学期)", select_year.get(), select_sem.get()));
                             adapter.notifyDataSetChanged();
                         });
                     }).start();
