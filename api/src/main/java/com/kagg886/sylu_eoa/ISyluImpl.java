@@ -640,4 +640,112 @@ public class ISyluImpl implements ISylu {
             throw new IllegalStateException(bdy);
         }
     }
+
+    @SneakyThrows
+    @Override
+    public List<RelatedItem> getAllUnRelatedItem(String cookie, String stuID) {
+        Connection conn = HTTPUtil.newSession("/xspjgl/xspj_cxXspjIndex.html?doType=query&gnmkdm=N401605&su=" + stuID);
+        conn.header("Cookie", cookie);
+        conn.data("nd", String.valueOf(System.currentTimeMillis()))
+                .data("_search", "false")
+                .data("queryModel.showCount", "5000")
+                .data("queryModel.currentPage", "1")
+                .data("queryModel.sortName:", "")
+                .data("queryModel.sortOrder", "asc")
+                .data("time", "0");
+        String body = conn.method(Connection.Method.POST).execute().body();
+        assertLogin(Jsoup.parse(body));
+        return JSON.parseObject(body).getList("items", RelatedItem.class).stream().filter((v) -> !v.isSubmit()).collect(Collectors.toList());
+    }
+
+    @SneakyThrows
+    @Override
+    public RelatedQuestions getRelatedQuestions(String cookie, String stuID, RelatedItem item) {
+        Connection conn = HTTPUtil.newSession("/xspjgl/xspj_cxXspjDisplay.html?gnmkdm=N401605&su=" + stuID);
+        conn.header("Cookie", cookie);
+        conn.data("jxb_id", item.getJxb_id());
+        conn.data("kch_id", item.getKch_id());
+        conn.data("jgh_id", item.getJgh_id());
+        conn.data("xsdm", item.getXsdm());
+        conn.data("pjmbmcb_id", "");
+        conn.data("sfcjlrjs", "1");
+        Document body = conn.method(Connection.Method.POST).post();
+        assertLogin(body);
+
+        RelatedQuestions rq = new RelatedQuestions();
+        rq.setSource(item);
+        rq.setXspfb_id(body.getElementsByAttribute("data-xspfb_id").get(0).attr("data-xspfb_id"));
+        rq.setPjzbxm_id(body.getElementsByAttribute("data-pjzbxm_id").get(0).attr("data-pjzbxm_id"));
+
+        Elements elements = body.getElementsByClass("tr-xspj");
+        for (Element element : elements) {
+            String pfdjdmb_id = element.attr("data-pfdjdmb_id");
+            String zsmbmcb_id = element.attr("data-zsmbmcb_id");
+            String pjzbxm_id = element.attr("data-pjzbxm_id");
+
+
+            String desc = element.getElementsByAttributeValue("style", "width: 400px;").get(0).text();
+
+            List<RelatedQuestion.Choice> choices = new ArrayList<>();
+            element.getElementsByTag("label").forEach((k) -> {
+                String value = k.text();
+                k = k.getElementsByTag("input").get(0); //label内只有一个input
+                String pfdjdmxmb = k.attr("data-pfdjdmxmb_id");
+                String name = k.attr("name");
+                choices.add(new RelatedQuestion.Choice(pfdjdmxmb, name, value));
+
+            });
+            rq.add(new RelatedQuestion(desc, choices, zsmbmcb_id, pfdjdmb_id, pjzbxm_id));
+        }
+        rq.setPyID(body.getElementsByTag("textarea").get(0).attr("id").split("_")[0]);
+        return rq;
+    }
+
+    @SneakyThrows
+    @Override
+    public void submitRelatedQuestions(String cookie, String stuID, RelatedQuestions item) {
+        Connection conn = HTTPUtil.newSession("/xspjgl/xspj_tjXspj.html?gnmkdm=N401605&su=", stuID);
+//        Connection conn = HTTPUtil.newSession("/xspjgl/xspj_bcXspj.html?gnmkdm=N401605&su=", stuID); //保存评价结果
+        conn.header("Cookie", cookie);
+
+        conn.data("ztpjbl", "100");
+        conn.data("jszdpjbl", "0");
+        conn.data("xykzpjbl", "0");
+
+        conn.data("jxb_id", item.getSource().getJxb_id());
+        conn.data("kch_id", item.getSource().getKch_id());
+        conn.data("jgh_id", item.getSource().getJgh_id());
+        conn.data("xsdm", item.getSource().getXsdm());
+
+        //主观题
+        conn.data("modelList[0].pjmbmcb_id", item.getPyID());
+        conn.data("modelList[0].pjdxdm", "01");
+        conn.data("modelList[0].fxzgf", "");
+        conn.data("modelList[0].py", "老师很好，谢谢老师"); //评语：无
+        conn.data("modelList[0].xspfb_id", item.getXspfb_id());
+//        modelList[0].pjmbmcb_id: 0E8EE3D2E94EF936E0630100050AED9A
+//        modelList[0].pjdxdm: 01
+//        modelList[0].fxzgf:
+//        modelList[0].py: %E6%97%A0
+//        modelList[0].xspfb_id:
+
+        for (int i = 0; i < item.size(); i++) {
+            @SuppressWarnings("DefaultLocale")
+            String prefix = String.format("modelList[0].xspjList[0].childXspjList[%d].", i);
+            conn.data(prefix + "pfdjdmxmb_id", item.get(i).getChoice().getPfdjdmxmb());
+            conn.data(prefix + "pjzbxm_id", item.get(i).getPjzbxm_id());
+            conn.data(prefix + "pfdjdmb_id", item.get(i).getPfdjdmb_id());
+            conn.data(prefix + "zsmbmcb_id", item.get(i).getZsmbmcb_id());
+        }
+
+        conn.data("modelList[0].xspjList[0].pjzbxm_id", item.getPjzbxm_id());
+        conn.data("modelList[0].pjzt", "1");
+        conn.data("tjzt", "0");
+
+
+        String body = conn.method(Connection.Method.POST).execute().body();
+        if (!body.equals("\"评价保存成功！\"") && !body.equals("\"提交成功!\"")) {
+            throw new IllegalStateException(body);
+        }
+    }
 }

@@ -101,4 +101,11 @@ public interface ISylu {
     void selectClass(String cookie, String stuID, ClassSelectHandle info);
 
     void unselectClass(String cookie, String stuID, ClassSelectHandle handle);
+
+    List<RelatedItem> getAllUnRelatedItem(String cookie, String stuID);
+
+
+    RelatedQuestions getRelatedQuestions(String cookie, String stuID, RelatedItem item);
+
+    void submitRelatedQuestions(String cookie, String stuID, RelatedQuestions item);
 }

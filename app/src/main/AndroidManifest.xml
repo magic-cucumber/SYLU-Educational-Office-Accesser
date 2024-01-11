@@ -57,6 +57,10 @@
                   android:exported="false"
                   android:label="@string/quick_class_select"/>
 
+        <activity android:name=".sub_activity.AutoSubmitActivity"
+                  android:exported="false"
+                  android:label="@string/related"/>
+
         <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="${applicationId}.fileprovider"

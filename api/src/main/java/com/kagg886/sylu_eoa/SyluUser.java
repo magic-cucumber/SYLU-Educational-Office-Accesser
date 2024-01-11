@@ -84,6 +84,18 @@ public class SyluUser {
         return user;
     }
 
+    public List<RelatedItem> getUnRelatedItems() {
+        return ISylu.getInstance().getAllUnRelatedItem(cookie, userID);
+    }
+
+    public RelatedQuestions getRelatedQuestions(RelatedItem ri) {
+        return ISylu.getInstance().getRelatedQuestions(cookie, userID, ri);
+    }
+
+    public void submitRelatedQuestion(RelatedQuestions ri) {
+        ISylu.getInstance().submitRelatedQuestions(cookie, userID, ri);
+    }
+
     @SneakyThrows
     public void loginByPwd(String pwd) {
         loginByPwdAndCaptcha(pwd, null);

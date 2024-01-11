@@ -10,10 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.kagg886.sylu_eoa.MainApplication;
 import com.kagg886.sylu_eoa.R;
-import com.kagg886.sylu_eoa.ui.toolbox.impl.ClassQuickSelect;
-import com.kagg886.sylu_eoa.ui.toolbox.impl.GPA;
-import com.kagg886.sylu_eoa.ui.toolbox.impl.ImagePaste;
-import com.kagg886.sylu_eoa.ui.toolbox.impl.SecondClass;
+import com.kagg886.sylu_eoa.ui.toolbox.impl.*;
 import com.kagg886.sylu_eoa.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,6 +34,7 @@ public class ToolsAdapter extends RecyclerView.Adapter<ToolsAdapter.TableUnit> {
         add(new ImagePaste());
         add(new ClassQuickSelect());
         add(new GPA());
+        add(new AutoSubmit());
     }};
 
     @NonNull

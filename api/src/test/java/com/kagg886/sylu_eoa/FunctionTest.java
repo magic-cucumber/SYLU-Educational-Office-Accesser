@@ -121,4 +121,55 @@ public class FunctionTest {
         Map<String,List<GPAScore>> res = ISylu.getInstance().getGPAScores(cookie,id);
         System.out.println(res);
     }
+
+    @Test
+    void testRelatedItems() {
+        List<RelatedItem> items = ISylu.getInstance().getAllUnRelatedItem(cookie, id);
+        items.forEach(System.out::println);
+    }
+
+    @Test
+    void testGetRelatedQuestions() {
+        List<RelatedItem> items = ISylu.getInstance().getAllUnRelatedItem(cookie, id);
+        System.out.println(items.get(0));
+
+        RelatedQuestions r = ISylu.getInstance().getRelatedQuestions(cookie, id, items.get(0));
+
+        System.out.println(r);
+        r.forEach(System.out::println);
+    }
+
+    @Test
+    void testRelateSubmit() {
+        List<RelatedItem> items = ISylu.getInstance().getAllUnRelatedItem(cookie, id);
+        RelatedItem ri = items.get(0);
+        System.out.println(ri);
+
+        RelatedQuestions rq = ISylu.getInstance().getRelatedQuestions(cookie, id, ri);
+
+        for (RelatedQuestion relatedQuestion : rq) {
+            System.out.println(relatedQuestion.getDesc());
+            relatedQuestion.select(relatedQuestion.getChoices().get(0));
+            System.out.println("My Choice:" + relatedQuestion.getChoice().getValue());
+        }
+
+        ISylu.getInstance().submitRelatedQuestions(cookie, id, rq);
+    }
+
+    @Test
+    void testRelateAllFunc() {
+        List<RelatedItem> items = ISylu.getInstance().getAllUnRelatedItem(cookie, id);
+
+        for (RelatedItem ri : items) {
+            System.out.println(ri);
+            RelatedQuestions rq = ISylu.getInstance().getRelatedQuestions(cookie, id, ri);
+            for (RelatedQuestion relatedQuestion : rq) {
+                System.out.println(relatedQuestion.getDesc());
+                relatedQuestion.select(relatedQuestion.getChoices().get(0));
+                System.out.println("My Choice:" + relatedQuestion.getChoice().getValue());
+            }
+            ISylu.getInstance().submitRelatedQuestions(cookie, id, rq);
+            System.out.println("--------");
+        }
+    }
 }
