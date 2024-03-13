@@ -86,6 +86,7 @@ fun SettingPage() {
                         app.updateConfig(ExamBeanExpire)
                         app.updateConfig(SchoolCalenderBeanExpire)
                         app.updateConfig(PickerBeanExpire)
+                        app.updateConfig(SECClassBeanExpire)
                         app.toast("清空成功!重启生效")
                         currentActivity().finish()
                     }) {

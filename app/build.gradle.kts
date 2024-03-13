@@ -94,5 +94,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
 
     implementation(project(":apiv2"))
+    implementation(project(":apiTW"))
     implementation(project(":utils"))
 }

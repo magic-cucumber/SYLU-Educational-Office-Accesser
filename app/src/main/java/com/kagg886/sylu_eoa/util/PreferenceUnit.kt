@@ -42,3 +42,7 @@ object ProfileBeanExpire : PreferenceUnit<Long>(longPreferencesKey("profile-expi
 
 object GPABean : PreferenceUnit<String>(stringPreferencesKey("gpa"), "")
 object GPABeanExpire : PreferenceUnit<Long>(longPreferencesKey("gpa-expire"), -1)
+
+object SECClassBean: PreferenceUnit<String>(stringPreferencesKey("sec-class"),"")
+object SECClassPass: PreferenceUnit<String>(stringPreferencesKey("sec-pass"),"")
+object SECClassBeanExpire : PreferenceUnit<Long>(longPreferencesKey("sec-class-expire"), -1)

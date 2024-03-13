@@ -92,7 +92,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
     override fun setDataLoadSuccess(new: SyluUser?) {
         super.setDataLoadSuccess(new)
-        context.updateConfig(Account, new!!.getUser())
+        context.updateConfig(Account, new!!.user)
     }
 
     override suspend fun onDataFetch(): SyluUser {

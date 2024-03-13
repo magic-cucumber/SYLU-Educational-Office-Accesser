@@ -42,7 +42,7 @@ fun LoginContent(modifier: Modifier = Modifier) {
     val storePass by model.storePass.collectAsState()
 
     var user by remember(model.data) {
-        mutableStateOf(model.data.value?.getUser() ?: "")
+        mutableStateOf(model.data.value?.user ?: "")
     }
     var pass by remember {
         mutableStateOf("")

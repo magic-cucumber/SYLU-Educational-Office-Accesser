@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,8 +23,8 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alorma.compose.settings.ui.SettingsGroup
 import com.alorma.compose.settings.ui.SettingsMenuLink
-import com.kagg886.sylu_eoa.api.v2.bean.GPAScore
 import com.kagg886.sylu_eoa.getApp
+import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
 import com.kagg886.sylu_eoa.ui.componment.Loading
@@ -54,6 +53,22 @@ fun ToolPage() {
         ImageSigner()
         HorizontalDivider()
         BigInnovation()
+        HorizontalDivider()
+        SecondClassData()
+    }
+}
+
+@Composable
+private fun SecondClassData() {
+    val nav = LocalNavController.current
+    SettingsMenuLink(title = {
+        Text(text = "第二课堂")
+    }, subtitle = {
+        Text(text = "查看第二课堂学分")
+    }, modifier = Modifier.height(75.dp), icon = {
+        Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
+    }) {
+        nav.navigate("SecondClass")
     }
 }
 
@@ -65,21 +80,25 @@ private fun BigInnovation() {
         mutableStateOf(false)
     }
 
-    val gpaViewModel:GPAViewModel = viewModel()
+    val gpaViewModel: GPAViewModel = viewModel()
 
     val state by gpaViewModel.loading.collectAsState()
     val gpa by gpaViewModel.data.collectAsState()
 
     if (dialog) {
-        AlertDialog(onDismissRequest = { dialog = false }, confirmButton = {},
-            title = { Text(text = "大创学分详情") }, text = {
-                when(state) {
+        AlertDialog(onDismissRequest = { dialog = false },
+            confirmButton = {},
+            title = { Text(text = "大创学分详情") },
+            text = {
+                when (state) {
                     LoadingState.NORMAL -> {
                         gpaViewModel.loadData()
                     }
+
                     LoadingState.LOADING -> {
                         Loading(fullScreen = false)
                     }
+
                     LoadingState.SUCCESS -> {
                         LazyColumn(modifier = Modifier.fillMaxWidth()) {
                             items(gpa!!.keys.toList()) {
@@ -96,11 +115,12 @@ private fun BigInnovation() {
                                             )
                                         }, modifier = Modifier.clickable { expand = !expand })
                                         if (expand) {
-                                            LazyColumn(modifier = Modifier.height((75*gpa!![it]!!.size).dp)) {
+                                            LazyColumn(modifier = Modifier.height((75 * gpa!![it]!!.size).dp)) {
                                                 items(gpa!![it]!!) {
-                                                    ListItem(headlineContent = { Text(text = it.name) }, supportingContent = {
-                                                        Text(text = it.score)
-                                                    })
+                                                    ListItem(headlineContent = { Text(text = it.name) },
+                                                        supportingContent = {
+                                                            Text(text = it.score)
+                                                        })
                                                 }
                                             }
                                         }
@@ -109,6 +129,7 @@ private fun BigInnovation() {
                             }
                         }
                     }
+
                     LoadingState.FAILED -> {
                         val err by gpaViewModel.error.collectAsState()
                         if (err?.message == "need web") {
@@ -201,7 +222,7 @@ private fun ImageSigner() {
                                         recycle()
                                         i
                                     }
-                                mutableBitmap.drawText("${user!!.getUser()}\n${data!!.name}")
+                                mutableBitmap.drawText("${user!!.user}\n${data!!.name}")
                                 get++
                                 if (this@launch.isActive.not()) {
                                     log.i("取消图片生成:在图片生成步骤")

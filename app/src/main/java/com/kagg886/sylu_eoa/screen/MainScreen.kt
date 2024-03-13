@@ -1,13 +1,14 @@
 package com.kagg886.sylu_eoa.screen
 
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -24,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import com.kagg886.sylu_eoa.R
 import com.kagg886.sylu_eoa.ui.theme.Typography
 import com.kagg886.sylu_eoa.util.PageConfig
+import com.kagg886.sylu_eoa.util.contains
 
 
 val LocalNavController = compositionLocalOf<NavHostController> {
@@ -63,6 +65,27 @@ fun MainScreen() {
         TopAppBar(title = {
             Column {
                 Text(LocalContext.current.getString(R.string.app_name), style = Typography.titleLarge)
+            }
+        }, navigationIcon = {
+            val currentRoute by nav.currentBackStackEntryAsState()
+            AnimatedVisibility(
+                visible = !PageConfig.nav.contains(currentRoute?.destination?.route ?: PageConfig.DEFAULT_ROUTER),
+                enter = slideInHorizontally(tween(300)) + fadeIn(tween(300)),
+                exit = slideOutHorizontally(tween(300)) + fadeOut(tween(300))
+            ) {
+                Row {
+                    IconButton(onClick = {
+                        nav.popBackStack()
+                    }) {
+                        Icon(imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = "")
+                    }
+
+                    IconButton(onClick = {
+                        nav.navigate(PageConfig.DEFAULT_ROUTER)
+                    }) {
+                        Icon(imageVector = Icons.Outlined.Home, contentDescription = "")
+                    }
+                }
             }
         })
     }) {

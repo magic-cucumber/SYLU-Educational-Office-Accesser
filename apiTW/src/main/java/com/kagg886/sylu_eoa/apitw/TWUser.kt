@@ -13,17 +13,18 @@ fun SyluUser.getTWUser(): TWUser {
     return TWUser(user, NetWorkClient("http://xg.sylu.edu.cn/SyluTW/Sys", serializer))
 }
 
+val TW_KEYS = arrayOf(
+    "思想成长",
+    "实践实习",
+    "创新创业",
+    "志愿公益",
+    "文体活动"
+)
 class TWUser(val user: String, val net: NetWorkClient) {
 
     var isLogin = false
 
-    private val keys = arrayOf(
-        "思想成长",
-        "实践实习",
-        "创新创业",
-        "志愿公益",
-        "文体活动"
-    )
+
 
     private val pubKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC3hzrH91c0OKgtaSB7GWGfDuUJ" +
             "sMrtiYThDXtJdrCr7exKt2fmIZngoFk71Dv/BPVQCHSuohNNvEV9VVDFSBhsP9xK" +
@@ -32,15 +33,6 @@ class TWUser(val user: String, val net: NetWorkClient) {
 
     suspend fun login(pass: String) {
         var dom = net.execute("/UserLogin.aspx").asHTML()
-        //.data("UserName", stuID)
-        //                .data("__VIEWSTATE", dom.getElementById("__VIEWSTATE").attr("value"))
-        //                .data("__VIEWSTATEGENERATOR", dom.getElementById("__VIEWSTATEGENERATOR").attr("value"))
-        //                .data("__EVENTVALIDATION", dom.getElementById("__EVENTVALIDATION").attr("value"))
-        //                .data("Password", pass)
-        //                .data("pwd", RSA.getInstance().encrypt(pass, pubKey))
-        //                .data("pubKey", pubKey)
-        //                .data("codeInput", "KHG6")
-        //                .data("queryBtn", "%B5%C7++++++++++%C2%BC")
         dom = net.execute("/UserLogin.aspx") {
             this.post(
                 mapOf(
@@ -56,7 +48,6 @@ class TWUser(val user: String, val net: NetWorkClient) {
                 ).asFormBody()
             )
         }.asHTML()
-
         dom.getElementsByTag("script").forEach { v ->
             if (v.html().startsWith("layer.alert('")) {
                 val l = v.html().indexOf("'") + 1;
@@ -77,13 +68,13 @@ class TWUser(val user: String, val net: NetWorkClient) {
 
         var id = 'A'
         while (id <= 'E') {
-            val e: String = dom.getElementById("Count" + id + "1").text()
+            val e: String = dom.getElementById("Count$id").text()
             val now = (e.ifEmpty { "0.00" }).toDouble()
-            map[SecondClassDataSummary(keys[id - 'A'], now)] = mutableListOf()
+            map[SecondClassDataSummary(TW_KEYS[id - 'A'], now)] = mutableListOf()
             id++
         }
 
-        val e: String = dom.getElementById("SunCount1").text()
+        val e: String = dom.getElementById("SunCount").text()
         val sum1 = (e.ifEmpty { "0.00" }).toDouble()
         map[SecondClassDataSummary("All", sum1)] = mutableListOf()
 

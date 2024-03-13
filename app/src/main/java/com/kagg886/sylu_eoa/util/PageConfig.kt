@@ -14,6 +14,7 @@ object PageConfig {
 
     val allPage: List<PageItem> = mutableListOf<PageItem>().apply {
         addAll(nav)
+        add(PageItem("第二课堂", 0, "SecondClass") @Composable { SecondClassPage() })
         add(PageItem("工具", 0, "ToolPage") @Composable { ToolPage() })
         add(PageItem("设置", 0, "SettingPage") @Composable { SettingPage() })
         add(PageItem("关于", 0, "AboutPage") @Composable { AboutPage() })
@@ -21,6 +22,10 @@ object PageConfig {
 
     const val DEFAULT_ROUTER = "MainPage"
 
+}
+
+fun List<PageItem>.contains(s:String):Boolean {
+    return any { it.router == s }
 }
 
 data class PageItem(val title: String, val icon: Int = 0, val router: String, val widget: @Composable () -> Unit)

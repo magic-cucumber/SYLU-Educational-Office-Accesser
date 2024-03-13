@@ -33,19 +33,12 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
 
     Column {
         Row {
-            Column(
-                Modifier
-                    .weight(0.6F)
-                    .height(40.dp)
-            ) {
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    text = "${date.month.value}\n月",
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = 10.sp, textAlign = TextAlign.Center,
-                    color = iconColor
-                )
-            }
+            Text(
+                text = "${date.month.value}\n月",
+                modifier = Modifier.width(38.dp),
+                fontSize = 10.sp, textAlign = TextAlign.Center,
+                color = iconColor
+            )
 
             (0..6).toList().forEach {
                 val date = date.plusDays(it.toLong())

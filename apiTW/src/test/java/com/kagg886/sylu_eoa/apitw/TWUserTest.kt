@@ -61,6 +61,19 @@ class TWUserTest {
     }
 
     @Test
+    fun getTWInfo1() = runBlocking {
+        val user = SyluUser("2203050528").getTWUser()
+        user.login(File("password.txt").readText())
+        if (user.isLogin) {
+            val data = user.getData()
+            data.forEach{
+                println(it.key)
+                println(it.value)
+            }
+        }
+    }
+
+    @Test
     fun getTWInfo() = runBlocking {
         val user = SyluUser("2203050528").getTWUser()
         user.login(File("password.txt").readText())

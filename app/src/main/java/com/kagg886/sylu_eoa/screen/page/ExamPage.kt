@@ -1,5 +1,7 @@
 package com.kagg886.sylu_eoa.screen.page
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -37,6 +39,7 @@ fun ExamPage() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExamContainer() {
     val userModel: SyluUserViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
@@ -111,7 +114,7 @@ fun ExamContainer() {
                 FilterChip(
                     onClick = { filterBad = !filterBad },
                     label = {
-                        Text("挂",color = Color.Red)
+                        Text("挂", color = Color.Red)
                     },
                     selected = filterBad,
                     leadingIcon = if (filterBad) {
@@ -173,8 +176,9 @@ fun ExamContainer() {
                 return
             }
 
+
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(s) {
+                items(s, key = { it.hashCode() }) {
                     var dialog by remember {
                         mutableStateOf(false)
                     }
@@ -220,6 +224,8 @@ fun ExamContainer() {
                             Text("考试: ${it.name} 成绩详情")
                         })
                     }
+
+
                     ListItem(headlineContent = {
                         Text(
                             "${it.name} ${it.relateScore}(${it.absoluteScore})",
@@ -232,12 +238,14 @@ fun ExamContainer() {
                     }, leadingContent = {
                         when (it.examStatus) {
                             SUCCESS -> Text("过", color = Color.Green)
-                            FAILED -> Text("挂",color = Color.Red)
-                            RE_SUCCESS -> Text("补",color = if (isSystemInDarkTheme()) Color(0xff84b3ff) else Color.Blue)
+                            FAILED -> Text("挂", color = Color.Red)
+                            RE_SUCCESS -> Text(
+                                "补", color = if (isSystemInDarkTheme()) Color(0xff84b3ff) else Color.Blue
+                            )
                         }
                     }, modifier = Modifier.clickable {
                         dialog = true
-                    })
+                    }.animateItemPlacement())
                 }
             }
         }

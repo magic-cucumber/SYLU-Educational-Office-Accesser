@@ -82,7 +82,7 @@ fun MePage() {
                                 }, text = {
                                     Column {
                                         Details("姓名", profile.name)
-                                        Details("学号", user!!.getUser())
+                                        Details("学号", user!!.user)
                                         Details("学院", profile.collegeName)
                                         Details("专业", profile.studyName)
                                         Details("政治面貌", profile.policy)
