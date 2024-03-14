@@ -10,6 +10,7 @@ import kotlinx.serialization.encoding.Encoder
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 
 @Serializable
 data class SchoolCalender(
@@ -29,6 +30,10 @@ data class SchoolCalender(
             start = start.plusWeeks(1)
         }
         return i
+    }
+
+    fun count():Int {
+        return start.until(end,ChronoUnit.WEEKS).toInt()
     }
 }
 

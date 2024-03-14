@@ -22,6 +22,9 @@ object SkipLogin : PreferenceUnit<Boolean>(booleanPreferencesKey("skip-login"), 
 object DayExpired : PreferenceUnit<Int>(intPreferencesKey("day-expired"), 7)
 
 
+object CalenderTipTime : PreferenceUnit<Int>(intPreferencesKey("time-tip"), 20)
+
+
 object ClassList : PreferenceUnit<String>(stringPreferencesKey("class-list"), "")
 object ClassListExpire : PreferenceUnit<Long>(longPreferencesKey("class-list-expire"), -1)
 

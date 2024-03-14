@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -32,6 +30,13 @@ val LocalNavController = compositionLocalOf<NavHostController> {
     error("NavController not provided")
 }
 
+val LocalMenuProvider = compositionLocalOf<MutableList<MenuItem>> {
+    error("LocalMenuProvider not provided")
+}
+
+data class MenuItem(val s: String,val click: () -> Unit)
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
@@ -40,6 +45,9 @@ fun MainScreen() {
 
     val reg by nav.currentBackStackEntryAsState()
 
+    val menu = remember {
+        mutableStateListOf<MenuItem>()
+    }
     Scaffold(bottomBar = {
         NavigationBar {
             PageConfig.nav.forEach { entry ->
@@ -66,6 +74,39 @@ fun MainScreen() {
             Column {
                 Text(LocalContext.current.getString(R.string.app_name), style = Typography.titleLarge)
             }
+        }, actions = {
+            var expanded by remember { mutableStateOf(false) }
+
+            AnimatedVisibility(
+                visible = menu.isNotEmpty(),
+                enter = slideInHorizontally(tween(300), initialOffsetX = { it / 2 }) + fadeIn(tween(300)),
+                exit = slideOutHorizontally(tween(300), targetOffsetX = { it / 2 }) + fadeOut(tween(300))
+            ) {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(imageVector = Icons.Outlined.MoreVert, contentDescription = "")
+                }
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                menu.forEach {
+                    DropdownMenuItem(text = { Text(text = it.s) }, onClick = {
+                        expanded = false
+                        it.click()
+                    })
+                }
+            }
+//            if (menu.value != null) {
+//                var expanded by remember { mutableStateOf(false) }
+//
+//                DropdownMenu(
+//                    expanded = expanded,
+//                    onDismissRequest = { expanded = false },
+//                ) {
+//                    menu.value!!()
+//                }
+//            }
         }, navigationIcon = {
             val currentRoute by nav.currentBackStackEntryAsState()
             AnimatedVisibility(
@@ -97,7 +138,7 @@ fun MainScreen() {
         //        enterTransition,
         //    popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
         //        exitTransition,
-        CompositionLocalProvider(LocalNavController provides nav) {
+        CompositionLocalProvider(LocalNavController provides nav, LocalMenuProvider provides menu) {
             NavHost(
                 navController = nav,
                 startDestination = PageConfig.DEFAULT_ROUTER,

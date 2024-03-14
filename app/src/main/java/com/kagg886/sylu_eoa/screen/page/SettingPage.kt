@@ -34,10 +34,13 @@ fun SettingPage() {
     val _skipLogin by app.getConfig(SkipLogin).collectAsState(false)
     val _expire by app.getConfig(DayExpired).collectAsState(7)
 
+    val _time_tip by app.getConfig(CalenderTipTime).collectAsState(7)
+
 
     val storePass = rememberBooleanSettingState()
     val skipLogin = rememberBooleanSettingState()
     val expire = rememberIntSettingState()
+    val timeTip = rememberIntSettingState()
 
     LaunchedEffect(key1 = _storePass) {
         storePass.value = _storePass
@@ -47,6 +50,9 @@ fun SettingPage() {
     }
     LaunchedEffect(key1 = _expire) {
         expire.value = _expire
+    }
+    LaunchedEffect(key1 = _time_tip) {
+        timeTip.value = _time_tip
     }
 
     Column(
@@ -152,6 +158,18 @@ fun SettingPage() {
                 }) { _, string ->
                 Text(text = string)
             }
+        }
+
+        SettingsGroup(title = {
+            Text(text = "日历")
+        }) {
+            SettingsSlider(modifier = Modifier.height(100.dp), state = timeTip, title = {
+                Column {
+                    Text("日历提前提醒：${_time_tip}分钟")
+                }
+            }, onValueChange = {
+                app.updateConfig(CalenderTipTime, it)
+            }, valueRange = 0f..20f, steps = 20)
         }
 
         SettingsGroup(title = {
