@@ -1,16 +1,16 @@
 package com.kagg886.sylu_eoa.screen.page
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +23,10 @@ import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.theme.Typography
 import com.kagg886.sylu_eoa.util.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val app by lazy {
     getApp()
@@ -170,6 +174,58 @@ fun SettingPage() {
             }, onValueChange = {
                 app.updateConfig(CalenderTipTime, it)
             }, valueRange = 0f..20f, steps = 20)
+
+            var confirmDialog by remember {
+                mutableIntStateOf(-1)
+                //-1为隐藏 0为询问用户是否删除 1为正在删除 2为删除完成
+            }
+
+            if (confirmDialog != -1) {
+                AlertDialog(onDismissRequest = {
+                                               if (confirmDialog != 1) {
+                                                   confirmDialog = -1
+                                               }
+                }, confirmButton = {
+                    if (confirmDialog == 0) {
+                        TextButton(onClick = {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                confirmDialog = 1
+                                Calender("sylu_class_calender").apply {
+                                    clearEvents()
+                                    delay(1000)
+                                    deleteAccount()
+                                }
+                                confirmDialog = 2
+                            }
+                        }) {
+                            Text(text = "确定")
+                        }
+                    }
+                }, dismissButton = {
+                    if (confirmDialog == 0) {
+                        TextButton(onClick = { confirmDialog = -1 }) {
+                            Text(text = "取消")
+                        }
+                    }
+                }, title = {
+                    when(confirmDialog) {
+                        0-> Text(text = "是否删除?")
+                        1-> Text(text = "删除中...")
+                        2-> Text(text = "删除完成!")
+                    }
+                }, text = {
+                    when (confirmDialog) {
+                        0-> Text(text = "删除后您的所有更改将不可恢复!除非您重新导入到日历中")
+                        1-> Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {CircularProgressIndicator()}
+                        2-> Text(text = "再见a.a")
+                    }
+                })
+            }
+            SettingsMenuLink(title = { Text(text = "删除日历账户") }, subtitle = {
+                Text(text = "有一天如果你不需要这个软件了呢?")
+            }) {
+                confirmDialog = 0
+            }
         }
 
         SettingsGroup(title = {

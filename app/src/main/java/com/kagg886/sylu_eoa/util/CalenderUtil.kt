@@ -27,6 +27,11 @@ private const val TIME_ZONE = "Asia/Shanghai"
 data class Calender(private val name:String) {
     private val id = getCalenderAccount(accountName = name)
 
+    fun deleteAccount() {
+        val selection = "${CalendarContract.Calendars._ID} = ?" // 使用where字句来指定要删除的日历ID
+        app.contentResolver.delete(CalendarContract.Calendars.CONTENT_URI, selection, arrayOf(id.toString()))
+    }
+
     fun clearEvents(): Int {
         // 构建用于删除事件的选择条件：指定只删除属于特定日历ID的事件
         val selection = "${CalendarContract.Events.CALENDAR_ID} = ?"
