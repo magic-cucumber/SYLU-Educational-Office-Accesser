@@ -1,5 +1,8 @@
 package com.kagg886.sylu_eoa.screen.page
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -16,14 +19,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kagg886.sylu_eoa.MainActivity
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.screen.LocalMenuProvider
 import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.screen.MenuItem
+import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.componment.ClassPage
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
 import com.kagg886.sylu_eoa.ui.componment.Loading
@@ -139,6 +145,13 @@ fun ClassTable() {
     }
 }
 
+private sealed interface Result {
+    data object Grant:Result
+
+    sealed interface Deny:Result
+    data object DenyOnce:Deny
+    data object DenyAll:Deny
+}
 @Composable
 fun ClassTablePage() {
     val tableModel: ClassTableViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
@@ -156,10 +169,10 @@ fun ClassTablePage() {
 
 
     var promise by remember {
-        mutableStateOf<Promise<List<String>,Boolean>?>(null)
+        mutableStateOf<Promise<List<String>,Result>?>(null)
     }
 
-
+    val avt = LocalContext.current as MainActivity
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = {
@@ -168,7 +181,17 @@ fun ClassTablePage() {
             bool.forEach { it1 ->
                 bool1 = it1 && bool1
             }
-            promise!!.resolve(bool1)
+            if (!bool1) {
+                it.forEach {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(avt, it.key)) {
+                        promise!!.resolve(Result.DenyAll)
+                        return@rememberLauncherForActivityResult
+                    }
+                }
+                promise!!.resolve(Result.DenyOnce)
+                return@rememberLauncherForActivityResult
+            }
+            promise!!.resolve(Result.Grant)
         }
     )
 
@@ -212,7 +235,18 @@ fun ClassTablePage() {
                         android.Manifest.permission.READ_CALENDAR,
                         android.Manifest.permission.WRITE_CALENDAR
                     ))
-                    if (code) {
+                    if (code is Result.Deny) {
+                        dialog = false
+                        getApp().apply {
+                            toast("请手动前往设置页面授予日历权限!")
+                            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                setData(Uri.fromParts("package", packageName, null))
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            })
+                        }
+                        return@launch
+                    }
+                    if (code == Result.Grant) {
                         dialog = false
                         complete = 0
                         Calender("sylu_class_calender").apply {

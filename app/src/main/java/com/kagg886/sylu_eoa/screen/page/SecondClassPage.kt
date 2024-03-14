@@ -3,10 +3,7 @@ package com.kagg886.sylu_eoa.screen.page
 import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -180,7 +177,7 @@ fun SecondClassPage() {
                         val result = (state as SecondClassPageUiState.LoadingSuccess).result
                         ComposeRadarView(data = result.map { it ->
                             return@map RadarScore(it.key.id, it.value.sumOf { it.score }, it.key.max)
-                        }.filter { it.text != "All" }, modifier = Modifier.size(width)) { score ->
+                        }.filter { it.text != "All" }, modifier = Modifier.size(width).padding(10.dp)) { score ->
                             dialog = result.filter { it.key.id == score.text }.toList()[0]
                         }
                     }
