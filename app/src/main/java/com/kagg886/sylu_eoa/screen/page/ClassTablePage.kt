@@ -252,17 +252,6 @@ fun ClassTablePage() {
             Text(text = "请先授予日历读取和写入权限，否则我们无法将课表写入到您的系统日历中")
         })
     }
-
-    DisposableEffect(key1= LocalNavController.current.currentDestination!!.route) {
-        action.add(MenuItem("导出到日历") {
-            dialog = true
-        })
-        //跳出页面时清除主页图标
-        onDispose {
-            action.clear()
-        }
-    }
-
     when (state) {
         NORMAL -> {
             LaunchedEffect(key1 = Unit) {
@@ -279,6 +268,17 @@ fun ClassTablePage() {
             if (state1 == SUCCESS) {
                 Column {
                     Picker()
+
+                    //成功加载后才弹出图标
+                    DisposableEffect(key1= LocalNavController.current.currentDestination!!.route) {
+                        action.add(MenuItem("导出到日历") {
+                            dialog = true
+                        })
+                        //跳出页面时清除主页图标
+                        onDispose {
+                            action.clear()
+                        }
+                    }
                     ClassTable()
                 }
             } else {

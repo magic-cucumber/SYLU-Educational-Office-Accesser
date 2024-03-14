@@ -192,7 +192,6 @@ fun SettingPage() {
                                 confirmDialog = 1
                                 Calender("sylu_class_calender").apply {
                                     clearEvents()
-                                    delay(1000)
                                     deleteAccount()
                                 }
                                 confirmDialog = 2
