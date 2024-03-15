@@ -1,15 +1,21 @@
 package com.kagg886.sylu_eoa
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.screen.LoginScreen
@@ -23,10 +29,17 @@ import com.kagg886.sylu_eoa.ui.model.impl.AppOnlineConfigViewModel
 import com.kagg886.sylu_eoa.ui.model.impl.SyluUserViewModel
 import com.kagg886.sylu_eoa.ui.theme.SYLU_EOATheme
 import com.kagg886.sylu_eoa.util.NightMode
+import com.kagg886.sylu_eoa.util.Promise
 import com.kagg886.sylu_eoa.util.ReadAboutOnFirst
 import com.kagg886.utils.createLogger
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import okhttp3.*
 import okio.IOException
+import okio.use
+import java.io.File
+import java.io.FileOutputStream
 
 private val log = createLogger("MainActivity")
 
@@ -140,6 +153,74 @@ fun CheckUpdate() {
                 )
             }
 
+            var downloadDialog by remember {
+                mutableStateOf("")
+            }
+
+            if (downloadDialog.isNotEmpty()) {
+                var promise by remember {
+                    mutableStateOf<Promise<Unit, Boolean>?>(null)
+                }
+                val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                    promise!!.resolve(result.resultCode == Activity.RESULT_OK)
+                    // 这里可以处理返回结果，但对于REQUEST_INSTALL_PACKAGES通常需要引导用户至设置页
+                }
+                promise = Promise {
+                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        this.data = Uri.parse("package:${getApp().packageName}")
+                    }
+                    launcher.launch(intent)
+                }
+
+                //下载弹窗
+                var download by remember {
+                    mutableFloatStateOf(0f)
+                }
+                LaunchedEffect(key1 = downloadDialog) {
+                    withContext(Dispatchers.IO) {
+                        val response = OkHttpClient.Builder().build().newCall(
+                            Request.Builder().url(downloadDialog).build()
+                        ).execute()
+
+                        val body = response.body!!
+                        val size = body.contentLength()
+                        var use = 0
+                        FileOutputStream(File(getApp().externalCacheDir, "update.apk").apply {
+                            if (exists()) {
+                                delete()
+                            }
+                            createNewFile()
+                        }).use { outStream ->
+                            body.byteStream().use { inStream ->
+                                val byt = ByteArray(8192)
+                                var len: Int
+                                while (inStream.read(byt, 0, byt.size).also { len = it } != -1) {
+                                    outStream.write(byt, 0, len)
+                                    use += len
+                                    download = use.toFloat() / size.toFloat()
+                                }
+                            }
+                        }
+                        downloadDialog = ""
+                        while (!getApp().packageManager.canRequestPackageInstalls()) {
+                            promise!!.startForResult()
+                        }
+                        val uri = FileProvider.getUriForFile(getApp(),"${getApp().packageName}.fileprovider",File(getApp().externalCacheDir, "update.apk"))
+
+                        getApp().startActivity(Intent(Intent.ACTION_VIEW).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                            setDataAndType(uri,"application/vnd.android.package-archive")
+                        })
+                    }
+                }
+                AlertDialog(onDismissRequest = {}, confirmButton = {}, title = { Text(text = "下载中") }, text = {
+                    LinearProgressIndicator(progress = {
+                        download
+                    })
+                })
+            }
 
             var open by remember {
                 mutableStateOf(true)
@@ -149,9 +230,10 @@ fun CheckUpdate() {
                     onDismissRequest = {},
                     confirmButton = {
                         TextButton(onClick = {
-                            getApp().openURL(data!!.assets.filter {
+                            open = false
+                            downloadDialog = data!!.assets.filter {
                                 it.name == "app-release.apk"
-                            }[0].browser_download_url)
+                            }[0].browser_download_url
                         }) {
                             Text("下载")
                         }
