@@ -261,11 +261,11 @@ fun ClassTablePage() {
                                             val (start,end) = getTime(it)
                                             l.add(Event(
                                                 title = it.name,
-                                                description = "${it.lesson}(${it.weekEachLesson})",
+                                                description = "${it.teacher}(${it.weekEachLesson})",
                                                 location = it.room,
-                                                startDate = LocalDateTime.of(calender!!.start.plusWeeks(week.toLong()).plusDays(day.toLong() % 7),start).toInstant(
+                                                startDate = LocalDateTime.of(calender!!.start.plusWeeks((week-1).toLong()).plusDays((day.toLong()-1) % 7),start).toInstant(
                                                     ZoneOffset.of("+8")).toEpochMilli(),
-                                                endDate =LocalDateTime.of(calender!!.start.plusWeeks(week.toLong()).plusDays(day.toLong() % 7),end).toInstant(
+                                                endDate =LocalDateTime.of(calender!!.start.plusWeeks((week-1).toLong()).plusDays((day.toLong()-1) % 7),end).toInstant(
                                                     ZoneOffset.of("+8")).toEpochMilli()
                                             ))
                                         }

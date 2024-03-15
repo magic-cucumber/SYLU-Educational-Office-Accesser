@@ -55,7 +55,8 @@ data class Calender(private val name:String) {
                 put(CalendarContract.Events.DESCRIPTION, event.description) //描述
                 put(CalendarContract.Events.DTSTART, event.startDate) //开始时间
                 put(CalendarContract.Events.DTEND, event.endDate) //停止时间
-                put(CalendarContract.Events.EVENT_TIMEZONE, TIME_ZONE) //市区
+                put(CalendarContract.Events.EVENT_TIMEZONE, TIME_ZONE) //时区
+                put(CalendarContract.Events.EVENT_LOCATION,event.location) //位置
                 put(CalendarContract.Events.HAS_ALARM,1) //闹钟提醒
             }
 
