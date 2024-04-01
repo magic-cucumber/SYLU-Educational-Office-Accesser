@@ -216,8 +216,17 @@ private fun PageItem() {
                             dialog = 0
                             typo.value = Typography(
                                 bodyLarge = TextStyle(fontSize = 100.sp),
+                                bodyMedium = TextStyle(fontSize = 100.sp),
+                                bodySmall = TextStyle(fontSize = 100.sp),
+
                                 titleLarge = TextStyle(fontSize = 100.sp),
+                                titleMedium = TextStyle(fontSize = 100.sp),
+                                titleSmall = TextStyle(fontSize = 100.sp),
+
                                 labelSmall = TextStyle(fontSize = 100.sp),
+                                labelMedium = TextStyle(fontSize = 100.sp),
+                                labelLarge = TextStyle(fontSize = 100.sp)
+
                             )
                         }
                     }) {
