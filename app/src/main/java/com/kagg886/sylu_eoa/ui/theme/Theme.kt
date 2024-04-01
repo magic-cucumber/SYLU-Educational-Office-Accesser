@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -87,6 +88,7 @@ val LightColorScheme = lightColorScheme(
 
 @Composable
 fun SYLU_EOATheme(
+    typo: Typography = Typography,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
@@ -110,7 +112,7 @@ fun SYLU_EOATheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = typo,
         content = content
     )
 }

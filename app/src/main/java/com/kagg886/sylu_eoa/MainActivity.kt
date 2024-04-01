@@ -28,6 +28,7 @@ import com.kagg886.sylu_eoa.ui.model.LoadingState
 import com.kagg886.sylu_eoa.ui.model.impl.AppOnlineConfigViewModel
 import com.kagg886.sylu_eoa.ui.model.impl.SyluUserViewModel
 import com.kagg886.sylu_eoa.ui.theme.SYLU_EOATheme
+import com.kagg886.sylu_eoa.ui.theme.Typography
 import com.kagg886.sylu_eoa.util.NightMode
 import com.kagg886.sylu_eoa.util.Promise
 import com.kagg886.sylu_eoa.util.ReadAboutOnFirst
@@ -42,6 +43,10 @@ import java.io.File
 import java.io.FileOutputStream
 
 private val log = createLogger("MainActivity")
+
+val LocalThemeTypo = compositionLocalOf<MutableState<Typography>> {
+    error("LocalThemeTypo not provided");
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,24 +96,29 @@ class MainActivity : ComponentActivity() {
                 })
             }
 
-            SYLU_EOATheme(
-                darkTheme = isDark
-            ) {
-                MaskBox(
-                    animTime = 1000L,
-                    maskComplete = {
-                    },
-                    animFinish = {},
-                ) { emit ->
-                    //非延迟变换
-                    LaunchedEffect(key1 = nightMode) {
-                        val d = getApp().resources.displayMetrics
-                        emit(MaskAnimModel.EXPEND, d.widthPixels.toFloat() / 2, d.heightPixels.toFloat() / 2)
+            CompositionLocalProvider(LocalThemeTypo provides remember {
+                mutableStateOf(Typography)
+            }) {
+                SYLU_EOATheme(
+                    darkTheme = isDark,
+                    typo = LocalThemeTypo.current.value
+                ) {
+                    MaskBox(
+                        animTime = 1000L,
+                        maskComplete = {
+                        },
+                        animFinish = {},
+                    ) { emit ->
+                        //非延迟变换
+                        LaunchedEffect(key1 = nightMode) {
+                            val d = getApp().resources.displayMetrics
+                            emit(MaskAnimModel.EXPEND, d.widthPixels.toFloat() / 2, d.heightPixels.toFloat() / 2)
+                        }
+                        CheckUpdate()
+                        Main()
                     }
-                    CheckUpdate()
-                    Main()
-                }
 
+                }
             }
         }
     }
