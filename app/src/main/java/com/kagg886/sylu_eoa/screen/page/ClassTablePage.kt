@@ -26,6 +26,7 @@ import com.kagg886.sylu_eoa.MainActivity
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
 import com.kagg886.sylu_eoa.getApp
+import com.kagg886.sylu_eoa.screen.LocalFABProvider
 import com.kagg886.sylu_eoa.screen.LocalMenuProvider
 import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.screen.MenuItem
@@ -68,6 +69,22 @@ fun Picker() {
 
     var choosePick by remember {
         mutableStateOf(false)
+    }
+
+    if (currentIndex != init) {
+        var fab by LocalFABProvider.current
+        DisposableEffect(key1 = Unit, effect = {
+            fab = {
+                FloatingActionButton(onClick = {
+                    calenderViewModel.setCurrentSelectedWeek(init)
+                }) {
+                    Text(text = "今")
+                }
+            }
+            onDispose {
+                fab = null
+            }
+        })
     }
 
     if (choosePick) {

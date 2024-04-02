@@ -34,7 +34,11 @@ val LocalMenuProvider = compositionLocalOf<MutableList<MenuItem>> {
     error("LocalMenuProvider not provided")
 }
 
-data class MenuItem(val s: String,val click: () -> Unit)
+val LocalFABProvider = compositionLocalOf<MutableState<(@Composable () -> Unit)?>> {
+    error("LocalFABProvider not provided")
+}
+
+data class MenuItem(val s: String, val click: () -> Unit)
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,55 +52,59 @@ fun MainScreen() {
     val menu = remember {
         mutableStateListOf<MenuItem>()
     }
-    Scaffold(bottomBar = {
-        NavigationBar {
-            PageConfig.nav.forEach { entry ->
-                val select = entry.router == (reg?.destination?.route ?: PageConfig.DEFAULT_ROUTER)
-                NavigationBarItem(
-                    icon = {
-                        Icon(painter = painterResource(entry.icon), "")
-                    },
-                    label = {
-                        Text(entry.title)
-                    },
-                    selected = select,
-                    onClick = {
-                        if (!select) {
-                            nav.navigate(entry.router)
-                        }
-                    },
-                    alwaysShowLabel = false
-                )
-            }
-        }
-    }, topBar = {
-        TopAppBar(title = {
-            Column {
-                Text(LocalContext.current.getString(R.string.app_name), style = Typography.titleLarge)
-            }
-        }, actions = {
-            var expanded by remember { mutableStateOf(false) }
 
-            AnimatedVisibility(
-                visible = menu.isNotEmpty(),
-                enter = slideInHorizontally(tween(300), initialOffsetX = { it / 2 }) + fadeIn(tween(300)),
-                exit = slideOutHorizontally(tween(300), targetOffsetX = { it / 2 }) + fadeOut(tween(300))
-            ) {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(imageVector = Icons.Outlined.MoreVert, contentDescription = "")
+    CompositionLocalProvider(LocalFABProvider provides remember {
+        mutableStateOf(null)
+    }) {
+        Scaffold(bottomBar = {
+            NavigationBar {
+                PageConfig.nav.forEach { entry ->
+                    val select = entry.router == (reg?.destination?.route ?: PageConfig.DEFAULT_ROUTER)
+                    NavigationBarItem(
+                        icon = {
+                            Icon(painter = painterResource(entry.icon), "")
+                        },
+                        label = {
+                            Text(entry.title)
+                        },
+                        selected = select,
+                        onClick = {
+                            if (!select) {
+                                nav.navigate(entry.router)
+                            }
+                        },
+                        alwaysShowLabel = false
+                    )
                 }
             }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-            ) {
-                menu.forEach {
-                    DropdownMenuItem(text = { Text(text = it.s) }, onClick = {
-                        expanded = false
-                        it.click()
-                    })
+        }, topBar = {
+            TopAppBar(title = {
+                Column {
+                    Text(LocalContext.current.getString(R.string.app_name), style = Typography.titleLarge)
                 }
-            }
+            }, actions = {
+                var expanded by remember { mutableStateOf(false) }
+
+                AnimatedVisibility(
+                    visible = menu.isNotEmpty(),
+                    enter = slideInHorizontally(tween(300), initialOffsetX = { it / 2 }) + fadeIn(tween(300)),
+                    exit = slideOutHorizontally(tween(300), targetOffsetX = { it / 2 }) + fadeOut(tween(300))
+                ) {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(imageVector = Icons.Outlined.MoreVert, contentDescription = "")
+                    }
+                }
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    menu.forEach {
+                        DropdownMenuItem(text = { Text(text = it.s) }, onClick = {
+                            expanded = false
+                            it.click()
+                        })
+                    }
+                }
 //            if (menu.value != null) {
 //                var expanded by remember { mutableStateOf(false) }
 //
@@ -107,57 +115,81 @@ fun MainScreen() {
 //                    menu.value!!()
 //                }
 //            }
-        }, navigationIcon = {
-            val currentRoute by nav.currentBackStackEntryAsState()
-            AnimatedVisibility(
-                visible = !PageConfig.nav.contains(currentRoute?.destination?.route ?: PageConfig.DEFAULT_ROUTER),
-                enter = slideInHorizontally(tween(300)) + fadeIn(tween(300)),
-                exit = slideOutHorizontally(tween(300)) + fadeOut(tween(300))
-            ) {
-                Row {
-                    IconButton(onClick = {
-                        nav.popBackStack()
-                    }) {
-                        Icon(imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = "")
-                    }
+            }, navigationIcon = {
+                val currentRoute by nav.currentBackStackEntryAsState()
+                AnimatedVisibility(
+                    visible = !PageConfig.nav.contains(currentRoute?.destination?.route ?: PageConfig.DEFAULT_ROUTER),
+                    enter = slideInHorizontally(tween(300)) + fadeIn(tween(300)),
+                    exit = slideOutHorizontally(tween(300)) + fadeOut(tween(300))
+                ) {
+                    Row {
+                        IconButton(onClick = {
+                            nav.popBackStack()
+                        }) {
+                            Icon(imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = "")
+                        }
 
-                    IconButton(onClick = {
-                        nav.navigate(PageConfig.DEFAULT_ROUTER)
-                    }) {
-                        Icon(imageVector = Icons.Outlined.Home, contentDescription = "")
+                        IconButton(onClick = {
+                            nav.navigate(PageConfig.DEFAULT_ROUTER)
+                        }) {
+                            Icon(imageVector = Icons.Outlined.Home, contentDescription = "")
+                        }
+                    }
+                }
+            })
+        }, floatingActionButton = {
+            var showing by remember {
+                mutableStateOf(false)
+            }
+            val fab = LocalFABProvider.current
+            LaunchedEffect(key1 = LocalFABProvider.current.value, block = {
+                showing = fab.value != null
+            })
+            AnimatedVisibility(visible = showing,
+                enter = fadeIn() + slideInHorizontally { it / 2 },
+                exit = fadeOut() + slideOutHorizontally { it / 2 }
+            ) {
+                if (fab.value != null) {
+                    fab.value!!()
+                } else {
+                    FloatingActionButton(onClick = { /*TODO*/ }) {
+
                     }
                 }
             }
-        })
-    }) {
-        //enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
-        //        { fadeIn(animationSpec = tween(700)) },
-        //    exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
-        //        { fadeOut(animationSpec = tween(700)) },
-        //    popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
-        //        enterTransition,
-        //    popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
-        //        exitTransition,
-        CompositionLocalProvider(LocalNavController provides nav, LocalMenuProvider provides menu) {
-            NavHost(
-                navController = nav,
-                startDestination = PageConfig.DEFAULT_ROUTER,
-                modifier = Modifier
-                    .padding(it)
-                    .fillMaxSize(),
-
-                enterTransition = {
-                    scaleIn(tween(300)) + fadeIn(animationSpec = tween(300))
-//                fadeIn(animationSpec = tween(500))
-                },
-                exitTransition = {
-                    scaleOut(tween(300)) + fadeOut(animationSpec = tween(300))
-//                expandIn(tween(500), expandFrom = Alignment.Center)
-                }
+        }) {
+            //enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
+            //        { fadeIn(animationSpec = tween(700)) },
+            //    exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
+            //        { fadeOut(animationSpec = tween(700)) },
+            //    popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
+            //        enterTransition,
+            //    popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
+            //        exitTransition,
+            CompositionLocalProvider(
+                LocalNavController provides nav,
+                LocalMenuProvider provides menu,
             ) {
-                PageConfig.allPage.forEach { entry ->
-                    composable(entry.router) {
-                        entry.widget()
+                NavHost(
+                    navController = nav,
+                    startDestination = PageConfig.DEFAULT_ROUTER,
+                    modifier = Modifier
+                        .padding(it)
+                        .fillMaxSize(),
+
+                    enterTransition = {
+                        scaleIn(tween(300)) + fadeIn(animationSpec = tween(300))
+//                fadeIn(animationSpec = tween(500))
+                    },
+                    exitTransition = {
+                        scaleOut(tween(300)) + fadeOut(animationSpec = tween(300))
+//                expandIn(tween(500), expandFrom = Alignment.Center)
+                    }
+                ) {
+                    PageConfig.allPage.forEach { entry ->
+                        composable(entry.router) {
+                            entry.widget()
+                        }
                     }
                 }
             }

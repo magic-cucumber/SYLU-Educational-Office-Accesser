@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.api.v2.bean.ExamStatus.*
 import com.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
 import com.kagg886.sylu_eoa.api.v2.bean.findListByTerm
+import com.kagg886.sylu_eoa.screen.LocalFABProvider
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
 import com.kagg886.sylu_eoa.ui.componment.Loading
 import com.kagg886.sylu_eoa.ui.model.LoadingState
@@ -243,9 +244,11 @@ fun ExamContainer() {
                                 "补", color = if (isSystemInDarkTheme()) Color(0xff84b3ff) else Color.Blue
                             )
                         }
-                    }, modifier = Modifier.clickable {
-                        dialog = true
-                    }.animateItemPlacement())
+                    }, modifier = Modifier
+                        .clickable {
+                            dialog = true
+                        }
+                        .animateItemPlacement())
                 }
             }
         }
@@ -291,6 +294,25 @@ fun PickerContainer() {
         }
 
         LoadingState.SUCCESS -> {
+            val defaultTerm = remember {
+                current
+            }
+            if (defaultTerm != current) {
+                var fab by LocalFABProvider.current
+                DisposableEffect(key1 = Unit, effect = {
+                    fab = {
+                        FloatingActionButton(onClick = {
+                            pickerViewModel.setCurrentTermPicker(defaultTerm)
+                        }) {
+                            Text(text = "今")
+                        }
+                    }
+                    onDispose {
+                        fab = null
+                    }
+                })
+            }
+
             if (show) {
                 ModalBottomSheet(onDismissRequest = {
                     show = false
