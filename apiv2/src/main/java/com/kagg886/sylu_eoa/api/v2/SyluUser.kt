@@ -13,7 +13,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 import java.time.LocalDate
-import javax.xml.crypto.Data
 
 
 private val log = createLogger("SyluUser")
@@ -21,13 +20,138 @@ private val log = createLogger("SyluUser")
 class SyluUser(
     val user: String,
     val serializer: CookieSerializer = InMemoryCookieSerializer,
-    baseURL:String = "https://jxw.sylu.edu.cn",
+    baseURL: String = "https://jxw.sylu.edu.cn",
 ) {
     internal val client: NetWorkClient = NetWorkClient(baseURL, serializer)
 
     private var password: String? = null
 
     //业务区
+
+    suspend fun submitRelatedQuestions(item: RelatedQuestions) {
+        kotlin.runCatching {
+            client.execute("/xspjgl/xspj_tjXspj.html?gnmkdm=N401605&su=$user") {
+                post(
+                    buildMap {
+                        putAll(
+                            arrayOf(
+                                "ztpjbl" to "100",
+                                "jszdpjbl" to "0",
+                                "xykzpjbl" to "0",
+                                "jxb_id" to item.source.jxb_id,
+                                "kch_id" to item.source.kch_id,
+                                "jgh_id" to item.source.jgh_id,
+                                "xsdm" to item.source.xsdm,
+                                "modelList[0].pjmbmcb_id" to item.pyID,
+                                "modelList[0].pjdxdm" to "01",
+                                "modelList[0].fxzgf" to "",
+                                "modelList[0].py" to "老师很好，谢谢老师",
+                                "modelList[0].xspfb_id" to item.xspfb_id,
+                            )
+                        )
+                        item.forEachIndexed { index, relatedQuestion ->
+                            val prefix = "modelList[0].xspjList[0].childXspjList[$index]."
+                            putAll(
+                                arrayOf(
+                                    "${prefix}pfdjdmxmb_id" to relatedQuestion.selected.pfdjdmxmb,
+                                    "${prefix}pjzbxm_id" to relatedQuestion.pjzbxm_id,
+                                    "${prefix}pfdjdmb_id" to relatedQuestion.pfdjdmb_id,
+                                    "${prefix}zsmbmcb_id" to relatedQuestion.zsmbmcb_id,
+                                )
+                            )
+                        }
+                        putAll(
+                            arrayOf(
+                                "modelList[0].xspjList[0].pjzbxm_id" to item.pjzbxm_id,
+                                "modelList[0].pjzt" to "1",
+                                "tjzt" to "0"
+                            )
+                        )
+                    }.asFormBody()
+                )
+            }.body!!.string().apply {
+                check(equals("\"评价保存成功\"") && equals("\"提交成功\"")) {
+                    this
+                }
+            }
+
+        }.onFailure {
+            serializer.clear()
+            throw DataFetchedException("评价拉取失败!", it)
+        }
+    }
+
+    suspend fun getRelatedQuestions(item: UnRelatedItem): RelatedQuestions {
+        return kotlin.runCatching {
+            val body = client.execute("/xspjgl/xspj_cxXspjDisplay.html?gnmkdm=N401605&su=$user") {
+                post(
+                    mapOf(
+                        "jxb_id" to item.jxb_id,
+                        "kch_id" to item.kch_id,
+                        "jgh_id" to item.jgh_id,
+                        "xsdm" to item.xsdm,
+                        "pjmbmcb_id" to "",
+                        "sfcjlrjs" to "1"
+                    ).asFormBody()
+                )
+            }.asHTML()
+
+            return@runCatching RelatedQuestions(
+                source = item,
+                xspfb_id = body.getElementsByAttribute("data-xspfb_id")[0].attr("data-xspfb_id"),
+                pjzbxm_id = body.getElementsByAttribute("data-pjzbxm_id")[0].attr("data-pjzbxm_id"),
+                pyID = body.getElementsByTag("textarea")[0].attr("id").split("_")[0]
+            ).apply {
+                addAll(
+                    body.getElementsByClass("tr-xspj").map { element ->
+                        RelatedQuestion(
+                            desc = element.getElementsByAttributeValue("style", "width: 400px;")[0].text(),
+                            choices = element.getElementsByTag("label").map {
+                                var k = it
+                                val value: String = k.text()
+                                k = k.getElementsByTag("input")[0] //label内只有一个input
+                                val pfdjdmxmb: String = k.attr("data-pfdjdmxmb_id")
+                                val name: String = k.attr("name")
+                                Choice(pfdjdmxmb, name, value)
+                            },
+                            zsmbmcb_id = element.attr("data-zsmbmcb_id"),
+                            pfdjdmb_id = element.attr("data-pfdjdmb_id"),
+                            pjzbxm_id = element.attr("data-pjzbxm_id")
+                        )
+                    }
+                )
+            }
+        }.onFailure {
+            serializer.clear()
+            throw DataFetchedException("评价拉取失败!", it)
+        }.getOrThrow()
+    }
+
+    suspend fun getAllUnRelatedItem(): List<UnRelatedItem> {
+        return kotlin.runCatching {
+            client.execute("/xspjgl/xspj_cxXspjIndex.html?doType=query&gnmkdm=N401605&su=$user") {
+                method(
+                    "POST", mapOf(
+                        "nd" to System.currentTimeMillis().toString(),
+                        "_search" to "false",
+                        "queryModel.showCount" to "5000",
+                        "queryModel.currentPage" to "1",
+                        "queryModel.sortName:" to "",
+                        "queryModel.sortOrder" to "asc",
+                        "time" to "0"
+                    ).asFormBody()
+                )
+            }.asJSONBean<List<UnRelatedItem>> {
+                this.jsonObject["items"]!!
+            }
+//                .filter { it.isSubmit().not() }
+        }.onFailure {
+            serializer.clear()
+            throw DataFetchedException("评价信息拉取失败!", it)
+        }.getOrThrow()
+    }
+
+
     suspend fun getUserProfile(): UserProfile {
 
         return kotlin.runCatching {
@@ -52,7 +176,7 @@ class SyluUser(
             )
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("个人信息拉取失败!",it)
+            throw DataFetchedException("个人信息拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -82,7 +206,7 @@ class SyluUser(
             return@runCatching SchoolCalender(start, end)
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("校历拉取失败!",it)
+            throw DataFetchedException("校历拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -130,7 +254,7 @@ class SyluUser(
             )
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("学期信息拉取失败!",it)
+            throw DataFetchedException("学期信息拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -154,7 +278,7 @@ class SyluUser(
             }
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("考试信息拉取失败!",it)
+            throw DataFetchedException("考试信息拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -183,7 +307,7 @@ class SyluUser(
             return@runCatching rtn
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("考试详情拉取失败!",it)
+            throw DataFetchedException("考试详情拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -200,7 +324,7 @@ class SyluUser(
             }
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("课程表拉取失败!",it)
+            throw DataFetchedException("课程表拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -228,7 +352,7 @@ class SyluUser(
             return@runCatching rtn
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("绩点拉取失败!",it)
+            throw DataFetchedException("绩点拉取失败!", it)
         }.getOrThrow()
     }
 
@@ -261,7 +385,7 @@ class SyluUser(
     }
 
     private suspend fun login(
-        pass: String, captcha: String? = null, captchaHandler: (suspend (a: ByteArray) -> String)? = null
+        pass: String, captcha: String? = null, captchaHandler: (suspend (a: ByteArray) -> String)? = null,
     ) {
         log.i("${user}开始获取RSA公钥")
         val param = kotlin.runCatching {

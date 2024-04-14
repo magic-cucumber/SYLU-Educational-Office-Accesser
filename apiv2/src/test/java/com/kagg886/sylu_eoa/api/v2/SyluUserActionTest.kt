@@ -23,6 +23,22 @@ class SyluUserActionTest {
     }
 
     @Test
+    fun testQuestionsInfo() = runBlocking {
+        //TODO 等待评价信息开放后再测试
+        log.i(user.getRelatedQuestions(user.getAllUnRelatedItem()[0]).toString())
+    }
+
+    @Test
+    fun testSubmitQuestion() = runBlocking {
+
+    }
+
+    @Test
+    fun testUnRelatedItem() = runBlocking {
+        log.i(user.getAllUnRelatedItem().toString())
+    }
+
+    @Test
     fun testSchoolCalender() = runBlocking {
         log.i(user.getSchoolCalender().toString())
     }
