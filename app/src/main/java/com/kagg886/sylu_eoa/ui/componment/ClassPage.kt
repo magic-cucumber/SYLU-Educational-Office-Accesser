@@ -21,10 +21,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
-import com.kagg886.sylu_eoa.getApp
-import com.kagg886.sylu_eoa.screen.LocalMenuProvider
-import com.kagg886.sylu_eoa.screen.LocalNavController
-import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.theme.Typography
 import java.time.LocalDate
 import java.time.LocalTime

@@ -1,47 +1,34 @@
 package com.kagg886.sylu_eoa.screen
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.kagg886.sylu_eoa.R
-import com.kagg886.sylu_eoa.ui.theme.Typography
 import com.kagg886.sylu_eoa.util.PageConfig
-import com.kagg886.sylu_eoa.util.contains
 
 
 val LocalNavController = compositionLocalOf<NavHostController> {
     error("NavController not provided")
 }
-
-val LocalMenuProvider = compositionLocalOf<MutableList<MenuItem>> {
-    error("LocalMenuProvider not provided")
-}
-
 val LocalFABProvider = compositionLocalOf<MutableState<(@Composable () -> Unit)?>> {
     error("LocalFABProvider not provided")
 }
 
-data class MenuItem(val s: String, val click: () -> Unit)
+val LocalTopBar = compositionLocalOf<MutableState<(@Composable () -> Unit)?>> {
+    error("LocalTopBar not provided")
+}
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("UnusedContentLambdaTargetStateParameter")
 @Composable
 fun MainScreen() {
 
@@ -49,13 +36,14 @@ fun MainScreen() {
 
     val reg by nav.currentBackStackEntryAsState()
 
-    val menu = remember {
-        mutableStateListOf<MenuItem>()
-    }
-
-    CompositionLocalProvider(LocalFABProvider provides remember {
-        mutableStateOf(null)
-    }) {
+    CompositionLocalProvider(
+        LocalFABProvider provides remember {
+            mutableStateOf(null)
+        },
+        LocalTopBar provides remember {
+            mutableStateOf(null)
+        },
+    ) {
         Scaffold(bottomBar = {
             NavigationBar {
                 PageConfig.nav.forEach { entry ->
@@ -78,65 +66,24 @@ fun MainScreen() {
                 }
             }
         }, topBar = {
-            TopAppBar(title = {
-                Column {
-                    Text(LocalContext.current.getString(R.string.app_name), style = Typography.titleLarge)
-                }
-            }, actions = {
-                var expanded by remember { mutableStateOf(false) }
+            val top by LocalTopBar.current
 
-                AnimatedVisibility(
-                    visible = menu.isNotEmpty(),
-                    enter = slideInHorizontally(tween(300), initialOffsetX = { it / 2 }) + fadeIn(tween(300)),
-                    exit = slideOutHorizontally(tween(300), targetOffsetX = { it / 2 }) + fadeOut(tween(300))
-                ) {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(imageVector = Icons.Outlined.MoreVert, contentDescription = "")
-                    }
+            val state = remember(top) {
+                top.hashCode()
+            }
+            AnimatedContent(
+                targetState = state,
+                label = "topbar",
+                transitionSpec = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down
+                    ) togetherWith slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down
+                    )
                 }
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                ) {
-                    menu.forEach {
-                        DropdownMenuItem(text = { Text(text = it.s) }, onClick = {
-                            expanded = false
-                            it.click()
-                        })
-                    }
-                }
-//            if (menu.value != null) {
-//                var expanded by remember { mutableStateOf(false) }
-//
-//                DropdownMenu(
-//                    expanded = expanded,
-//                    onDismissRequest = { expanded = false },
-//                ) {
-//                    menu.value!!()
-//                }
-//            }
-            }, navigationIcon = {
-                val currentRoute by nav.currentBackStackEntryAsState()
-                AnimatedVisibility(
-                    visible = !PageConfig.nav.contains(currentRoute?.destination?.route ?: PageConfig.DEFAULT_ROUTER),
-                    enter = slideInHorizontally(tween(300)) + fadeIn(tween(300)),
-                    exit = slideOutHorizontally(tween(300)) + fadeOut(tween(300))
-                ) {
-                    Row {
-                        IconButton(onClick = {
-                            nav.popBackStack()
-                        }) {
-                            Icon(imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = "")
-                        }
-
-                        IconButton(onClick = {
-                            nav.navigate(PageConfig.DEFAULT_ROUTER)
-                        }) {
-                            Icon(imageVector = Icons.Outlined.Home, contentDescription = "")
-                        }
-                    }
-                }
-            })
+            ) { _ ->
+                top?.invoke()
+            }
         }, floatingActionButton = {
             var showing by remember {
                 mutableStateOf(false)
@@ -158,17 +105,8 @@ fun MainScreen() {
                 }
             }
         }) {
-            //enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
-            //        { fadeIn(animationSpec = tween(700)) },
-            //    exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
-            //        { fadeOut(animationSpec = tween(700)) },
-            //    popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
-            //        enterTransition,
-            //    popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
-            //        exitTransition,
             CompositionLocalProvider(
                 LocalNavController provides nav,
-                LocalMenuProvider provides menu,
             ) {
                 NavHost(
                     navController = nav,
@@ -178,12 +116,10 @@ fun MainScreen() {
                         .fillMaxSize(),
 
                     enterTransition = {
-                        scaleIn(tween(300)) + fadeIn(animationSpec = tween(300))
-//                fadeIn(animationSpec = tween(500))
+                        fadeIn(animationSpec = tween(300))
                     },
                     exitTransition = {
-                        scaleOut(tween(300)) + fadeOut(animationSpec = tween(300))
-//                expandIn(tween(500), expandFrom = Alignment.Center)
+                        fadeOut(animationSpec = tween(1))
                     }
                 ) {
                     PageConfig.allPage.forEach { entry ->

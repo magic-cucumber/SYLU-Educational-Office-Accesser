@@ -1,6 +1,5 @@
 package com.kagg886.sylu_eoa.screen.page
 
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,6 +21,7 @@ import com.kagg886.sylu_eoa.api.v2.bean.ExamStatus.*
 import com.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
 import com.kagg886.sylu_eoa.api.v2.bean.findListByTerm
 import com.kagg886.sylu_eoa.screen.LocalFABProvider
+import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
 import com.kagg886.sylu_eoa.ui.componment.Loading
 import com.kagg886.sylu_eoa.ui.model.LoadingState
@@ -328,22 +327,25 @@ fun PickerContainer() {
                                     show = false
                                     pickerViewModel.setCurrentTermPicker(it)
                                 },
-                                colors = if (it == current!!) ListItemDefaults.colors(containerColor = Color.Cyan) else ListItemDefaults.colors()
+                                colors = if (it == current) ListItemDefaults.colors(containerColor = Color.Cyan) else ListItemDefaults.colors()
                             )
                         }
                     }
                 }
             }
-
-            Text(current.toString(),
-                style = Typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        show = true
-                    }
-                    .padding(top = 10.dp, bottom = 20.dp))
+            var top by LocalTopBar.current
+            LaunchedEffect(key1 = Unit, block = {
+                top = {
+                    TopAppBar(title = {
+                        Text(current.toString(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    show = true
+                                })
+                    })
+                }
+            })
         }
 
         LoadingState.FAILED -> {

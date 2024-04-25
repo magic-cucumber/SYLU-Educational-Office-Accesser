@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,12 +13,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelStoreOwner
@@ -26,10 +28,7 @@ import com.kagg886.sylu_eoa.MainActivity
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
 import com.kagg886.sylu_eoa.getApp
-import com.kagg886.sylu_eoa.screen.LocalFABProvider
-import com.kagg886.sylu_eoa.screen.LocalMenuProvider
-import com.kagg886.sylu_eoa.screen.LocalNavController
-import com.kagg886.sylu_eoa.screen.MenuItem
+import com.kagg886.sylu_eoa.screen.*
 import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.componment.ClassPage
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
@@ -51,6 +50,13 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneOffset
+import kotlin.IllegalStateException
+import kotlin.OptIn
+import kotlin.Pair
+import kotlin.String
+import kotlin.Unit
+import kotlin.apply
+import kotlin.to
 
 private val log = createLogger("MainPage")
 
@@ -109,17 +115,13 @@ fun Picker() {
         }
     }
 
-    Text(
-        "第${currentIndex}周，共${all}周",
+    Text("第${currentIndex}周，共${all}周",
         style = Typography.titleMedium,
-        textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
                 choosePick = true
-            }
-            .padding(top = 10.dp, bottom = 20.dp)
-    )
+            })
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -154,8 +156,7 @@ fun ClassTable() {
     }
 
     HorizontalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxSize()
+        state = pagerState, modifier = Modifier.fillMaxSize()
     ) { index -> //从0开始
         val week by remember(index) {
             mutableStateOf(calender!!.start.plusWeeks(index.toLong()))
@@ -175,6 +176,7 @@ private sealed interface Result {
     data object DenyAll : Deny
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassTablePage() {
     val tableModel: ClassTableViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
@@ -187,18 +189,13 @@ fun ClassTablePage() {
     val state1 by calenderViewModel.loading.collectAsState()
     val err by tableModel.error.collectAsState()
 
-
-    val action = LocalMenuProvider.current
-
-
     var promise by remember {
         mutableStateOf<Promise<List<String>, Result>?>(null)
     }
 
     val avt = LocalContext.current as MainActivity
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-        onResult = {
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions(), onResult = {
             val bool = it.map { (_, v) -> v }.toList()
             var bool1 = true
             bool.forEach { it1 ->
@@ -215,8 +212,7 @@ fun ClassTablePage() {
                 return@rememberLauncherForActivityResult
             }
             promise!!.resolve(Result.Grant)
-        }
-    )
+        })
 
     promise = Promise {
         launcher.launch(it!!.toTypedArray())
@@ -256,8 +252,7 @@ fun ClassTablePage() {
                 CoroutineScope(Dispatchers.IO).launch {
                     val code = promise!!.startForResult(
                         listOf(
-                            android.Manifest.permission.READ_CALENDAR,
-                            android.Manifest.permission.WRITE_CALENDAR
+                            android.Manifest.permission.READ_CALENDAR, android.Manifest.permission.WRITE_CALENDAR
                         )
                     )
                     if (code is Result.Deny) {
@@ -336,18 +331,30 @@ fun ClassTablePage() {
         SUCCESS -> {
             if (state1 == SUCCESS) {
                 Column {
-                    Picker()
-
-                    //成功加载后才弹出图标
-                    DisposableEffect(key1 = LocalNavController.current.currentDestination!!.route) {
-                        action.add(MenuItem("导出到日历") {
-                            dialog = true
-                        })
-                        //跳出页面时清除主页图标
-                        onDispose {
-                            action.clear()
+                    var top by LocalTopBar.current
+                    LaunchedEffect(key1 = Unit, block = {
+                        top = {
+                            TopAppBar(title = {
+                                Picker()
+                            }, actions = {
+                                var expanded by remember {
+                                    mutableStateOf(false)
+                                }
+                                IconButton(onClick = { expanded = true }) {
+                                    Icon(imageVector = Icons.Outlined.MoreVert, contentDescription = "")
+                                }
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false },
+                                ) {
+                                    DropdownMenuItem(text = { Text(text = "导出到日历") }, onClick = {
+                                        expanded = false
+                                        dialog = true
+                                    })
+                                }
+                            })
                         }
-                    }
+                    })
                     ClassTable()
                 }
             } else {

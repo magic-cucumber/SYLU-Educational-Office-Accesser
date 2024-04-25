@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.LocalThemeTypo
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.screen.LocalNavController
+import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.componment.Details
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
@@ -37,8 +38,10 @@ import java.time.LocalDate
 
 @Composable
 fun MePage() {
-    val nav = LocalNavController.current
-    val avt = LocalContext.current
+    var top by LocalTopBar.current
+    LaunchedEffect(key1 = Unit, block = {
+        top = null
+    })
     val userModel: SyluUserViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
     val profileModel: ProfileViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
 

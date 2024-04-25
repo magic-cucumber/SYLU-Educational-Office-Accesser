@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.R
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
+import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.ui.componment.ClassDialog
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
 import com.kagg886.sylu_eoa.ui.componment.Loading
@@ -30,7 +31,6 @@ import com.kagg886.sylu_eoa.ui.theme.Typography
 import com.pushpal.jetlime.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -48,13 +48,24 @@ fun getTips(): Pair<String, String> {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainPage() {
+    var top by LocalTopBar.current
+    LaunchedEffect(key1 = Unit, block = {
+        top = {
+            TopAppBar(title = {
+                Text(text = "首页")
+            })
+        }
+    })
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .weight(0.2f, fill = true)
-            .padding(start = 25.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.2f, fill = true)
+                .padding(start = 25.dp)
+        ) {
             val (a, b) = getTips()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = Icons.Outlined.Email, contentDescription = "")
@@ -63,9 +74,11 @@ fun MainPage() {
             Text(b, modifier = Modifier.padding(top = 20.dp))
         }
         Box(modifier = Modifier.weight(0.8f, fill = true), contentAlignment = Alignment.TopCenter) {
-            Card(modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .fillMaxHeight()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .fillMaxHeight()
+            ) {
                 ClassSummary()
             }
         }
@@ -144,8 +157,10 @@ fun TimeLineTable(data: List<ClassUnit>) {
         }
     }
     val list by remember(currentTime) {
-        mutableStateOf(ItemsList(data.findClassByWeek(calender!!.currentWeek())
-            .filter { it.dayInWeek.toInt() == currentTime.dayOfWeek.value }))
+        mutableStateOf(
+            ItemsList(data.findClassByWeek(calender!!.currentWeek())
+                .filter { it.dayInWeek.toInt() == currentTime.dayOfWeek.value })
+        )
     }
 
     if (list.items.isEmpty()) {
@@ -171,7 +186,7 @@ fun TimeLineTable(data: List<ClassUnit>) {
         }
 
         LaunchedEffect(key1 = currentTime) {
-            type = getTypeInClass(unit,currentTime.toLocalTime())
+            type = getTypeInClass(unit, currentTime.toLocalTime())
         }
         JetLimeEvent(
             style = JetLimeEventDefaults.eventStyle(
@@ -206,7 +221,13 @@ fun TimeLineTable(data: List<ClassUnit>) {
                 )
             ) {
                 Column {
-                    Text(unit.name, style = Typography.bodyLarge, maxLines = 3, overflow = TextOverflow.Ellipsis, color = if (unit.isDegreeProgram) Color.Red else Color.Unspecified)
+                    Text(
+                        unit.name,
+                        style = Typography.bodyLarge,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (unit.isDegreeProgram) Color.Red else Color.Unspecified
+                    )
                     Text(unit.room, style = Typography.bodyMedium)
                     Text(getTime(unit).toString(), style = Typography.bodySmall)
                 }

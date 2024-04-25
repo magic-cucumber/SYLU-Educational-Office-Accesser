@@ -92,7 +92,7 @@ fun SecondClassPage() {
             if (dialog) {
                 AlertDialog(onDismissRequest = {
                     if (state is SecondClassPageUiState.NeedLogin) {
-                        nav.navigate("ToolPage")
+                        nav.popBackStack()
                     }
                     dialog = false
                 }, confirmButton = {
