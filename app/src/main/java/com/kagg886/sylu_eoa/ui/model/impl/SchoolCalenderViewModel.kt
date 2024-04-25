@@ -8,7 +8,9 @@ import com.kagg886.sylu_eoa.ui.model.BaseViewModel
 import com.kagg886.sylu_eoa.util.DayExpired
 import com.kagg886.sylu_eoa.util.SchoolCalenderBean
 import com.kagg886.sylu_eoa.util.SchoolCalenderBeanExpire
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -24,16 +26,18 @@ class SchoolCalenderViewModel : BaseViewModel<SchoolCalender>() {
     }
 
     private val _currentWeekIndex = MutableStateFlow(0)
+    private val _defaultWeekIndex = MutableStateFlow(0)
     private val _all = MutableStateFlow(0)
 
     val currentWeekIndex = _currentWeekIndex.asStateFlow()
+    val defaultWeekIndex = _defaultWeekIndex.asStateFlow()
     val all = _all.asStateFlow()
 
     override suspend fun onDataFetch(): SchoolCalender? {
         return null;
     }
 
-    fun setCurrentSelectedWeek(w:Int) {
+    fun setCurrentSelectedWeek(w: Int) {
         _currentWeekIndex.value = w
     }
 
@@ -61,6 +65,7 @@ class SchoolCalenderViewModel : BaseViewModel<SchoolCalender>() {
     override fun setDataLoadSuccess(new: SchoolCalender?) {
         super.setDataLoadSuccess(new)
         _currentWeekIndex.value = new!!.currentWeek()
+        _defaultWeekIndex.value = new.currentWeek()
         _all.value = new.start.until(new.end, ChronoUnit.WEEKS).toInt() + 1
     }
 }

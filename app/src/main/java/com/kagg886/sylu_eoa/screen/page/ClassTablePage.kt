@@ -60,23 +60,20 @@ fun Picker() {
     val calenderViewModel: SchoolCalenderViewModel =
         viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
     val currentIndex by calenderViewModel.currentWeekIndex.collectAsState()
+    val defaultIndex by calenderViewModel.defaultWeekIndex.collectAsState()
     val all by calenderViewModel.all.collectAsState()
 
-
-    val init by remember {
-        mutableIntStateOf(calenderViewModel.currentWeekIndex.value)
-    }
 
     var choosePick by remember {
         mutableStateOf(false)
     }
 
-    if (currentIndex != init) {
+    if (currentIndex != defaultIndex) {
         var fab by LocalFABProvider.current
         DisposableEffect(key1 = Unit, effect = {
             fab = {
                 FloatingActionButton(onClick = {
-                    calenderViewModel.setCurrentSelectedWeek(init)
+                    calenderViewModel.setCurrentSelectedWeek(defaultIndex)
                 }) {
                     Text(text = "今")
                 }
@@ -94,7 +91,15 @@ fun Picker() {
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items((1..all).toList()) {
                     ListItem(headlineContent = {
-                        Text("第${it}周${if (it == init) "(当前周)" else ""}")
+                        Text(
+                            "第${it}周".plus(
+                                when (it) {
+                                    defaultIndex -> "(本周)"
+                                    currentIndex -> "(当前选择周)"
+                                    else -> ""
+                                }
+                            )
+                        )
                     }, modifier = Modifier.clickable {
                         calenderViewModel.setCurrentSelectedWeek(it)
                         choosePick = false
@@ -163,12 +168,13 @@ fun ClassTable() {
 }
 
 private sealed interface Result {
-    data object Grant:Result
+    data object Grant : Result
 
-    sealed interface Deny:Result
-    data object DenyOnce:Deny
-    data object DenyAll:Deny
+    sealed interface Deny : Result
+    data object DenyOnce : Deny
+    data object DenyAll : Deny
 }
+
 @Composable
 fun ClassTablePage() {
     val tableModel: ClassTableViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
@@ -186,14 +192,14 @@ fun ClassTablePage() {
 
 
     var promise by remember {
-        mutableStateOf<Promise<List<String>,Result>?>(null)
+        mutableStateOf<Promise<List<String>, Result>?>(null)
     }
 
     val avt = LocalContext.current as MainActivity
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = {
-            val bool = it.map { (_,v)->v }.toList()
+            val bool = it.map { (_, v) -> v }.toList()
             var bool1 = true
             bool.forEach { it1 ->
                 bool1 = it1 && bool1
@@ -226,9 +232,9 @@ fun ClassTablePage() {
 
     if (complete != -1) {
         AlertDialog(onDismissRequest = {
-                                       if (complete == 1) {
-                                           complete = -1
-                                       }
+            if (complete == 1) {
+                complete = -1
+            }
         }, confirmButton = {}, title = {
             Text(text = if (complete == 1) "导入完成！" else "导入中")
         }, text = {
@@ -248,10 +254,12 @@ fun ClassTablePage() {
             val calender by calenderViewModel.data.collectAsState()
             TextButton(onClick = {
                 CoroutineScope(Dispatchers.IO).launch {
-                    val code = promise!!.startForResult(listOf(
-                        android.Manifest.permission.READ_CALENDAR,
-                        android.Manifest.permission.WRITE_CALENDAR
-                    ))
+                    val code = promise!!.startForResult(
+                        listOf(
+                            android.Manifest.permission.READ_CALENDAR,
+                            android.Manifest.permission.WRITE_CALENDAR
+                        )
+                    )
                     if (code is Result.Deny) {
                         dialog = false
                         getApp().apply {
@@ -275,16 +283,26 @@ fun ClassTablePage() {
                                     for (day in 1..7) {
                                         //该天有课
                                         if (it.rangeAllTerm.contains(week) && day == it.dayInWeek.toInt()) {
-                                            val (start,end) = getTime(it)
-                                            l.add(Event(
-                                                title = it.name,
-                                                description = "${it.teacher}(${it.weekEachLesson})",
-                                                location = it.room,
-                                                startDate = LocalDateTime.of(calender!!.start.plusWeeks((week-1).toLong()).plusDays((day.toLong()-1) % 7),start).toInstant(
-                                                    ZoneOffset.of("+8")).toEpochMilli(),
-                                                endDate =LocalDateTime.of(calender!!.start.plusWeeks((week-1).toLong()).plusDays((day.toLong()-1) % 7),end).toInstant(
-                                                    ZoneOffset.of("+8")).toEpochMilli()
-                                            ))
+                                            val (start, end) = getTime(it)
+                                            l.add(
+                                                Event(
+                                                    title = it.name,
+                                                    description = "${it.teacher}(${it.weekEachLesson})",
+                                                    location = it.room,
+                                                    startDate = LocalDateTime.of(
+                                                        calender!!.start.plusWeeks((week - 1).toLong())
+                                                            .plusDays((day.toLong() - 1) % 7), start
+                                                    ).toInstant(
+                                                        ZoneOffset.of("+8")
+                                                    ).toEpochMilli(),
+                                                    endDate = LocalDateTime.of(
+                                                        calender!!.start.plusWeeks((week - 1).toLong())
+                                                            .plusDays((day.toLong() - 1) % 7), end
+                                                    ).toInstant(
+                                                        ZoneOffset.of("+8")
+                                                    ).toEpochMilli()
+                                                )
+                                            )
                                         }
                                     }
                                 }
@@ -321,7 +339,7 @@ fun ClassTablePage() {
                     Picker()
 
                     //成功加载后才弹出图标
-                    DisposableEffect(key1= LocalNavController.current.currentDestination!!.route) {
+                    DisposableEffect(key1 = LocalNavController.current.currentDestination!!.route) {
                         action.add(MenuItem("导出到日历") {
                             dialog = true
                         })
