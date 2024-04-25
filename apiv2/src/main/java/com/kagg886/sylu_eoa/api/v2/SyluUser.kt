@@ -95,7 +95,11 @@ class SyluUser(
                     ).asFormBody()
                 )
             }.asHTML()
-
+            with(body.select(".alert , .alert-error , .align-center , .bigger-180 , .red")) {
+                check(this.isEmpty()) {
+                    this[0].text()
+                }
+            }
             return@runCatching RelatedQuestions(
                 source = item,
                 xspfb_id = body.getElementsByAttribute("data-xspfb_id")[0].attr("data-xspfb_id"),
