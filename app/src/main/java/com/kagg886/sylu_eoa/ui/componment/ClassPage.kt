@@ -3,8 +3,11 @@ package com.kagg886.sylu_eoa.ui.componment
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -28,6 +31,14 @@ import java.time.LocalTime
 
 @Composable
 fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
+    if (list.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(imageVector = Icons.Outlined.Clear, contentDescription = "")
+                Text(text = "本周无课程!", style = Typography.labelLarge)
+            }
+        }
+    }
     val iconColor = if (isSystemInDarkTheme()) {
         Color.White
     } else {
