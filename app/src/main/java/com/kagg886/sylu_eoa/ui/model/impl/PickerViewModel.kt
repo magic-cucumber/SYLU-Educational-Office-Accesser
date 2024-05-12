@@ -26,7 +26,10 @@ class PickerViewModel : BaseViewModel<TermResult>() {
 
     private val _currentTermPicker = MutableStateFlow(TERM_ALL_PICKER)
 
+    private val _defaultTermPicker = MutableStateFlow(TERM_ALL_PICKER)
+
     val currentTermPicker = _currentTermPicker.asStateFlow()
+    val defaultTermPicker = _defaultTermPicker.asStateFlow()
 
     fun setCurrentTermPicker(l: TermPicker) {
         _currentTermPicker.value = l
@@ -42,6 +45,7 @@ class PickerViewModel : BaseViewModel<TermResult>() {
 
         val cd = json.decodeFromString<TermResult>(list)
         _currentTermPicker.value = cd.default
+        _defaultTermPicker.value = cd.default
         return cd
     }
 
@@ -53,6 +57,7 @@ class PickerViewModel : BaseViewModel<TermResult>() {
                 val list = user.getAllAvailableTerms()
 
                 _currentTermPicker.value = list.default
+                _defaultTermPicker.value = list.default
 
                 setDataLoadSuccess(list)
                 context.updateConfig(PickerBean, Json.encodeToString(list))

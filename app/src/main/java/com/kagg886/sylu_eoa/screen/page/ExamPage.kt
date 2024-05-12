@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Done
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -276,6 +279,7 @@ fun PickerContainer() {
 
     val data by pickerViewModel.data.collectAsState()
     val current by pickerViewModel.currentTermPicker.collectAsState()
+    val default by pickerViewModel.defaultTermPicker.collectAsState()
     val state by pickerViewModel.loading.collectAsState()
     val err by pickerViewModel.error.collectAsState()
     val user by userModel.data.collectAsState()
@@ -321,13 +325,23 @@ fun PickerContainer() {
                             .also { it.add(0, TERM_ALL_PICKER) }) {
                             ListItem(
                                 headlineContent = {
-                                    Text(it.toString())
+                                    Text("${it}")
+                                },
+                                leadingContent = {
+                                    when (it) {
+                                        current -> {
+                                            Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
+                                        }
+                                        default -> {
+                                            Icon(imageVector = Icons.Outlined.Home, contentDescription = "")
+                                        }
+                                    }
                                 },
                                 modifier = Modifier.clickable {
                                     show = false
                                     pickerViewModel.setCurrentTermPicker(it)
                                 },
-                                colors = if (it == current) ListItemDefaults.colors(containerColor = Color.Cyan) else ListItemDefaults.colors()
+//                                colors = if (it == current) ListItemDefaults.colors(containerColor = Color.Cyan) else ListItemDefaults.colors()
                             )
                         }
                     }
