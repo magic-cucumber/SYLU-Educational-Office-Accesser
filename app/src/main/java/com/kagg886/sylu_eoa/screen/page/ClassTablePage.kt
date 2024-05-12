@@ -1,14 +1,17 @@
 package com.kagg886.sylu_eoa.screen.page
 
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -20,15 +23,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastJoinToString
 import androidx.core.app.ActivityCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.MainActivity
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
+import com.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
 import com.kagg886.sylu_eoa.getApp
-import com.kagg886.sylu_eoa.screen.*
+import com.kagg886.sylu_eoa.screen.LocalFABProvider
+import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.componment.ClassPage
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
@@ -47,9 +53,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import net.fortuna.ical4j.data.CalendarBuilder
+import net.fortuna.ical4j.data.CalendarOutputter
+import net.fortuna.ical4j.model.Calendar
+import net.fortuna.ical4j.model.DateTime
+import net.fortuna.ical4j.model.TimeZone
+import net.fortuna.ical4j.model.component.VAlarm
+import net.fortuna.ical4j.model.component.VEvent
+import net.fortuna.ical4j.model.property.*
+import net.fortuna.ical4j.validate.ValidationEntry
+import java.io.File
+import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneOffset
+import java.util.*
 import kotlin.IllegalStateException
 import kotlin.OptIn
 import kotlin.Pair
@@ -218,10 +237,6 @@ fun ClassTablePage() {
         launcher.launch(it!!.toTypedArray())
     }
 
-    var dialog by remember {
-        mutableStateOf(false)
-    }
-
     var complete by remember {
         mutableIntStateOf(-1)
     }
@@ -237,15 +252,15 @@ fun ClassTablePage() {
             if (complete == 1) {
                 Text(text = "您可以卸载这个软件了！\n直到下学期课表发布...或者毕业了呢")
             } else {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                Loading(fullScreen = false)
             }
         })
     }
-
-    if (dialog) {
-        AlertDialog(onDismissRequest = { dialog = false }, confirmButton = {
+    var exportCalenderDialog by remember {
+        mutableStateOf(false)
+    }
+    if (exportCalenderDialog) {
+        AlertDialog(onDismissRequest = { exportCalenderDialog = false }, confirmButton = {
             val course by tableModel.data.collectAsState()
             val calender by calenderViewModel.data.collectAsState()
             TextButton(onClick = {
@@ -256,7 +271,7 @@ fun ClassTablePage() {
                         )
                     )
                     if (code is Result.Deny) {
-                        dialog = false
+                        exportCalenderDialog = false
                         getApp().apply {
                             toast("请手动前往设置页面授予日历权限!")
                             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -267,42 +282,14 @@ fun ClassTablePage() {
                         return@launch
                     }
                     if (code == Result.Grant) {
-                        dialog = false
+                        exportCalenderDialog = false
                         complete = 0
                         Calender("sylu_class_calender").apply {
                             clearEvents()
-                            insertEvents(course!!.flatMap {
-                                val l = mutableListOf<Event>()
-                                //计算什么时候有课
-                                for (week in 1..calender!!.count()) {
-                                    for (day in 1..7) {
-                                        //该天有课
-                                        if (it.rangeAllTerm.contains(week) && day == it.dayInWeek.toInt()) {
-                                            val (start, end) = getTime(it)
-                                            l.add(
-                                                Event(
-                                                    title = it.name,
-                                                    description = "${it.teacher}(${it.weekEachLesson})",
-                                                    location = it.room,
-                                                    startDate = LocalDateTime.of(
-                                                        calender!!.start.plusWeeks((week - 1).toLong())
-                                                            .plusDays((day.toLong() - 1) % 7), start
-                                                    ).toInstant(
-                                                        ZoneOffset.of("+8")
-                                                    ).toEpochMilli(),
-                                                    endDate = LocalDateTime.of(
-                                                        calender!!.start.plusWeeks((week - 1).toLong())
-                                                            .plusDays((day.toLong() - 1) % 7), end
-                                                    ).toInstant(
-                                                        ZoneOffset.of("+8")
-                                                    ).toEpochMilli()
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                                return@flatMap l
-                            }, getApp().getConfig(CalenderTipTime).first())
+                            insertEvents(
+                                course!!.flatMapToEvent(calender!!),
+                                getApp().getConfig(CalenderTipTime).first()
+                            )
                         }
                         complete = 1
                     }
@@ -316,6 +303,78 @@ fun ClassTablePage() {
             Text(text = "请先授予日历读取和写入权限，否则我们无法将课表写入到您的系统日历中")
         })
     }
+
+    var exportICSDialog by remember {
+        mutableStateOf(false)
+    }
+    if (exportICSDialog) {
+        val course by tableModel.data.collectAsState()
+        val calender by calenderViewModel.data.collectAsState()
+        AlertDialog(
+            onDismissRequest = { },
+            confirmButton = {},
+            title = { Text(text = "导出中...") },
+            text = { Loading(fullScreen = false) })
+
+        LaunchedEffect(key1 = Unit) {
+            val app = getApp()
+            val tip = app.getConfig(CalenderTipTime).first()
+            withContext(Dispatchers.IO) {
+                val calendar = Calendar()
+                calendar.properties.add(ProdId("-//Ben Fortuna//iCal4j 1.0//EN"))
+                calendar.properties.add(Version.VERSION_2_0)
+                calendar.properties.add(CalScale.GREGORIAN)
+                calendar.properties.add(XProperty("X-WR-TIMEZONE", TimeZone.getDefault().id))
+
+                course!!.flatMapToEvent(calender!!).forEach { course ->
+                    val event = VEvent(
+                        DateTime(course.startDate),
+                        DateTime(course.endDate),
+                        course.title
+                    )
+                    event.properties.add(Location(course.location))
+                    event.properties.add(Description(course.description))
+                    event.properties.add(Uid(UUID.randomUUID().toString()))
+                    val alarm = VAlarm(DateTime(course.startDate - tip.toLong()))
+                    alarm.properties.add(Description("alarm"))
+                    alarm.properties.add(Action.DISPLAY)
+                    event.alarms.add(alarm)
+
+                    calendar.components.add(event)
+                }
+
+                val result = calendar.validate()
+                check(!result.hasErrors()) {
+                    "导出ics文件失败!\n${
+                        result.entries.filter { it.severity == ValidationEntry.Severity.ERROR }.map {
+                            "${it.context}-->${it.message}"
+                        }.fastJoinToString("\n")
+                    }"
+                }
+
+                val file = File(app.externalCacheDir,"event.ics")
+                if (file.exists()) {
+                    file.delete()
+                }
+                file.parentFile!!.mkdirs()
+                file.createNewFile()
+
+                CalendarOutputter().output(calendar, FileOutputStream(file))
+
+
+                val intent = Intent("android.intent.action.SEND")
+                intent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+                intent.putExtra(
+                    "android.intent.extra.STREAM",
+                    FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
+                )
+                intent.setType("*/*")
+                app.startActivity(intent)
+                exportICSDialog = false
+            }
+        }
+    }
+
     when (state) {
         NORMAL -> {
             LaunchedEffect(key1 = Unit) {
@@ -349,7 +408,11 @@ fun ClassTablePage() {
                                 ) {
                                     DropdownMenuItem(text = { Text(text = "导出到日历") }, onClick = {
                                         expanded = false
-                                        dialog = true
+                                        exportCalenderDialog = true
+                                    })
+                                    DropdownMenuItem(text = { Text(text = "导出到ICS") }, onClick = {
+                                        expanded = false
+                                        exportICSDialog = true
                                     })
                                 }
                             })
@@ -388,5 +451,41 @@ private fun getTime(u: ClassUnit): Pair<LocalTime, LocalTime> {
         5 -> LocalTime.of(17, 0) to LocalTime.of(18, 40)
         6 -> LocalTime.of(19, 0) to LocalTime.of(20, 40)
         else -> throw IllegalStateException("no this class")
+    }
+}
+
+
+private fun List<ClassUnit>.flatMapToEvent(calender: SchoolCalender): List<Event> {
+    return flatMap {
+        val l = mutableListOf<Event>()
+        //计算什么时候有课
+        for (week in 1..calender!!.count()) {
+            for (day in 1..7) {
+                //该天有课
+                if (it.rangeAllTerm.contains(week) && day == it.dayInWeek.toInt()) {
+                    val (start, end) = getTime(it)
+                    l.add(
+                        Event(
+                            title = it.name,
+                            description = "${it.teacher}(${it.weekEachLesson})",
+                            location = it.room,
+                            startDate = LocalDateTime.of(
+                                calender!!.start.plusWeeks((week - 1).toLong())
+                                    .plusDays((day.toLong() - 1) % 7), start
+                            ).toInstant(
+                                ZoneOffset.of("+8")
+                            ).toEpochMilli(),
+                            endDate = LocalDateTime.of(
+                                calender!!.start.plusWeeks((week - 1).toLong())
+                                    .plusDays((day.toLong() - 1) % 7), end
+                            ).toInstant(
+                                ZoneOffset.of("+8")
+                            ).toEpochMilli()
+                        )
+                    )
+                }
+            }
+        }
+        return@flatMap l
     }
 }
