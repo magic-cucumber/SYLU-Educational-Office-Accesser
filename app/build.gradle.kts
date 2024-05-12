@@ -13,8 +13,8 @@ android {
         applicationId = "com.kagg886.sylu_eoa"
         minSdk = 28
         targetSdk = 34
-        versionCode = 22
-        versionName = "3.4"
+        versionCode = 23
+        versionName = "3.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
