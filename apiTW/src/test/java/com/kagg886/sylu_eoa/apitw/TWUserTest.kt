@@ -1,19 +1,17 @@
 package com.kagg886.sylu_eoa.apitw
 
+import com.kagg886.sylu_eoa.api.tw.SecondClassData
+import com.kagg886.sylu_eoa.api.tw.SecondClassDataSummary
+import com.kagg886.sylu_eoa.api.tw.getTWUser
 import com.kagg886.sylu_eoa.api.v2.SyluUser
 import com.kagg886.utils.LoggerReceiver
 import com.kagg886.utils.createLogger
 import com.kagg886.utils.registryLogReceiver
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.descriptors.mapSerialDescriptor
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.serializer
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.io.File

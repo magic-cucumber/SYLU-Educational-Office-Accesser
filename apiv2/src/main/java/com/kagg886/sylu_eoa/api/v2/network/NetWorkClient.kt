@@ -12,7 +12,7 @@ private val logger = createLogger("Network")
 
 class NetWorkClient(
     private val baseURL: String,
-    private val serializer: CookieSerializer = InMemoryCookieSerializer
+    private val serializer: CookieSerializer = InMemoryCookieSerializer,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO) + CoroutineName("Network") + SupervisorJob()
 
@@ -36,7 +36,7 @@ class NetWorkClient(
         }).build()
 
     suspend fun execute(
-        sub: String, builder: Request.Builder.() -> Request.Builder = { Request.Builder().url(baseURL + sub) }
+        sub: String, builder: Request.Builder.() -> Request.Builder = { this },
     ): Response {
         return scope.async {
             client.newCall(

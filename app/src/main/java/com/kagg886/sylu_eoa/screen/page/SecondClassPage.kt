@@ -33,10 +33,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.App
 import com.kagg886.sylu_eoa.api.v2.SyluUser
-import com.kagg886.sylu_eoa.apitw.SecondClassData
-import com.kagg886.sylu_eoa.apitw.SecondClassDataSummary
-import com.kagg886.sylu_eoa.apitw.TWUser
-import com.kagg886.sylu_eoa.apitw.getTWUser
+import com.kagg886.sylu_eoa.api.tw.SecondClassData
+import com.kagg886.sylu_eoa.api.tw.SecondClassDataSummary
+import com.kagg886.sylu_eoa.api.tw.TWUser
+import com.kagg886.sylu_eoa.api.tw.getTWUser
 import com.kagg886.sylu_eoa.openURL
 import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.ui.componment.ComposeRadarView

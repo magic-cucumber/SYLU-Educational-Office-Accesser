@@ -1,4 +1,4 @@
-package com.kagg886.sylu_eoa.apitw
+package com.kagg886.sylu_eoa.api.tw
 
 import com.kagg886.sylu_eoa.api.v2.SyluUser
 import com.kagg886.sylu_eoa.api.v2.network.NetWorkClient
@@ -86,14 +86,16 @@ class TWUser(val user: String, val net: NetWorkClient) {
             val info: Element = data[i]
 
             val elements: Elements = info.getElementsByTag("td")
-            map[elements[3].text()].add(SecondClassData(
+            map[elements[3].text()].add(
+                SecondClassData(
                 elements[0].text(),
                 elements[1].text(),  //申请单位
                 elements[2].text(),  //时间
                 elements[4].text(),  //身份
                 elements[5].text().toInt(),  //参与人数
                 elements[7].text().toDouble()
-            ))
+            )
+            )
         }
 
         return map

@@ -1,4 +1,4 @@
-package com.kagg886.sylu_eoa.apitw
+package com.kagg886.sylu_eoa.api.tw
 
 import kotlinx.serialization.Serializable
 

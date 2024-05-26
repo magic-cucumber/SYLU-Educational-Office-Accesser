@@ -1,6 +1,5 @@
 package com.kagg886.sylu_eoa.api.v2.bean
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
