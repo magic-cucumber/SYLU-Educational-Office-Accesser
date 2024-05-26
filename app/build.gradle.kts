@@ -98,4 +98,5 @@ dependencies {
     implementation(project(":apiv2"))
     implementation(project(":apiTW"))
     implementation(project(":utils"))
+    implementation(project(":apiSeats"))
 }

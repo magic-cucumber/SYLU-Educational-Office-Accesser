@@ -55,6 +55,22 @@ fun ToolPage() {
         BigInnovation()
         HorizontalDivider()
         SecondClassData()
+        HorizontalDivider()
+        LibraryReverser()
+    }
+}
+
+@Composable
+fun LibraryReverser() {
+    val nav = LocalNavController.current
+    SettingsMenuLink(title = {
+        Text(text = "图书馆自助工具")
+    }, subtitle = {
+        Text(text = "预约图书馆以及签到")
+    }, modifier = Modifier.height(75.dp), icon = {
+        Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
+    }) {
+        nav.navigate("LibraryReverser")
     }
 }
 
