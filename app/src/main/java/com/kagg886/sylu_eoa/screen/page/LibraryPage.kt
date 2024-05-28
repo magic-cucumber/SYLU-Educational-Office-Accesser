@@ -41,7 +41,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import java.time.*
-import kotlin.math.abs
 import kotlin.math.absoluteValue
 
 @Composable
@@ -129,12 +128,8 @@ fun LibraryPageContent(manager: SeatManager, query: SeatQueryModel) {
                             Icon(imageVector = Icons.Outlined.ThumbUp, contentDescription = "")
                         }, supportingContent = {
                             val usage = remember(it) {
-                                String.format("%.2f", (1 - it.usage.filter {
-                                    it.end > LocalDateTime.now()
-                                }.sumOf {
-                                    val start = if (it.start < LocalDateTime.now()) LocalDateTime.now() else it.start
-                                    abs(Duration.between(it.end, start).seconds)
-                                } / 86400.0) * 100) //获取空闲率
+                                val duration = Duration.between(LocalTime.now(), LocalTime.of(22, 0)).seconds.absoluteValue / 60 //距离今天结束还有多少分钟
+                                String.format("%.2f", it.freeTime.toFloat() / duration * 100.0)
                             }
                             Text(text = "空闲率：$usage%")
                         })

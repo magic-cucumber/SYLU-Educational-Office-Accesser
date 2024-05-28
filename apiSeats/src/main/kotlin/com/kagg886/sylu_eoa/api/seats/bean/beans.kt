@@ -11,6 +11,7 @@ import java.time.LocalTime
 data class Seat(
     val title: String,
     @SerialName("ts") val usage: List<SeatUsage>,
+    val freeTime: Int, //空闲时间，单位为分钟
     internal val devId: Long, //devId，用于提交预约信息
 )
 
@@ -69,7 +70,7 @@ data class SeatQueryModel(
         check(startTime >= LocalTime.of(6, 0)) {
             "开始日期不得小于六点！"
         }
-        check(endTime < LocalTime.of(22, 0)) {
+        check(endTime <= LocalTime.of(22, 0)) {
             "结束日期不得大于22点"
         }
         check(date >= LocalDate.now()) {
