@@ -52,9 +52,9 @@ data class ExamItem(
 
     val examStatus by lazy {
         if (Double.parseDouble(absoluteScore).compareTo(60) == -1) {
-            return@lazy ExamStatus.FAILED;
+            return@lazy ExamStatus.FAILED
         } else {
-            val ksxzdm = Integer.parseInt(completionCode);
+            val ksxzdm = Integer.parseInt(completionCode)
             if (ksxzdm == 11 || ksxzdm == 16 || ksxzdm == 17) {
                 return@lazy ExamStatus.RE_SUCCESS
             }
@@ -79,7 +79,7 @@ fun List<ExamItem>.findListByTerm(picker: TermPicker): List<ExamItem> {
         }
 
         if (xnm.isEmpty()) {
-            return@filter it.semester == xqm;
+            return@filter it.semester == xqm
         }
 
         if (xqm.isEmpty()) {

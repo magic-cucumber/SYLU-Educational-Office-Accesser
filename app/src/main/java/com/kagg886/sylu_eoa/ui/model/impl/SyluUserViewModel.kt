@@ -81,7 +81,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
     }
 
     fun setStorePassword(new: Boolean) {
-        _storePass.value = new;
+        _storePass.value = new
         context.updateConfig(StorePassword, new)
     }
 
@@ -141,7 +141,7 @@ fun newSyluUser(name: String): SyluUser {
 
 class EncryptedInFileCookieSerializer(private val filePath: File) : CookieSerializer {
 
-    private val list = mutableMapOf<String, MutableMap<String, String>>();
+    private val list = mutableMapOf<String, MutableMap<String, String>>()
     private val serializer =
         MapSerializer(String.serializer(), MapSerializer(String.serializer(), String.serializer()))
 

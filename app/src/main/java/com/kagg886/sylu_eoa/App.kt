@@ -39,7 +39,7 @@ private val scope = CoroutineScope(Dispatchers.IO)
 private val log = createLogger("Application")
 
 class App : Application(), Thread.UncaughtExceptionHandler {
-    private lateinit var data: DataStore<Preferences>;
+    private lateinit var data: DataStore<Preferences>
 
     override fun onCreate() {
         super.onCreate()
@@ -91,7 +91,7 @@ class App : Application(), Thread.UncaughtExceptionHandler {
             log.w("协程退出，日志文件收集结束")
         }
 
-        Thread.setDefaultUncaughtExceptionHandler(this);
+        Thread.setDefaultUncaughtExceptionHandler(this)
         Handler(Looper.getMainLooper()).post {
             try {
                 while (true) {

@@ -45,7 +45,7 @@ import java.io.FileOutputStream
 private val log = createLogger("MainActivity")
 
 val LocalThemeTypo = compositionLocalOf<MutableState<Typography>> {
-    error("LocalThemeTypo not provided");
+    error("LocalThemeTypo not provided")
 }
 
 class MainActivity : ComponentActivity() {
@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
 
             var s: Boolean by remember {
                 mutableStateOf(true)
-            };
+            }
 
             LaunchedEffect(key1 = Unit) {
                 s = getApp().getConfig(ReadAboutOnFirst).first()

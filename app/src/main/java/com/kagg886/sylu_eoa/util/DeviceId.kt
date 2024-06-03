@@ -11,5 +11,5 @@ fun getDeviceId(app:Context = getApp()): String {
 
     val byte = ByteArray(64)
     Random(info.firstInstallTime).nextBytes(byte)
-    return Base64.getEncoder().encodeToString(byte);
+    return Base64.getEncoder().encodeToString(byte)
 }

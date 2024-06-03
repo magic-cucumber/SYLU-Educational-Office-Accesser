@@ -34,7 +34,7 @@ class SchoolCalenderViewModel : BaseViewModel<SchoolCalender>() {
     val all = _all.asStateFlow()
 
     override suspend fun onDataFetch(): SchoolCalender? {
-        return null;
+        return null
     }
 
     fun setCurrentSelectedWeek(w: Int) {

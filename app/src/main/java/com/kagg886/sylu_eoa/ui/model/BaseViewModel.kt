@@ -52,7 +52,7 @@ abstract class BaseViewModel<T> : ViewModel() {
         _data.value = null
     }
 
-    internal abstract suspend fun onDataFetch(): T?;
+    internal abstract suspend fun onDataFetch(): T?
 
     fun clearLoading() {
         _loading.value = LoadingState.NORMAL

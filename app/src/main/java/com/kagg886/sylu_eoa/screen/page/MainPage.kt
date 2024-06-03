@@ -236,7 +236,7 @@ fun TimeLineTable(data: List<ClassUnit>) {
     }
 }
 
-private fun getTime(u: ClassUnit): Pair<LocalTime, LocalTime> {
+fun getTime(u: ClassUnit): Pair<LocalTime, LocalTime> {
     val dt = (u.rangeEveryDay[0] + 1) / 2 //1-2 3-4 5-6 7-8 9-10 11-12
     return when (dt) {
         1 -> LocalTime.of(8, 0) to LocalTime.of(9, 40)

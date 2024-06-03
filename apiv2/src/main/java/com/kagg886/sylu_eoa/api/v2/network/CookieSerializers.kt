@@ -27,7 +27,7 @@ object InMemoryCookieSerializer : CookieSerializer {
 
 class InFileCookieSerializer(private val filePath: File) : CookieSerializer {
 
-    private val list = mutableMapOf<String, MutableMap<String, String>>();
+    private val list = mutableMapOf<String, MutableMap<String, String>>()
     private val serializer =
         MapSerializer(String.serializer(), MapSerializer(String.serializer(), String.serializer()))
 

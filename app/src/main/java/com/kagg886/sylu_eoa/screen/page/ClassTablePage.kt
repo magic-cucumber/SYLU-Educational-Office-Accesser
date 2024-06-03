@@ -276,7 +276,7 @@ fun ClassTablePage() {
                             toast("请手动前往设置页面授予日历权限!")
                             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                 setData(Uri.fromParts("package", packageName, null))
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                addFlags(FLAG_ACTIVITY_NEW_TASK)
                             })
                         }
                         return@launch
@@ -441,25 +441,12 @@ fun ClassTablePage() {
     }
 }
 
-private fun getTime(u: ClassUnit): Pair<LocalTime, LocalTime> {
-    val dt = (u.rangeEveryDay[0] + 1) / 2 //1-2 3-4 5-6 7-8 9-10 11-12
-    return when (dt) {
-        1 -> LocalTime.of(8, 0) to LocalTime.of(9, 40)
-        2 -> LocalTime.of(10, 0) to LocalTime.of(11, 40)
-        3 -> LocalTime.of(13, 0) to LocalTime.of(14, 40)
-        4 -> LocalTime.of(15, 0) to LocalTime.of(16, 40)
-        5 -> LocalTime.of(17, 0) to LocalTime.of(18, 40)
-        6 -> LocalTime.of(19, 0) to LocalTime.of(20, 40)
-        else -> throw IllegalStateException("no this class")
-    }
-}
-
 
 private fun List<ClassUnit>.flatMapToEvent(calender: SchoolCalender): List<Event> {
     return flatMap {
         val l = mutableListOf<Event>()
         //计算什么时候有课
-        for (week in 1..calender!!.count()) {
+        for (week in 1..calender.count()) {
             for (day in 1..7) {
                 //该天有课
                 if (it.rangeAllTerm.contains(week) && day == it.dayInWeek.toInt()) {
@@ -470,13 +457,13 @@ private fun List<ClassUnit>.flatMapToEvent(calender: SchoolCalender): List<Event
                             description = "${it.teacher}(${it.weekEachLesson})",
                             location = it.room,
                             startDate = LocalDateTime.of(
-                                calender!!.start.plusWeeks((week - 1).toLong())
+                                calender.start.plusWeeks((week - 1).toLong())
                                     .plusDays((day.toLong() - 1) % 7), start
                             ).toInstant(
                                 ZoneOffset.of("+8")
                             ).toEpochMilli(),
                             endDate = LocalDateTime.of(
-                                calender!!.start.plusWeeks((week - 1).toLong())
+                                calender.start.plusWeeks((week - 1).toLong())
                                     .plusDays((day.toLong() - 1) % 7), end
                             ).toInstant(
                                 ZoneOffset.of("+8")

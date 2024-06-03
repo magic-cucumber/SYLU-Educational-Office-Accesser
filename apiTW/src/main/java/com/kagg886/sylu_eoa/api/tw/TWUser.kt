@@ -29,7 +29,7 @@ class TWUser(val user: String, val net: NetWorkClient) {
     private val pubKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC3hzrH91c0OKgtaSB7GWGfDuUJ" +
             "sMrtiYThDXtJdrCr7exKt2fmIZngoFk71Dv/BPVQCHSuohNNvEV9VVDFSBhsP9xK" +
             "EDAM4/2Lv+wlzN9CuZtLpV3Elo8VacjwMHcjTRmTchRBmijQzZRFrA2LM+qsH3U5" +
-            "tRM1uJFbfRMkBq24AwIDAQAB";
+            "tRM1uJFbfRMkBq24AwIDAQAB"
 
     suspend fun login(pass: String) {
         var dom = net.execute("/UserLogin.aspx").asHTML()
@@ -50,9 +50,9 @@ class TWUser(val user: String, val net: NetWorkClient) {
         }.asHTML()
         dom.getElementsByTag("script").forEach { v ->
             if (v.html().startsWith("layer.alert('")) {
-                val l = v.html().indexOf("'") + 1;
-                val r = v.html().indexOf("'", l);
-                throw IllegalStateException(v.html().substring(l, r));
+                val l = v.html().indexOf("'") + 1
+                val r = v.html().indexOf("'", l)
+                throw IllegalStateException(v.html().substring(l, r))
             }
 
             if (v.html().equals("window.location.href='SystemForm/main.htm';")) {

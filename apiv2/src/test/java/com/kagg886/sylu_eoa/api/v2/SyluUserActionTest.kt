@@ -105,7 +105,7 @@ class SyluUserActionTest {
                     System.err.println(i)
                 }
 
-            });
+            })
 
 
             log.i("currentDir:${File("").absolutePath}")

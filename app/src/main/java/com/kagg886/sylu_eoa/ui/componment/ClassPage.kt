@@ -18,12 +18,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
+import com.kagg886.sylu_eoa.screen.page.getTime
 import com.kagg886.sylu_eoa.ui.theme.Typography
+import net.fortuna.ical4j.model.Dur
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import kotlin.math.absoluteValue
 
 @Composable
 fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
@@ -197,24 +204,53 @@ fun ClassItem(unit: ClassUnit, height: Int) {
         mutableStateOf(false)
     }
     ClassDialog(onDismiss = { dialog = false }, unit = unit, dialog = dialog)
-    Card(
-        modifier = Modifier
-            .height(height = height.dp)
-            .padding(3.dp)
-            .clickable {
-                dialog = true
-            }, colors = CardDefaults.cardColors(
-            containerColor = Color(unit.name.hashCode())
-        )
-    ) {
-        Column {
-            Text(
-                unit.name, style = Typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis,
-                color = if (unit.isDegreeProgram) Color.Red else Color.Unspecified
+    Box(modifier = Modifier.height(height = height.dp).padding(3.dp).clickable { dialog = true }) {
+        val (start,end) = getTime(unit)
+        val timeAll = Duration.between(start,end).toMinutes().absoluteValue
+        val now = LocalTime.now()
+        if (now > start && now < end) {
+            HorizontalDivider(modifier = Modifier.fillMaxWidth().offset {
+                IntOffset(
+                    x = 0,
+                    y = (Duration.between(now,start).toMinutes().absoluteValue / timeAll * height).toInt()
+                )
+            })
+        }
+
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(unit.name.hashCode())
             )
-            Text(unit.room, style = Typography.bodySmall)
+        ) {
+            Column {
+                Text(
+                    unit.name, style = Typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                    color = if (unit.isDegreeProgram) Color.Red else Color.Unspecified
+                )
+                Text(unit.room, style = Typography.bodySmall)
+            }
         }
     }
+}
+
+@Preview
+@Composable
+private fun ClassItemPreview() {
+    ClassItem(
+        unit = ClassUnit(
+            name = "1",
+            teacher = "2",
+            room = "room",
+            weekEachLesson = "1",
+            lesson = "1",
+            dayInWeek = "1",
+            score = "a",
+            classType = "1",
+            _degreeProgram = "sdsd"
+        ),
+        height = 110
+    )
 }
 
 @Composable
@@ -259,5 +295,4 @@ fun ConflictItem(unit: List<ClassUnit>, height: Int) {
     ) {
         Text("冲突课程\n点我查看", style = Typography.bodyMedium)
     }
-
 }
