@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.util.toRange
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.api.seats.SeatManager
@@ -41,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import java.time.*
+import kotlin.math.abs
 import kotlin.math.absoluteValue
 
 @Composable
@@ -336,32 +338,26 @@ private fun ChooseTimeTopBar(flow: MutableStateFlow<ChooseTime?>) {
 
                     2 -> {
                         // 预约允许时间为6:00-22:00，其中共16小时-->960
-                        var value by remember(timeStartState, timeEndState) {
-                            mutableStateOf(timeStartState.toFloat()..timeEndState.toFloat())
-                        }
-                        LaunchedEffect(key1 = value, block = {
-                            var newStart = value.start.toInt()
-                            var newEnd = value.endInclusive.toInt()
-
-                            if (newStart >= 900) {
-                                newStart = 900
-                                newEnd = 959
-                                timeStartState = newStart
-                                timeEndState = newEnd
-                                return@LaunchedEffect
+//                        var value by remember(timeStartState, timeEndState) {
+//                            mutableStateOf(timeStartState.toFloat()..timeEndState.toFloat())
+//                        }
+                        LaunchedEffect(key1 = timeStartState, key2 = timeEndState, block = {
+                            if (timeStartState > 900) {
+                                timeStartState = 900
+                                timeEndState = 960
                             }
-                            if (newEnd - newStart < 60) {
-                                newEnd = newStart + 60
+                            if (timeEndState - timeStartState <= 60) {
+                                timeEndState = timeStartState + 60
                             }
-
-                            timeStartState = newStart
-                            timeEndState = newEnd
                         })
                         Column {
                             RangeSlider(
-                                value = value,
+                                value = timeStartState.toFloat()..timeEndState.toFloat(),
                                 steps = 960,
-                                onValueChange = { range -> value = range },
+                                onValueChange = { range ->
+                                    timeStartState = range.start.toInt()
+                                    timeEndState = range.endInclusive.toInt()
+                                },
                                 valueRange = 0f..960f
                             )
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
