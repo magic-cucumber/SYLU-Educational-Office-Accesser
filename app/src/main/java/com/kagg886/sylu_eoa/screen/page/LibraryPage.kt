@@ -1,5 +1,6 @@
 package com.kagg886.sylu_eoa.screen.page
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.togetherWith
@@ -30,6 +31,8 @@ import com.kagg886.sylu_eoa.api.seats.bean.SeatUsage
 import com.kagg886.sylu_eoa.api.seats.util.getSeatsManager
 import com.kagg886.sylu_eoa.api.seats.util.isCanReserve
 import com.kagg886.sylu_eoa.api.v2.SyluUser
+import com.kagg886.sylu_eoa.currentActivity
+import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
@@ -40,6 +43,7 @@ import com.kagg886.sylu_eoa.ui.model.impl.SyluUserViewModel
 import com.kagg886.utils.throttleLatest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.*
 import kotlin.math.abs
@@ -100,6 +104,8 @@ fun LibraryPage() {
 fun LibraryPageContent(manager: SeatManager, query: SeatQueryModel) {
     val model: SeatModel = viewModel()
     val state by model.loading.collectAsState()
+    val libraryModel: LibraryModel = viewModel()
+    val user by libraryModel.data.collectAsState()
 
     val data by model.data.collectAsState()
     LaunchedEffect(key1 = query, block = {
@@ -123,14 +129,32 @@ fun LibraryPageContent(manager: SeatManager, query: SeatQueryModel) {
                         ListItem(headlineContent = {
                             Text(text = it.title)
                         }, trailingContent = {
-                            IconButton(onClick = { { /*TODO*/ } }) {
+                            val scope = rememberCoroutineScope()
+                            IconButton(onClick = {
+                                scope.launch {
+                                    val msg = kotlin.runCatching {
+                                        user!!.reserve(
+                                            seat = it, usage = SeatUsage(
+                                                LocalDateTime.of(query.date, query.startTime),
+                                                LocalDateTime.of(query.date, query.endTime),
+                                                ""
+                                            )
+                                        )
+                                        "预约成功"
+                                    }.getOrElse { it.message }
+                                    Toast.makeText(currentActivity(), msg, Toast.LENGTH_SHORT).show()
+                                }
+                            }) {
                                 Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
                             }
                         }, leadingContent = {
                             Icon(imageVector = Icons.Outlined.ThumbUp, contentDescription = "")
                         }, supportingContent = {
                             val usage = remember(it) {
-                                val duration = Duration.between(LocalTime.now(), LocalTime.of(22, 0)).seconds.absoluteValue / 60 //距离今天结束还有多少分钟
+                                val duration = Duration.between(
+                                    LocalTime.now(),
+                                    LocalTime.of(22, 0)
+                                ).seconds.absoluteValue / 60 //距离今天结束还有多少分钟
                                 String.format("%.2f", it.freeTime.toFloat() / duration * 100.0)
                             }
                             Text(text = "空闲率：$usage%")

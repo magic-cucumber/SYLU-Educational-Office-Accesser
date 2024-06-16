@@ -107,6 +107,7 @@ class EncryptedPreferencesSerializer(password: String) : Serializer<Preferences>
             Value.ValueCase.VALUE_NOT_SET -> throw CorruptionException("Value not set.")
 
             null -> throw CorruptionException("Value case is null.")
+            Value.ValueCase.BYTES -> mutablePreferences[byteArrayPreferencesKey(name)] = value.bytes.toByteArray()
         }
     }
 }
