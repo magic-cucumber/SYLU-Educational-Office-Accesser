@@ -26,7 +26,8 @@ object PageConfig {
         add(PageItem("工具", 0, "ToolPage") @Composable { BackTopBar("工具");ToolPage() })
         add(PageItem("设置", 0, "SettingPage") @Composable { BackTopBar("设置");SettingPage() })
         add(PageItem("关于", 0, "AboutPage") @Composable { BackTopBar("关于");AboutPage() })
-        add(PageItem("图书馆工具", 0, "LibraryReverser") @Composable {LibraryPage() })
+        add(PageItem("图书馆工具", 0, "LibraryReverser") @Composable { LibraryPage() })
+        add(PageItem("全部课程", 0, "ClassAllPage") @Composable { ClassAllPage() })
     }
 
     const val DEFAULT_ROUTER = "MainPage"

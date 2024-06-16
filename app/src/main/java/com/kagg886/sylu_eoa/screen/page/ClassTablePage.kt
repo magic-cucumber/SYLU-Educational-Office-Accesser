@@ -34,6 +34,7 @@ import com.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.screen.LocalFABProvider
+import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.toast
 import com.kagg886.sylu_eoa.ui.componment.ClassPage
@@ -388,6 +389,7 @@ fun ClassTablePage() {
         }
 
         SUCCESS -> {
+            val nav = LocalNavController.current
             if (state1 == SUCCESS) {
                 Column {
                     var top by LocalTopBar.current
@@ -406,6 +408,9 @@ fun ClassTablePage() {
                                     expanded = expanded,
                                     onDismissRequest = { expanded = false },
                                 ) {
+                                    DropdownMenuItem(text = { Text(text = "查看本学期课程") }, onClick = {
+                                        nav.navigate("ClassAllPage")
+                                    })
                                     DropdownMenuItem(text = { Text(text = "导出到日历") }, onClick = {
                                         expanded = false
                                         exportCalenderDialog = true
@@ -442,7 +447,7 @@ fun ClassTablePage() {
 }
 
 
-private fun List<ClassUnit>.flatMapToEvent(calender: SchoolCalender): List<Event> {
+fun List<ClassUnit>.flatMapToEvent(calender: SchoolCalender): List<Event> {
     return flatMap {
         val l = mutableListOf<Event>()
         //计算什么时候有课
