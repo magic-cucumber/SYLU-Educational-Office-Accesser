@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,11 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastJoinToString
 import androidx.core.app.ActivityCompat
@@ -37,9 +41,7 @@ import com.kagg886.sylu_eoa.screen.LocalFABProvider
 import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.toast
-import com.kagg886.sylu_eoa.ui.componment.ClassPage
-import com.kagg886.sylu_eoa.ui.componment.ErrorPage
-import com.kagg886.sylu_eoa.ui.componment.Loading
+import com.kagg886.sylu_eoa.ui.componment.*
 import com.kagg886.sylu_eoa.ui.model.LoadingState.*
 import com.kagg886.sylu_eoa.ui.model.impl.ClassTableViewModel
 import com.kagg886.sylu_eoa.ui.model.impl.SchoolCalenderViewModel
@@ -135,7 +137,8 @@ fun Picker() {
         }
     }
 
-    Text("第${currentIndex}周，共${all}周",
+    Text(
+        "第${currentIndex}周，共${all}周",
         style = Typography.titleMedium,
         modifier = Modifier
             .fillMaxWidth()
@@ -144,7 +147,7 @@ fun Picker() {
             })
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ClassTable() {
     val tableModel: ClassTableViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
@@ -184,7 +187,55 @@ fun ClassTable() {
         val classDataByWeek by remember(week) {
             mutableStateOf(table!!.findClassByWeek(index + 1))
         }
-        ClassPage(date = week, classDataByWeek)
+
+        var unit by remember {
+            mutableStateOf<ClassUnit?>(null)
+        }
+        var closeFunc by remember {
+            mutableStateOf<(() -> Unit)?>(null)
+        }
+        AnimationPopupOverlay(content = {
+            if (unit != null) {
+                var topBar by LocalTopBar.current
+                val default = topBar
+                LaunchedEffect(key1 = Unit) {
+                    topBar = {
+                        TopAppBar(title = { Text(text = "课程详情:${unit!!.name}") }, navigationIcon = {
+                            IconButton(onClick = {
+                                topBar = default
+                                closeFunc!!()
+                                unit = null
+                            }) {
+                                Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "")
+                            }
+                        })
+                    }
+                }
+            }
+            ClassPage(date = week, classDataByWeek) { offset, size, unit0 ->
+                unit = unit0
+                it(offset, size)
+            }
+        }, dialogView = { modifier, _, closeFunc0 ->
+            closeFunc = closeFunc0
+            Surface(modifier = modifier.pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { change, _ ->
+                        change.consume()
+                    }
+                )
+            }) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (unit != null) {
+                        Details("上课时间", unit!!.weekEachLesson)
+                        Details("教室", unit!!.room)
+                        Details("老师", unit!!.teacher)
+                        Details("考试形式", unit!!.classType)
+                        Details("学分", unit!!.score)
+                    }
+                }
+            }
+        })
     }
 }
 
@@ -288,8 +339,7 @@ fun ClassTablePage() {
                         Calender("sylu_class_calender").apply {
                             clearEvents()
                             insertEvents(
-                                course!!.flatMapToEvent(calender!!),
-                                getApp().getConfig(CalenderTipTime).first()
+                                course!!.flatMapToEvent(calender!!), getApp().getConfig(CalenderTipTime).first()
                             )
                         }
                         complete = 1
@@ -311,8 +361,7 @@ fun ClassTablePage() {
     if (exportICSDialog) {
         val course by tableModel.data.collectAsState()
         val calender by calenderViewModel.data.collectAsState()
-        AlertDialog(
-            onDismissRequest = { },
+        AlertDialog(onDismissRequest = { },
             confirmButton = {},
             title = { Text(text = "导出中...") },
             text = { Loading(fullScreen = false) })
@@ -329,9 +378,7 @@ fun ClassTablePage() {
 
                 course!!.flatMapToEvent(calender!!).forEach { course ->
                     val event = VEvent(
-                        DateTime(course.startDate),
-                        DateTime(course.endDate),
-                        course.title
+                        DateTime(course.startDate), DateTime(course.endDate), course.title
                     )
                     event.properties.add(Location(course.location))
                     event.properties.add(Description(course.description))
@@ -353,7 +400,7 @@ fun ClassTablePage() {
                     }"
                 }
 
-                val file = File(app.externalCacheDir,"event.ics")
+                val file = File(app.externalCacheDir, "event.ics")
                 if (file.exists()) {
                     file.delete()
                 }
@@ -462,14 +509,12 @@ fun List<ClassUnit>.flatMapToEvent(calender: SchoolCalender): List<Event> {
                             description = "${it.teacher}(${it.weekEachLesson})",
                             location = it.room,
                             startDate = LocalDateTime.of(
-                                calender.start.plusWeeks((week - 1).toLong())
-                                    .plusDays((day.toLong() - 1) % 7), start
+                                calender.start.plusWeeks((week - 1).toLong()).plusDays((day.toLong() - 1) % 7), start
                             ).toInstant(
                                 ZoneOffset.of("+8")
                             ).toEpochMilli(),
                             endDate = LocalDateTime.of(
-                                calender.start.plusWeeks((week - 1).toLong())
-                                    .plusDays((day.toLong() - 1) % 7), end
+                                calender.start.plusWeeks((week - 1).toLong()).plusDays((day.toLong() - 1) % 7), end
                             ).toInstant(
                                 ZoneOffset.of("+8")
                             ).toEpochMilli()

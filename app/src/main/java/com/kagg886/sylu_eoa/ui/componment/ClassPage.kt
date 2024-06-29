@@ -9,8 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -20,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
@@ -33,7 +37,7 @@ import java.time.LocalTime
 import kotlin.math.absoluteValue
 
 @Composable
-fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
+fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize, ClassUnit) -> Unit) {
     if (list.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -41,6 +45,7 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
                 Text(text = "本周无课程!", style = Typography.labelLarge)
             }
         }
+        return
     }
     val iconColor = if (isSystemInDarkTheme()) {
         Color.White
@@ -48,7 +53,6 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
         Color.Gray
     }
     val perHeight = 110
-
     Column {
         Row {
             Text(
@@ -178,7 +182,9 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
                                 if (empty != 0) {
                                     Spacer(modifier = Modifier.height((perHeight * empty).dp))
                                 }
-                                ClassItem(unit = list[0], height = perHeight)
+                                ClassItem(unit = list[0], height = perHeight) { offset, intSize ->
+                                    openFunc(offset,intSize,list[0])
+                                }
 
                                 empty = 0
                             }
@@ -199,22 +205,36 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>) {
 }
 
 @Composable
-fun ClassItem(unit: ClassUnit, height: Int) {
-    var dialog by remember {
-        mutableStateOf(false)
+fun ClassItem(unit: ClassUnit, height: Int,openFunc: (Offset, IntSize) -> Unit = {_,_->}) {
+    var offset by remember {
+        mutableStateOf(Offset.Zero)
     }
-    ClassDialog(onDismiss = { dialog = false }, unit = unit, dialog = dialog)
-    Box(modifier = Modifier.height(height = height.dp).padding(3.dp).clickable { dialog = true }) {
+    var size by remember {
+        mutableStateOf(IntSize.Zero)
+    }
+    Box(modifier = Modifier
+        .onGloballyPositioned {
+            offset = it.positionInRoot()
+            size = it.size
+        }
+        .clickable {openFunc(offset,size)}
+        .height(height = height.dp)
+        .padding(3.dp)
+    ) {
         val (start,end) = getTime(unit)
         val timeAll = Duration.between(start,end).toMinutes().absoluteValue
         val now = LocalTime.now()
         if (now > start && now < end) {
-            HorizontalDivider(modifier = Modifier.fillMaxWidth().offset {
-                IntOffset(
-                    x = 0,
-                    y = (Duration.between(now,start).toMinutes().absoluteValue / timeAll * height).toInt()
-                )
-            })
+            HorizontalDivider(modifier = Modifier
+                .fillMaxWidth()
+                .offset {
+                    IntOffset(
+                        x = 0,
+                        y = (Duration
+                            .between(now, start)
+                            .toMinutes().absoluteValue / timeAll * height).toInt()
+                    )
+                })
         }
 
         Card(
