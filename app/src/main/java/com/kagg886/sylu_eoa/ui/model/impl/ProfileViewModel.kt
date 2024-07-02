@@ -23,30 +23,25 @@ class ProfileViewModel : BaseViewModel<UserProfile>() {
     private val context by lazy {
         getApp()
     }
+
+    init {
+        viewModelScope.launch {
+            context.getConfig(ProfileBean).collect {
+                if (it.isEmpty()) {
+                    setDataLoading()
+                    return@collect
+                }
+                setDataLoadSuccess(Json.decodeFromString(it))
+            }
+        }
+    }
     override suspend fun onDataFetch(): UserProfile {
         val list = context.getConfig(ProfileBean).first()
-        val expire = context.getConfig(ProfileBeanExpire).first()
-
-        if ((expire == -1L) && (list.isEmpty() || System.currentTimeMillis() > expire)) {
-            throw IllegalStateException("need web")
-        }
-
         val cd = json.decodeFromString<UserProfile>(list)
         return cd
     }
 
     fun loadDataByUser(user: SyluUser) {
         setDataLoading()
-        viewModelScope.launch {
-            try {
-                val day = context.getConfig(DayExpired).first()
-                val list = user.getUserProfile()
-                setDataLoadSuccess(list)
-                context.updateConfig(ProfileBean, Json.encodeToString(list))
-                context.updateConfig(ProfileBeanExpire, System.currentTimeMillis() + day * 864_000_00)
-            } catch (e:Exception) {
-                setDataLoadError(e)
-            }
-        }
     }
 }

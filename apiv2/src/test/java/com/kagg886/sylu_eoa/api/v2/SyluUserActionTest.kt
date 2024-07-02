@@ -1,6 +1,7 @@
 package com.kagg886.sylu_eoa.api.v2
 
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
+import com.kagg886.sylu_eoa.api.v2.bean.SubmitType
 import com.kagg886.sylu_eoa.api.v2.network.InFileCookieSerializer
 import com.kagg886.utils.LoggerReceiver
 import com.kagg886.utils.createLogger
@@ -24,13 +25,23 @@ class SyluUserActionTest {
 
     @Test
     fun testQuestionsInfo() = runBlocking {
-        //TODO 等待评价信息开放后再测试
-        log.i(user.getRelatedQuestions(user.getAllUnRelatedItem()[0]).toString())
+        val items = user.getAllUnRelatedItem()
+        val eng = user.getRelatedQuestions(items[0])
+        println(eng)
     }
 
     @Test
     fun testSubmitQuestion() = runBlocking {
+        user.getAllUnRelatedItem().forEach {
+            user.getRelatedQuestions(it).apply {
+                for (i in this) {
+                    //存在分数超出100分的情况,后端无校验
+                    i.labelValue = "10"
+                }
 
+                user.submitRelatedQuestions(this,SubmitType.SAVE)
+            }
+        }
     }
 
     @Test

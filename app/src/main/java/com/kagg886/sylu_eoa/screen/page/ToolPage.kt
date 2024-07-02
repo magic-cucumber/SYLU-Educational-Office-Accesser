@@ -3,6 +3,7 @@ package com.kagg886.sylu_eoa.screen.page
 import android.content.Intent
 import android.graphics.*
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -23,6 +25,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alorma.compose.settings.ui.SettingsGroup
 import com.alorma.compose.settings.ui.SettingsMenuLink
+import com.kagg886.sylu_eoa.currentActivity
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.screen.LocalNavController
 import com.kagg886.sylu_eoa.toast
@@ -46,22 +49,90 @@ fun ToolPage() {
     SettingsGroup(title = {
         Column {
             Text(text = "在线工具")
-            Text(text = "强烈建议关闭离线模式使用", style = Typography.titleMedium)
+            Text(text = "首页右上角标志停止转动后且不为感叹号才能使用灰色功能。", style = Typography.titleMedium)
         }
     }) {
+        val model: SyluUserViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
+        val load by model.syncStatus.collectAsState()
         HorizontalDivider()
         ImageSigner()
+
         HorizontalDivider()
         BigInnovation()
+
         HorizontalDivider()
-        SecondClassData()
+        AutoRelated(load)
+
         HorizontalDivider()
-        LibraryReverser()
+        SecondClassData(load)
+
+        HorizontalDivider()
+        LibraryReverser(load)
     }
 }
 
 @Composable
-fun LibraryReverser() {
+fun AutoRelated(load: LoadingState) {
+    val scope = rememberCoroutineScope {
+        Dispatchers.IO
+    }
+    var dialog by remember { mutableStateOf(false) }
+    var progress by remember { mutableFloatStateOf(0f) }
+
+    val userViewModel: SyluUserViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
+
+    val user by userViewModel.data.collectAsState()
+
+    if (dialog) {
+        AlertDialog(onDismissRequest = { }, confirmButton = { /*TODO*/ }, title = {
+            Text(text = "填写评价中")
+        }, text = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(progress = { progress })
+                Text(text = String.format("%.2f", progress * 100))
+            }
+        })
+    }
+    SettingsMenuLink(title = {
+        Text(text = "期末自动评价工具")
+    }, subtitle = {
+        Text(text = "填写期末强制要求的评价")
+    }, modifier = Modifier.height(75.dp), icon = {
+        Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
+    }, enabled = load == LoadingState.SUCCESS) {
+        scope.launch {
+            dialog = true
+            kotlin.runCatching {
+                val list = user!!.getAllUnRelatedItem()
+                val all = list.size
+                var cur = 0
+                for (item in list) {
+                    val submit = user!!.getRelatedQuestions(item).apply {
+                        for (q in this) {
+                            if (q.isNoLabelMode) {
+                                q.labelValue = "10"
+                                return@apply
+                            }
+                            q.select(q.choices[0])
+                        }
+                    }
+                    user!!.submitRelatedQuestions(submit)
+//                    user!!.submitRelatedQuestions(submit,SubmitType.SAVE)
+                    cur++
+                    progress = cur.toFloat() / all
+                }
+            }.onFailure {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(currentActivity(), "评价提交失败！", Toast.LENGTH_SHORT).show()
+                }
+            }
+            dialog = false
+        }
+    }
+}
+
+@Composable
+fun LibraryReverser(load: LoadingState) {
     val nav = LocalNavController.current
     SettingsMenuLink(title = {
         Text(text = "图书馆自助工具")
@@ -69,13 +140,13 @@ fun LibraryReverser() {
         Text(text = "预约图书馆以及签到")
     }, modifier = Modifier.height(75.dp), icon = {
         Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
-    }) {
+    }, enabled = load == LoadingState.SUCCESS) {
         nav.navigate("LibraryReverser")
     }
 }
 
 @Composable
-private fun SecondClassData() {
+private fun SecondClassData(load: LoadingState) {
     val nav = LocalNavController.current
     SettingsMenuLink(title = {
         Text(text = "第二课堂")
@@ -83,7 +154,7 @@ private fun SecondClassData() {
         Text(text = "查看第二课堂学分")
     }, modifier = Modifier.height(75.dp), icon = {
         Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
-    }) {
+    }, enabled = load == LoadingState.SUCCESS) {
         nav.navigate("SecondClass")
     }
 }
@@ -336,12 +407,9 @@ private fun ImageSigner() {
         Text(text = "照片签名")
     }, subtitle = {
         Text(text = "为照片批量p入学号姓名，交报告必备。")
-        if (loading != LoadingState.SUCCESS) {
-            Text(text = "未加载用户信息，请关闭离线模式")
-        }
     }, modifier = Modifier.height(75.dp), icon = {
         Icon(imageVector = Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "")
-    }, enabled = loading == LoadingState.SUCCESS) {
+    }) {
         state.launch("image/*")
     }
 }

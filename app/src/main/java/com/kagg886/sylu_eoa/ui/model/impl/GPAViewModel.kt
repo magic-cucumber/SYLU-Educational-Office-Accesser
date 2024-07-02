@@ -24,28 +24,35 @@ private val context by lazy {
 class GPAViewModel:BaseViewModel<Map<String, List<GPAScore>>>() {
     override suspend fun onDataFetch(): Map<String, List<GPAScore>> {
         val list = context.getConfig(GPABean).first()
-        val expire = context.getConfig(GPABeanExpire).first()
-
-        if ((expire == -1L) && (list.isEmpty() || System.currentTimeMillis() > expire)) {
-            throw IllegalStateException("need web")
-        }
         val list1 = json.decodeFromString<Map<String, List<GPAScore>>>(list)
         return list1
     }
 
-    fun fetchUser(user:SyluUser) {
-        setDataLoading()
+    init {
         viewModelScope.launch {
-            try {
-                val day = context.getConfig(DayExpired).first()
-                val list = user.getGPAScores()
-
-                setDataLoadSuccess(list)
-                context.updateConfig(GPABean, Json.encodeToString(list))
-                context.updateConfig(GPABeanExpire, System.currentTimeMillis() + day * 864_000_00)
-            } catch (e:Exception) {
-                setDataLoadError(e)
+            context.getConfig(GPABean).collect {
+                if (it.isEmpty()) {
+                    setDataLoading()
+                    return@collect
+                }
+                setDataLoadSuccess(Json.decodeFromString(it))
             }
         }
+    }
+
+    fun fetchUser(user:SyluUser) {
+        setDataLoading()
+//        viewModelScope.launch {
+//            try {
+//                val day = context.getConfig(DayExpired).first()
+//                val list = user.getGPAScores()
+//
+//                setDataLoadSuccess(list)
+//                context.updateConfig(GPABean, Json.encodeToString(list))
+//                context.updateConfig(GPABeanExpire, System.currentTimeMillis() + day * 864_000_00)
+//            } catch (e:Exception) {
+//                setDataLoadError(e)
+//            }
+//        }
     }
 }

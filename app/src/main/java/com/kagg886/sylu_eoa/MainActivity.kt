@@ -303,7 +303,6 @@ fun Main() {
                 }
 
                 if (err is IOException) {
-                    syluUserViewModel.setSkipCheckLogin(true)
                     syluUserViewModel.clearLoading()
                     LocalContext.current.toast("网络连接失败，自动开启离线模式!")
                     return

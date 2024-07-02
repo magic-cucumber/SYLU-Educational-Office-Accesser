@@ -35,22 +35,17 @@ private val app by lazy {
 @Composable
 fun SettingPage() {
     val _storePass by app.getConfig(StorePassword).collectAsState(false)
-    val _skipLogin by app.getConfig(SkipLogin).collectAsState(false)
     val _expire by app.getConfig(DayExpired).collectAsState(7)
 
     val _time_tip by app.getConfig(CalenderTipTime).collectAsState(7)
 
 
     val storePass = rememberBooleanSettingState()
-    val skipLogin = rememberBooleanSettingState()
     val expire = rememberIntSettingState()
     val timeTip = rememberIntSettingState()
 
     LaunchedEffect(key1 = _storePass) {
         storePass.value = _storePass
-    }
-    LaunchedEffect(key1 = _skipLogin) {
-        skipLogin.value = _skipLogin
     }
     LaunchedEffect(key1 = _expire) {
         expire.value = _expire
@@ -72,14 +67,6 @@ fun SettingPage() {
                 Text("登录检验失败时自动使用密码登录")
             }, state = storePass, modifier = Modifier.height(75.dp)) {
                 app.updateConfig(StorePassword, it)
-            }
-
-            SettingsSwitch(title = {
-                Text("离线模式")
-            }, subtitle = {
-                Text("跳过登录检验。当登录凭证过期时有闪退风险。")
-            }, state = skipLogin, modifier = Modifier.height(85.dp)) {
-                app.updateConfig(SkipLogin, it)
             }
 
             var cacheClearDialog by remember {
@@ -296,7 +283,6 @@ fun SettingPage() {
                 restoreSettingDialog = false
             }, confirmButton = {
                 TextButton(onClick = {
-                    app.updateConfig(SkipLogin)
                     app.updateConfig(DayExpired)
                     app.toast("清空成功!重启生效")
                     currentActivity().finish()

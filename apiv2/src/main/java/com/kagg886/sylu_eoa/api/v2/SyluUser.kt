@@ -28,9 +28,11 @@ class SyluUser(
 
     //业务区
 
-    suspend fun submitRelatedQuestions(item: RelatedQuestions) {
+    suspend fun submitRelatedQuestions(item: RelatedQuestions,mode:SubmitType = SubmitType.SUBMIT) {
         kotlin.runCatching {
-            client.execute("/xspjgl/xspj_tjXspj.html?gnmkdm=N401605&su=$user") {
+            //提交xspj_tjXspj
+            //保存xspj_bcXspj
+            client.execute("/xspjgl/${mode.s}.html?gnmkdm=N401605&su=$user") {
                 post(
                     buildMap {
                         putAll(
@@ -49,11 +51,24 @@ class SyluUser(
                                 "modelList[0].xspfb_id" to item.xspfb_id,
                             )
                         )
+                        //modelList[0].xspjList[0].childXspjList[0].pjf: 8
+
+
+                        //modelList[0].xspjList[0].childXspjList[0].pjzbxm_id: 161A7638EE527638E0630200050A3517
+                        //modelList[0].xspjList[0].childXspjList[0].pfdjdmb_id: 161A3D15723EAA0BE0630100050A58D3
+                        //modelList[0].xspjList[0].childXspjList[0].zsmbmcb_id: 161A7638EE4E7638E0630200050A3517
                         item.forEachIndexed { index, relatedQuestion ->
                             val prefix = "modelList[0].xspjList[0].childXspjList[$index]."
+                            val ansPair = kotlin.run {
+                                if (relatedQuestion.isNoLabelMode) {
+                                    "${prefix}pjf" to relatedQuestion.labelValue
+                                } else {
+                                    "${prefix}pfdjdmxmb_id" to relatedQuestion.selected.pfdjdmxmb
+                                }
+                            }
                             putAll(
                                 arrayOf(
-                                    "${prefix}pfdjdmxmb_id" to relatedQuestion.selected.pfdjdmxmb,
+                                    ansPair,
                                     "${prefix}pjzbxm_id" to relatedQuestion.pjzbxm_id,
                                     "${prefix}pfdjdmb_id" to relatedQuestion.pfdjdmb_id,
                                     "${prefix}zsmbmcb_id" to relatedQuestion.zsmbmcb_id,
@@ -67,17 +82,19 @@ class SyluUser(
                                 "tjzt" to "0"
                             )
                         )
+                    }.apply {
+                        println(this)
                     }.asFormBody()
                 )
             }.body!!.string().apply {
-                check(equals("\"评价保存成功\"") && equals("\"提交成功\"")) {
+                check(contains("成功")) {
                     this
                 }
             }
 
         }.onFailure {
             serializer.clear()
-            throw DataFetchedException("评价拉取失败!", it)
+            throw DataFetchedException("评价保存失败!", it)
         }
     }
 
@@ -94,17 +111,17 @@ class SyluUser(
                         "sfcjlrjs" to "1"
                     ).asFormBody()
                 )
-            }.asHTML()
-            with(body.select(".alert , .alert-error , .align-center , .bigger-180 , .red")) {
-                check(this.isEmpty()) {
-                    this[0].text()
-                }
-            }
+            }.asHTML().assertLogin()
+//            with(body.select(".alert , .alert-error , .align-center , .bigger-180 , .red")) {
+//                check(this.isEmpty()) {
+//                    this[0].text()
+//                }
+//            }
             return@runCatching RelatedQuestions(
                 source = item,
                 xspfb_id = body.getElementsByAttribute("data-xspfb_id")[0].attr("data-xspfb_id"),
                 pjzbxm_id = body.getElementsByAttribute("data-pjzbxm_id")[0].attr("data-pjzbxm_id"),
-                pyID = body.getElementsByTag("textarea")[0].attr("id").split("_")[0]
+                pyID = body.getElementsByClass("tr-xspj")[0].attr("data-zsmbmcb_id")
             ).apply {
                 addAll(
                     body.getElementsByClass("tr-xspj").map { element ->

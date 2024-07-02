@@ -1,23 +1,32 @@
 package com.kagg886.sylu_eoa.ui.model.impl
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import androidx.compose.runtime.currentRecomposeScope
 import androidx.lifecycle.viewModelScope
 import com.kagg886.sylu_eoa.api.v2.LoginFailedException
 import com.kagg886.sylu_eoa.api.v2.SyluUser
+import com.kagg886.sylu_eoa.api.v2.bean.TermResult
 import com.kagg886.sylu_eoa.api.v2.network.CookieSerializer
 import com.kagg886.sylu_eoa.api.v2.network.InFileCookieSerializer
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.ui.model.BaseViewModel
+import com.kagg886.sylu_eoa.ui.model.LoadingState
 import com.kagg886.sylu_eoa.util.*
-import kotlinx.coroutines.delay
+import com.kagg886.utils.createLogger
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.charset.StandardCharsets
+
+private val log = createLogger("NetworkProtect")
 
 class SyluUserViewModel : BaseViewModel<SyluUser>() {
     private val context by lazy {
@@ -28,14 +37,20 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
     val storePass = _storePass.asStateFlow()
 
 
-    private var _skipCheckLogin = MutableStateFlow(false)
-    val skipCheckLogin = _skipCheckLogin.asStateFlow()
+//    private var _skipCheckLogin = MutableStateFlow(false)
+//    val skipCheckLogin = _skipCheckLogin.asStateFlow()
+
+    private val _syncStatus = MutableStateFlow<LoadingState>(LoadingState.LOADING)
+    val syncStatus = _syncStatus.asStateFlow()
+
+    val manager by lazy {
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
 
     fun clearLogin() {
         context.updateConfig(Account)
         context.updateConfig(Password)
         setStorePassword(false)
-        setSkipCheckLogin(false)
         viewModelScope.launch {
             delay(1000)
             clearLoading()
@@ -73,6 +88,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
                 context.updateConfig(Password, if (_storePass.value) user.getPassword()!! else "")
                 setDataLoadSuccess(user)
+                loadAllData(user)
                 continueHandler(null)
             }.onFailure {
                 continueHandler(it)
@@ -85,11 +101,6 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
         context.updateConfig(StorePassword, new)
     }
 
-    fun setSkipCheckLogin(new: Boolean) {
-        _skipCheckLogin.value = new
-        context.updateConfig(SkipLogin, new)
-    }
-
     override fun setDataLoadSuccess(new: SyluUser?) {
         super.setDataLoadSuccess(new)
         context.updateConfig(Account, new!!.user)
@@ -99,39 +110,178 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
         val account0 = context.getConfig(Account).first()
         val password0 = context.getConfig(Password).first()
         _storePass.value = context.getConfig(StorePassword).first()
-        _skipCheckLogin.value = context.getConfig(SkipLogin).first()
 
         //未填写账户，返回null
         if (account0.isEmpty()) {
             throw LoginFailedException("未登录")
         }
+
         val user = newSyluUser(account0)
 
-        //跳过登录检查
-        if (skipCheckLogin.first()) {
-            return user
-        }
-
-        //尝试检查在线，若在线返回User
-        if (user.isLogin()) {
-            return user
-        }
-//
-//        kotlin.runCatching {
-//            //尝试检查在线，若在线返回User
-//            if (user.isLogin()) {
-//                return user
-//            }
-//        }.onFailure {
-//            //网络波动错误，自动开启离线模式
-//            _skipCheckLogin.value = true
-//
-//            getApp().toast("网络错误，强制开启离线模式")
+//        //跳过登录检查
+//        if (skipCheckLogin.first()) {
 //            return user
 //        }
-        //不在线尝试登录。若报错则抛异常
-        user.login(password0)
+        //尝试检查在线，不在线登录
+        viewModelScope.launch {
+            if (!manager.isNetWorkConnected) {
+                log.i("network unavailable, stop check login and use offline data")
+                _syncStatus.value = LoadingState.FAILED
+                return@launch
+            }
+            val isLogin = kotlin.runCatching {
+                user.isLogin()
+            }.getOrElse {
+                _syncStatus.value = LoadingState.FAILED
+                true
+            }
+
+            if (!isLogin) {
+                if (password0.isEmpty()) {
+                    setDataLoadError(LoginFailedException("登录状态过期，且未记住密码"))
+                    return@launch
+                }
+                user.login(password0)
+            }
+            loadAllData(user)
+        }
+
+//        manager.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+//            override fun onAvailable(network: Network) {
+//                viewModelScope.launch {
+//                    log.i("network detected,now data fetch")
+//                    kotlin.runCatching {
+//                        if (manager.isNetWorkConnected) {
+//                            loadAllData(user)
+//                        }
+//                    }
+//                }
+//            }
+//        })
         return user
+    }
+
+    suspend fun loadAllData(user: SyluUser, force: Boolean = false) {
+        if (!manager.isNetWorkConnected) {
+            log.i("network unavailable, stop check login and use offline data")
+            return
+        }
+        _syncStatus.value = LoadingState.LOADING
+        kotlin.runCatching {
+            withContext(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, _ -> }) {
+                val currentTimeStamp = System.currentTimeMillis()
+                val day = context.getConfig(DayExpired).first()
+
+                //拉取学年学期选择器
+                val job4 = launch {
+                    val expire = context.getConfig(PickerBeanExpire)
+                    if (expire.first() > currentTimeStamp && !force) {
+                        return@launch
+                    }
+                    val job = launch {
+                        val term = user.getAllAvailableTerms()
+                        context.updateConfigSuspend(PickerBean, Json.encodeToString(term))
+                        context.updateConfigSuspend(PickerBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+                    }
+                    if (expire.first() == -1L || force) {
+                        job.join()
+                    }
+                }
+
+                //拉取课程表
+                val job1 = launch {
+                    val expire = context.getConfig(ClassListExpire)
+                    if (expire.first() > currentTimeStamp && !force) {
+                        return@launch
+                    }
+                    val job = launch {
+                        job4.join()
+                        val term = Json.decodeFromString<TermResult>(context.getConfig(PickerBean).first())
+                        val list = user.getClassTable(term.default)
+                        context.updateConfigSuspend(ClassList, Json.encodeToString(list))
+                        context.updateConfigSuspend(ClassListExpire, System.currentTimeMillis() + day * 864_000_00)
+                    }
+                    if (expire.first() == -1L || force) {
+                        job.join()
+                    }
+                }
+
+                //拉取校历
+                val job2 = launch {
+                    val expire = context.getConfig(SchoolCalenderBeanExpire)
+                    if (expire.first() > currentTimeStamp && !force) {
+                        return@launch
+                    }
+                    val job = launch {
+                        val list = user.getSchoolCalender()
+                        context.updateConfigSuspend(SchoolCalenderBean, Json.encodeToString(list))
+                        context.updateConfigSuspend(SchoolCalenderBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+                    }
+
+                    if (expire.first() == -1L || force) {
+                        job.join()
+                    }
+                }
+
+                //拉取考试条目
+                val job3 = launch {
+                    val expire = context.getConfig(ExamBeanExpire)
+                    if (expire.first() > currentTimeStamp && !force) {
+                        return@launch
+                    }
+                    val job = launch {
+                        val list = user.getExamList()
+                        context.updateConfigSuspend(ExamBean, Json.encodeToString(list))
+                        context.updateConfigSuspend(ExamBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+                    }
+                    if (expire.first() == -1L || force) {
+                        job.join()
+                    }
+                }
+
+
+                //拉取个人信息
+                val job5 = launch {
+                    val expire = context.getConfig(ProfileBeanExpire)
+                    if (expire.first() > currentTimeStamp && !force) {
+                        return@launch
+                    }
+                    val job = launch {
+                        val list = user.getUserProfile()
+                        context.updateConfigSuspend(ProfileBean, Json.encodeToString(list))
+                        context.updateConfigSuspend(ProfileBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+                    }
+                    if (expire.first() == -1L || force) {
+                        job.join()
+                    }
+                }
+
+                //拉取gpa绩点
+                val job6 = launch {
+                    val expire = context.getConfig(GPABeanExpire)
+                    if (expire.first() > currentTimeStamp && !force) {
+                        return@launch
+                    }
+                    val job = launch {
+                        val list = user.getGPAScores()
+                        context.updateConfigSuspend(GPABean, Json.encodeToString(list))
+                        context.updateConfigSuspend(GPABeanExpire, System.currentTimeMillis() + day * 864_000_00)
+                    }
+                    if (expire.first() == -1L || force) {
+                        job.join()
+                    }
+                }
+
+                listOf(
+                    job1, job2, job3, job4, job5, job6
+                ).joinAll()
+
+            }
+        }.onFailure {
+            _syncStatus.value = LoadingState.FAILED
+            return
+        }
+        _syncStatus.value = LoadingState.SUCCESS
     }
 }
 
@@ -142,8 +292,7 @@ fun newSyluUser(name: String): SyluUser {
 class EncryptedInFileCookieSerializer(private val filePath: File) : CookieSerializer {
 
     private val list = mutableMapOf<String, MutableMap<String, String>>()
-    private val serializer =
-        MapSerializer(String.serializer(), MapSerializer(String.serializer(), String.serializer()))
+    private val serializer = MapSerializer(String.serializer(), MapSerializer(String.serializer(), String.serializer()))
 
     private val des = DESCrypt(getDeviceId())
 

@@ -1,14 +1,22 @@
 package com.kagg886.sylu_eoa.screen.page
 
+import android.widget.Toast
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -19,6 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kagg886.sylu_eoa.R
 import com.kagg886.sylu_eoa.api.v2.bean.ClassUnit
 import com.kagg886.sylu_eoa.api.v2.bean.findClassByWeek
+import com.kagg886.sylu_eoa.currentActivity
 import com.kagg886.sylu_eoa.screen.LocalTopBar
 import com.kagg886.sylu_eoa.ui.componment.ClassDialog
 import com.kagg886.sylu_eoa.ui.componment.ErrorPage
@@ -29,8 +38,7 @@ import com.kagg886.sylu_eoa.ui.model.impl.SchoolCalenderViewModel
 import com.kagg886.sylu_eoa.ui.model.impl.SyluUserViewModel
 import com.kagg886.sylu_eoa.ui.theme.Typography
 import com.pushpal.jetlime.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.*
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -38,13 +46,13 @@ fun getTips(): Pair<String, String> {
     val now = LocalTime.now()
 
     return when {
-        now < LocalTime.of(3, 0) -> "半夜了！" to "该睡觉啦！我的奶奶会给我念windows激活码助眠，你的奶奶会吗？" //0:00-3:00
+        now < LocalTime.of(3, 0) -> "半夜了！" to "zzz...zzz...zzz...？" //0:00-3:00
         now < LocalTime.of(6, 0) -> "凌晨！" to "大学生不可能起的这么早！你究竟是谁？" //3:00-6:00
         now < LocalTime.of(11, 0) -> "早上好" to "愿世上没有早八！" //6:00-11:00
         now < LocalTime.of(13, 0) -> "中午好" to "干饭人万岁！" //11:00-13:00
         now < LocalTime.of(17, 0) -> "下午好" to "午睡有助于恢复精力！有课的除外（逃）" //13:00-17:00
         now < LocalTime.of(21, 0) -> "晚上好" to "今天要通宵玩游戏吗？"//17:00-21:00
-        else -> "半夜了！" to "该睡觉啦！我的奶奶会给我念windows激活码助眠，你的奶奶会吗？" //21:00-0:00
+        else -> "半夜了！" to "该睡觉啦！熬夜是不好的！" //21:00-0:00
     }
 }
 
@@ -52,10 +60,46 @@ fun getTips(): Pair<String, String> {
 @Composable
 fun MainPage() {
     var top by LocalTopBar.current
+    val model: SyluUserViewModel = viewModel(viewModelStoreOwner = LocalContext.current as ViewModelStoreOwner)
+    val sync by model.syncStatus.collectAsState()
+    val user by model.data.collectAsState()
     LaunchedEffect(key1 = Unit, block = {
         top = {
             TopAppBar(title = {
                 Text(text = "首页")
+            }, actions = {
+                val anf = rememberInfiniteTransition(label = "anim")
+                val float by anf.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(tween(500)),
+                    label = "qwq"
+                )
+                val scope = rememberCoroutineScope()
+                IconButton(onClick = {
+                    scope.launch {
+                        if (sync == LoadingState.LOADING) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(currentActivity(), "请等待上一次拉取数据完成后再试！", Toast.LENGTH_LONG)
+                                    .show()
+                            }
+                            return@launch
+                        }
+                        if (user != null) {
+                            model.loadAllData(user!!, true)
+                            return@launch
+                        }
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(currentActivity(), "请等待首次拉取数据完成后再试！", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) {
+                    Icon(
+                        imageVector = if (sync == LoadingState.FAILED) Icons.Outlined.Warning else Icons.Outlined.Refresh,
+                        contentDescription = "loading",
+                        modifier = if (sync == LoadingState.LOADING) Modifier.rotate(float) else Modifier
+                    )
+                }
             })
         }
     })

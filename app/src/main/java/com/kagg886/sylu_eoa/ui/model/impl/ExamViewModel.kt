@@ -9,6 +9,7 @@ import com.kagg886.sylu_eoa.ui.model.BaseViewModel
 import com.kagg886.sylu_eoa.util.DayExpired
 import com.kagg886.sylu_eoa.util.ExamBean
 import com.kagg886.sylu_eoa.util.ExamBeanExpire
+import com.kagg886.sylu_eoa.util.PickerBean
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -25,28 +26,35 @@ class ExamViewModel : BaseViewModel<List<ExamItem>>() {
 
     override suspend fun onDataFetch(): List<ExamItem> {
         val list = context.getConfig(ExamBean).first()
-        val expire = context.getConfig(ExamBeanExpire).first()
-
-        if ((expire == -1L) && (list.isEmpty() || System.currentTimeMillis() > expire)) {
-            throw IllegalStateException("need web")
-        }
         val list1 = json.decodeFromString<List<ExamItem>>(list)
         return list1
     }
 
-    fun loadDataByUser(user: SyluUser) {
-        setDataLoading()
+    init {
         viewModelScope.launch {
-            try {
-                val day = context.getConfig(DayExpired).first()
-                val list = user.getExamList()
-
-                setDataLoadSuccess(list)
-                context.updateConfig(ExamBean, Json.encodeToString(list))
-                context.updateConfig(ExamBeanExpire, System.currentTimeMillis() + day * 864_000_00)
-            } catch (e:Exception) {
-                setDataLoadError(e)
+            context.getConfig(ExamBean).collect {
+                if (it.isEmpty()) {
+                    setDataLoading()
+                    return@collect
+                }
+                setDataLoadSuccess(Json.decodeFromString(it))
             }
         }
+    }
+
+    fun loadDataByUser(user: SyluUser) {
+        setDataLoading()
+//        viewModelScope.launch {
+//            try {
+//                val day = context.getConfig(DayExpired).first()
+//                val list = user.getExamList()
+//
+//                setDataLoadSuccess(list)
+//                context.updateConfig(ExamBean, Json.encodeToString(list))
+//                context.updateConfig(ExamBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+//            } catch (e:Exception) {
+//                setDataLoadError(e)
+//            }
+//        }
     }
 }

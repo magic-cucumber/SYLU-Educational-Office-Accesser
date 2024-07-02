@@ -10,6 +10,7 @@ import com.kagg886.sylu_eoa.ui.model.BaseViewModel
 import com.kagg886.sylu_eoa.util.DayExpired
 import com.kagg886.sylu_eoa.util.PickerBean
 import com.kagg886.sylu_eoa.util.PickerBeanExpire
+import com.kagg886.sylu_eoa.util.SchoolCalenderBean
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
@@ -37,34 +38,40 @@ class PickerViewModel : BaseViewModel<TermResult>() {
 
     override suspend fun onDataFetch(): TermResult {
         val list = context.getConfig(PickerBean).first()
-        val expire = context.getConfig(PickerBeanExpire).first()
-
-        if ((expire == -1L) && (list.isEmpty() || System.currentTimeMillis() > expire)) {
-            throw IllegalStateException("need web")
-        }
-
         val cd = json.decodeFromString<TermResult>(list)
         _currentTermPicker.value = cd.default
         _defaultTermPicker.value = cd.default
         return cd
     }
 
-    fun loadDataByUser(user: SyluUser) {
-        setDataLoading()
+    init {
         viewModelScope.launch {
-            try {
-                val day = context.getConfig(DayExpired).first()
-                val list = user.getAllAvailableTerms()
-
-                _currentTermPicker.value = list.default
-                _defaultTermPicker.value = list.default
-
-                setDataLoadSuccess(list)
-                context.updateConfig(PickerBean, Json.encodeToString(list))
-                context.updateConfig(PickerBeanExpire, System.currentTimeMillis() + day * 864_000_00)
-            } catch (e:Exception) {
-                setDataLoadError(e)
+            context.getConfig(PickerBean).collect {
+                if (it.isEmpty()) {
+                    setDataLoading()
+                    return@collect
+                }
+                setDataLoadSuccess(Json.decodeFromString(it))
             }
         }
+    }
+
+    fun loadDataByUser(user: SyluUser) {
+        setDataLoading()
+//        viewModelScope.launch {
+//            try {
+//                val day = context.getConfig(DayExpired).first()
+//                val list = user.getAllAvailableTerms()
+//
+//                _currentTermPicker.value = list.default
+//                _defaultTermPicker.value = list.default
+//
+//                setDataLoadSuccess(list)
+//                context.updateConfig(PickerBean, Json.encodeToString(list))
+//                context.updateConfig(PickerBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+//            } catch (e:Exception) {
+//                setDataLoadError(e)
+//            }
+//        }
     }
 }

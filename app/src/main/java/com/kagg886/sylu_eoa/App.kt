@@ -19,6 +19,7 @@ import androidx.activity.ComponentActivity
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import com.kagg886.sylu_eoa.api.v2.util.RSA
 import com.kagg886.sylu_eoa.util.PreferenceUnit
 import com.kagg886.sylu_eoa.util.newEncryptedPreferenceDataStore
@@ -39,12 +40,14 @@ private val scope = CoroutineScope(Dispatchers.IO)
 private val log = createLogger("Application")
 
 class App : Application(), Thread.UncaughtExceptionHandler {
-    private lateinit var data: DataStore<Preferences>
+    private lateinit var store: DataStore<Preferences>
+
+//    val store: DataStore<Preferences> by preferencesDataStore("store_debug")
 
     override fun onCreate() {
         super.onCreate()
 
-        data = newEncryptedPreferenceDataStore("storage", this)
+        store = newEncryptedPreferenceDataStore("storage", this)
 
         registryLogReceiver(object : LoggerReceiver {
             override fun d(msg: String) {
@@ -205,16 +208,20 @@ class App : Application(), Thread.UncaughtExceptionHandler {
 
 
     fun <T> getConfig(config: PreferenceUnit<T>): Flow<T> {
-        return data.data.map {
+        return store.data.map {
             it[config.key] ?: config.default
+        }
+    }
+
+    suspend fun <T> updateConfigSuspend(config: PreferenceUnit<T>, newVal: T = config.default) {
+        store.edit {
+            it[config.key] = newVal
         }
     }
 
     fun <T> updateConfig(config: PreferenceUnit<T>, newVal: T = config.default) {
         scope.launch {
-            data.edit {
-                it[config.key] = newVal
-            }
+            updateConfigSuspend(config, newVal)
         }
     }
 }

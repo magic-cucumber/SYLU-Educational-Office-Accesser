@@ -3,6 +3,11 @@ package com.kagg886.sylu_eoa.api.v2.bean
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+enum class SubmitType(val s: String) {
+    SAVE("xspj_bcXspj"),
+    SUBMIT("xspj_tjXspj")
+}
+
 class RelatedQuestions(
     val source: UnRelatedItem,
     val xspfb_id:String,
@@ -10,7 +15,7 @@ class RelatedQuestions(
     val pyID:String
 ): MutableList<RelatedQuestion> by mutableListOf()
 
-class RelatedQuestion(
+data class RelatedQuestion(
     val desc: String,
     val choices: List<Choice>,
     var index: Int = -1,
@@ -24,6 +29,12 @@ class RelatedQuestion(
     fun select(s: Choice) {
         this.index = choices.indexOf(s)
     }
+
+    val isNoLabelMode by lazy {
+        choices.isEmpty()
+    }
+
+    var labelValue : String = ""
 }
 
 @Serializable
