@@ -137,12 +137,16 @@ class DESCrypt(password: String) {
     }
 
     fun encrypt(input: String): String {
-        val encrypt = en.doFinal(input.toByteArray())
-        return Base64.getEncoder().encodeToString(encrypt)
+        return synchronized(en) {
+            val encrypt = en.doFinal(input.toByteArray())
+            Base64.getEncoder().encodeToString(encrypt)
+        }
     }
 
     fun decrypt(input: String): String {
-        val encrypt = de.doFinal(Base64.getDecoder().decode(input))
-        return String(encrypt)
+        return synchronized(de) {
+            val encrypt = de.doFinal(Base64.getDecoder().decode(input))
+            String(encrypt)
+        }
     }
 }

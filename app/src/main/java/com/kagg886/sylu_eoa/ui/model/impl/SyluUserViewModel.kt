@@ -25,6 +25,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.Executors
 
 private val log = createLogger("NetworkProtect")
 
@@ -168,7 +169,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
         }
         _syncStatus.value = LoadingState.LOADING
         kotlin.runCatching {
-            withContext(Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, _ -> }) {
+            withContext(Executors.newSingleThreadExecutor().asCoroutineDispatcher() + SupervisorJob() + CoroutineExceptionHandler { _, _ -> }) {
                 val currentTimeStamp = System.currentTimeMillis()
                 val day = context.getConfig(DayExpired).first()
 
