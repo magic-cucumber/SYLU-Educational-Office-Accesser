@@ -289,7 +289,7 @@ class SyluUser(
                         "xqm" to picker.asTerm().xqm,
                         "_search" to "false",
                         "nd" to "${System.currentTimeMillis()}",
-                        "queryModel.showCount" to "50",
+                        "queryModel.showCount" to "5000",
                         "queryModel.currentPage" to "1",
                         "time" to "2"
                     ).asFormBody()
@@ -359,7 +359,7 @@ class SyluUser(
                     mapOf(
                         "_search" to "false",
                         "nd" to "${System.currentTimeMillis()}",
-                        "queryModel.showCount" to "50",
+                        "queryModel.showCount" to "5000",
                         "queryModel.currentPage" to "1",
                         "time" to "0"
                     ).asFormBody()

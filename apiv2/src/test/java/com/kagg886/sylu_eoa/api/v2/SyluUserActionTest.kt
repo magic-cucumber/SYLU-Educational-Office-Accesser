@@ -65,8 +65,11 @@ class SyluUserActionTest {
 
     @Test
     fun testExamResult() = runBlocking {
+        val currentTerm = user.getAllAvailableTerms().default.asTerm()
         val list = user.getExamList()
-        list.forEach {
+        list.filter {
+            it.year == currentTerm.xnm && it.semester == currentTerm.xqm
+        }.forEach {
             log.i(it.toString())
         }
     }
