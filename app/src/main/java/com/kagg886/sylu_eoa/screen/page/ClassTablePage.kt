@@ -19,6 +19,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
@@ -91,6 +93,9 @@ fun Picker() {
     val defaultIndex by calenderViewModel.defaultWeekIndex.collectAsState()
     val all by calenderViewModel.all.collectAsState()
 
+    if (currentIndex < 0) {
+        return
+    }
 
     var choosePick by remember {
         mutableStateOf(false)
@@ -159,6 +164,16 @@ fun ClassTable() {
     val table by tableModel.data.collectAsState()
     val currentWeek by calendarViewModel.currentWeekIndex.collectAsState()
     val all by calendarViewModel.all.collectAsState()
+
+    if (currentWeek < 0) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(imageVector = Icons.Outlined.FavoriteBorder, contentDescription = "")
+                Text(text = "享受假期吧!", style = Typography.labelLarge)
+            }
+        }
+        return
+    }
 
     val init by remember {
         mutableIntStateOf(calendarViewModel.currentWeekIndex.value - 1)
