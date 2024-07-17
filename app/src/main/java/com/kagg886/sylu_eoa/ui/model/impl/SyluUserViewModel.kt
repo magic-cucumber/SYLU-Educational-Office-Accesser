@@ -169,7 +169,10 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
         }
         _syncStatus.value = LoadingState.LOADING
         kotlin.runCatching {
-            withContext(Executors.newSingleThreadExecutor().asCoroutineDispatcher() + SupervisorJob() + CoroutineExceptionHandler { _, _ -> }) {
+            withContext(Dispatchers.IO) {
+                if (force && user.isLogin()) {
+                    user.login(context.getConfig(Password).first())
+                }
                 val currentTimeStamp = System.currentTimeMillis()
                 val day = context.getConfig(DayExpired).first()
 
@@ -191,6 +194,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
                 //拉取课程表
                 val job1 = launch {
+                    job4.join()
                     val expire = context.getConfig(ClassListExpire)
                     if (expire.first() > currentTimeStamp && !force) {
                         return@launch
@@ -209,6 +213,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
                 //拉取校历
                 val job2 = launch {
+                    job1.join()
                     val expire = context.getConfig(SchoolCalenderBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
                         return@launch
@@ -226,6 +231,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
                 //拉取考试条目
                 val job3 = launch {
+                    job2.join()
                     val expire = context.getConfig(ExamBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
                         return@launch
@@ -243,6 +249,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
                 //拉取个人信息
                 val job5 = launch {
+                    job3.join()
                     val expire = context.getConfig(ProfileBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
                         return@launch
@@ -259,6 +266,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
                 //拉取gpa绩点
                 val job6 = launch {
+                    job5.join()
                     val expire = context.getConfig(GPABeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
                         return@launch
@@ -272,13 +280,11 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
                         job.join()
                     }
                 }
-
-                listOf(
-                    job1, job2, job3, job4, job5, job6
-                ).joinAll()
+                job6.join()
 
             }
         }.onFailure {
+            log.e("fetching data failed",it)
             _syncStatus.value = LoadingState.FAILED
             return
         }
