@@ -58,7 +58,10 @@ fun MainScreen() {
                         selected = select,
                         onClick = {
                             if (!select) {
-                                nav.navigate(entry.router)
+                                val last = reg?.destination?.route
+                                nav.navigate(entry.router) {
+                                    popUpTo(last ?: PageConfig.DEFAULT_ROUTER) { inclusive = true }
+                                }
                             }
                         },
                         alwaysShowLabel = false

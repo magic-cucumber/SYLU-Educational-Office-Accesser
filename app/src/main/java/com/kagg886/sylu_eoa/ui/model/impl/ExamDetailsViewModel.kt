@@ -9,6 +9,7 @@ import com.kagg886.sylu_eoa.ui.model.BaseViewModel
 import com.kagg886.sylu_eoa.util.ClassList
 import com.kagg886.sylu_eoa.util.ClassListExpire
 import com.kagg886.sylu_eoa.util.DayExpired
+import com.kagg886.sylu_eoa.util.Password
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -29,12 +30,18 @@ class ExamDetailsViewModel : BaseViewModel<List<List<String>>>() {
     fun loadDataByUser(user: SyluUser, exam: ExamItem) {
         setDataLoading()
         viewModelScope.launch {
-            try {
-                setDataLoadSuccess(user.getExamInfo(exam))
-            } catch (e:Throwable) {
-                setDataLoadError(e)
-                cancel("拉取考试信息失败",e)
-            }
+            var success = false
+            do {
+                try {
+                    setDataLoadSuccess(user.getExamInfo(exam))
+                    success = true
+                } catch (e:Throwable) {
+                    user.login(
+                        context.getConfig(Password).first()
+                    )
+                    continue
+                }
+            } while (!success)
         }
     }
 

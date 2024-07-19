@@ -2,14 +2,11 @@ package com.kagg886.sylu_eoa.ui.model.impl
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.Network
-import androidx.compose.runtime.currentRecomposeScope
 import androidx.lifecycle.viewModelScope
 import com.kagg886.sylu_eoa.api.v2.LoginFailedException
 import com.kagg886.sylu_eoa.api.v2.SyluUser
 import com.kagg886.sylu_eoa.api.v2.bean.TermResult
 import com.kagg886.sylu_eoa.api.v2.network.CookieSerializer
-import com.kagg886.sylu_eoa.api.v2.network.InFileCookieSerializer
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.ui.model.BaseViewModel
 import com.kagg886.sylu_eoa.ui.model.LoadingState
@@ -25,7 +22,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.Executors
 
 private val log = createLogger("NetworkProtect")
 
@@ -168,21 +164,23 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
             return
         }
         _syncStatus.value = LoadingState.LOADING
+        val failHandler = suspend {
+            if (force && !user.isLogin()) {
+                user.login(context.getConfig(Password).first())
+            }
+        }
         kotlin.runCatching {
             withContext(Dispatchers.IO) {
-                if (force && user.isLogin()) {
-                    user.login(context.getConfig(Password).first())
-                }
                 val currentTimeStamp = System.currentTimeMillis()
                 val day = context.getConfig(DayExpired).first()
 
                 //拉取学年学期选择器
-                val job4 = launch {
+                val job4 = launchUntilSuccess(failHandler) {
                     val expire = context.getConfig(PickerBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
-                        return@launch
+                        return@launchUntilSuccess
                     }
-                    val job = launch {
+                    val job = launchUntilSuccess(failHandler) {
                         val term = user.getAllAvailableTerms()
                         context.updateConfigSuspend(PickerBean, Json.encodeToString(term))
                         context.updateConfigSuspend(PickerBeanExpire, System.currentTimeMillis() + day * 864_000_00)
@@ -193,13 +191,13 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
                 }
 
                 //拉取课程表
-                val job1 = launch {
+                val job1 = launchUntilSuccess(failHandler) {
                     job4.join()
                     val expire = context.getConfig(ClassListExpire)
                     if (expire.first() > currentTimeStamp && !force) {
-                        return@launch
+                        return@launchUntilSuccess
                     }
-                    val job = launch {
+                    val job = launchUntilSuccess(failHandler) {
                         job4.join()
                         val term = Json.decodeFromString<TermResult>(context.getConfig(PickerBean).first())
                         val list = user.getClassTable(term.default)
@@ -212,16 +210,19 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
                 }
 
                 //拉取校历
-                val job2 = launch {
+                val job2 = launchUntilSuccess(failHandler) {
                     job1.join()
                     val expire = context.getConfig(SchoolCalenderBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
-                        return@launch
+                        return@launchUntilSuccess
                     }
-                    val job = launch {
+                    val job = launchUntilSuccess(failHandler) {
                         val list = user.getSchoolCalender()
                         context.updateConfigSuspend(SchoolCalenderBean, Json.encodeToString(list))
-                        context.updateConfigSuspend(SchoolCalenderBeanExpire, System.currentTimeMillis() + day * 864_000_00)
+                        context.updateConfigSuspend(
+                            SchoolCalenderBeanExpire,
+                            System.currentTimeMillis() + day * 864_000_00
+                        )
                     }
 
                     if (expire.first() == -1L || force) {
@@ -230,13 +231,13 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
                 }
 
                 //拉取考试条目
-                val job3 = launch {
+                val job3 = launchUntilSuccess(failHandler) {
                     job2.join()
                     val expire = context.getConfig(ExamBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
-                        return@launch
+                        return@launchUntilSuccess
                     }
-                    val job = launch {
+                    val job = launchUntilSuccess(failHandler) {
                         val list = user.getExamList()
                         context.updateConfigSuspend(ExamBean, Json.encodeToString(list))
                         context.updateConfigSuspend(ExamBeanExpire, System.currentTimeMillis() + day * 864_000_00)
@@ -248,13 +249,13 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
 
                 //拉取个人信息
-                val job5 = launch {
+                val job5 = launchUntilSuccess(failHandler) {
                     job3.join()
                     val expire = context.getConfig(ProfileBeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
-                        return@launch
+                        return@launchUntilSuccess
                     }
-                    val job = launch {
+                    val job = launchUntilSuccess(failHandler) {
                         val list = user.getUserProfile()
                         context.updateConfigSuspend(ProfileBean, Json.encodeToString(list))
                         context.updateConfigSuspend(ProfileBeanExpire, System.currentTimeMillis() + day * 864_000_00)
@@ -265,13 +266,13 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
                 }
 
                 //拉取gpa绩点
-                val job6 = launch {
+                val job6 = launchUntilSuccess(failHandler) {
                     job5.join()
                     val expire = context.getConfig(GPABeanExpire)
                     if (expire.first() > currentTimeStamp && !force) {
-                        return@launch
+                        return@launchUntilSuccess
                     }
-                    val job = launch {
+                    val job = launchUntilSuccess(failHandler) {
                         val list = user.getGPAScores()
                         context.updateConfigSuspend(GPABean, Json.encodeToString(list))
                         context.updateConfigSuspend(GPABeanExpire, System.currentTimeMillis() + day * 864_000_00)
@@ -284,7 +285,7 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
 
             }
         }.onFailure {
-            log.e("fetching data failed",it)
+            log.e("fetching data failed", it)
             _syncStatus.value = LoadingState.FAILED
             return
         }
@@ -332,3 +333,19 @@ class EncryptedInFileCookieSerializer(private val filePath: File) : CookieSerial
         filePath.delete()
     }
 }
+
+private fun CoroutineScope.launchUntilSuccess(failed: suspend () -> Unit = {}, block: suspend () -> Unit): Job =
+    launch {
+        var t: Throwable? = null
+
+        do {
+            kotlin.runCatching {
+                block()
+            }.onFailure {
+                t = it
+                failed()
+            }.onSuccess {
+                t = null
+            }
+        } while (t != null)
+    }
