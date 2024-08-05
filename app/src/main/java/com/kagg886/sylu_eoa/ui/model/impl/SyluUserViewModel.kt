@@ -165,7 +165,10 @@ class SyluUserViewModel : BaseViewModel<SyluUser>() {
         }
         _syncStatus.value = LoadingState.LOADING
         val failHandler = suspend {
-            if (force && !user.isLogin()) {
+            if (!user.isLogin()) {
+                if (!force) {
+                    throw IllegalArgumentException("")
+                }
                 user.login(context.getConfig(Password).first())
             }
         }
