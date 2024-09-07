@@ -75,7 +75,6 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize,
                     if (date != LocalDate.now()) {
                         Text(
                             text = textText,
-                            modifier = Modifier.background(Color.Transparent),
                             fontSize = 11.sp,
                             lineHeight = 10.sp,
                             textAlign = TextAlign.Center,
@@ -108,8 +107,6 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize,
                 .verticalScroll(rememberScrollState())
         ) {
             Column {
-                var time = LocalTime.of(8, 0)
-                // 时间列
                 (1..6).toList().forEach { i ->
                     Text(
                         buildAnnotatedString {
@@ -132,30 +129,17 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize,
                                 )
                             ) {
                                 withStyle(style = ParagraphStyle(lineHeight = 10.sp)) {
-                                    append(time.toString()) //8:00
-                                    time = time.plusMinutes(45)
+                                    val (start, end) = getTime(i)
+                                    append(start.toString())
                                     append("\n-\n")
-                                    append(time.toString()) //8:45
-                                    append("\n")
-                                    time = time.plusMinutes(10)
-                                    append("\n")
-                                    append(time.toString()) //8:55
-                                    time = time.plusMinutes(45)
-                                    append("\n-\n")
-                                    append(time.toString()) //9:30
-                                    time = time.plusMinutes(20)
-                                    if (time.hour == 12) {
-                                        time = LocalTime.of(13, 0)
-                                    }
-                                    if (time.hour == 18) {
-                                        time = LocalTime.of(19, 0)
-                                    }
+                                    append(end.toString())
                                 }
                             }
                         },
                         modifier = Modifier
                             .height(perHeight.dp),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        color = iconColor
                     )
                 }
             }
@@ -183,7 +167,7 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize,
                                     Spacer(modifier = Modifier.height((perHeight * empty).dp))
                                 }
                                 ClassItem(unit = list[0], height = perHeight) { offset, intSize ->
-                                    openFunc(offset,intSize,list[0])
+                                    openFunc(offset, intSize, list[0])
                                 }
 
                                 empty = 0
@@ -205,7 +189,7 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize,
 }
 
 @Composable
-fun ClassItem(unit: ClassUnit, height: Int,openFunc: (Offset, IntSize) -> Unit = {_,_->}) {
+fun ClassItem(unit: ClassUnit, height: Int, openFunc: (Offset, IntSize) -> Unit = { _, _ -> }) {
     var offset by remember {
         mutableStateOf(Offset.Zero)
     }
@@ -217,12 +201,12 @@ fun ClassItem(unit: ClassUnit, height: Int,openFunc: (Offset, IntSize) -> Unit =
             offset = it.positionInRoot()
             size = it.size
         }
-        .clickable {openFunc(offset,size)}
+        .clickable { openFunc(offset, size) }
         .height(height = height.dp)
         .padding(3.dp)
     ) {
-        val (start,end) = getTime(unit)
-        val timeAll = Duration.between(start,end).toMinutes().absoluteValue
+        val (start, end) = getTime(unit)
+        val timeAll = Duration.between(start, end).toMinutes().absoluteValue
         val now = LocalTime.now()
         if (now > start && now < end) {
             HorizontalDivider(modifier = Modifier

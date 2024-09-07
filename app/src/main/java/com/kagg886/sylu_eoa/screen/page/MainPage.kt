@@ -281,17 +281,20 @@ fun TimeLineTable(data: List<ClassUnit>) {
 }
 
 fun getTime(u: ClassUnit): Pair<LocalTime, LocalTime> {
-    val dt = (u.rangeEveryDay[0] + 1) / 2 //1-2 3-4 5-6 7-8 9-10 11-12
+    return getTime((u.rangeEveryDay[0] + 1) / 2)
+}
+
+fun getTime(dt:Int) : Pair<LocalTime, LocalTime> {
     return when (dt) {
         1 -> LocalTime.of(8, 0) to LocalTime.of(9, 40)
         2 -> LocalTime.of(10, 0) to LocalTime.of(11, 40)
         3 -> LocalTime.of(13, 0) to LocalTime.of(14, 40)
-        4 -> LocalTime.of(15, 0) to LocalTime.of(16, 40)
-        5 -> LocalTime.of(17, 0) to LocalTime.of(18, 40)
-        6 -> LocalTime.of(19, 0) to LocalTime.of(20, 40)
+        4 -> LocalTime.of(14, 50) to LocalTime.of(16, 30)
+        5 -> LocalTime.of(16, 40) to LocalTime.of(18, 20)
+        6 -> LocalTime.of(19, 30) to LocalTime.of(21, 10)
         else -> throw IllegalStateException("no this class")
     }
-}
+ }
 
 private fun getTypeInClass(u: ClassUnit, now: LocalTime = LocalTime.now()): ClassType {
     val (start, end) = getTime(u)
