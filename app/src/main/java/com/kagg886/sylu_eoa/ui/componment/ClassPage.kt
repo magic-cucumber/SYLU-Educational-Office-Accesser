@@ -50,7 +50,7 @@ fun ClassPage(date: LocalDate, list: List<ClassUnit>,openFunc: (Offset, IntSize,
     val iconColor = if (isSystemInDarkTheme()) {
         Color.White
     } else {
-        Color.Gray
+        Color.LightGray
     }
     val perHeight = 110
     Column {
