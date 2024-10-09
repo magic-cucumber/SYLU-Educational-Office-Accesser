@@ -291,7 +291,7 @@ fun getTime(dt:Int) : Pair<LocalTime, LocalTime> {
         3 -> LocalTime.of(13, 0) to LocalTime.of(14, 40)
         4 -> LocalTime.of(14, 50) to LocalTime.of(16, 30)
         5 -> LocalTime.of(16, 40) to LocalTime.of(18, 20)
-        6 -> LocalTime.of(19, 30) to LocalTime.of(21, 10)
+        6 -> LocalTime.of(18, 30) to LocalTime.of(21, 10)
         else -> throw IllegalStateException("no this class")
     }
  }
