@@ -2,6 +2,7 @@ package com.kagg886.sylu_eoa.api.v2.network
 
 import com.kagg886.sylu_eoa.api.v2.util.MyHttpLoggingInterceptor
 import com.kagg886.utils.createLogger
+import ignoreSSL
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import okhttp3.*
@@ -32,8 +33,11 @@ class NetWorkClient(
                 }
                 serializer.save(url.host, cookie)
             }
-
-        }).build()
+        })
+        .apply {
+            ignoreSSL()
+        }
+        .build()
 
     suspend fun execute(
         sub: String, builder: Request.Builder.() -> Request.Builder = { this },
