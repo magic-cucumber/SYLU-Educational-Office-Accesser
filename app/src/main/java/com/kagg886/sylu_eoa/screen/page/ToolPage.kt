@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alorma.compose.settings.ui.SettingsGroup
 import com.alorma.compose.settings.ui.SettingsMenuLink
+import com.kagg886.sylu_eoa.api.v2.bean.SubmitType
 import com.kagg886.sylu_eoa.currentActivity
 import com.kagg886.sylu_eoa.getApp
 import com.kagg886.sylu_eoa.screen.LocalNavController
@@ -116,8 +117,8 @@ fun AutoRelated(load: LoadingState) {
                             q.select(q.choices[0])
                         }
                     }
-                    user!!.submitRelatedQuestions(submit)
-//                    user!!.submitRelatedQuestions(submit,SubmitType.SAVE)
+//                    user!!.submitRelatedQuestions(submit)
+                    user!!.submitRelatedQuestions(submit, SubmitType.SAVE)
                     cur++
                     progress = cur.toFloat() / all
                 }
