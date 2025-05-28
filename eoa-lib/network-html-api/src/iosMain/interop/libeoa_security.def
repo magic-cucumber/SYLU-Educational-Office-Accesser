@@ -1,0 +1,4 @@
+headers = eoa_security.h
+staticLibraries = libeoa_security.a
+linkerOpts.ios_arm64 = -Bstatic -Lsrc/rust/target/aarch64-apple-ios/release/ -leoa_security
+libraryPaths.ios_arm64 = src/rust/target/aarch64-apple-ios/release/
