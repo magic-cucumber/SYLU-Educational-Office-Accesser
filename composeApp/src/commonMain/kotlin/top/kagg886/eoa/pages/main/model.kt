@@ -32,9 +32,8 @@ fun mainViewModel(): MainRouteViewModel {
 class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRouteViewEffect> {
     private val database = databaseBuilder().build()
 
-
     override val container: Container<MainRouteViewState, MainRouteViewEffect> = container(MainRouteViewState.Empty) {
-        if (Clock.System.now() - AppSyncMMKV.lastSync > 1.days) {
+        if (Clock.System.now() - AppSyncMMKV.lastSync > 3.days) {
             startSync()
             return@container
         }
@@ -99,7 +98,6 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                         }
                     }
                 }
-
             }
         }
 

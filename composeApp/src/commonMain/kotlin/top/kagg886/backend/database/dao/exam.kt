@@ -35,7 +35,7 @@ interface ExamDao {
     @Query("DELETE FROM exams")
     suspend fun clear()
     @Query("SELECT * FROM exams")
-    suspend fun allFlow(): Flow<List<ExamEntity>>
+    fun allFlow(): Flow<List<ExamEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: ExamEntity)

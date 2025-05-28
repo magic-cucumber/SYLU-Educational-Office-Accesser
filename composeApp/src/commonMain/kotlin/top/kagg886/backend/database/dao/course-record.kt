@@ -33,12 +33,12 @@ data class CourseRecordEntity(
 interface CourseRecordDao {
     @Query("DELETE FROM course_records")
     suspend fun clear()
-    
+
     @Query("SELECT * FROM course_records")
-    suspend fun allFlow(): Flow<List<CourseRecordEntity>>
+    fun allFlow(): Flow<List<CourseRecordEntity>>
 
     @Query("SELECT * FROM course_records WHERE courseId = :courseId")
-    suspend fun getByCourseId(courseId: Long): Flow<List<CourseRecordEntity>>
+    fun getByCourseId(courseId: Long): Flow<List<CourseRecordEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: CourseRecordEntity)

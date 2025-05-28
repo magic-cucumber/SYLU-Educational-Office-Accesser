@@ -42,6 +42,10 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.material.icons.extended)
 
+            implementation(libs.adaptive)
+//            implementation(libs.adaptive.layout)
+//            implementation(libs.adaptive.navigation)
+//            implementation(libs.adaptive.navigation.suite)
 
             implementation(libs.kermit)
             implementation(libs.okio)

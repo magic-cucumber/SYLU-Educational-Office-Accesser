@@ -5,17 +5,27 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import top.kagg886.backend.database.dao.CourseDao
+import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordDao
+import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.ExamDao
 import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.backend.database.dao.GPADao
+import top.kagg886.backend.database.dao.GPAEntity
 import top.kagg886.backend.database.dao.GPASummaryDao
+import top.kagg886.backend.database.dao.GPASummaryEntity
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
 
 @Database(
-    entities = [ExamEntity::class],
+    entities = [
+        ExamEntity::class,
+        GPASummaryEntity::class,
+        GPAEntity::class,
+        CourseEntity::class,
+        CourseRecordEntity::class
+    ],
     version = BuildConfig.DATABASE_VERSION,
 )
 @ConstructedBy(AppDatabaseConstructor::class)

@@ -33,12 +33,12 @@ data class GPAEntity(
 interface GPADao {
     @Query("DELETE FROM gpa_scores")
     suspend fun clear()
-    
+
     @Query("SELECT * FROM gpa_scores")
-    suspend fun allFlow(): Flow<List<GPAEntity>>
+     fun allFlow(): Flow<List<GPAEntity>>
 
     @Query("SELECT * FROM gpa_scores WHERE summaryId = :summaryId")
-    suspend fun getByParentId(summaryId: Long): Flow<List<GPAEntity>>
+     fun getByParentId(summaryId: Long): Flow<List<GPAEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: GPAEntity)

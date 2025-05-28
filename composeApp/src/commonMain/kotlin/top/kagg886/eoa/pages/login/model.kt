@@ -8,8 +8,11 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
+import top.kagg886.util.logger
 
 class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSideEffect> {
+
+    private val log = logger
 
     override val container = container<LoginViewModelState, LoginSideEffect>(LoginViewModelState.Empty) {
         if (AppLoginPropertiesMMKV.username.isNotEmpty() && AppLoginPropertiesMMKV.password.isNotEmpty()) {
@@ -25,11 +28,12 @@ class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSide
         reduce {
             LoginViewModelState.WaitLogin.Processing("登录中...")
         }
-
+        log.i("开始登录")
         try {
             AppLoginPropertiesMMKV.client.username = username
             AppLoginPropertiesMMKV.client.password = password
             AppLoginPropertiesMMKV.client.login {
+                log.w("发现验证码")
                 val defer = CompletableDeferred<String>(viewModelScope.coroutineContext[Job])
                 reduce {
                     LoginViewModelState.WaitLogin.VerifyCode(it,defer)
@@ -38,12 +42,10 @@ class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSide
             }
             AppLoginPropertiesMMKV.username = username
             AppLoginPropertiesMMKV.password = password
-
-            //数据同步等
-
+            log.i("登录成功")
             postSideEffect(LoginSideEffect.NavigateToMain)
         } catch (e: Exception) {
-            // 处理异常
+            log.e("登录失败",e)
             reduce {
                 LoginViewModelState.WaitLogin.Failed(e)
             }
