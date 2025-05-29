@@ -52,8 +52,9 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
     }
 
     fun startSyncForce() = intent {
+        val haveDirtyData = syncDao.getLastSyncTime(7.days.inWholeMilliseconds) != null
         reduce {
-            MainRouteViewState.SyncProcess
+            MainRouteViewState.SyncProcess(haveDirtyData)
         }
         logger.i("开始同步")
         postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Info, message = "开始同步"))
@@ -132,17 +133,34 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
 
         logger.e("同步失败！", result.exceptionOrNull())
         reduce {
-            MainRouteViewState.SyncFailed(result.exceptionOrNull()!!.message ?: "未知错误")
+            MainRouteViewState.SyncFailed(haveDirtyData,result.exceptionOrNull()!!.message ?: "未知错误")
         }
     }
 }
 
 
 sealed interface MainRouteViewState {
+    /**
+     * 初始状态
+     */
     data object Empty : MainRouteViewState
-    data object SyncProcess : MainRouteViewState
+
+    /**
+     * 正在同步
+     * @param haveDirtyData 是否在之前同步过
+     */
+    data class SyncProcess(val haveDirtyData: Boolean = false) : MainRouteViewState
+
+    /**
+     * 同步成功
+     */
     data object SyncSuccess : MainRouteViewState
-    data class SyncFailed(val message: String) : MainRouteViewState
+    /**
+     * 同步失败
+     * @param haveDirtyData 是否在之前同步过
+     * @param message 失败信息
+     */
+    data class SyncFailed(val haveDirtyData: Boolean = false,val message:String) : MainRouteViewState
 }
 
 sealed interface MainRouteViewEffect {

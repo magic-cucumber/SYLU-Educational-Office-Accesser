@@ -45,7 +45,7 @@ kotlin {
             implementation(libs.adaptive)
 //            implementation(libs.adaptive.layout)
 //            implementation(libs.adaptive.navigation)
-//            implementation(libs.adaptive.navigation.suite)
+            implementation(libs.adaptive.navigation.suite)
 
             implementation(libs.kermit)
             implementation(libs.okio)
@@ -76,6 +76,7 @@ kotlin {
 
             implementation(libs.mkmb.core)
             implementation(libs.compose.stacked.snackbar)
+            implementation(libs.compose.placeholder.material3)
 
             implementation(project(":util"))
             //方便切换到闭源后端

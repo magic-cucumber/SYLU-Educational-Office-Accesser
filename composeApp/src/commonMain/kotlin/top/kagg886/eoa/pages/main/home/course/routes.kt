@@ -1,0 +1,18 @@
+package top.kagg886.eoa.pages.main.home.course
+
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import kotlinx.serialization.Serializable
+import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
+import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailScreen
+import top.kagg886.eoa.pages.main.home.course.list.CourseListRoute
+import top.kagg886.eoa.pages.main.home.course.list.CourseListScreen
+
+@Serializable
+data object CourseRoute
+
+val installCourseGraph: NavGraphBuilder.() -> Unit = {
+    composable<CourseListRoute> { CourseListScreen() }
+    composable<CourseDetailRoute> { CourseDetailScreen(it.toRoute()) }
+}

@@ -10,6 +10,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -53,13 +55,19 @@ internal fun App() = AppTheme {
                     )
                 }
             ) {
+                val nav = LocalNavController.current
                 NavHost(
                     modifier = Modifier.fillMaxSize().padding(it),
-                    navController = LocalNavController.current,
+                    navController = nav,
                     startDestination = WelcomeRoute,
                     builder = installEOAGraph,
                 )
 
+                val stack by nav.currentBackStack.collectAsState()
+                LaunchedEffect(stack) {
+                    val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
+                    logger.i("Route Stack Modified: $flow")
+                }
             }
         }
     }
