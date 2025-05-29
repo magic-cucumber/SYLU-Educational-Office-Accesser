@@ -11,12 +11,13 @@ import top.kagg886.eoa.pages.main.home.exam.ExamRoute
 import top.kagg886.eoa.pages.main.home.exam.ExamScreen
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
 import top.kagg886.eoa.pages.main.home.summary.SummaryScreen
+import top.kagg886.eoa.util.shared.AutoInject
 
 @Serializable
 data object HomeRoute
 
 val installHomeGraph: NavGraphBuilder.() -> Unit = {
-    composable<SummaryRoute> { SummaryScreen() }
+    composable<SummaryRoute> { AutoInject { SummaryScreen() } }
     navigation<CourseRoute>(startDestination = CourseListRoute, builder = installCourseGraph)
     composable<ExamRoute> { ExamScreen() }
 }

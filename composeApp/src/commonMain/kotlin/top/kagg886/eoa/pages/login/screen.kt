@@ -287,7 +287,7 @@ private fun LoginScreenContent(
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(Modifier.width(16.dp))
-                                    Text(processingState.toast)
+                                    Text((processingState as LoginViewModelState.WaitLogin.Processing).toast)
                                 }
                                 return@AnimatedContent
                             }

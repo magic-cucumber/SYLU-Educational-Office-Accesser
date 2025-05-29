@@ -25,7 +25,9 @@ import top.kagg886.eoa.util.showSnackBar
 @Composable
 fun HomeScreen(
     route: NavigationRoute,
+    enableNavigation: Boolean = true,
     menu: @Composable (() -> Unit)? = null,
+    back: @Composable (() -> Unit)? = null,
     title: @Composable (() -> Unit)? = null,
     fabIcon: @Composable (() -> Unit)? = null,
     fabText: @Composable (() -> Unit)? = null,
@@ -54,9 +56,11 @@ fun HomeScreen(
         }
     }
     NavigationSuiteScaffold(
+        enableNavigation = enableNavigation,
         navigationSuiteItems = {
             menu(menu)
             title(title)
+            back(back)
 
             fab(onClick = fabOnClick, icon = fabIcon, text = fabText)
 

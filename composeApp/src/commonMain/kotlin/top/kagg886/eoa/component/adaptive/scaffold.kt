@@ -1,5 +1,6 @@
 package top.kagg886.eoa.component.adaptive
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirst
 import androidx.window.core.layout.WindowHeightSizeClass
@@ -53,6 +55,7 @@ import kotlin.jvm.JvmInline
 @Composable
 fun NavigationSuiteScaffold(
     navigationSuiteItems: NavigationSuiteScope.() -> Unit,
+    enableNavigation: Boolean = true,
     modifier: Modifier = Modifier,
     layoutType: NavigationSuiteType =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(WindowAdaptiveInfoDefault),
@@ -65,6 +68,7 @@ fun NavigationSuiteScaffold(
         NavigationSuiteScaffoldLayout(
             navigationSuite = {
                 NavigationSuite(
+                    enable = enableNavigation,
                     layoutType = layoutType,
                     colors = navigationSuiteColors,
                     content = navigationSuiteItems
@@ -96,6 +100,7 @@ fun NavigationSuiteScaffold(
                             val menu by scope.menu
                             val fab by scope.fabIcon
                             val fabClick by scope.fabOnClick
+                            val back by scope.back
                             Scaffold(
                                 floatingActionButton = {
                                     if (fab != null) {
@@ -109,10 +114,19 @@ fun NavigationSuiteScaffold(
                                     }
                                 },
                                 topBar = {
-                                    if (title != null || menu != null) {
+                                    if (title != null || menu != null || back != null) {
                                         TopAppBar(
                                             title = {
-                                                title?.let { it() }
+                                                ProvideTextStyle(
+                                                    MaterialTheme.typography.headlineSmall.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                    )
+                                                ) {
+                                                    title?.let { it() }
+                                                }
+                                            },
+                                            navigationIcon = {
+                                                back?.let { it() }
                                             },
                                             actions = {
                                                 menu?.let { it() }
@@ -129,12 +143,22 @@ fun NavigationSuiteScaffold(
 
                         NavigationSuiteType.NavigationRail -> {
                             val title by scope.title
+                            val back by scope.back
                             Scaffold(
                                 topBar = {
                                     if (title != null) {
                                         TopAppBar(
                                             title = {
-                                                title?.let { it() }
+                                                ProvideTextStyle(
+                                                    MaterialTheme.typography.headlineSmall.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                    )
+                                                ) {
+                                                    title?.let { it() }
+                                                }
+                                            },
+                                            navigationIcon = {
+                                                back?.let { it() }
                                             },
                                         )
                                     }
@@ -249,6 +273,7 @@ fun NavigationSuiteScaffoldLayout(
  */
 @Composable
 fun NavigationSuite(
+    enable: Boolean = true,
     modifier: Modifier = Modifier,
     layoutType: NavigationSuiteType =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(WindowAdaptiveInfoDefault),
@@ -273,7 +298,7 @@ fun NavigationSuite(
                         selected = it.selected,
                         onClick = it.onClick,
                         icon = { NavigationItemIcon(icon = it.icon, badge = it.badge) },
-                        enabled = it.enabled,
+                        enabled = it.enabled && enable,
                         label = it.label,
                         alwaysShowLabel = it.alwaysShowLabel,
                         colors = it.colors?.navigationBarItemColors
@@ -325,7 +350,7 @@ fun NavigationSuite(
                         selected = it.selected,
                         onClick = it.onClick,
                         icon = { NavigationItemIcon(icon = it.icon, badge = it.badge) },
-                        enabled = it.enabled,
+                        enabled = it.enabled && enable,
                         label = it.label,
                         alwaysShowLabel = it.alwaysShowLabel,
                         colors = it.colors?.navigationRailItemColors
@@ -347,17 +372,28 @@ fun NavigationSuite(
                 val fab by scope.fabIcon
                 val fabText by scope.fabText
                 val fabClick by scope.fabOnClick
+                val back by scope.back
 
                 Box(
                     Modifier
                         .semantics { role = Role.Tab }
                         .heightIn(min = 56.dp)
-                        .padding(8.dp)
                         .fillMaxWidth(),
                 ) {
-                    Box(Modifier.align(Alignment.CenterStart).padding(start = 16.dp)) {
-                        title?.let {
-                            it()
+                    Box(Modifier.align(Alignment.CenterStart)) {
+                        ProvideTextStyle(
+                            MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                            )
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Spacer(Modifier.width(8.dp))
+                                Box(Modifier.sizeIn(48.dp), contentAlignment = Alignment.Center) {
+                                    back?.let { it() }
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                title?.let { it() }
+                            }
                         }
                     }
                     Box(Modifier.align(Alignment.CenterEnd)) {
@@ -396,13 +432,34 @@ fun NavigationSuite(
                     NavigationDrawerItem(
                         modifier = it.modifier.padding(horizontal = 16.dp),
                         selected = it.selected,
-                        onClick = it.onClick,
+                        onClick = {
+                            if (!it.enabled) return@NavigationDrawerItem
+                            it.onClick()
+                        },
                         icon = it.icon,
                         badge = it.badge,
                         label = { it.label?.invoke() ?: Text("") },
-                        colors = it.colors?.navigationDrawerItemColors
-                            ?: defaultItemColors.navigationDrawerItemColors,
-                        interactionSource = it.interactionSource
+                        colors = if (enable)
+                            (it.colors?.navigationDrawerItemColors
+                                ?: defaultItemColors.navigationDrawerItemColors)
+                        else
+                            (NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor = Color.Transparent,
+                                unselectedContainerColor = Color.Transparent,
+                                selectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    alpha = 0.38f
+                                ),
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    alpha = 0.38f
+                                ),
+                                selectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    alpha = 0.38f
+                                ),
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                    alpha = 0.38f
+                                )
+                            )),
+                        interactionSource = if (enable) it.interactionSource else MutableInteractionSource()
                     )
                 }
             }
@@ -459,10 +516,19 @@ sealed interface NavigationSuiteScope {
     /**
      * 程序的标题
      * drawer模式下显示在drawer的左上角
-     * navigationBar，navigationRail模式下显示在content上方
+     * navigationBar，navigationRail模式下显示在content代表的top-bar里
      */
     fun title(
         title: (@Composable () -> Unit)?,
+    )
+
+    /**
+     * 返回按钮
+     * drawer模式下显示在drawer的左上角
+     * navigationBar，navigationRail模式下显示在content代表的top-bar
+     */
+    fun back(
+        back: (@Composable () -> Unit)?,
     )
 
     /**
@@ -688,6 +754,7 @@ private interface NavigationSuiteItemProvider {
 
     val title: MutableState<@Composable (() -> Unit)?>
     val menu: MutableState<@Composable (() -> Unit)?>
+    val back: MutableState<@Composable (() -> Unit)?>
 
     val fabText: MutableState<@Composable (() -> Unit)?>
     val fabIcon: MutableState<@Composable (() -> Unit)?>
@@ -744,6 +811,10 @@ private class NavigationSuiteScopeImpl : NavigationSuiteScope,
         this.title.value = title
     }
 
+    override fun back(back: @Composable (() -> Unit)?) {
+        this.back.value = back
+    }
+
     override fun menu(menu: @Composable (() -> Unit)?) {
         this.menu.value = menu
     }
@@ -764,6 +835,7 @@ private class NavigationSuiteScopeImpl : NavigationSuiteScope,
     override val fabOnClick: MutableState<(() -> Unit)?> = mutableStateOf(null)
     override val title: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val menu: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
+    override val back: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
 
     override val itemsCount: Int
         get() = itemList.size

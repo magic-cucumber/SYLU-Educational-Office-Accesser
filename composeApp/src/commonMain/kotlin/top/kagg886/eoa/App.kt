@@ -3,9 +3,11 @@ package top.kagg886.eoa
 import StackedSnackbarAnimation
 import StackedSnackbarHost
 import StackedSnakbarHostState
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -13,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -23,8 +26,10 @@ import coil3.util.Logger
 import rememberStackedSnackbarHostState
 import top.kagg886.util.initializeMMKV
 import top.kagg886.eoa.pages.installEOAGraph
+import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.welcome.WelcomeRoute
 import top.kagg886.eoa.theme.AppTheme
+import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.util.logger
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
@@ -35,6 +40,7 @@ val LocalSnackBarHost = staticCompositionLocalOf<StackedSnakbarHostState> {
     error("not provided")
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun App() = AppTheme {
     LaunchedEffect(Unit) {
@@ -47,30 +53,41 @@ internal fun App() = AppTheme {
             animation = StackedSnackbarAnimation.Slide
         )
     ) {
-        Surface(Modifier.fillMaxSize()) {
-            Scaffold(
-                snackbarHost = {
-                    StackedSnackbarHost(
-                        hostState = LocalSnackBarHost.current,
-                    )
-                }
-            ) {
+        Box(Modifier.fillMaxSize()) {
+            Surface(Modifier.fillMaxSize()) {
                 val nav = LocalNavController.current
-                NavHost(
-                    modifier = Modifier.fillMaxSize().padding(it),
-                    navController = nav,
-                    startDestination = WelcomeRoute,
-                    builder = installEOAGraph,
-                )
-
+                SharedTransitionLayout {
+                    CompositionLocalProvider(LocalShareTransitionScope provides this) {
+                        NavHost(
+                            modifier = Modifier.fillMaxSize(),
+                            navController = nav,
+                            startDestination = WelcomeRoute,
+                            builder = installEOAGraph,
+                        )
+                    }
+                }
                 val stack by nav.currentBackStack.collectAsState()
                 LaunchedEffect(stack) {
+                    if (stack.isEmpty()) {
+                        //出bug了！速速补救。
+                        nav.navigate(WelcomeRoute)
+                        return@LaunchedEffect
+                    }
                     val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
                     logger.i("Route Stack Modified: $flow")
+
                 }
             }
+
+            Box(Modifier.align(Alignment.BottomCenter)) {
+                StackedSnackbarHost(
+                    hostState = LocalSnackBarHost.current,
+                )
+            }
+
         }
     }
+
 }
 
 fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this.logger(

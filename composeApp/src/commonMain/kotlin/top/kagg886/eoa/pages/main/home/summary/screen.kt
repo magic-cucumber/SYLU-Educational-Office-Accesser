@@ -1,7 +1,6 @@
 package top.kagg886.eoa.pages.main.home.summary
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,13 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -36,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,22 +43,28 @@ import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.component.collapse.CollapsableTopAppBarScaffold
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
-import androidx.compose.material3.Badge
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.rememberSharedContentState
+import top.kagg886.eoa.util.shared.shareElementComposed
 
 @Serializable
 data object SummaryRoute
 
 @Composable
-fun SummaryScreen() = HomeScreen(NavigationRoute.SUMMARY) {
+fun SummaryScreen() = HomeScreen(
+    route = NavigationRoute.SUMMARY,
+    title = {
+        Text("概要")
+    }
+) {
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<SummaryModel>(key = syncState.toString()) {
@@ -168,6 +172,45 @@ private fun SummaryContent(
 }
 
 @Composable
+private fun SummaryCard(
+    state: SummaryState.Success?,
+    showPlaceHolder: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // Current week indicator
+                SummaryItem(
+                    showPlaceHolder = showPlaceHolder,
+                    details = "第 ${state?.weekNumber} 周",
+                    title = "当前周数",
+                )
+                // Today's classes count
+                SummaryItem(
+                    showPlaceHolder = showPlaceHolder,
+                    details = "${state?.plan?.size ?: 0} 门",
+                    title = "今日课程数",
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+
+}
+
+@Composable
 private fun SummaryContentPlaceHolder(
     state: SummaryState.Success?,
     onCourseItemClicked: (TodayClass) -> Unit = {},
@@ -178,89 +221,49 @@ private fun SummaryContentPlaceHolder(
         }
     }
 
-    CollapsableTopAppBarScaffold(
-        modifier = Modifier.fillMaxSize(),
-        background = {
-            Card(
-                modifier = it.fillMaxWidth().padding(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "今日概览",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.placeholder(
-                            visible = showPlaceHolder,
-                            highlight = PlaceholderHighlight.shimmer()
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // Current week indicator
-                        SummaryItem(
-                            showPlaceHolder = showPlaceHolder,
-                            details = "第 ${state?.weekNumber} 周",
-                            title = "当前周数",
-                        )
-                        // Today's classes count
-                        SummaryItem(
-                            showPlaceHolder = showPlaceHolder,
-                            details = "${state?.plan?.size ?: 0} 门",
-                            title = "今日课程数",
-                        )
-                    }
-                }
-            }
-        },
-        title = {
-            Text(
-                text = "今日课程",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .placeholder(
-                        visible = showPlaceHolder,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
-            )
-        },
-        content = {
-            Box(Modifier.padding(horizontal = 16.dp)) {
-                if (state?.plan?.isEmpty() == true) {
-                    Text(
-                        text = "今天没有课程安排",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = it
-                    ) {
-                        val items = state?.plan ?: List(3) { null }
-                        items(items) { course ->
-                            CourseItem(course, onCourseItemClicked)
-                        }
-                    }
-                }
+    if (state?.plan?.isEmpty() == true) {
+        Column {
+            SummaryCard(state, showPlaceHolder)
+            Box(Modifier.weight(1f),  contentAlignment = Alignment.Center) {
+                Text(
+                    text = "今天没有课程安排",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
+        return
+    }
 
-    )
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            SummaryCard(state, showPlaceHolder)
+        }
+
+        item {
+            Text(
+                text = "今日课程",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.placeholder(
+                    visible = showPlaceHolder,
+                    highlight = PlaceholderHighlight.shimmer()
+                )
+            )
+        }
+
+
+        val items = state?.plan ?: List(3) { null }
+        items(items) { course ->
+            CourseItem(course, onCourseItemClicked)
+        }
+    }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CourseItem(
     course: TodayClass?,
@@ -274,6 +277,10 @@ private fun CourseItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .shareElementComposed(
+                sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course?.recordId}"),
+                animatedVisibilityScope = LocalAnimatedContentScope.current
+            )
             .clickable(onClick = { course?.let { onCourseItemClicked(it) } }),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)

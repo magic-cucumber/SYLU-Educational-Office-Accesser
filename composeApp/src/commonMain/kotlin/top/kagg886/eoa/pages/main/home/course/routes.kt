@@ -8,11 +8,12 @@ import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailScreen
 import top.kagg886.eoa.pages.main.home.course.list.CourseListRoute
 import top.kagg886.eoa.pages.main.home.course.list.CourseListScreen
+import top.kagg886.eoa.util.shared.AutoInject
 
 @Serializable
 data object CourseRoute
 
 val installCourseGraph: NavGraphBuilder.() -> Unit = {
     composable<CourseListRoute> { CourseListScreen() }
-    composable<CourseDetailRoute> { CourseDetailScreen(it.toRoute()) }
+    composable<CourseDetailRoute> { AutoInject { CourseDetailScreen(it.toRoute()) } }
 }

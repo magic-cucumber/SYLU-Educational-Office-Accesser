@@ -15,7 +15,7 @@ class EOAApplication : Application(), SingletonImageLoader.Factory {
 
     companion object {
         @SuppressLint("DiscouragedPrivateApi", "PrivateApi")
-        fun getApp(): EOAApplication {
+        fun getApp(): Application {
             var application: Application? = null
             try {
                 val atClass = Class.forName("android.app.ActivityThread")
@@ -24,7 +24,7 @@ class EOAApplication : Application(), SingletonImageLoader.Factory {
                 application = currentApplicationMethod.invoke(null) as Application
             } catch (ignored: Exception) {
             }
-            if (application != null) return application as EOAApplication
+            if (application != null) return application
             try {
                 val atClass = Class.forName("android.app.AppGlobals")
                 val currentApplicationMethod = atClass.getDeclaredMethod("getInitialApplication")
@@ -32,7 +32,7 @@ class EOAApplication : Application(), SingletonImageLoader.Factory {
                 application = currentApplicationMethod.invoke(null) as Application
             } catch (ignored: Exception) {
             }
-            return application as EOAApplication
+            return application!!
         }
     }
 }

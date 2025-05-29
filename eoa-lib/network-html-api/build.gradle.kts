@@ -13,10 +13,11 @@ android {
     ndkVersion = "28.1.13356709"
     namespace = "top.kagg886.sylu_eoa.api.v3"
 
-    compileSdk = 21
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 35
+        minSdk = 28
+        targetSdk = 35
         externalNativeBuild {
             cmake {
                 targets += "cargo-build_eoa_security"
