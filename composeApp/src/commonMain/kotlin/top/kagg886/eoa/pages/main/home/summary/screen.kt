@@ -29,6 +29,10 @@ fun SummaryScreen() = HomeScreen(NavigationRoute.SUMMARY) {
             else -> {}
         }
     }
+    val state by model.collectAsState()
+    SummaryContent(
+        state = state
+    )
 }
 
 @Composable

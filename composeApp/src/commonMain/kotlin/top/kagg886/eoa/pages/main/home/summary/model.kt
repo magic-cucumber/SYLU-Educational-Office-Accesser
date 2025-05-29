@@ -34,25 +34,30 @@ class SummaryModel(
 
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
+        //计算今天是校历第几周
         val weekNumber = try {
             AppSyncMMKV.calender!!.calculateWeekNumber(today)
         } catch (e: IllegalStateException) {
+            //如果是假期则报错
             reduce {
                 SummaryState.FailedButSuccess(e.message!!)
             }
             return@container
         }
 
+        //获取今天的课表计划
         val plan = courseRecordDao.getTodayClassesByDateParam(
             weekNumber = weekNumber,
             dayOfWeek = today.dayOfWeek.isoDayNumber,
         )
 
+        //获取今天的要上的所有课
         val courses = run {
             val haveCourseCode = plan.map { it.courseId }.toSet()
             courseDao.all().filter { it.id in haveCourseCode }
         }
 
+        //将课表计划和课表信息合并
         reduce {
             SummaryState.Success(
                 courses.flatMap { course->
