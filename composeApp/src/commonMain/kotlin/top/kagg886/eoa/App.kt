@@ -70,7 +70,7 @@ internal fun App() = AppTheme {
                 LaunchedEffect(stack) {
                     if (stack.isEmpty()) {
                         //出bug了！速速补救。
-                        nav.navigate(WelcomeRoute)
+                        nav.navigate(MainRoute)
                         return@LaunchedEffect
                     }
                     val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }

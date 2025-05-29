@@ -8,8 +8,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import androidx.room.Relation
-import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Entity(
@@ -45,13 +43,13 @@ interface CourseRecordDao {
     suspend fun clear()
 
     @Query("SELECT * FROM course_records")
-    fun allFlow(): Flow<List<CourseRecordEntity>>
-
-    @Query("SELECT * FROM course_records")
     suspend fun all(): List<CourseRecordEntity>
 
     @Query("SELECT * FROM course_records WHERE courseId = :courseId")
-    fun getByCourseId(courseId: Long): Flow<List<CourseRecordEntity>>
+    suspend fun getByCourseId(courseId: Long): List<CourseRecordEntity>
+
+    @Query("SELECT * FROM course_records WHERE id = :recordId")
+    suspend fun getById(recordId: Long): CourseRecordEntity
 
     @Query("""
     SELECT 
@@ -62,6 +60,8 @@ interface CourseRecordDao {
         c.credits AS credits,
         c.isDegreeRequired AS isDegreeRequired,
         c.isUserAdded AS isUserAdded,
+        c.yearCode AS yearCode,
+        c.semesterCode AS semesterCode,
         
         cr.id AS record_id,
         cr.courseId AS record_courseId,

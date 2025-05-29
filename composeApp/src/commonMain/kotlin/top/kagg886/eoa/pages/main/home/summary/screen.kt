@@ -460,9 +460,3 @@ private fun SummaryItem(
         )
     }
 }
-
-@Preview
-@Composable
-fun CourseDetailScreenPreview() {
-    Text("1")
-}

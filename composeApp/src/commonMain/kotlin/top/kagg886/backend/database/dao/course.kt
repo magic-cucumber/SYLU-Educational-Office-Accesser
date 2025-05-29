@@ -16,16 +16,18 @@ data class CourseEntity(
     val classroomName: String,
     val credits: Float,
     val isDegreeRequired: Boolean,
+
+    val yearCode: String,
+    val semesterCode: String,
+
     val isUserAdded: Boolean = false
 )
 
 @Dao
 interface CourseDao {
-    @Query("DELETE FROM courses WHERE isUserAdded = false")
-    suspend fun clear()
+    @Query("DELETE FROM courses WHERE isUserAdded = false AND yearCode = :xnm AND semesterCode = :xqm")
+    suspend fun clear(xnm:String, xqm:String)
 
-    @Query("SELECT * FROM courses")
-    fun allFlow(): Flow<List<CourseEntity>>
     @Query("SELECT * FROM courses")
     suspend fun all(): List<CourseEntity>
 
@@ -34,5 +36,8 @@ interface CourseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<CourseEntity>)
+
+    @Query("SELECT * FROM courses WHERE id = :courseId")
+    suspend fun getById(courseId: Long): CourseEntity
 }
 

@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -25,17 +26,7 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
     NavigationRoute.COURSE,
     title = { Text("课程详情") },
     back = {
-        val nav = LocalNavController.current
-        IconButton(
-            onClick = {
-                nav.popBackStack()
-            }
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back"
-            )
-        }
+        BackIconButton()
     }
 ) {
     Text(

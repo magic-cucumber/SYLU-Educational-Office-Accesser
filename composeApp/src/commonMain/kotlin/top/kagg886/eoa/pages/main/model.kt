@@ -91,16 +91,24 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
 
                 val courseDao = database.courseDao()
                 val recordDao = database.courseRecordDao()
-                courseDao.clear()
+
+                with(AppSyncMMKV.picker!!.default.asTerm()) {
+                    courseDao.clear(xnm,xqm)
+                }
+
                 for (i in getClassTable(AppSyncMMKV.picker!!.default)) {
                     val bindId = courseDao.insert(
-                        item = CourseEntity(
-                            name = i.name,
-                            teacherName = i.teacher,
-                            classroomName = i.room,
-                            credits = i.score.toFloat(),
-                            isDegreeRequired = i.isDegreeProgram,
-                        )
+                        item = with(AppSyncMMKV.picker!!.default.asTerm()) {
+                            CourseEntity(
+                                name = i.name,
+                                teacherName = i.teacher,
+                                classroomName = i.room,
+                                credits = i.score.toFloat(),
+                                isDegreeRequired = i.isDegreeProgram,
+                                yearCode = xnm,
+                                semesterCode = xqm,
+                            )
+                        }
                     )
                     val dayNumber = i.dayInWeek
                     i.rangeAllTerm.forEach { weekNumber ->
