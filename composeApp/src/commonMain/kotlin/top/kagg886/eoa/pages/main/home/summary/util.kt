@@ -5,5 +5,6 @@ import kotlinx.datetime.LocalTime
 data class TodayClass(
     val name: String,
     val teacher: String,
+    val location:String,
     val date: Pair<LocalTime, LocalTime>
 )

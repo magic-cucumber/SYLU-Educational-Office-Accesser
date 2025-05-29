@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -33,14 +34,15 @@ fun mainViewModel(): MainRouteViewModel {
 
 class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRouteViewEffect> {
     val database = databaseBuilder().build()
+    private val syncDao = database.syncRecordDao()
 
     override val container: Container<MainRouteViewState, MainRouteViewEffect> = container(MainRouteViewState.Empty) {
-        logger.i("上次同步时间：${AppSyncMMKV.lastSync}")
+        logger.i("上次同步时间：${syncDao.getLastSyncTime(7.days.inWholeMilliseconds)}")
         startSync().join()
     }
 
     fun startSync() = intent {
-        if (Clock.System.now() - AppSyncMMKV.lastSync > 3.days) {
+        if (Clock.System.now() - Instant.fromEpochMilliseconds(syncDao.getLastSyncTime(7.days.inWholeMilliseconds) ?: 0) > 3.days) {
             startSyncForce()
             return@intent
         }
@@ -120,7 +122,7 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
         if (result.isSuccess) {
             postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Success, message = "同步完毕！"))
             logger.i("同步完毕！")
-            AppSyncMMKV.lastSync = Clock.System.now()
+            syncDao.markSync()
             reduce {
                 MainRouteViewState.SyncSuccess
             }

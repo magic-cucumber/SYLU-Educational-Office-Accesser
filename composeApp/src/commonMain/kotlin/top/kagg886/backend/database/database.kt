@@ -14,6 +14,8 @@ import top.kagg886.backend.database.dao.GPADao
 import top.kagg886.backend.database.dao.GPAEntity
 import top.kagg886.backend.database.dao.GPASummaryDao
 import top.kagg886.backend.database.dao.GPASummaryEntity
+import top.kagg886.backend.database.dao.SyncRecordEntity
+import top.kagg886.backend.database.dao.SyncRecordDao
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
@@ -24,7 +26,8 @@ import top.kagg886.util.dataPath
         GPASummaryEntity::class,
         GPAEntity::class,
         CourseEntity::class,
-        CourseRecordEntity::class
+        CourseRecordEntity::class,
+        SyncRecordEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
 )
@@ -35,6 +38,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun gpaDao(): GPADao
     abstract fun courseDao(): CourseDao
     abstract fun courseRecordDao(): CourseRecordDao
+
+    abstract fun syncRecordDao(): SyncRecordDao
 }
 
 // The Room compiler generates the `actual` implementations.

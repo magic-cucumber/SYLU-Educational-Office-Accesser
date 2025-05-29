@@ -1,0 +1,30 @@
+package top.kagg886.backend.database.dao
+
+import androidx.room.*
+import kotlinx.datetime.Clock
+
+@Entity(tableName = "sync_records")
+data class SyncRecordEntity(
+    @PrimaryKey(true) val id: Int? = null,
+    val updatedStamp: Long = Clock.System.now().toEpochMilliseconds()
+)
+
+@Dao
+interface SyncRecordDao {
+    @Insert
+    suspend fun markSync(record: SyncRecordEntity = SyncRecordEntity())
+
+    @Query(
+        """
+    SELECT updatedStamp 
+    FROM sync_records 
+    WHERE updatedStamp >= (:now - :duration)
+    ORDER BY updatedStamp DESC 
+    LIMIT 1
+"""
+    )
+    suspend fun getLastSyncTime(
+        duration: Long,
+        now: Long = Clock.System.now().toEpochMilliseconds()
+    ): Long?
+}

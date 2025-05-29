@@ -1,12 +1,15 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Relation
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Entity(
@@ -29,6 +32,13 @@ data class CourseRecordEntity(
     val isUserAdded: Boolean = false
 )
 
+data class CourseAndRecord(
+    @Embedded val course: CourseEntity,
+
+    @Embedded(prefix = "record_")
+    val record: CourseRecordEntity
+)
+
 @Dao
 interface CourseRecordDao {
     @Query("DELETE FROM course_records")
@@ -43,8 +53,33 @@ interface CourseRecordDao {
     @Query("SELECT * FROM course_records WHERE courseId = :courseId")
     fun getByCourseId(courseId: Long): Flow<List<CourseRecordEntity>>
 
-    @Query("SELECT * FROM course_records WHERE weekNumber = :weekNumber AND dayOfWeek = :dayOfWeek")
-    fun getTodayClassesByDateParam(weekNumber: Int, dayOfWeek: Int): List<CourseRecordEntity>
+    @Query("""
+    SELECT 
+        c.id AS id,
+        c.name AS name,
+        c.teacherName AS teacherName,
+        c.classroomName AS classroomName,
+        c.credits AS credits,
+        c.isDegreeRequired AS isDegreeRequired,
+        c.isUserAdded AS isUserAdded,
+        
+        cr.id AS record_id,
+        cr.courseId AS record_courseId,
+        cr.weekNumber AS record_weekNumber,
+        cr.dayOfWeek AS record_dayOfWeek,
+        cr.periodOfDay AS record_periodOfDay,
+        cr.isUserAdded AS record_isUserAdded
+        
+    FROM courses c
+    JOIN course_records cr ON cr.courseId = c.id
+    WHERE cr.weekNumber = :weekNumber AND cr.dayOfWeek = :dayOfWeek
+    ORDER BY cr.periodOfDay
+""")
+    suspend fun getCoursesWithRecordInfoByDate(
+        weekNumber: Int,
+        dayOfWeek: Int
+    ): List<CourseAndRecord>
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: CourseRecordEntity)

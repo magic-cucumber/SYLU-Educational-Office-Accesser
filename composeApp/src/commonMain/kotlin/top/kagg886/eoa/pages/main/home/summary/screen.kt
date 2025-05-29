@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,5 +38,14 @@ fun SummaryScreen() = HomeScreen(NavigationRoute.SUMMARY) {
 
 @Composable
 private fun SummaryContent(state: SummaryState) {
+    when (state) {
+        is SummaryState.Loading -> {
 
+        }
+        is SummaryState.Success -> {
+            Text(state.plan.toString())
+        }
+        is SummaryState.Failed -> {}
+        is SummaryState.FailedButSuccess -> {}
+    }
 }

@@ -2,7 +2,6 @@ package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.lifecycle.ViewModel
 import kotlinx.datetime.Clock
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.toLocalDateTime
@@ -21,7 +20,6 @@ class SummaryModel(
 ) : ViewModel(), ContainerHost<SummaryState, SummarySideEffect> {
     override val container: Container<SummaryState, SummarySideEffect> = container(SummaryState.Loading) {
         if (syncState == MainRouteViewState.SyncProcess) {
-            reduce { SummaryState.Syncing }
             return@container
         }
         if (syncState is MainRouteViewState.SyncFailed) {
@@ -30,7 +28,6 @@ class SummaryModel(
         }
 
         val courseRecordDao = database.courseRecordDao()
-        val courseDao = database.courseDao()
 
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
@@ -46,26 +43,21 @@ class SummaryModel(
         }
 
         //获取今天的课表计划
-        val plan = courseRecordDao.getTodayClassesByDateParam(
+        val plan = courseRecordDao.getCoursesWithRecordInfoByDate(
             weekNumber = weekNumber,
             dayOfWeek = today.dayOfWeek.isoDayNumber,
         )
 
-        //获取今天的要上的所有课
-        val courses = run {
-            val haveCourseCode = plan.map { it.courseId }.toSet()
-            courseDao.all().filter { it.id in haveCourseCode }
-        }
-
         //将课表计划和课表信息合并
         reduce {
             SummaryState.Success(
-                courses.flatMap { course->
-                    plan.filter { it.courseId == it.id }.map { record->
+                plan.groupBy { it.course }.flatMap { (course, records) ->
+                    records.map { record->
                         TodayClass(
                             name = course.name,
                             teacher = course.teacherName,
-                            date = getTimeByLessonNumber(record.periodOfDay),
+                            location = course.classroomName,
+                            date = getTimeByLessonNumber(record.record.periodOfDay)
                         )
                     }
                 }
@@ -79,11 +71,6 @@ sealed interface SummaryState {
      * 初始状态
      */
     data object Loading : SummaryState
-
-    /**
-     * 同步中
-     */
-    data object Syncing : SummaryState
 
     /**
      * 同步成功
@@ -100,7 +87,7 @@ sealed interface SummaryState {
      * 例如正在放假
      */
     data class FailedButSuccess(
-        val msg:String,
+        val msg: String,
     ) : SummaryState
 }
 
