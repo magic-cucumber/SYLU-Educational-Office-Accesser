@@ -33,7 +33,7 @@ data class ClassUnit(
         ((ls[0]).toInt() ..(ls[1]).toInt()).toList()
     }
 
-    //7周,9-11周(单),12-16周
+    //7周,9-11周(单),12-16周, 一定大于1。
     val rangeAllTerm by lazy {
         weekEachLesson.replace("周", "").split(",").map {
             val a = it.substring(0, it.length)

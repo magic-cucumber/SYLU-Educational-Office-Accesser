@@ -2,7 +2,10 @@ package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.lifecycle.ViewModel
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
@@ -14,6 +17,7 @@ import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.home.summary.SummaryState
 import top.kagg886.util.calculateWeekNumber
+import top.kagg886.util.getTimeByLessonNumber
 
 class CourseDetailViewModel(
     private val recordId: Long,
@@ -84,11 +88,34 @@ class CourseDetailViewModel(
                 else -> this / (plans.size - 1f)
             }
         }
-
+        val current = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         reduce {
             CourseDetailState.Success(
                 entity = course,
-                records = plans,
+                records = plans.map {
+                    val date =
+                        AppSyncMMKV.calender!!.start
+                            .plus(it.weekNumber - 1, DateTimeUnit.WEEK)
+                            .plus(it.dayOfWeek, DateTimeUnit.DAY)
+                    val (start, end) = getTimeByLessonNumber(it.periodOfDay)
+
+                    CourseRecordAndProgress(
+                        it.id!!,
+                        it.courseId,
+                        it.weekNumber,
+                        it.dayOfWeek,
+                        it.periodOfDay,
+                        it.isUserAdded,
+                        when {
+                            current < date.atTime(start) -> CourseRecordAndProgress.ProgressStatus.NotStarted
+                            current > date.atTime(end) -> CourseRecordAndProgress.ProgressStatus.Completed
+                            else -> CourseRecordAndProgress.ProgressStatus.InProgress
+                        },
+                        date,
+                        start,
+                        end
+                    )
+                },
                 progress = progress,
             )
         }
@@ -98,16 +125,12 @@ class CourseDetailViewModel(
 sealed interface CourseDetailState {
     data class Success(
         val entity: CourseEntity,
-        val records: List<CourseRecordEntity>,
+        val records: List<CourseRecordAndProgress>,
         val progress: Float?,
     ) : CourseDetailState
 
     data object Failed : CourseDetailState
     data object Loading : CourseDetailState
-
-    data class FailedButSuccess(
-        val msg: String,
-    ) : CourseDetailState
 }
 
 sealed interface CourseDetailSideEffect {

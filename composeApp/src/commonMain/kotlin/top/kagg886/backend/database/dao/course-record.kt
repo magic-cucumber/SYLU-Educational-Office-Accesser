@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
 data class CourseRecordEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val courseId: Long, // Foreign key to CourseEntity
-    val weekNumber: Int, // Week of the semester
+    val weekNumber: Int, // Week of the semester (start At 1)
     val dayOfWeek: Int, // Day of the week (1-7)
     val periodOfDay: Int, // Period of the day
     val isUserAdded: Boolean = false
