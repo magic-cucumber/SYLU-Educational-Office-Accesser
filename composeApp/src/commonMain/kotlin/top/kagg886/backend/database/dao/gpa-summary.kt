@@ -8,7 +8,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
 data class GPASummaryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val name: String,
-    val score: String
+    val score: Double
 )
 
 @Dao

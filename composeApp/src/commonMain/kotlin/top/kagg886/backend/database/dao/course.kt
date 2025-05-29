@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 @Entity(tableName = "courses")
 data class CourseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
+    val name: String,
     val teacherName: String,
     val classroomName: String,
     val credits: Float,
@@ -25,6 +26,8 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses")
     fun allFlow(): Flow<List<CourseEntity>>
+    @Query("SELECT * FROM courses")
+    suspend fun all(): List<CourseEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: CourseEntity): Long

@@ -16,9 +16,23 @@ class EOAClientTest {
         user.init(MemoryStorage())
         runBlocking {
             val ex = assertFailsWith(EOAClientException::class) {
-                user.login("2201010101","123456")
+                user.login()
             }
             println(ex.message)
+        }
+    }
+
+    @Test
+    fun testEOAGPA() {
+        val user = EOAHTMLClient()
+        user.init(MemoryStorage())
+        runBlocking {
+            user.login()
+            val picker = user.getGPAScores()
+            for (term in picker) {
+                val gpa = user.getGPAScoreList(term)
+                logger.i("${term.name} GPA: $gpa")
+            }
         }
     }
 
@@ -27,7 +41,7 @@ class EOAClientTest {
         val user = EOAHTMLClient()
         user.init(MemoryStorage())
         runBlocking {
-            user.login("2203050528","123456")
+            user.login()
             val picker = user.getAllAvailableTerms().default
             user.logout()
             println(user.getClassTable(picker).toString())
@@ -42,7 +56,7 @@ class EOAClientTest {
             var hasVerifyCode = false
             repeat(6) {
                 assertFailsWith(EOAClientException::class) {
-                    user.login("2201010101","123456") {
+                    user.login {
                         logger.i("发现验证码")
                         hasVerifyCode = true
                         return@login "123456"

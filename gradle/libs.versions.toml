@@ -1,6 +1,7 @@
 [versions]
 adaptive-suite = "1.8.1"
 adaptive = "1.1.1"
+composeStackedSnackbar = "1.0.4"
 ksoup = "0.2.3"
 materialIconsExtended = "1.7.3"
 mkmb-core = "1.0.1"
@@ -38,6 +39,7 @@ androidx-activityCompose = { module = "androidx.activity:activity-compose", vers
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
 androidx-uitest-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
 androidx-uitest-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-uiTest" }
+compose-stacked-snackbar = { module = "io.github.rizmaulana:compose-stacked-snackbar", version.ref = "composeStackedSnackbar" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 mkmb-core = { module = "top.kagg886.mkmb:core", version.ref = "mkmb-core" }

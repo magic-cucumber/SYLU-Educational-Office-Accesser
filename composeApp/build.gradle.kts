@@ -75,6 +75,7 @@ kotlin {
             implementation(libs.orbit.compose)
 
             implementation(libs.mkmb.core)
+            implementation(libs.compose.stacked.snackbar)
 
             implementation(project(":util"))
             //方便切换到闭源后端

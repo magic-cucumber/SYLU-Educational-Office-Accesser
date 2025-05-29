@@ -15,6 +15,8 @@ import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.toEntity
 import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.util.logger
 import kotlin.time.Duration.Companion.days
 
 @Composable
@@ -30,28 +32,37 @@ fun mainViewModel(): MainRouteViewModel {
 
 
 class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRouteViewEffect> {
-    private val database = databaseBuilder().build()
+    val database = databaseBuilder().build()
 
     override val container: Container<MainRouteViewState, MainRouteViewEffect> = container(MainRouteViewState.Empty) {
+        logger.i("上次同步时间：${AppSyncMMKV.lastSync}")
+        startSync().join()
+    }
+
+    fun startSync() = intent {
         if (Clock.System.now() - AppSyncMMKV.lastSync > 3.days) {
-            startSync()
-            return@container
+            startSyncForce()
+            return@intent
         }
         reduce {
             MainRouteViewState.SyncSuccess
         }
     }
 
-    fun startSync() = intent {
+    fun startSyncForce() = intent {
         reduce {
             MainRouteViewState.SyncProcess
         }
-
+        logger.i("开始同步")
+        postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Info, message = "开始同步"))
         val result = runCatching {
             with(AppLoginPropertiesMMKV.client) {
                 AppSyncMMKV.profile = getUserProfile()
+                logger.i("成功同步用户信息")
                 AppSyncMMKV.picker = getAllAvailableTerms()
+                logger.i("成功同步学期信息")
                 AppSyncMMKV.calender = getSchoolCalender()
+                logger.i("成功同步校历信息")
 
                 database.examDao().let {
                     it.clear()
@@ -59,6 +70,7 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                         it.insert(item.toEntity())
                     }
                 }
+                logger.i("成功同步考试信息")
 
                 val gpa = database.gpaDao()
                 database.gpaSummaryDao().let {
@@ -72,12 +84,15 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                     }
                 }
 
+                logger.i("成功同步GPA信息")
+
                 val courseDao = database.courseDao()
                 val recordDao = database.courseRecordDao()
                 courseDao.clear()
                 for (i in getClassTable(AppSyncMMKV.picker!!.default)) {
                     val bindId = courseDao.insert(
                         item = CourseEntity(
+                            name = i.name,
                             teacherName = i.teacher,
                             classroomName = i.room,
                             credits = i.score.toFloat(),
@@ -85,8 +100,8 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                         )
                     )
                     val dayNumber = i.dayInWeek
-                    i.rangeAllTerm.forEach { weekNumber->
-                        i.rangeEveryDay.forEach { lessonNumber->
+                    i.rangeAllTerm.forEach { weekNumber ->
+                        i.rangeEveryDay.forEach { lessonNumber ->
                             recordDao.insert(
                                 CourseRecordEntity(
                                     courseId = bindId,
@@ -98,15 +113,22 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                         }
                     }
                 }
+                logger.i("成功同步课程信息")
             }
         }
 
         if (result.isSuccess) {
+            postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Success, message = "同步完毕！"))
+            logger.i("同步完毕！")
+            AppSyncMMKV.lastSync = Clock.System.now()
             reduce {
                 MainRouteViewState.SyncSuccess
             }
             return@intent
         }
+        postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Error, message = "同步失败！详情请参阅日志"))
+
+        logger.e("同步失败！", result.exceptionOrNull())
         reduce {
             MainRouteViewState.SyncFailed(result.exceptionOrNull()!!.message ?: "未知错误")
         }
@@ -121,4 +143,9 @@ sealed interface MainRouteViewState {
     data class SyncFailed(val message: String) : MainRouteViewState
 }
 
-sealed interface MainRouteViewEffect
+sealed interface MainRouteViewEffect {
+    data class Toast(
+        val type: SnackBarType,
+        val message: String
+    ) : MainRouteViewEffect
+}

@@ -1,6 +1,11 @@
 package top.kagg886.eoa
 
+import StackedSnackbarAnimation
+import StackedSnackbarHost
+import StackedSnakbarHostState
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -13,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
+import rememberStackedSnackbarHostState
 import top.kagg886.util.initializeMMKV
 import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.welcome.WelcomeRoute
@@ -23,21 +29,38 @@ val LocalNavController = staticCompositionLocalOf<NavHostController> {
     error("not provided")
 }
 
+val LocalSnackBarHost = staticCompositionLocalOf<StackedSnakbarHostState> {
+    error("not provided")
+}
+
 @Composable
 internal fun App() = AppTheme {
     LaunchedEffect(Unit) {
         initializeMMKV()
     }
     CompositionLocalProvider(
-        LocalNavController provides rememberNavController()
+        LocalNavController provides rememberNavController(),
+        LocalSnackBarHost provides rememberStackedSnackbarHostState(
+            maxStack = 3,
+            animation = StackedSnackbarAnimation.Slide
+        )
     ) {
         Surface(Modifier.fillMaxSize()) {
-            NavHost(
-                modifier = Modifier.fillMaxSize(),
-                navController = LocalNavController.current,
-                startDestination = WelcomeRoute,
-                builder = installEOAGraph,
-            )
+            Scaffold(
+                snackbarHost = {
+                    StackedSnackbarHost(
+                        hostState = LocalSnackBarHost.current,
+                    )
+                }
+            ) {
+                NavHost(
+                    modifier = Modifier.fillMaxSize().padding(it),
+                    navController = LocalNavController.current,
+                    startDestination = WelcomeRoute,
+                    builder = installEOAGraph,
+                )
+
+            }
         }
     }
 }

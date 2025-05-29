@@ -37,8 +37,14 @@ interface CourseRecordDao {
     @Query("SELECT * FROM course_records")
     fun allFlow(): Flow<List<CourseRecordEntity>>
 
+    @Query("SELECT * FROM course_records")
+    suspend fun all(): List<CourseRecordEntity>
+
     @Query("SELECT * FROM course_records WHERE courseId = :courseId")
     fun getByCourseId(courseId: Long): Flow<List<CourseRecordEntity>>
+
+    @Query("SELECT * FROM course_records WHERE weekNumber = :weekNumber AND dayOfWeek = :dayOfWeek")
+    fun getTodayClassesByDateParam(weekNumber: Int, dayOfWeek: Int): List<CourseRecordEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: CourseRecordEntity)

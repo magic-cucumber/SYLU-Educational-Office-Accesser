@@ -1,15 +1,21 @@
 package top.kagg886.eoa.util
 
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.util.logger
 
 @Composable
 fun currentLayoutType(): NavigationSuiteType {
     val (w,h) = with(currentWindowAdaptiveInfo()) {
         windowSizeClass.windowWidthSizeClass to windowSizeClass.windowHeightSizeClass
+    }
+
+    LaunchedEffect(w,h) {
+        logger.i("current window layout type: $w,$h")
     }
 
     //  w\h         COMPACT           MEDIUM           EXPAND
