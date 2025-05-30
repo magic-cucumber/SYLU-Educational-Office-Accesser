@@ -1,2 +1,86 @@
 package top.kagg886.eoa.pages.main.home.exam.detail
 
+import androidx.lifecycle.ViewModel
+import org.orbitmvi.orbit.Container
+import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.viewmodel.container
+import top.kagg886.backend.config.AppSyncMMKV
+import top.kagg886.backend.database.AppDatabase
+import top.kagg886.backend.database.dao.ExamEntity
+import top.kagg886.eoa.pages.main.MainRouteViewState
+
+class ExamDetailViewModel(
+    private val recordId: Long,
+    private val syncState: MainRouteViewState,
+    database: AppDatabase
+) : ViewModel(), ContainerHost<ExamDetailState, ExamDetailSideEffect> {
+    private val examDao = database.examDao()
+
+
+    override val container: Container<ExamDetailState, ExamDetailSideEffect> =
+        container(ExamDetailState.Loading) {
+            if (syncState is MainRouteViewState.SyncFailed) {
+                // 非首次同步则展示脏数据
+                if (syncState.haveDirtyData) {
+                    setDataUnsafe().join()
+                    return@container
+                }
+                // 否则提示同步失败
+                reduce {
+                    ExamDetailState.Failed
+                }
+                return@container
+            }
+
+            // 正在同步则展示加载中
+            if (syncState is MainRouteViewState.SyncProcess) {
+                // 如果有脏数据则展示
+                if (syncState.haveDirtyData) {
+                    setDataUnsafe().join()
+                    return@container
+                }
+                // 否则展示加载中
+                reduce {
+                    ExamDetailState.Loading
+                }
+                return@container
+            }
+
+            // 同步成功则展示数据
+            if (syncState is MainRouteViewState.SyncSuccess) {
+                setDataUnsafe().join()
+                return@container
+            }
+        }
+
+    fun setDataUnsafe() = intent {
+        val exam = examDao.getById(recordId)!!
+
+        val term =
+            AppSyncMMKV.picker!!.list.first { it.asTerm().xnm == exam.year && it.asTerm().xqm == exam.semester }
+
+        reduce {
+            ExamDetailState.Success(
+                exam.copy(
+                    year = term.asDisplay().xnm,
+                    semester = term.asDisplay().xqm,
+                )
+            )
+        }
+    }
+
+}
+
+
+sealed interface ExamDetailState {
+    data class Success(
+        val records: ExamEntity,
+    ) : ExamDetailState
+
+    data object Failed : ExamDetailState
+    data object Loading : ExamDetailState
+}
+
+sealed interface ExamDetailSideEffect {
+    data class ShowToast(val message: String) : ExamDetailSideEffect
+}

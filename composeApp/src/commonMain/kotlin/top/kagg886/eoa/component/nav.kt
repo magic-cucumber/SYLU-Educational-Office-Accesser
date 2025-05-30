@@ -33,7 +33,7 @@ fun BackIconButton(
 
     IconButton(
         onClick = {
-            nav.popBackStack(MainRoute,false)
+            nav.popBackStack()
         },
         enabled = backButtonEnabled
     ) {

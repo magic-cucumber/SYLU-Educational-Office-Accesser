@@ -56,6 +56,9 @@ interface ExamDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: ExamEntity)
+
+    @Query("SELECT * FROM exams WHERE id = :id")
+    suspend fun getById(id: Long): ExamEntity?
 }
 
 fun ExamItem.toEntity(detail: List<List<String>>) = ExamEntity(

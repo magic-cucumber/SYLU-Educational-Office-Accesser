@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.exam.list
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -79,6 +80,9 @@ import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.rememberSharedContentState
+import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
 @Serializable
@@ -127,6 +131,7 @@ fun ExamListScreen() = HomeScreen(
                         Icons.Default.FilterList,
                         contentDescription = "筛选"
                     )
+
                     DrawerValue.Open -> Icon(
                         Icons.Default.Close,
                         contentDescription = "关闭"
@@ -264,7 +269,7 @@ fun ExamListScreenDrawer(
                         )
                     }
                 }
-                
+
                 // Year and Term Filters Row
                 Row(
                     modifier = Modifier
@@ -368,8 +373,8 @@ fun ExamListContent(
 ) {
     if (state?.entity?.isEmpty() == true) {
         ErrorPage(
-            title = { Text("没有考试")},
-            message = { Text("点击菜单按钮以弹出筛选框")},
+            title = { Text("没有考试") },
+            message = { Text("点击菜单按钮以弹出筛选框") },
             modifier = Modifier.fillMaxSize(),
         )
         return
@@ -584,13 +589,13 @@ private fun YearFilterDropdown(
                     text = {
                         Text(
                             text = year.yearDisplay,
-                            color = if (index == currentYearIndex) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
+                            color = if (index == currentYearIndex)
+                                MaterialTheme.colorScheme.primary
+                            else
                                 MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (index == currentYearIndex) 
-                                FontWeight.Bold 
-                            else 
+                            fontWeight = if (index == currentYearIndex)
+                                FontWeight.Bold
+                            else
                                 FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -617,11 +622,11 @@ private fun TermFilterDropdown(
     onTermChanged: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
+
     val terms = if (selector.isNotEmpty() && currentYearIndex < selector.size) {
         selector[currentYearIndex].second
     } else emptyList()
-    
+
     val currentTerm = if (terms.isNotEmpty() && currentTermIndex < terms.size) {
         terms[currentTermIndex]
     } else null
@@ -656,13 +661,13 @@ private fun TermFilterDropdown(
                     text = {
                         Text(
                             text = term.semesterDisplay,
-                            color = if (index == currentTermIndex) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
+                            color = if (index == currentTermIndex)
+                                MaterialTheme.colorScheme.primary
+                            else
                                 MaterialTheme.colorScheme.onSurface,
-                            fontWeight = if (index == currentTermIndex) 
-                                FontWeight.Bold 
-                            else 
+                            fontWeight = if (index == currentTermIndex)
+                                FontWeight.Bold
+                            else
                                 FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -679,6 +684,7 @@ private fun TermFilterDropdown(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ExamItem(
     exam: ExamEntity?,
@@ -707,7 +713,10 @@ private fun ExamItem(
                     modifier = Modifier.placeholder(
                         visible = showPlaceHolder,
                         highlight = PlaceholderHighlight.shimmer()
-                    )
+                    ).shareElementComposed(
+                        sharedContentState = rememberSharedContentState(key = "exam-to-detail-${exam?.id}"),
+                        animatedVisibilityScope = LocalAnimatedContentScope.current
+                    ),
                 )
             },
             supportingContent = {
