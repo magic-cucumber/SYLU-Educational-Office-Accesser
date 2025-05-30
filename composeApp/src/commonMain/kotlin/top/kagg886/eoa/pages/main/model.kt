@@ -70,7 +70,8 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                 database.examDao().let {
                     it.clear()
                     for (item in getExamList()) {
-                        it.insert(item.toEntity())
+                        val details = getExamInfo(item)
+                        it.insert(item.toEntity(details))
                     }
                 }
                 logger.i("成功同步考试信息")

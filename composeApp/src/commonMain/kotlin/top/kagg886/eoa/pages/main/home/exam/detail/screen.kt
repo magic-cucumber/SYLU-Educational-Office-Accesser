@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.home.exam
+package top.kagg886.eoa.pages.main.home.exam.detail
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -7,10 +7,9 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 
 @Serializable
-data object ExamRoute
+data class ExamDetailRoute(val examId: Long)
 
 @Composable
-fun ExamScreen() = HomeScreen(NavigationRoute.EXAM) {
-
+fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(NavigationRoute.EXAM) {
     Text("Exam")
 }

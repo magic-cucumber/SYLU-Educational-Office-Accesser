@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DonutLarge
 import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.TaskAlt
@@ -130,7 +129,7 @@ private fun CourseDetailPanelPhone(
     state: CourseDetailState.Success?,
     recordId: Long
 ) {
-    val visible by remember {
+    val visible by remember(state) {
         derivedStateOf {
             state == null
         }
@@ -165,7 +164,7 @@ private fun CourseDetailPanelTablet(
     state: CourseDetailState.Success?,
     recordId: Long
 ) {
-    val visible by remember {
+    val visible by remember(state) {
         derivedStateOf {
             state == null
         }

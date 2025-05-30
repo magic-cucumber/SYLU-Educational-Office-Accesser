@@ -13,10 +13,7 @@ import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
-import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
-import top.kagg886.eoa.pages.main.home.summary.SummaryState
-import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getTimeByLessonNumber
 
 class CourseDetailViewModel(

@@ -1,18 +1,18 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
+import androidx.room.TypeConverters
+import top.kagg886.backend.database.converters.ExamConverter
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
-import kotlin.text.toDouble
 
 @Entity(tableName = "exams")
+@TypeConverters(ExamConverter::class)
 data class ExamEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val year: String, //学年代号
@@ -26,7 +26,9 @@ data class ExamEntity(
     val relateScore: String, //评价
 
     val status: ExamStatus, //过，挂，重修
-    val degree: Boolean //是否学位
+    val degree: Boolean, //是否学位,
+
+    val detail: List<List<String>>, //详细表单
 )
 
 
@@ -34,14 +36,25 @@ data class ExamEntity(
 interface ExamDao {
     @Query("DELETE FROM exams")
     suspend fun clear()
-    @Query("SELECT * FROM exams")
-    fun allFlow(): Flow<List<ExamEntity>>
+
+    @Query(
+        """
+            SELECT * FROM exams
+            WHERE 
+                (:filterPassType IS NULL OR status = :filterPassType) AND
+                (:filterDegree IS NULL OR degree = :filterDegree)
+        """
+    )
+    suspend fun all(
+        filterPassType: ExamStatus? = null,
+        filterDegree: Boolean? = null
+    ): List<ExamEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: ExamEntity)
 }
 
-fun ExamItem.toEntity() = ExamEntity(
+fun ExamItem.toEntity(detail: List<List<String>>) = ExamEntity(
     year = year,
     semester = semester,
     detailsID = detailsID,
@@ -52,7 +65,8 @@ fun ExamItem.toEntity() = ExamEntity(
     absoluteScore = absoluteScore,
     relateScore = relateScore,
     status = examStatus,
-    degree = degreeProgram
+    degree = degreeProgram,
+    detail = detail
 )
 
 fun ExamEntity.toItem() = ExamItem(

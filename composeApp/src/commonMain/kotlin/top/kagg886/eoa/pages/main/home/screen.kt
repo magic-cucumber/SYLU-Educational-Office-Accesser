@@ -8,7 +8,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavDestination.Companion.hasRoute
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
@@ -67,7 +70,11 @@ fun HomeScreen(
             for (navigationRoute in NavigationRoute.entries) {
                 item(
                     selected = navigationRoute == route,
-                    onClick = { nav.navigate(navigationRoute.target) },
+                    onClick = {
+                        if (navigationRoute != route) {
+                            nav.navigate(navigationRoute.target)
+                        }
+                    },
                     icon = { Icon(navigationRoute.icon, contentDescription = navigationRoute.display) },
                     label = { Text(navigationRoute.display) },
                 )
