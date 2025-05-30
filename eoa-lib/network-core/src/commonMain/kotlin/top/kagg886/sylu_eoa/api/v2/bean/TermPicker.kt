@@ -14,6 +14,10 @@ data class TermPicker(
         return Term(yearName.second, yearCode.second)
     }
 
+    fun asDisplay(): Term {
+        return Term(yearName.first, yearCode.first)
+    }
+
     override fun toString(): String {
         return when {
 //            yearName.second.isEmpty() && yearCode.second.isEmpty() -> "全部"

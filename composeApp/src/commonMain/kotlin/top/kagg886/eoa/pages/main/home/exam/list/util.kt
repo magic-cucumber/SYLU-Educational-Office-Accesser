@@ -2,6 +2,16 @@ package top.kagg886.eoa.pages.main.home.exam.list
 
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
+data class YearSelectBean(
+    val yearDisplay: String,
+    val yearCode: String
+)
+
+data class TermSelectBean(
+    val semesterDisplay: String,
+    val semesterCode: String
+)
+
 enum class PassFilter {
     ALL, //全部
     PASS, //过
@@ -16,14 +26,14 @@ enum class DegreeFilter {
 }
 
 
-fun PassFilter.toExamStatus():ExamStatus? = when(this) {
+fun PassFilter.toExamStatus(): ExamStatus? = when (this) {
     PassFilter.ALL -> null
     PassFilter.PASS -> ExamStatus.SUCCESS
     PassFilter.NOT_PASS -> ExamStatus.FAILED
     PassFilter.RE_PASS -> ExamStatus.RE_SUCCESS
 }
 
-fun DegreeFilter.toQuery():Boolean? = when(this) {
+fun DegreeFilter.toQuery(): Boolean? = when (this) {
     DegreeFilter.ALL -> null
     DegreeFilter.ONLY_DEGREE -> true
     DegreeFilter.NO_DEGREE -> false

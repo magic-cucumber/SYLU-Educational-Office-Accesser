@@ -4,10 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -115,8 +119,8 @@ fun ExamListScreen() = HomeScreen(
         drawerContent = {
             ExamListScreenDrawer(
                 state = state as? ExamListState.Success,
-                onFilterChanged = { pass, degree ->
-                    model.filterPassType(pass, degree)
+                onFilterChanged = { pass, degree, yearIndex, termIndex ->
+                    model.filterPassType(pass, degree, yearIndex, termIndex)
                 }
             )
         },
@@ -134,7 +138,7 @@ fun ExamListScreen() = HomeScreen(
 @Composable
 fun ExamListScreenDrawer(
     state: ExamListState.Success?,
-    onFilterChanged: (PassFilter, DegreeFilter) -> Unit = { _, _ -> },
+    onFilterChanged: (PassFilter, DegreeFilter, Int, Int) -> Unit = { _, _, _, _ -> },
 ) {
     val visible by remember(state) {
         derivedStateOf {
@@ -187,7 +191,9 @@ fun ExamListScreenDrawer(
                                 if (!visible) {
                                     onFilterChanged(
                                         filter,
-                                        state?.degreeFilter ?: DegreeFilter.ALL
+                                        state?.degreeFilter ?: DegreeFilter.ALL,
+                                        state?.currentYearIndex ?: 0,
+                                        state?.currentTermIndex ?: 0
                                     )
                                 }
                             }
@@ -211,7 +217,72 @@ fun ExamListScreenDrawer(
                                 if (!visible) {
                                     onFilterChanged(
                                         state?.passFilter ?: PassFilter.ALL,
-                                        filter
+                                        filter,
+                                        state?.currentYearIndex ?: 0,
+                                        state?.currentTermIndex ?: 0
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                // Year and Term Filters Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Left column - Year Filter
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "学年:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        YearFilterDropdown(
+                            selector = state?.selector ?: emptyList(),
+                            currentYearIndex = state?.currentYearIndex ?: 0,
+                            enabled = !visible,
+                            onYearChanged = { yearIndex ->
+                                if (!visible) {
+                                    onFilterChanged(
+                                        state?.passFilter ?: PassFilter.ALL,
+                                        state?.degreeFilter ?: DegreeFilter.ALL,
+                                        yearIndex,
+                                        0 // Reset term index when year changes
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                    // Right column - Term Filter
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "学期:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        TermFilterDropdown(
+                            selector = state?.selector ?: emptyList(),
+                            currentYearIndex = state?.currentYearIndex ?: 0,
+                            currentTermIndex = state?.currentTermIndex ?: 0,
+                            enabled = !visible,
+                            onTermChanged = { termIndex ->
+                                if (!visible) {
+                                    onFilterChanged(
+                                        state?.passFilter ?: PassFilter.ALL,
+                                        state?.degreeFilter ?: DegreeFilter.ALL,
+                                        state?.currentYearIndex ?: 0,
+                                        termIndex
                                     )
                                 }
                             }
@@ -276,12 +347,12 @@ fun ExamListContent(
 
         items((state?.entity ?: List(6) { null }).chunked(2)) { exam ->
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ExamItem(
                     exam = exam[0],
-                    modifier = Modifier.weight(0.5f),
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                     onExamItemClicked = onExamItemClicked
                 )
 
@@ -292,7 +363,7 @@ fun ExamListContent(
 
                 ExamItem(
                     exam = exam[1],
-                    modifier = Modifier.weight(0.5f),
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
                     onExamItemClicked = onExamItemClicked
                 )
             }
@@ -415,6 +486,144 @@ private fun DegreeFilterDropdown(
                     },
                     onClick = {
                         onFilterChanged(filter)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun YearFilterDropdown(
+    selector: List<Pair<YearSelectBean, List<TermSelectBean>>>,
+    currentYearIndex: Int,
+    enabled: Boolean,
+    onYearChanged: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentYear = if (selector.isNotEmpty() && currentYearIndex < selector.size) {
+        selector[currentYearIndex].first
+    } else null
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = it }
+    ) {
+        OutlinedTextField(
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
+            readOnly = true,
+            value = currentYear?.yearDisplay ?: "选择学年",
+            onValueChange = {},
+            enabled = enabled,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium,
+            shape = RoundedCornerShape(8.dp)
+        )
+
+        DropdownMenu(
+            expanded = expanded && enabled,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.exposedDropdownSize()
+        ) {
+            selector.forEachIndexed { index, (year, _) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = year.yearDisplay,
+                            color = if (index == currentYearIndex) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (index == currentYearIndex) 
+                                FontWeight.Bold 
+                            else 
+                                FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    onClick = {
+                        onYearChanged(index)
+                        expanded = false
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TermFilterDropdown(
+    selector: List<Pair<YearSelectBean, List<TermSelectBean>>>,
+    currentYearIndex: Int,
+    currentTermIndex: Int,
+    enabled: Boolean,
+    onTermChanged: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    val terms = if (selector.isNotEmpty() && currentYearIndex < selector.size) {
+        selector[currentYearIndex].second
+    } else emptyList()
+    
+    val currentTerm = if (terms.isNotEmpty() && currentTermIndex < terms.size) {
+        terms[currentTermIndex]
+    } else null
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = it }
+    ) {
+        OutlinedTextField(
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
+            readOnly = true,
+            value = currentTerm?.semesterDisplay ?: "选择学期",
+            onValueChange = {},
+            enabled = enabled,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium,
+            shape = RoundedCornerShape(8.dp)
+        )
+
+        DropdownMenu(
+            expanded = expanded && enabled,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.exposedDropdownSize()
+        ) {
+            terms.forEachIndexed { index, term ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = term.semesterDisplay,
+                            color = if (index == currentTermIndex) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (index == currentTermIndex) 
+                                FontWeight.Bold 
+                            else 
+                                FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    onClick = {
+                        onTermChanged(index)
                         expanded = false
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding

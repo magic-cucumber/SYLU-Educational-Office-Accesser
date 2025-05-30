@@ -10,6 +10,7 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
 
 class ExamListViewModel(
     database: AppDatabase,
@@ -58,18 +59,54 @@ class ExamListViewModel(
             }
         }
 
-    fun filterPassType(type: PassFilter = PassFilter.ALL, degree: DegreeFilter = DegreeFilter.ALL) = intent {
-        val state = DrawerState(DrawerValue.Closed)
+    fun filterPassType(
+        type: PassFilter = PassFilter.ALL,
+        degree: DegreeFilter = DegreeFilter.ALL,
+
+        currentYearIndex:Int = 0,
+        currentTermIndex:Int = 0,
+    ) = intent {
+
         reduce {
-            ExamListState.Loading(state)
+            ExamListState.Loading(state.drawerState)
         }
-        val list = examDao.all(type.toExamStatus(), degree.toQuery())
+
+        // Map<学年，该学年的所有学期>
+        // 复用之前的对象，防止重复计算
+        val terms = (state as? ExamListState.Success)?.selector ?: mutableListOf(TERM_ALL_PICKER)
+            .plus(AppSyncMMKV.picker!!.list)
+            .map {
+                YearSelectBean(
+                    it.asDisplay().xnm,
+                    it.asTerm().xnm
+                ) to TermSelectBean(
+                    it.asDisplay().xqm,
+                    it.asTerm().xqm
+                )
+            }
+            .groupBy { it.first }
+            .map { it.key to it.value.map { it.second } }
+
+        val selectYear = terms[currentYearIndex]
+        val selectSemester = selectYear.second[currentTermIndex]
+
+        val list = examDao.all(
+            type.toExamStatus(),
+            degree.toQuery(),
+            selectYear.first.yearCode.ifEmpty { null }, // '全部' 的code为空，转成null让数据库返回正常数据
+            selectSemester.semesterCode.ifEmpty { null },
+        )
+
+
         reduce {
             ExamListState.Success(
-                type,
-                degree,
-                list,
-                state
+                passFilter = type,
+                degreeFilter = degree,
+                entity = list,
+                selector = terms,
+                currentYearIndex = currentYearIndex,
+                currentTermIndex = currentTermIndex,
+                drawerState = state.drawerState,
             )
         }
     }
@@ -77,20 +114,26 @@ class ExamListViewModel(
 }
 
 sealed interface ExamListState {
-    val drawerState:DrawerState
+    val drawerState: DrawerState
 
     data class Success(
         val passFilter: PassFilter,
         val degreeFilter: DegreeFilter,
         val entity: List<ExamEntity>,
-        override val drawerState:DrawerState
+        val selector: List<Pair<YearSelectBean, List<TermSelectBean>>>,
+
+        val currentYearIndex: Int,
+        val currentTermIndex: Int,
+
+        override val drawerState: DrawerState
     ) : ExamListState
 
     data class Failed(
-        override val drawerState:DrawerState
+        override val drawerState: DrawerState
     ) : ExamListState
+
     data class Loading(
-        override val drawerState:DrawerState
+        override val drawerState: DrawerState
     ) : ExamListState
 }
 

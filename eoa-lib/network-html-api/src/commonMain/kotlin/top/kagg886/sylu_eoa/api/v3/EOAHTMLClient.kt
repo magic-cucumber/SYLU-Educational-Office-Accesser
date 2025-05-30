@@ -226,8 +226,11 @@ class EOAHTMLClient : EOAClient {
             tempYearCodeMap[e.text()] = e.attr("value")
         }
 
-        tempYearNameMap.forEach { name ->
-            tempYearCodeMap.forEach { code ->
+        tempYearNameMap.forEach a@{ name ->
+            tempYearCodeMap.forEach b@{ code ->
+                if (code.value.isBlank()) { //过滤学期名为 全部(空)的情况
+                    return@b
+                }
                 termPickers.add(TermPicker(Pair(name.key, name.value), Pair(code.key, code.value)))
             }
         }
