@@ -42,12 +42,16 @@ interface ExamDao {
             SELECT * FROM exams
             WHERE 
                 (:filterPassType IS NULL OR status = :filterPassType) AND
-                (:filterDegree IS NULL OR degree = :filterDegree)
+                (:filterDegree IS NULL OR degree = :filterDegree) AND
+                (:yearCode IS NULL OR year = :yearCode) AND
+                (:xqmCode IS NULL OR semester = :xqmCode)
         """
     )
     suspend fun all(
         filterPassType: ExamStatus? = null,
-        filterDegree: Boolean? = null
+        filterDegree: Boolean? = null,
+        yearCode:String? = null,
+        xqmCode:String? = null
     ): List<ExamEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

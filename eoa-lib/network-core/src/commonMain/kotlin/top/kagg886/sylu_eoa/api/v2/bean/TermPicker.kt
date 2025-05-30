@@ -2,6 +2,9 @@ package top.kagg886.sylu_eoa.api.v2.bean
 
 import kotlinx.serialization.Serializable
 
+/**
+ * first为名称，second为代码。
+ */
 @Serializable
 data class TermPicker(
     private val yearName: Pair<String, String>,
@@ -39,7 +42,25 @@ data class TermPicker(
 }
 
 @Serializable
-data class Term(val xnm: String, val xqm: String)
+data class Term(val xnm: String, val xqm: String) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Term
+
+        if (xnm != other.xnm) return false
+        if (xqm != other.xqm) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = xnm.hashCode()
+        result = 31 * result + xqm.hashCode()
+        return result
+    }
+}
 
 
 val TERM_ALL_PICKER = TermPicker("全部" to "", "全部" to "")
