@@ -4,6 +4,7 @@ import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
@@ -72,8 +73,7 @@ class ExamListViewModel(
             ExamListState.Loading(state.drawerState)
         }
 
-        //计算密集型，切换线程降低卡顿
-        withContext(Dispatchers.Default) {
+        withContext(Dispatchers.IO) {
             // Map<学年，该学年的所有学期>
             // 复用之前的对象，防止重复计算
             val terms = (state as? ExamListState.Success)?.selector ?: mutableListOf(TERM_ALL_PICKER)
