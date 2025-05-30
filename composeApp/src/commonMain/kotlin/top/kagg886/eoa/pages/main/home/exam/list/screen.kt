@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -17,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
@@ -27,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
@@ -38,6 +39,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -55,7 +58,7 @@ import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
-import top.kagg886.eoa.component.collapse.CollapsableTopAppBarScaffold
+import top.kagg886.eoa.component.drawer.SupportRTLModalNavigationDrawer
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
@@ -67,7 +70,30 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 data object ExamListRoute
 
 @Composable
-fun ExamListScreen() = HomeScreen(NavigationRoute.EXAM) {
+fun ExamListScreen() = HomeScreen(
+    route = NavigationRoute.EXAM,
+    title = {
+        Text("考试列表")
+    },
+    menu = {
+        val mainViewModel = mainViewModel()
+        val syncState by mainViewModel.collectAsState()
+        val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
+            ExamListViewModel(mainViewModel.database, syncState)
+        }
+        val state by model.collectAsState()
+        val scope = rememberCoroutineScope()
+        IconButton(
+            onClick = {
+                scope.launch {
+                    state.drawerState.open()
+                }
+            }
+        ) {
+            Icon(Icons.Default.Menu, null)
+        }
+    }
+) {
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
@@ -83,22 +109,124 @@ fun ExamListScreen() = HomeScreen(NavigationRoute.EXAM) {
     }
     val state by model.collectAsState()
 
-    ExamListScreenContent(
-        state = state,
-        onExamItemClicked = {
-            model.navigateToDetail(it)
+    SupportRTLModalNavigationDrawer(
+        drawerState = state.drawerState,
+        rtlLayout = true,
+        drawerContent = {
+            ExamListScreenDrawer(
+                state = state as? ExamListState.Success,
+                onFilterChanged = { pass, degree ->
+                    model.filterPassType(pass, degree)
+                }
+            )
         },
-        onFilterChanged = { a, b ->
-            model.filterPassType(a, b)
+        content = {
+            ExamListScreenContent(
+                state,
+                onExamItemClicked = {
+                    model.navigateToDetail(it)
+                },
+            )
         }
     )
+}
+
+@Composable
+fun ExamListScreenDrawer(
+    state: ExamListState.Success?,
+    onFilterChanged: (PassFilter, DegreeFilter) -> Unit = { _, _ -> },
+) {
+    val visible by remember(state) {
+        derivedStateOf {
+            state == null
+        }
+    }
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Filter Section
+        Card(
+            modifier = Modifier.padding(16.dp),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "筛选",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Combined Filters Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Left column - Pass Status Filter
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "考试状态:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        PassFilterDropdown(
+                            selectedFilter = state?.passFilter ?: PassFilter.ALL,
+                            enabled = !visible,
+                            onFilterChanged = { filter ->
+                                if (!visible) {
+                                    onFilterChanged(
+                                        filter,
+                                        state?.degreeFilter ?: DegreeFilter.ALL
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                    // Right column - Degree Filter
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "学位课程:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        DegreeFilterDropdown(
+                            selectedFilter = state?.degreeFilter ?: DegreeFilter.ALL,
+                            enabled = !visible,
+                            onFilterChanged = { filter ->
+                                if (!visible) {
+                                    onFilterChanged(
+                                        state?.passFilter ?: PassFilter.ALL,
+                                        filter
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
 fun ExamListScreenContent(
     state: ExamListState,
     onExamItemClicked: (ExamEntity) -> Unit = {},
-    onFilterChanged: (PassFilter, DegreeFilter) -> Unit = { _, _ -> },
 ) {
     when (state) {
         is ExamListState.Failed -> {
@@ -119,7 +247,6 @@ fun ExamListScreenContent(
             ExamListContent(
                 state,
                 onExamItemClicked,
-                onFilterChanged
             )
         }
     }
@@ -128,147 +255,49 @@ fun ExamListScreenContent(
 @Composable
 fun ExamListContent(
     state: ExamListState.Success?,
-    onExamItemClicked: (ExamEntity) -> Unit = {},
-    onFilterChanged: (PassFilter, DegreeFilter) -> Unit = { _, _ -> },
+    onExamItemClicked: (ExamEntity) -> Unit,
 ) {
-    val visible by remember(state) {
-        derivedStateOf {
-            state == null
+    val layoutType = currentLayoutType()
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        if (layoutType == NavigationSuiteType.NavigationBar) {
+            items(state?.entity ?: List(6) { null }) { exam ->
+                ExamItem(
+                    exam = exam,
+                    modifier = Modifier.fillMaxWidth(),
+                    onExamItemClicked = onExamItemClicked
+                )
+            }
+            return@LazyColumn
+        }
+
+        items((state?.entity ?: List(6) { null }).chunked(2)) { exam ->
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ExamItem(
+                    exam = exam[0],
+                    modifier = Modifier.weight(0.5f),
+                    onExamItemClicked = onExamItemClicked
+                )
+
+                if (exam.size == 1) {
+                    return@Row
+                }
+                Spacer(Modifier.width(16.dp))
+
+                ExamItem(
+                    exam = exam[1],
+                    modifier = Modifier.weight(0.5f),
+                    onExamItemClicked = onExamItemClicked
+                )
+            }
         }
     }
-
-    CollapsableTopAppBarScaffold(
-        modifier = Modifier.fillMaxSize(),
-        background = {
-            Box(
-                modifier = it.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                // Filter Section
-                Card(
-                    modifier = Modifier.padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "筛选",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        // Combined Filters Row
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Left column - Pass Status Filter
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "考试状态:",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
-
-                                PassFilterDropdown(
-                                    selectedFilter = state?.passFilter ?: PassFilter.ALL,
-                                    enabled = !visible,
-                                    onFilterChanged = { filter ->
-                                        if (!visible) {
-                                            onFilterChanged(
-                                                filter,
-                                                state?.degreeFilter ?: DegreeFilter.ALL
-                                            )
-                                        }
-                                    }
-                                )
-                            }
-
-                            // Right column - Degree Filter
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "学位课程:",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
-
-                                DegreeFilterDropdown(
-                                    selectedFilter = state?.degreeFilter ?: DegreeFilter.ALL,
-                                    enabled = !visible,
-                                    onFilterChanged = { filter ->
-                                        if (!visible) {
-                                            onFilterChanged(
-                                                state?.passFilter ?: PassFilter.ALL,
-                                                filter
-                                            )
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-        },
-        title = {
-            Text("考试列表")
-        },
-        content = {
-            val layoutType = currentLayoutType()
-            LazyColumn(
-                modifier = it.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-                if (layoutType == NavigationSuiteType.NavigationBar) {
-                    items(state?.entity ?: List(6) { null }) { exam ->
-                        ExamItem(
-                            exam = exam,
-                            modifier = Modifier.fillMaxWidth(),
-                            onExamItemClicked = onExamItemClicked
-                        )
-                    }
-                    return@LazyColumn
-                }
-
-                items((state?.entity ?: List(6) { null }).chunked(2)) { exam ->
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        ExamItem(
-                            exam = exam[0],
-                            modifier = Modifier.weight(0.5f),
-                            onExamItemClicked = onExamItemClicked
-                        )
-
-                        if (exam.size == 1) {
-                            return@Row
-                        }
-                        Spacer(Modifier.width(16.dp))
-
-                        ExamItem(
-                            exam = exam[1],
-                            modifier = Modifier.weight(0.5f),
-                            onExamItemClicked = onExamItemClicked
-                        )
-                    }
-                }
-            }
-        }
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

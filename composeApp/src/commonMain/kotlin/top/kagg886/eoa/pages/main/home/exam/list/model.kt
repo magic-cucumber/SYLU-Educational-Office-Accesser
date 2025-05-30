@@ -1,5 +1,7 @@
 package top.kagg886.eoa.pages.main.home.exam.list
 
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
 import androidx.lifecycle.ViewModel
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
@@ -20,7 +22,7 @@ class ExamListViewModel(
     }
 
     override val container: Container<ExamListState, ExamListSideEffect> =
-        container(ExamListState.Loading) {
+        container(ExamListState.Loading(DrawerState(DrawerValue.Closed))) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
@@ -29,7 +31,7 @@ class ExamListViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    ExamListState.Failed
+                    ExamListState.Failed(state.drawerState)
                 }
                 return@container
             }
@@ -43,7 +45,7 @@ class ExamListViewModel(
                 }
                 // 否则展示加载中
                 reduce {
-                    ExamListState.Loading
+                    ExamListState.Loading(state.drawerState)
                 }
                 return@container
             }
@@ -56,15 +58,17 @@ class ExamListViewModel(
         }
 
     fun filterPassType(type: PassFilter = PassFilter.ALL, degree: DegreeFilter = DegreeFilter.ALL) = intent {
+        val state = DrawerState(DrawerValue.Closed)
         reduce {
-            ExamListState.Loading
+            ExamListState.Loading(state)
         }
         val list = examDao.all(type.toExamStatus(), degree.toQuery())
         reduce {
             ExamListState.Success(
                 type,
                 degree,
-                list
+                list,
+                state
             )
         }
     }
@@ -72,14 +76,21 @@ class ExamListViewModel(
 }
 
 sealed interface ExamListState {
+    val drawerState:DrawerState
+
     data class Success(
         val passFilter: PassFilter,
         val degreeFilter: DegreeFilter,
-        val entity: List<ExamEntity>
+        val entity: List<ExamEntity>,
+        override val drawerState:DrawerState
     ) : ExamListState
 
-    data object Failed : ExamListState
-    data object Loading : ExamListState
+    data class Failed(
+        override val drawerState:DrawerState
+    ) : ExamListState
+    data class Loading(
+        override val drawerState:DrawerState
+    ) : ExamListState
 }
 
 sealed interface ExamListSideEffect {
