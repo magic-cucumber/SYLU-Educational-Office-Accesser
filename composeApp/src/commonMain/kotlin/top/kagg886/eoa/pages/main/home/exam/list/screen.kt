@@ -1,5 +1,13 @@
 package top.kagg886.eoa.pages.main.home.exam.list
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,11 +28,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +84,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 @Serializable
 data object ExamListRoute
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ExamListScreen() = HomeScreen(
     route = NavigationRoute.EXAM,
@@ -90,11 +102,37 @@ fun ExamListScreen() = HomeScreen(
         IconButton(
             onClick = {
                 scope.launch {
-                    state.drawerState.open()
+                    if (state.drawerState.isOpen) {
+                        state.drawerState.close()
+                    } else {
+                        state.drawerState.open()
+                    }
                 }
             }
         ) {
-            Icon(Icons.Default.Menu, null)
+            AnimatedContent(
+                targetState = state.drawerState.currentValue,
+                transitionSpec = {
+                    if (initialState == DrawerValue.Open) {
+                        slideInVertically { height -> height } + fadeIn() togetherWith
+                                slideOutVertically { height -> -height } + fadeOut()
+                    } else {
+                        slideInVertically { height -> -height } + fadeIn() togetherWith
+                                slideOutVertically { height -> height } + fadeOut()
+                    }
+                }
+            ) {
+                when (it) {
+                    DrawerValue.Closed -> Icon(
+                        Icons.Default.FilterList,
+                        contentDescription = "筛选"
+                    )
+                    DrawerValue.Open -> Icon(
+                        Icons.Default.Close,
+                        contentDescription = "关闭"
+                    )
+                }
+            }
         }
     }
 ) {
@@ -328,6 +366,14 @@ fun ExamListContent(
     state: ExamListState.Success?,
     onExamItemClicked: (ExamEntity) -> Unit,
 ) {
+    if (state?.entity?.isEmpty() == true) {
+        ErrorPage(
+            title = { Text("没有考试")},
+            message = { Text("点击菜单按钮以弹出筛选框")},
+            modifier = Modifier.fillMaxSize(),
+        )
+        return
+    }
     val layoutType = currentLayoutType()
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
