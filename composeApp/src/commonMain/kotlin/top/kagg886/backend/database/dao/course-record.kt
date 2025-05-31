@@ -72,12 +72,12 @@ interface CourseRecordDao {
         
     FROM courses c
     JOIN course_records cr ON cr.courseId = c.id
-    WHERE cr.weekNumber = :weekNumber AND cr.dayOfWeek = :dayOfWeek
+    WHERE cr.weekNumber = :weekNumber AND (:dayOfWeek IS NULL OR cr.dayOfWeek = :dayOfWeek)
     ORDER BY cr.periodOfDay
 """)
     suspend fun getCoursesWithRecordInfoByDate(
         weekNumber: Int,
-        dayOfWeek: Int
+        dayOfWeek: Int? = null
     ): List<CourseAndRecord>
 
 
@@ -87,4 +87,5 @@ interface CourseRecordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<CourseRecordEntity>)
 }
+
 

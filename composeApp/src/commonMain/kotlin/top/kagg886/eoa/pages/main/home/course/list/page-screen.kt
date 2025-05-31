@@ -15,7 +15,7 @@ fun CoursePageListScreen(
 ) {
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<CoursePageViewModel>(key = syncState.toString()) {
+    val model = viewModel<CoursePageViewModel>(key =  "${index * 31 + syncState.hashCode()}") {
         CoursePageViewModel(syncState, index + 1, mainViewModel.database)
     }
     model.collectSideEffect {
@@ -26,6 +26,7 @@ fun CoursePageListScreen(
         state = state,
     )
 }
+
 @Composable
 private fun CoursePageScreenContent(
     state: CoursePageState

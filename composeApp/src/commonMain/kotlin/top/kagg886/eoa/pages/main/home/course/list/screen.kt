@@ -2,8 +2,10 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -54,6 +56,7 @@ private fun CourseListScreenContent(
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
+                Spacer(Modifier.width(16.dp))
                 Text("正在同步课表，请稍等。")
             }
         }
