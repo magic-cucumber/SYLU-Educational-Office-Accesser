@@ -203,11 +203,12 @@ private fun SummaryContentPlaceHolder(
     if (state?.plan?.isEmpty() == true) {
         Column {
             SummaryCard(state, showPlaceHolder)
-            Box(Modifier.weight(1f),  contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxSize(),  contentAlignment = Alignment.Center) {
                 Text(
                     text = "今天没有课程安排",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
             }
         }
