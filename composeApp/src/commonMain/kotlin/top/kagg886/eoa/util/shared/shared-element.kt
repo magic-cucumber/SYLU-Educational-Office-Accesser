@@ -26,11 +26,11 @@ import androidx.compose.ui.unit.LayoutDirection
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 val LocalShareTransitionScope = staticCompositionLocalOf<SharedTransitionScope> {
-    error("not provided")
+    error("LST not provided")
 }
 
 val LocalAnimatedContentScope = compositionLocalOf<AnimatedContentScope> {
-    error("not provided")
+    error("LAC not provided")
 }
 
 @Composable

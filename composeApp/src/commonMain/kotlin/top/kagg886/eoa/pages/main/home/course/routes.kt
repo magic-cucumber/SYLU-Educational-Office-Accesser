@@ -14,6 +14,6 @@ import top.kagg886.eoa.util.shared.AutoInject
 data object CourseRoute
 
 val installCourseGraph: NavGraphBuilder.() -> Unit = {
-    composable<CourseListRoute> { CourseListScreen() }
+    composable<CourseListRoute> { AutoInject { CourseListScreen() } }
     composable<CourseDetailRoute> { AutoInject { CourseDetailScreen(it.toRoute()) } }
 }

@@ -1,5 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,8 +39,15 @@ import kotlinx.datetime.format.char
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.database.dao.CourseAndRecord
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.applyIf
+import top.kagg886.eoa.util.shared.rememberSharedContentState
+import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.getTimeByLessonNumber
 
 @Composable
@@ -50,18 +59,28 @@ fun CoursePageListScreen(
     val model = viewModel<CoursePageViewModel>(key = "${index * 31 + syncState.hashCode()}") {
         CoursePageViewModel(syncState, index + 1, mainViewModel.database)
     }
+    val nav = LocalNavController.current
     model.collectSideEffect {
+         when (it) {
+            is CoursePageSideEffect.NavigateToCourseDetail -> {
+                nav.navigate(CourseDetailRoute(it.recordId))
+            }
+        }
     }
     val state by model.collectAsState()
 
     CoursePageScreenContent(
         state = state,
+        onCourseItemClicked = {
+            model.navigateToCourseDetail(it)
+        }
     )
 }
 
 @Composable
 private fun CoursePageScreenContent(
-    state: CoursePageState
+    state: CoursePageState,
+    onCourseItemClicked: (CourseAndRecord) -> Unit
 ) {
     when (state) {
         is CoursePageState.Failed -> {
@@ -88,15 +107,18 @@ private fun CoursePageScreenContent(
         is CoursePageState.Success -> {
             CoursePageScreenSuccess(
                 state = state,
+                onCourseItemClicked = onCourseItemClicked,
                 modifier = Modifier.fillMaxSize()
             )
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CoursePageScreenSuccess(
     state: CoursePageState.Success,
+    onCourseItemClicked: (CourseAndRecord) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(modifier.verticalScroll(rememberScrollState())) {
@@ -215,7 +237,19 @@ private fun CoursePageScreenSuccess(
                                 .offset(y = topOffset)
                                 .fillMaxWidth()
                                 .height(cardHeight)
-                                .padding(horizontal = cardPadding, vertical = cardPadding),
+                                .padding(horizontal = cardPadding, vertical = cardPadding)
+                                .applyIf(!course.hasConflict) {
+                                    shareElementComposed(
+                                        sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course.asNoConflict.record.id}"),
+                                        animatedVisibilityScope = LocalAnimatedContentScope.current
+                                    )
+                                }
+                                .clickable {
+                                    if (course.hasConflict) {
+                                        return@clickable
+                                    }
+                                    onCourseItemClicked(course.asNoConflict)
+                                },
                             shape = RoundedCornerShape(12.dp),
                             elevation = CardDefaults.elevatedCardElevation(
                                 defaultElevation = 2.dp

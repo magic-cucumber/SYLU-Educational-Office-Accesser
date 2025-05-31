@@ -1,18 +1,20 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
+import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.pages.main.MainRouteViewState
 
 class CoursePageViewModel(
@@ -60,24 +62,30 @@ class CoursePageViewModel(
         }
 
     fun setDataUnsafe() = intent {
-        val courseGroupByWeekNumber = courseRecordDao
-            .getCoursesWithRecordInfoByDate(weekNumber = weekNumber)
-            .groupBy { it.record.dayOfWeek }
-            .map { (weekNumber, courseAndRecord) ->
-                weekNumber to courseAndRecord.groupBy { it.record.periodOfDay }
-            }
-            .toMap()
+        withContext(Dispatchers.IO) {
+            val courseGroupByWeekNumber = courseRecordDao
+                .getCoursesWithRecordInfoByDate(weekNumber = weekNumber)
+                .groupBy { it.record.dayOfWeek }
+                .map { (weekNumber, courseAndRecord) ->
+                    weekNumber to courseAndRecord.groupBy { it.record.periodOfDay }
+                }
+                .toMap()
 
-        reduce {
-            CoursePageState.Success(
-                thisWeekStartDate = AppSyncMMKV.calender!!.start.plus(
-                    weekNumber - 1,
-                    DateTimeUnit.WEEK
-                ),
-                currentWeekCourse = courseGroupByWeekNumber,
-                currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            )
+            reduce {
+                CoursePageState.Success(
+                    thisWeekStartDate = AppSyncMMKV.calender!!.start.plus(
+                        weekNumber - 1,
+                        DateTimeUnit.WEEK
+                    ),
+                    currentWeekCourse = courseGroupByWeekNumber,
+                    currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                )
+            }
         }
+    }
+
+    fun navigateToCourseDetail(it: CourseAndRecord) = intent {
+        postSideEffect(CoursePageSideEffect.NavigateToCourseDetail(it.record.id!!))
     }
 }
 
@@ -93,4 +101,5 @@ sealed interface CoursePageState {
 }
 
 sealed interface CoursePageSideEffect {
+    data class NavigateToCourseDetail(val recordId: Long) : CoursePageSideEffect
 }
