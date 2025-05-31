@@ -7,12 +7,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -22,15 +25,20 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +67,7 @@ import top.kagg886.eoa.util.showSnackBar
 @Serializable
 data object CourseListRoute
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CourseListScreen() {
     val nav = LocalNavController.current
@@ -101,6 +109,7 @@ fun CourseListScreen() {
             val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
                 CourseListViewModel(syncState)
             }
+            val state by model.collectAsState()
 
 
             var iconExpanded by remember {
@@ -118,6 +127,34 @@ fun CourseListScreen() {
                 )
             }
 
+            var jumpModal by rememberSaveable {
+                mutableStateOf(false)
+            }
+
+            if (jumpModal) {
+                ModalBottomSheet(
+                    onDismissRequest = { jumpModal = false }
+                ) {
+                    val weeks = (state as? CourseListState.Success)?.allWeek ?: -1
+                    if (weeks == -1) {
+                        return@ModalBottomSheet
+                    }
+                    LazyColumn {
+                        items((1..weeks).toList()) {
+                            ListItem(
+                                headlineContent = {
+                                    Text("第 $it 周")
+                                },
+                                modifier = Modifier.clickable {
+                                    model.selectToWeek(it)
+                                    jumpModal = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             DropdownMenu(
                 expanded = iconExpanded,
                 onDismissRequest = {
@@ -129,7 +166,18 @@ fun CourseListScreen() {
                         Text("回到本周")
                     },
                     onClick = {
-                        model.selectToThisWeek()
+                        model.selectToWeek()
+                        iconExpanded = false
+                    }
+                )
+
+                DropdownMenuItem(
+                    text = {
+                        Text("跳转到...")
+                    },
+                    onClick = {
+                        jumpModal = true
+                        iconExpanded = false
                     }
                 )
             }
@@ -159,13 +207,15 @@ fun CourseListScreen() {
         val state by model.collectAsState()
         val toast = LocalSnackBarHost.current
         val scope = rememberCoroutineScope()
+
         model.collectSideEffect {
             when (it) {
                 is CourseListSideEffect.Toast -> {
                     scope.launch {
-                        toast.showSnackBar(type = SnackBarType.Warning,it.msg)
+                        toast.showSnackBar(type = SnackBarType.Warning, it.msg)
                     }
                 }
+
                 is CourseListSideEffect.ScrollToCurrentWeek -> {
                     // 在 UI 层执行动画，这里已经有正确的 Compose 上下文
                     scope.launch {
@@ -181,6 +231,7 @@ fun CourseListScreen() {
     }
 
 }
+
 @Composable
 private fun CourseListScreenContent(
     state: CourseListState,

@@ -1,6 +1,8 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,9 +23,13 @@ fun CourseManageListScreen() = HomeScreen(
     route = NavigationRoute.COURSE,
     menu = { BackIconButton() },
     title = { Text("管理课程") },
-    modifier = Modifier.shareElementComposed(
-        sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
-        animatedVisibilityScope = LocalAnimatedContentScope.current
-    )
 ) {
+    Surface(
+        Modifier.fillMaxSize().shareElementComposed(
+            sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
+            animatedVisibilityScope = LocalAnimatedContentScope.current
+        )
+    ) {
+
+    }
 }

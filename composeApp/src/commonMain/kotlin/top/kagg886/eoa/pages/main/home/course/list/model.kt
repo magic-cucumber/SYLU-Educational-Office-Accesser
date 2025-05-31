@@ -83,19 +83,19 @@ class CourseListViewModel(
     }
 
     @OptIn(OrbitExperimental::class)
-    fun selectToThisWeek() = intent {
+    fun selectToWeek(data: Int? = null) = intent {
         val s = state
         if (s !is CourseListState.Success) {
             postSideEffect(CourseListSideEffect.Toast("正在加载中，请稍等片刻"))
             return@intent
         }
-
-        if ((s.currentWeek-1) == s.state.currentPage) {
+        val week = data ?: (s.currentWeek - 1)
+        if (week == s.state.currentPage) {
             postSideEffect(CourseListSideEffect.Toast("当前周数无需跳转"))
             return@intent
         }
         // 只发送事件，不直接处理动画
-        postSideEffect(CourseListSideEffect.ScrollToCurrentWeek(s.currentWeek - 1))
+        postSideEffect(CourseListSideEffect.ScrollToCurrentWeek(week))
     }
 }
 
