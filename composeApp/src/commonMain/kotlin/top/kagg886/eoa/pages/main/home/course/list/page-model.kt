@@ -1,10 +1,14 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.lifecycle.ViewModel
-import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
@@ -70,7 +74,8 @@ class CoursePageViewModel(
                     weekNumber - 1,
                     DateTimeUnit.WEEK
                 ),
-                currentWeekCourse = courseGroupByWeekNumber
+                currentWeekCourse = courseGroupByWeekNumber,
+                currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
             )
         }
     }
@@ -82,6 +87,7 @@ sealed interface CoursePageState {
     data object Failed : CoursePageState
     data class Success(
         val thisWeekStartDate: LocalDate,
+        val currentDate: LocalDate,
         val currentWeekCourse: Map<Int, Map<Int, MaybeConflictCourse>> //key为星期几，值为 该天的所有课程
     ) : CoursePageState
 }
