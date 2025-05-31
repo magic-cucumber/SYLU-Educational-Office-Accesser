@@ -7,9 +7,9 @@ fun StackedSnakbarHostState.showSnackBar(
     type: SnackBarType,
     title: String,
     description: String? = null,
-    actionTitle: String? = null,
-    action: (() -> Unit)? = null,
-    duration: StackedSnackbarDuration = StackedSnackbarDuration.Indefinite,
+    actionTitle: String = "关闭",
+    action: (() -> Unit) = {},
+    duration: StackedSnackbarDuration = StackedSnackbarDuration.Short,
 ) {
     when (type) {
         SnackBarType.Info -> showInfoSnackbar(

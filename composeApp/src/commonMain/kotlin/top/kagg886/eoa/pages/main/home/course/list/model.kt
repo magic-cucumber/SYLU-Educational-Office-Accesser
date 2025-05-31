@@ -1,15 +1,22 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.runtime.withFrameNanos
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
+import top.kagg886.util.logger
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
@@ -74,6 +81,22 @@ class CourseListViewModel(
             )
         }
     }
+
+    @OptIn(OrbitExperimental::class)
+    fun selectToThisWeek() = intent {
+        val s = state
+        if (s !is CourseListState.Success) {
+            postSideEffect(CourseListSideEffect.Toast("正在加载中，请稍等片刻"))
+            return@intent
+        }
+
+        if ((s.currentWeek-1) == s.state.currentPage) {
+            postSideEffect(CourseListSideEffect.Toast("当前周数无需跳转"))
+            return@intent
+        }
+        // 只发送事件，不直接处理动画
+        postSideEffect(CourseListSideEffect.ScrollToCurrentWeek(s.currentWeek - 1))
+    }
 }
 
 
@@ -93,5 +116,6 @@ sealed interface CourseListState {
 }
 
 sealed interface CourseListSideEffect {
-
+    data class Toast(val msg: String) : CourseListSideEffect
+    data class ScrollToCurrentWeek(val page: Int) : CourseListSideEffect
 }

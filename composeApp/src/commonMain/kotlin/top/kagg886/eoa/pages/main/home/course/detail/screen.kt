@@ -47,10 +47,12 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.list.asNoConflict
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
 data class CourseDetailRoute(val recordId: Long)
@@ -75,7 +77,7 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
     model.collectSideEffect {
         when (it) {
             is CourseDetailSideEffect.ShowToast -> {
-                toast.showInfoSnackbar(it.message)
+                toast.showSnackBar(type = SnackBarType.Info,it.message)
             }
         }
     }

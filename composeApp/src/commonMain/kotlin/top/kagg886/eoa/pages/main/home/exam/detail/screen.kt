@@ -53,6 +53,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
 @Serializable
@@ -79,7 +81,7 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     model.collectSideEffect {
         when (it) {
             is ExamDetailSideEffect.ShowToast -> {
-                toast.showInfoSnackbar(it.message)
+                toast.showSnackBar(type = SnackBarType.Info,it.message)
             }
         }
     }
