@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -42,128 +43,144 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
+import top.kagg886.eoa.pages.main.home.course.manage.list.CourseManageListRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.rememberSharedContentState
+import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
 data object CourseListRoute
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun CourseListScreen() = HomeScreen(
-    route = NavigationRoute.COURSE,
-    title = {
-        val mainViewModel = mainViewModel()
-        val syncState by mainViewModel.collectAsState()
-        val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
-            CourseListViewModel(syncState)
-        }
-
-        val state by model.collectAsState()
-
-        AnimatedContent(
-            targetState = (state as? CourseListState.Success)?.state?.currentPage ?: -1,
-            transitionSpec = {
-                if (targetState > initialState) {
-                    slideInVertically { height -> height } + fadeIn() togetherWith
-                            slideOutVertically { height -> -height } + fadeOut()
-                } else {
-                    slideInVertically { height -> -height } + fadeIn() togetherWith
-                            slideOutVertically { height -> height } + fadeOut()
-                }
+fun CourseListScreen() {
+    val nav = LocalNavController.current
+    HomeScreen(
+        route = NavigationRoute.COURSE,
+        title = {
+            val mainViewModel = mainViewModel()
+            val syncState by mainViewModel.collectAsState()
+            val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
+                CourseListViewModel(syncState)
             }
-        ) {
-            Text(
-                text = "第 ${it + 1} 周",
-                modifier = Modifier.placeholder(
-                    visible = it == -1,
-                    highlight = PlaceholderHighlight.shimmer()
+
+            val state by model.collectAsState()
+
+            AnimatedContent(
+                targetState = (state as? CourseListState.Success)?.state?.currentPage ?: -1,
+                transitionSpec = {
+                    if (targetState > initialState) {
+                        slideInVertically { height -> height } + fadeIn() togetherWith
+                                slideOutVertically { height -> -height } + fadeOut()
+                    } else {
+                        slideInVertically { height -> -height } + fadeIn() togetherWith
+                                slideOutVertically { height -> height } + fadeOut()
+                    }
+                }
+            ) {
+                Text(
+                    text = "第 ${it + 1} 周",
+                    modifier = Modifier.placeholder(
+                        visible = it == -1,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
                 )
+            }
+        },
+        menu = {
+            val mainViewModel = mainViewModel()
+            val syncState by mainViewModel.collectAsState()
+            val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
+                CourseListViewModel(syncState)
+            }
+
+
+            var iconExpanded by remember {
+                mutableStateOf(false)
+            }
+
+            IconButton(
+                onClick = {
+                    iconExpanded = true
+                },
+            ) {
+                Icon(
+                    Icons.Default.Menu,
+                    contentDescription = "Menu",
+                )
+            }
+
+            DropdownMenu(
+                expanded = iconExpanded,
+                onDismissRequest = {
+                    iconExpanded = false
+                }
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text("回到本周")
+                    },
+                    onClick = {
+                        model.selectToThisWeek()
+                    }
+                )
+            }
+        },
+        fabIcon = {
+            Icon(
+                Icons.AutoMirrored.Filled.ViewList,
+                contentDescription = "ViewList",
             )
-        }
-    },
-    menu = {
+        },
+        fabText = {
+            Text("管理课表")
+        },
+        fabOnClick = {
+            nav.navigate(CourseManageListRoute)
+        },
+        fabModifier = Modifier.shareElementComposed(
+            sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
+            animatedVisibilityScope = LocalAnimatedContentScope.current
+        )
+    ) {
         val mainViewModel = mainViewModel()
         val syncState by mainViewModel.collectAsState()
         val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
             CourseListViewModel(syncState)
         }
-
-
-        var iconExpanded by remember {
-            mutableStateOf(false)
-        }
-
-        IconButton(
-            onClick = {
-                iconExpanded = true
-            },
-        ) {
-            Icon(
-                Icons.Default.Menu,
-                contentDescription = "Menu",
-            )
-        }
-
-        DropdownMenu(
-            expanded = iconExpanded,
-            onDismissRequest = {
-                iconExpanded = false
-            }
-        ) {
-            DropdownMenuItem(
-                text = {
-                    Text("回到本周")
-                },
-                onClick = {
-                    model.selectToThisWeek()
+        val state by model.collectAsState()
+        val toast = LocalSnackBarHost.current
+        val scope = rememberCoroutineScope()
+        model.collectSideEffect {
+            when (it) {
+                is CourseListSideEffect.Toast -> {
+                    scope.launch {
+                        toast.showSnackBar(type = SnackBarType.Warning,it.msg)
+                    }
                 }
-            )
+                is CourseListSideEffect.ScrollToCurrentWeek -> {
+                    // 在 UI 层执行动画，这里已经有正确的 Compose 上下文
+                    scope.launch {
+                        (state as? CourseListState.Success)?.state?.animateScrollToPage(it.page)
+                    }
+                }
+            }
         }
-    },
-    fabIcon = {
-        Icon(
-            Icons.AutoMirrored.Filled.ViewList,
-            contentDescription = "ViewList",
+
+        CourseListScreenContent(
+            state = state,
         )
-    },
-    fabText = {
-        Text("管理课表")
-    }
-) {
-    val mainViewModel = mainViewModel()
-    val syncState by mainViewModel.collectAsState()
-    val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
-        CourseListViewModel(syncState)
-    }
-    val state by model.collectAsState()
-    val toast = LocalSnackBarHost.current
-    val scope = rememberCoroutineScope()
-    model.collectSideEffect {
-        when (it) {
-            is CourseListSideEffect.Toast -> {
-                scope.launch {
-                    toast.showSnackBar(type = SnackBarType.Warning,it.msg)
-                }
-            }
-            is CourseListSideEffect.ScrollToCurrentWeek -> {
-                // 在 UI 层执行动画，这里已经有正确的 Compose 上下文
-                scope.launch {
-                    (state as? CourseListState.Success)?.state?.animateScrollToPage(it.page)
-                }
-            }
-        }
     }
 
-    CourseListScreenContent(
-        state = state,
-    )
 }
-
 @Composable
 private fun CourseListScreenContent(
     state: CourseListState,

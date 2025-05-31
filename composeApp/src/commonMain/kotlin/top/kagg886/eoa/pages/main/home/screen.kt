@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hasRoute
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -35,6 +36,8 @@ fun HomeScreen(
     fabIcon: @Composable (() -> Unit)? = null,
     fabText: @Composable (() -> Unit)? = null,
     fabOnClick: () -> Unit = {},
+    fabModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     val nav = LocalNavController.current
@@ -60,12 +63,13 @@ fun HomeScreen(
     }
     NavigationSuiteScaffold(
         enableNavigation = enableNavigation,
+        modifier = modifier,
         navigationSuiteItems = {
             menu(menu)
             title(title)
             back(back)
 
-            fab(onClick = fabOnClick, icon = fabIcon, text = fabText)
+            fab(onClick = fabOnClick, icon = fabIcon, text = fabText,modifier = fabModifier)
 
             for (navigationRoute in NavigationRoute.entries) {
                 item(

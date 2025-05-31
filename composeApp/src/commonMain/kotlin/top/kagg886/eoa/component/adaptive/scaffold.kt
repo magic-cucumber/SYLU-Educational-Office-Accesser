@@ -100,11 +100,13 @@ fun NavigationSuiteScaffold(
                             val menu by scope.menu
                             val fab by scope.fabIcon
                             val fabClick by scope.fabOnClick
+                            val fabModifier by scope.fabModifier
                             val back by scope.back
                             Scaffold(
                                 floatingActionButton = {
                                     if (fab != null) {
                                         FloatingActionButton(
+                                            modifier = fabModifier,
                                             onClick = {
                                                 fabClick?.let { it() }
                                             },
@@ -318,6 +320,7 @@ fun NavigationSuite(
                 val menu by scope.menu
                 val fab by scope.fabIcon
                 val fabClick by scope.fabOnClick
+                val fabModifier by scope.fabModifier
 
                 Spacer(Modifier.height(16.dp))
                 Box(Modifier.size(40.dp)) {
@@ -336,6 +339,7 @@ fun NavigationSuite(
                     fab?.let {
                         FloatingActionButton(
                             onClick = fabClick ?: {},
+                            modifier = fabModifier
                         ) {
                             it()
                         }
@@ -372,6 +376,7 @@ fun NavigationSuite(
                 val fab by scope.fabIcon
                 val fabText by scope.fabText
                 val fabClick by scope.fabOnClick
+                val fabModifier by scope.fabModifier
                 val back by scope.back
 
                 Box(
@@ -422,7 +427,7 @@ fun NavigationSuite(
                                     it()
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth().sizeIn(minWidth = 80.dp)
+                            modifier = fabModifier.fillMaxWidth().sizeIn(minWidth = 80.dp)
                         )
                     }
                 }
@@ -551,6 +556,7 @@ sealed interface NavigationSuiteScope {
         onClick: () -> Unit,
         text: (@Composable () -> Unit)? = null,
         icon: (@Composable () -> Unit)? = null,
+        modifier: Modifier = Modifier,
     )
 }
 
@@ -759,6 +765,7 @@ private interface NavigationSuiteItemProvider {
     val fabText: MutableState<@Composable (() -> Unit)?>
     val fabIcon: MutableState<@Composable (() -> Unit)?>
     val fabOnClick: MutableState<(() -> Unit)?>
+    val fabModifier: MutableState<Modifier>
 }
 
 private class NavigationSuiteItem(
@@ -822,17 +829,20 @@ private class NavigationSuiteScopeImpl : NavigationSuiteScope,
     override fun fab(
         onClick: () -> Unit,
         text: (@Composable (() -> Unit))?,
-        icon: (@Composable (() -> Unit))?
+        icon: (@Composable (() -> Unit))?,
+        modifier: Modifier
     ) {
         fabText.value = text
         fabIcon.value = icon
         fabOnClick.value = onClick
+        fabModifier.value = modifier
     }
 
     override val itemList: MutableVector<NavigationSuiteItem> = mutableVectorOf()
     override val fabIcon: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val fabText: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val fabOnClick: MutableState<(() -> Unit)?> = mutableStateOf(null)
+    override val fabModifier: MutableState<Modifier> = mutableStateOf(Modifier)
     override val title: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val menu: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val back: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
