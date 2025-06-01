@@ -21,7 +21,7 @@ data object CourseManageListRoute
 @Composable
 fun CourseManageListScreen() = HomeScreen(
     route = NavigationRoute.COURSE,
-    menu = { BackIconButton() },
+    back = { BackIconButton() },
     title = { Text("管理课程") },
 ) {
     Surface(
