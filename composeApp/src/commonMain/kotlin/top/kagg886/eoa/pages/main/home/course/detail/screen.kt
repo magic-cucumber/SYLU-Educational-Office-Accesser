@@ -149,6 +149,9 @@ private fun CourseDetailPanelPhone(
             state, visible, Modifier.shareElementComposed(
                 sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-$recordId"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
+            ).shareElementComposed(
+                sharedContentState = rememberSharedContentState(key = "list-course-to-detail-$recordId"),
+                animatedVisibilityScope = LocalAnimatedContentScope.current
             )
         )
 
@@ -190,6 +193,9 @@ private fun CourseDetailPanelTablet(
                 visible,
                 modifier = Modifier.weight(1f).fillMaxHeight().shareElementComposed(
                     sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-$recordId"),
+                    animatedVisibilityScope = LocalAnimatedContentScope.current
+                ).shareElementComposed(
+                    sharedContentState = rememberSharedContentState(key = "list-course-to-detail-$recordId"),
                     animatedVisibilityScope = LocalAnimatedContentScope.current
                 )
             )

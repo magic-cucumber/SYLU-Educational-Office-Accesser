@@ -251,7 +251,7 @@ private fun CoursePageScreenSuccess(
                                 .padding(horizontal = cardPadding, vertical = cardPadding)
                                 .applyIf(!course.hasConflict) {
                                     shareElementComposed(
-                                        sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course.asNoConflict.record.id}"),
+                                        sharedContentState = rememberSharedContentState(key = "list-course-to-detail-${course.asNoConflict.record.id}"),
                                         animatedVisibilityScope = LocalAnimatedContentScope.current
                                     )
                                 }

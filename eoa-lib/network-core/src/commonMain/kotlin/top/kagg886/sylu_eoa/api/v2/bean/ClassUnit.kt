@@ -18,8 +18,10 @@ data class ClassUnit(
     //星期几 1 2 3 4 5 6 7
     @SerialName("xqj") val dayInWeek: String,
 
+    //学分
     @SerialName("xf") val score: String,
 
+    //考察形式（考查，考试）
     @SerialName("khfsmc") val classType: String,
 
     @SerialName("zyhxkcbj") private val _degreeProgram: String,
