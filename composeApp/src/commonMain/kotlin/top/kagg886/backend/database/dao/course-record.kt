@@ -1,6 +1,7 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -51,7 +52,8 @@ interface CourseRecordDao {
     @Query("SELECT * FROM course_records WHERE id = :recordId")
     suspend fun getById(recordId: Long): CourseRecordEntity
 
-    @Query("""
+    @Query(
+        """
     SELECT 
         c.id AS id,
         c.name AS name,
@@ -72,12 +74,14 @@ interface CourseRecordDao {
         
     FROM courses c
     JOIN course_records cr ON cr.courseId = c.id
-    WHERE cr.weekNumber = :weekNumber AND (:dayOfWeek IS NULL OR cr.dayOfWeek = :dayOfWeek)
+    WHERE cr.weekNumber = :weekNumber AND (:dayOfWeek IS NULL OR cr.dayOfWeek = :dayOfWeek) AND (:periodOfDay IS NULL OR cr.periodOfDay = :periodOfDay)
     ORDER BY cr.periodOfDay
-""")
+"""
+    )
     suspend fun getCoursesWithRecordInfoByDate(
         weekNumber: Int,
-        dayOfWeek: Int? = null
+        dayOfWeek: Int? = null,
+        periodOfDay: Int? = null
     ): List<CourseAndRecord>
 
 
@@ -86,6 +90,9 @@ interface CourseRecordDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<CourseRecordEntity>)
+
+    @Delete
+    suspend fun delete(item: CourseRecordEntity)
 }
 
 

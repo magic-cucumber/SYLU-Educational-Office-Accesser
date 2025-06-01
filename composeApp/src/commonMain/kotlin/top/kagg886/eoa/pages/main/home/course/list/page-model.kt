@@ -87,6 +87,10 @@ class CoursePageViewModel(
     fun navigateToCourseDetail(it: CourseAndRecord) = intent {
         postSideEffect(CoursePageSideEffect.NavigateToCourseDetail(it.record.id!!))
     }
+
+    fun navigateToConflictDetail(weekNumber: Int,dayOfWeek:Int, periodOfDay:Int) = intent {
+         postSideEffect(CoursePageSideEffect.NavigateToConflictDetail(weekNumber,dayOfWeek, periodOfDay))
+    }
 }
 
 
@@ -102,4 +106,5 @@ sealed interface CoursePageState {
 
 sealed interface CoursePageSideEffect {
     data class NavigateToCourseDetail(val recordId: Long) : CoursePageSideEffect
+    data class NavigateToConflictDetail(val weekNumber: Int,val dayOfWeek:Int, val periodOfDay:Int) : CoursePageSideEffect
 }

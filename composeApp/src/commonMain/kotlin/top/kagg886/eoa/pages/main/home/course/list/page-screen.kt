@@ -42,6 +42,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -61,9 +62,13 @@ fun CoursePageListScreen(
     }
     val nav = LocalNavController.current
     model.collectSideEffect {
-         when (it) {
+        when (it) {
             is CoursePageSideEffect.NavigateToCourseDetail -> {
                 nav.navigate(CourseDetailRoute(it.recordId))
+            }
+
+            is CoursePageSideEffect.NavigateToConflictDetail -> {
+                nav.navigate(CourseConflictRoute(it.weekNumber, it.dayOfWeek, it.periodOfDay))
             }
         }
     }
@@ -73,6 +78,9 @@ fun CoursePageListScreen(
         state = state,
         onCourseItemClicked = {
             model.navigateToCourseDetail(it)
+        },
+        onCourseConflictClicked = { dayOfWeek, periodOfDay ->
+            model.navigateToConflictDetail(index + 1, dayOfWeek, periodOfDay)
         }
     )
 }
@@ -80,7 +88,8 @@ fun CoursePageListScreen(
 @Composable
 private fun CoursePageScreenContent(
     state: CoursePageState,
-    onCourseItemClicked: (CourseAndRecord) -> Unit
+    onCourseItemClicked: (CourseAndRecord) -> Unit,
+    onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit
 ) {
     when (state) {
         is CoursePageState.Failed -> {
@@ -108,6 +117,7 @@ private fun CoursePageScreenContent(
             CoursePageScreenSuccess(
                 state = state,
                 onCourseItemClicked = onCourseItemClicked,
+                onCourseConflictClicked = onCourseConflictClicked,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -119,6 +129,7 @@ private fun CoursePageScreenContent(
 private fun CoursePageScreenSuccess(
     state: CoursePageState.Success,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
+    onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(modifier.verticalScroll(rememberScrollState())) {
@@ -246,6 +257,10 @@ private fun CoursePageScreenSuccess(
                                 }
                                 .clickable {
                                     if (course.hasConflict) {
+                                        onCourseConflictClicked(
+                                            course[0].record.dayOfWeek,
+                                            course[0].record.periodOfDay
+                                        )
                                         return@clickable
                                     }
                                     onCourseItemClicked(course.asNoConflict)

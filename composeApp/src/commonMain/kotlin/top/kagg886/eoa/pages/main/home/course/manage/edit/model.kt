@@ -1,6 +1,8 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.delay
+import kotlinx.datetime.LocalDate
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
@@ -9,6 +11,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.util.SnackBarType
+import kotlin.time.Duration.Companion.seconds
 
 class CourseEditModel(
     database: AppDatabase,
@@ -37,6 +40,9 @@ class CourseEditModel(
                 CourseEditState.Success(
                     courseInfo = courseInfo,
                     recordInfo = records,
+                    startDate = AppSyncMMKV.calender!!.start,
+                    allWeekNumber = AppSyncMMKV.calender!!.count(),
+                    enableSaveButton = true
                 )
             }
         }
@@ -60,15 +66,63 @@ class CourseEditModel(
                 postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, "课程名不能为空"))
                 return@runOn
             }
-             if (state.courseInfo.classroomName.isBlank()) {
+            if (state.courseInfo.classroomName.isBlank()) {
                 postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, "教室不能为空"))
                 return@runOn
             }
-            val id = courseDao.insert(state.courseInfo)
+            if (state.recordInfo.isEmpty()) {
+                postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, "请添加课程时间"))
+                return@runOn
+            }
+            reduce { state.copy(enableSaveButton = false) } //防止重复点击
+            val id = courseId?.apply { courseDao.update(state.courseInfo) } ?: courseDao.insert(state.courseInfo)
+            if (courseId == null) {
+                courseRecordDao.insertAll(state.recordInfo.map { it.copy(courseId = id) })
+            }
             postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Success, "修改成功"))
             reduce {
                 state.copy(
                     courseInfo = state.courseInfo.copy(id = id),
+                )
+            }
+            delay(3.seconds)
+            postSideEffect(CourseEditSideEffect.NavigateBack)
+        }
+    }
+
+    @OptIn(OrbitExperimental::class)
+    fun addRecord(weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) = intent {
+        runOn<CourseEditState.Success> {
+            val record = CourseRecordEntity(
+                id = null,
+                courseId = courseId,
+                weekNumber = weekNumber,
+                dayOfWeek = dayOfWeek,
+                periodOfDay = periodOfDay,
+                isUserAdded = true
+            )
+            //是修改模式则编辑数据库
+            if (courseId != null) {
+                courseRecordDao.insert(record)
+            }
+            reduce {
+                state.copy(
+                    recordInfo = state.recordInfo + record
+                )
+            }
+        }
+    }
+
+    @OptIn(OrbitExperimental::class)
+    fun deleteRecord(it: CourseRecordEntity) = intent {
+        runOn<CourseEditState.Success> {
+            //是修改模式则编辑数据库
+            if (it.courseId != null) {
+                courseRecordDao.delete(it)
+            }
+            reduce {
+                state.copy(
+                    recordInfo = state.recordInfo - it
                 )
             }
         }
@@ -79,11 +133,15 @@ class CourseEditModel(
 sealed interface CourseEditState {
     data object Loading : CourseEditState
     data class Success(
+        val enableSaveButton: Boolean,
         val courseInfo: CourseEntity,
-        val recordInfo: List<CourseRecordEntity>
+        val recordInfo: List<CourseRecordEntity>,
+        val allWeekNumber: Int,
+        val startDate: LocalDate,
     ) : CourseEditState
 }
 
 sealed interface CourseEditSideEffect {
     data class Toast(val type: SnackBarType, val message: String) : CourseEditSideEffect
+    data object NavigateBack : CourseEditSideEffect
 }

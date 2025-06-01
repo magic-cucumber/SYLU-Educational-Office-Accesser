@@ -24,38 +24,7 @@ class CourseListViewModel(
 
     override val container =
         container<CourseListState, CourseListSideEffect>(CourseListState.Loading) {
-            if (syncState is MainRouteViewState.SyncFailed) {
-                // 非首次同步则展示脏数据
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return@container
-                }
-                // 否则提示同步失败
-                reduce {
-                    CourseListState.Failed(syncState.message)
-                }
-                return@container
-            }
-
-            // 正在同步则展示加载中
-            if (syncState is MainRouteViewState.SyncProcess) {
-                // 如果有脏数据则展示
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return@container
-                }
-                // 否则展示加载中
-                reduce {
-                    CourseListState.Loading
-                }
-                return@container
-            }
-
-            // 同步成功则展示数据
-            if (syncState is MainRouteViewState.SyncSuccess) {
-                setDataUnsafe().join()
-                return@container
-            }
+            refresh().join()
         }
 
     fun setDataUnsafe() = intent {
@@ -80,7 +49,6 @@ class CourseListViewModel(
         }
     }
 
-    @OptIn(OrbitExperimental::class)
     fun selectToWeek(data: Int? = null) = intent {
         val s = state
         if (s !is CourseListState.Success) {
@@ -94,6 +62,41 @@ class CourseListViewModel(
         }
         // 只发送事件，不直接处理动画
         postSideEffect(CourseListSideEffect.ScrollToCurrentWeek(week))
+    }
+
+    fun refresh() = intent {
+        if (syncState is MainRouteViewState.SyncFailed) {
+            // 非首次同步则展示脏数据
+            if (syncState.haveDirtyData) {
+                setDataUnsafe().join()
+                return@intent
+            }
+            // 否则提示同步失败
+            reduce {
+                CourseListState.Failed(syncState.message)
+            }
+            return@intent
+        }
+
+        // 正在同步则展示加载中
+        if (syncState is MainRouteViewState.SyncProcess) {
+            // 如果有脏数据则展示
+            if (syncState.haveDirtyData) {
+                setDataUnsafe().join()
+                return@intent
+            }
+            // 否则展示加载中
+            reduce {
+                CourseListState.Loading
+            }
+            return@intent
+        }
+
+        // 同步成功则展示数据
+        if (syncState is MainRouteViewState.SyncSuccess) {
+            setDataUnsafe().join()
+            return@intent
+        }
     }
 }
 

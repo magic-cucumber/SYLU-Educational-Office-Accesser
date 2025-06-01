@@ -31,5 +31,5 @@ data class SchoolCalender(
         return i
     }
 
-    fun count(): Int = start.until(end, DateTimeUnit.WEEK)
+    fun count(): Int = start.until(end, DateTimeUnit.WEEK) + 1
 }

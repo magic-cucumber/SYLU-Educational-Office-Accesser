@@ -1,10 +1,14 @@
 package top.kagg886.eoa.pages.main.home.course
 
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
+import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
+import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictScreen
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailScreen
 import top.kagg886.eoa.pages.main.home.course.list.CourseListRoute
@@ -20,5 +24,9 @@ data object CourseRoute
 val installCourseGraph: NavGraphBuilder.() -> Unit = {
     composable<CourseListRoute> { AutoInject { CourseListScreen() } }
     composable<CourseDetailRoute> { AutoInject { CourseDetailScreen(it.toRoute()) } }
-    navigation<CourseManageRoute>(startDestination = CourseManageListRoute, builder = installCourseManageRoute)
+    navigation<CourseManageRoute>(
+        startDestination = CourseManageListRoute,
+        builder = installCourseManageRoute
+    )
+    dialog<CourseConflictRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { CourseConflictScreen(it.toRoute()) }
 }

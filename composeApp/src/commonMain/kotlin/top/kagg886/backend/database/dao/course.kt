@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Update
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -31,8 +32,11 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
     suspend fun all(onlyUserAdded: Boolean = false): List<CourseEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insert(item: CourseEntity): Long
+
+    @Update
+    suspend fun update(item: CourseEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<CourseEntity>)

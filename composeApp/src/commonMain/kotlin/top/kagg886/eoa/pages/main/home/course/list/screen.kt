@@ -71,16 +71,17 @@ data object CourseListRoute
 @Composable
 fun CourseListScreen() {
     val nav = LocalNavController.current
+    val mainViewModel = mainViewModel()
+    val syncState by mainViewModel.collectAsState()
+    val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
+        CourseListViewModel(syncState)
+    }
+
+    val state by model.collectAsState()
     HomeScreen(
         route = NavigationRoute.COURSE,
         title = {
-            val mainViewModel = mainViewModel()
-            val syncState by mainViewModel.collectAsState()
-            val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
-                CourseListViewModel(syncState)
-            }
 
-            val state by model.collectAsState()
 
             AnimatedContent(
                 targetState = (state as? CourseListState.Success)?.state?.currentPage ?: -1,
@@ -104,14 +105,6 @@ fun CourseListScreen() {
             }
         },
         menu = {
-            val mainViewModel = mainViewModel()
-            val syncState by mainViewModel.collectAsState()
-            val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
-                CourseListViewModel(syncState)
-            }
-            val state by model.collectAsState()
-
-
             var iconExpanded by remember {
                 mutableStateOf(false)
             }
@@ -163,6 +156,15 @@ fun CourseListScreen() {
             ) {
                 DropdownMenuItem(
                     text = {
+                        Text("刷新")
+                    },
+                    onClick = {
+                        model.refresh()
+                        iconExpanded = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = {
                         Text("回到本周")
                     },
                     onClick = {
@@ -199,21 +201,11 @@ fun CourseListScreen() {
             animatedVisibilityScope = LocalAnimatedContentScope.current
         )
     ) {
-        val mainViewModel = mainViewModel()
-        val syncState by mainViewModel.collectAsState()
-        val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
-            CourseListViewModel(syncState)
-        }
-        val state by model.collectAsState()
-        val toast = LocalSnackBarHost.current
         val scope = rememberCoroutineScope()
-
         model.collectSideEffect {
             when (it) {
                 is CourseListSideEffect.Toast -> {
-                    scope.launch {
-                        toast.showSnackBar(type = SnackBarType.Warning, it.msg)
-                    }
+                    mainViewModel.toast(type = SnackBarType.Warning, it.msg)
                 }
 
                 is CourseListSideEffect.ScrollToCurrentWeek -> {
@@ -287,7 +279,6 @@ private fun CourseListScreenContent(
 private fun CourseDrawerContent(
     state: CourseListState.Success,
 ) {
-    //TODO 或者选择器写在这里，一个大Tab
     HorizontalPager(
         state = state.state,
         modifier = Modifier.fillMaxSize(),
