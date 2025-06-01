@@ -17,8 +17,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -342,7 +344,7 @@ private fun SummaryCard(
         }
     }
     Card(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -397,15 +399,14 @@ private fun SummaryContentPlaceHolderHeader(
         }
 
         else -> {
-            Row(modifier) {
+            Row(modifier.height(IntrinsicSize.Min)) {
                 SyncStateCard(
                     state = syncState,
                     onSyncActionStarted = onSyncActionStarted,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).fillMaxHeight()
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                SummaryCard(state, Modifier.weight(1f))
-
+                SummaryCard(state, Modifier.weight(1f).fillMaxHeight())
             }
         }
     }
@@ -428,7 +429,7 @@ private fun SummaryContentPlaceHolder(
         Column {
             SummaryContentPlaceHolderHeader(
                 state = state,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 onSyncActionStarted = onSyncActionStarted,
                 syncState = syncState,
                 suiteType = currentLayoutType()
