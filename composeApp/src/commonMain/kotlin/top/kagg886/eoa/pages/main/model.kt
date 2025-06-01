@@ -36,13 +36,25 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
     val database = databaseBuilder().build()
     private val syncDao = database.syncRecordDao()
 
-    override val container: Container<MainRouteViewState, MainRouteViewEffect> = container(MainRouteViewState.Empty) {
-        logger.i("上次同步时间：${syncDao.getLastSyncTime(7.days.inWholeMilliseconds)}")
-        startSync().join()
-    }
+    override val container: Container<MainRouteViewState, MainRouteViewEffect> =
+        container(MainRouteViewState.Empty) {
+            val time = try {
+                syncDao.getLastSyncTime(7.days.inWholeMilliseconds)
+            } catch (e: Exception) {
+                reduce {
+                     MainRouteViewState.SyncFailed(false,"数据库损坏，请删除数据库后重试")
+                }
+                return@container
+            }
+            logger.i("上次同步时间：${time}")
+            startSync().join()
+        }
 
     fun startSync() = intent {
-        if (Clock.System.now() - Instant.fromEpochMilliseconds(syncDao.getLastSyncTime(7.days.inWholeMilliseconds) ?: 0) > 3.days) {
+        if (Clock.System.now() - Instant.fromEpochMilliseconds(
+                syncDao.getLastSyncTime(7.days.inWholeMilliseconds) ?: 0
+            ) > 3.days
+        ) {
             startSyncForce()
             return@intent
         }
@@ -94,7 +106,7 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
                 val recordDao = database.courseRecordDao()
 
                 with(AppSyncMMKV.picker!!.default.asTerm()) {
-                    courseDao.clear(xnm,xqm)
+                    courseDao.clear(xnm, xqm)
                 }
 
                 for (i in getClassTable(AppSyncMMKV.picker!!.default)) {
@@ -130,7 +142,12 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
         }
 
         if (result.isSuccess) {
-            postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Success, message = "同步完毕！"))
+            postSideEffect(
+                MainRouteViewEffect.Toast(
+                    type = SnackBarType.Success,
+                    message = "同步完毕！"
+                )
+            )
             logger.i("同步完毕！")
             syncDao.markSync()
             reduce {
@@ -138,12 +155,24 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
             }
             return@intent
         }
-        postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Error, message = "同步失败！详情请参阅日志"))
+        postSideEffect(
+            MainRouteViewEffect.Toast(
+                type = SnackBarType.Error,
+                message = "同步失败！详情请参阅日志"
+            )
+        )
 
         logger.e("同步失败！", result.exceptionOrNull())
         reduce {
-            MainRouteViewState.SyncFailed(haveDirtyData,result.exceptionOrNull()!!.message ?: "未知错误")
+            MainRouteViewState.SyncFailed(
+                haveDirtyData,
+                result.exceptionOrNull()!!.message ?: "未知错误"
+            )
         }
+    }
+
+    fun toast(type: SnackBarType, message: String) = intent {
+        postSideEffect(MainRouteViewEffect.Toast(type, message))
     }
 }
 
@@ -164,12 +193,14 @@ sealed interface MainRouteViewState {
      * 同步成功
      */
     data object SyncSuccess : MainRouteViewState
+
     /**
      * 同步失败
      * @param haveDirtyData 是否在之前同步过
      * @param message 失败信息
      */
-    data class SyncFailed(val haveDirtyData: Boolean = false,val message:String) : MainRouteViewState
+    data class SyncFailed(val haveDirtyData: Boolean = false, val message: String) :
+        MainRouteViewState
 }
 
 sealed interface MainRouteViewEffect {

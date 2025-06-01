@@ -73,11 +73,10 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
     }
     val state by model.collectAsState()
 
-    val toast = LocalSnackBarHost.current
     model.collectSideEffect {
         when (it) {
             is CourseDetailSideEffect.ShowToast -> {
-                toast.showSnackBar(type = SnackBarType.Info,it.message)
+                mainViewModel.toast(type = SnackBarType.Info, it.message)
             }
         }
     }

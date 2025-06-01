@@ -347,6 +347,7 @@ fun ExamListScreenContent(
             ErrorPage(
                 title = { Text("考试列表加载失败") },
                 message = { Text("请检查系统日志") },
+                modifier = Modifier.fillMaxSize()
             )
         }
 

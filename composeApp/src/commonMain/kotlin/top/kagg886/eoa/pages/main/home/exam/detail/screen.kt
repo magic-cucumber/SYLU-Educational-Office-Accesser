@@ -77,11 +77,10 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     }
     val state by model.collectAsState()
 
-    val toast = LocalSnackBarHost.current
     model.collectSideEffect {
         when (it) {
             is ExamDetailSideEffect.ShowToast -> {
-                toast.showSnackBar(type = SnackBarType.Info,it.message)
+                mainViewModel.toast(type = SnackBarType.Info,it.message)
             }
         }
     }

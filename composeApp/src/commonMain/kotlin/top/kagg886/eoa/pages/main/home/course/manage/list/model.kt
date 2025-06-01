@@ -1,9 +1,6 @@
-package top.kagg886.eoa.pages.main.home.course.manage
+package top.kagg886.eoa.pages.main.home.course.manage.list
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -14,32 +11,10 @@ import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
-import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.main.MainRouteViewState
-import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.util.calculateWeekNumber
 
-@Composable
-fun courseManageModel(
-    syncState: MainRouteViewState,
-): CourseManageModel {
-    val nav = LocalNavController.current
-    val entry = remember {
-        nav.getBackStackEntry(CourseManageRoute) // 嵌套图 route
-    }
-    val mainModel = mainViewModel()
-    val model = viewModel(
-        viewModelStoreOwner = entry,
-        key = syncState.toString(),
-        initializer = {
-            CourseManageModel(syncState, mainModel.database)
-        }
-    )
-
-    return model
-}
-
-class CourseManageModel(
+class CourseManageListModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
 ) : ViewModel(), ContainerHost<CourseManageState, CourseManageSideEffect> {
@@ -115,6 +90,14 @@ class CourseManageModel(
             }
         }
     }
+
+    fun openAddOrEditCourse(data: CourseEntity?) = intent {
+        if (data?.isUserAdded == false) {
+            postSideEffect(CourseManageSideEffect.Toast("系统课程不可修改"))
+            return@intent
+        }
+        postSideEffect(CourseManageSideEffect.NavigateToEditOrAdd(data?.id))
+    }
 }
 
 
@@ -134,5 +117,6 @@ sealed interface CourseManageState {
 }
 
 sealed interface CourseManageSideEffect {
-
+    data class Toast(val msg: String) : CourseManageSideEffect
+    data class NavigateToEditOrAdd(val courseId: Long?) : CourseManageSideEffect
 }

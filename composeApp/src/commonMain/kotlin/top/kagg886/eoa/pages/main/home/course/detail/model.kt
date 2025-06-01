@@ -65,7 +65,7 @@ class CourseDetailViewModel(
         //因为配置了删除课程时级联删除记录，所以我们无需过滤xnm和xqm。
 
         //获取课程实体
-        val course = courseDao.getById(courseRecordDao.getById(recordId).courseId)
+        val course = courseDao.getById(courseRecordDao.getById(recordId).courseId!!)
 
         //获取上课记录
         val plans = courseRecordDao.getByCourseId(course.id!!).sortedWith { a, b ->
@@ -98,7 +98,7 @@ class CourseDetailViewModel(
 
                     CourseRecordAndProgress(
                         it.id!!,
-                        it.courseId,
+                        it.courseId!!,
                         it.weekNumber,
                         it.dayOfWeek,
                         it.periodOfDay,
