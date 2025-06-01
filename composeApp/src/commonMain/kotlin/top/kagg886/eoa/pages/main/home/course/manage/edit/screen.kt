@@ -50,6 +50,7 @@ import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.home.course.list.cardHeight
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.showSnackBar
@@ -130,6 +131,9 @@ private fun CourseEditScreenContent(
                 TopAppBar(
                     title = {
                         Text("编辑课程")
+                    },
+                    navigationIcon = {
+                        BackIconButton()
                     }
                 )
                 TabRow(
@@ -275,7 +279,7 @@ private fun CourseEditTime(
 
             Text(
                 "第 ${pageState.currentPage + 1} 周",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
 
@@ -313,7 +317,7 @@ private fun CourseEditTime(
                                 .padding(1.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("周/节")
+                            Text("周/节", style = MaterialTheme.typography.bodySmall)
                         }
 
                         // Day headers
@@ -329,7 +333,7 @@ private fun CourseEditTime(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         "周${getDayOfWeekText(dayOfWeek)}",
-                                        style = MaterialTheme.typography.labelMedium
+                                        style = MaterialTheme.typography.bodySmall
                                     )
                                     Text(
                                         "${currentDate.monthNumber}/${currentDate.dayOfMonth}",
@@ -356,8 +360,8 @@ private fun CourseEditTime(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        "第${periodOfDay}节",
-                                        style = MaterialTheme.typography.labelMedium
+                                        "$periodOfDay",
+                                        style = MaterialTheme.typography.bodySmall
                                     )
                                 }
 

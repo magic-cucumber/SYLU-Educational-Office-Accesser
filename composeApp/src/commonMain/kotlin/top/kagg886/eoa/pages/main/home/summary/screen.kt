@@ -1,6 +1,18 @@
 package top.kagg886.eoa.pages.main.home.summary
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,16 +24,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -29,11 +46,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,10 +65,13 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
@@ -81,24 +103,30 @@ fun SummaryScreen() = HomeScreen(
 
     SummaryContent(
         state = state,
+        syncState = syncState,
         onCourseItemClicked = { model.redirectToCourse(it) },
+        onSyncActionStarted = { mainViewModel.startSyncForce() }
     )
 }
 
 @Composable
 private fun SummaryContent(
     state: SummaryState,
+    syncState: MainRouteViewState,
     onCourseItemClicked: (TodayClass) -> Unit = {},
+    onSyncActionStarted: () -> Unit = {}
 ) {
     when (state) {
         is SummaryState.Loading -> {
-            SummaryContentPlaceHolder(null)
+            SummaryContentPlaceHolder(null, syncState)
         }
 
         is SummaryState.Success -> {
             SummaryContentPlaceHolder(
                 state = state,
-                onCourseItemClicked = onCourseItemClicked
+                syncState = syncState,
+                onCourseItemClicked = onCourseItemClicked,
+                onSyncActionStarted = onSyncActionStarted
             )
         }
 
@@ -147,12 +175,174 @@ private fun SummaryContent(
 }
 
 @Composable
-private fun SummaryCard(
-    state: SummaryState.Success?,
-    showPlaceHolder: Boolean
+private fun SyncStateCard(
+    state: MainRouteViewState,
+    onSyncActionStarted: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "系统状态",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            val (text, icon, containerColor, contentColor, enabled) = when (state) {
+                is MainRouteViewState.Empty -> {
+                    Tuple5(
+                        "系统正在初始化",
+                        null,
+                        MaterialTheme.colorScheme.outline,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                        false
+                    )
+                }
+
+                is MainRouteViewState.SyncProcess -> {
+                    Tuple5(
+                        "系统正在同步",
+                        Icons.Default.Refresh,
+                        MaterialTheme.colorScheme.outline,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                        false
+                    )
+                }
+
+                is MainRouteViewState.SyncSuccess -> {
+                    Tuple5(
+                        "系统同步成功",
+                        Icons.Default.Check,
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.onPrimary,
+                        true
+                    )
+                }
+
+                is MainRouteViewState.SyncFailed -> {
+                    Tuple5(
+                        "系统同步失败",
+                        Icons.Default.Close,
+                        MaterialTheme.colorScheme.error,
+                        MaterialTheme.colorScheme.onError,
+                        true
+                    )
+                }
+            }
+
+            val animatedContainerColor by animateColorAsState(
+                targetValue = containerColor,
+                animationSpec = tween(durationMillis = 300),
+                label = "containerColorAnimation"
+            )
+
+            val animatedContentColor by animateColorAsState(
+                targetValue = contentColor,
+                animationSpec = tween(durationMillis = 300),
+                label = "contentColorAnimation"
+            )
+
+            val infiniteTransition = rememberInfiniteTransition(label = "infiniteRotation")
+            val rotationAngle by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 1000, easing = LinearEasing)
+                ),
+                label = "rotationAnimation"
+            )
+
+            ExtendedFloatingActionButton(
+                onClick = { if (enabled) onSyncActionStarted() },
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = animatedContainerColor,
+                contentColor = animatedContentColor
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AnimatedContent(
+                        targetState = icon,
+                        transitionSpec = {
+                            if (targetState != initialState) {
+                                slideInVertically { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically { height -> -height } + fadeOut()
+                            } else {
+                                slideInVertically { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically { height -> -height } + fadeOut()
+                            }
+                        },
+                    ) {
+                        if (it != null) {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = text,
+                                modifier = Modifier
+                                    .rotate(if (state is MainRouteViewState.SyncProcess) rotationAngle else 0f)
+                                    .size(18.dp)
+                            )
+                            return@AnimatedContent
+                        }
+                        Box(Modifier.size(18.dp))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    AnimatedContent(
+                        targetState = text,
+                        transitionSpec = {
+                            if (targetState != initialState) {
+                                slideInVertically { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically { height -> -height } + fadeOut()
+                            } else {
+                                slideInVertically { height -> height } + fadeIn() togetherWith
+                                        slideOutVertically { height -> -height } + fadeOut()
+                            }
+                        },
+                        label = "textAnimation"
+                    ) { animatedText ->
+                        Text(
+                            text = animatedText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Helper data class for tuple
+private data class Tuple5<A, B, C, D, E>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D,
+    val fifth: E
+)
+
+@Composable
+private fun SummaryCard(
+    state: SummaryState.Success?,
+    modifier: Modifier = Modifier
+) {
+    val showPlaceHolder by remember(state) {
+        derivedStateOf {
+            state == null
+        }
+    }
+    Card(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -186,9 +376,47 @@ private fun SummaryCard(
 }
 
 @Composable
+private fun SummaryContentPlaceHolderHeader(
+    modifier: Modifier = Modifier,
+    suiteType: NavigationSuiteType,
+    syncState: MainRouteViewState,
+    state: SummaryState.Success?,
+    onSyncActionStarted: () -> Unit,
+) {
+    when (suiteType) {
+        NavigationSuiteType.NavigationBar -> {
+            Column(modifier) {
+                SyncStateCard(
+                    state = syncState,
+                    onSyncActionStarted = onSyncActionStarted,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                SummaryCard(state, Modifier.fillMaxWidth())
+            }
+        }
+
+        else -> {
+            Row(modifier) {
+                SyncStateCard(
+                    state = syncState,
+                    onSyncActionStarted = onSyncActionStarted,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                SummaryCard(state, Modifier.weight(1f))
+
+            }
+        }
+    }
+}
+
+@Composable
 private fun SummaryContentPlaceHolder(
     state: SummaryState.Success?,
+    syncState: MainRouteViewState,
     onCourseItemClicked: (TodayClass) -> Unit = {},
+    onSyncActionStarted: () -> Unit = {},
 ) {
     val showPlaceHolder by remember(state) {
         derivedStateOf {
@@ -198,8 +426,14 @@ private fun SummaryContentPlaceHolder(
 
     if (state?.plan?.isEmpty() == true) {
         Column {
-            SummaryCard(state, showPlaceHolder)
-            Box(Modifier.fillMaxSize(),  contentAlignment = Alignment.Center) {
+            SummaryContentPlaceHolderHeader(
+                state = state,
+                modifier = Modifier.fillMaxWidth(),
+                onSyncActionStarted = onSyncActionStarted,
+                syncState = syncState,
+                suiteType = currentLayoutType()
+            )
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "今天没有课程安排",
                     style = MaterialTheme.typography.bodyLarge,
@@ -216,7 +450,13 @@ private fun SummaryContentPlaceHolder(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            SummaryCard(state, showPlaceHolder)
+            SummaryContentPlaceHolderHeader(
+                state = state,
+                modifier = Modifier.fillMaxWidth(),
+                onSyncActionStarted = onSyncActionStarted,
+                syncState = MainRouteViewState.Empty,
+                suiteType = currentLayoutType()
+            )
         }
 
         item {
@@ -276,7 +516,7 @@ private fun CourseItem(
                     trackColor = MaterialTheme.colorScheme.primaryContainer
                 )
             }
-            
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -298,7 +538,7 @@ private fun CourseItem(
                                 highlight = PlaceholderHighlight.shimmer()
                             )
                     )
-                    
+
                     // Show an indicator for ongoing classes
                     course?.progress?.let {
                         Badge(
@@ -312,9 +552,9 @@ private fun CourseItem(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -341,9 +581,9 @@ private fun CourseItem(
                             )
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -358,7 +598,7 @@ private fun CourseItem(
                                 highlight = PlaceholderHighlight.shimmer()
                             )
                     )
-                    
+
                     Text(
                         text = course?.location ?: "",
                         style = MaterialTheme.typography.bodyMedium,
@@ -370,13 +610,13 @@ private fun CourseItem(
                             )
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 HorizontalDivider()
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
                     text = "授课教师: ${course?.teacher ?: ""}",
                     style = MaterialTheme.typography.bodySmall,
