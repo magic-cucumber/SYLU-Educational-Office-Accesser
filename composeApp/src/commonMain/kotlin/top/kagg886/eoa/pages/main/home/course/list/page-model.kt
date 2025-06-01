@@ -35,7 +35,7 @@ class CoursePageViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    CoursePageState.Failed
+                    CoursePageState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -92,7 +92,7 @@ class CoursePageViewModel(
 
 sealed interface CoursePageState {
     data object Loading : CoursePageState
-    data object Failed : CoursePageState
+    data class Failed(val msg: String) : CoursePageState
     data class Success(
         val thisWeekStartDate: LocalDate,
         val currentDate: LocalDate,

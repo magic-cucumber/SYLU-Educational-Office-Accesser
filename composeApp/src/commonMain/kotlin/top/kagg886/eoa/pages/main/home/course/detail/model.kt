@@ -35,7 +35,7 @@ class CourseDetailViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    CourseDetailState.Failed
+                    CourseDetailState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -126,7 +126,7 @@ sealed interface CourseDetailState {
         val progress: Float?,
     ) : CourseDetailState
 
-    data object Failed : CourseDetailState
+    data class Failed(val msg: String) : CourseDetailState
     data object Loading : CourseDetailState
 }
 

@@ -256,7 +256,7 @@ private fun CourseListScreenContent(
                 Text("同步失败")
             },
             message = {
-                Text("请查阅系统日志")
+                Text(state.msg)
             },
             modifier = Modifier.fillMaxSize(),
         )

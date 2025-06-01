@@ -87,10 +87,10 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
 @Composable
 private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) {
     when (state) {
-        CourseDetailState.Failed -> {
+        is CourseDetailState.Failed -> {
             ErrorPage(
                 title = { Text("课程加载失败") },
-                message = { Text("请检查系统日志") },
+                message = { Text(state.msg) },
             )
         }
 

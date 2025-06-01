@@ -32,7 +32,7 @@ class CourseListViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    CourseListState.Failed
+                    CourseListState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -65,9 +65,7 @@ class CourseListViewModel(
             )
         } catch (e: Exception) {
             reduce {
-                CourseListState.FailedButSuccess(
-                    msg = e.message ?: "未知错误"
-                )
+                CourseListState.Failed(e.message ?: "未知错误")
             }
             return@intent
         }
@@ -102,7 +100,7 @@ class CourseListViewModel(
 
 sealed interface CourseListState {
     data object Loading : CourseListState
-    data object Failed : CourseListState
+    data class Failed(val msg: String) : CourseListState
 
     data class Success(
         val state: PagerState,

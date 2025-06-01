@@ -346,7 +346,7 @@ fun ExamListScreenContent(
         is ExamListState.Failed -> {
             ErrorPage(
                 title = { Text("考试列表加载失败") },
-                message = { Text("请检查系统日志") },
+                message = { Text(state.msg) },
                 modifier = Modifier.fillMaxSize()
             )
         }

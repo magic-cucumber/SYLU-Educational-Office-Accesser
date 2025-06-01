@@ -36,7 +36,7 @@ class ExamListViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    ExamListState.Failed(state.drawerState)
+                    ExamListState.Failed(state.drawerState, syncState.message)
                 }
                 return@container
             }
@@ -137,7 +137,8 @@ sealed interface ExamListState {
     ) : ExamListState
 
     data class Failed(
-        override val drawerState: DrawerState
+        override val drawerState: DrawerState,
+        val msg: String
     ) : ExamListState
 
     data class Loading(

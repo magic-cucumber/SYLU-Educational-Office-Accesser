@@ -132,10 +132,10 @@ private fun CoursePageScreenContent(
     state: CourseManageState,
     onCourseItemClicked: (CourseEntity) -> Unit
 ): Unit = when (state) {
-    CourseManageState.Failed -> {
+    is CourseManageState.Failed -> {
         ErrorPage(
             title = { Text("获取课表失败") },
-            message = { Text("检查日志后重试") },
+            message = { Text(state.msg) },
         )
     }
 

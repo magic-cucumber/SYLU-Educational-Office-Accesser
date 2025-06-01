@@ -94,7 +94,7 @@ private fun ExamDetailScreenContent(state: ExamDetailState) {
         is ExamDetailState.Failed -> {
             ErrorPage(
                 title = { Text("考试详情加载失败") },
-                message = { Text("请检查系统日志") },
+                message = { Text(state.msg) },
                 modifier = Modifier.fillMaxSize(),
             )
         }

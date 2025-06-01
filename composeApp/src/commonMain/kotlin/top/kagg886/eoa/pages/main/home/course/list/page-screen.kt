@@ -89,7 +89,7 @@ private fun CoursePageScreenContent(
                     Text(text = "加载课表失败")
                 },
                 message = {
-                    Text(text = "请参阅系统日志")
+                    Text(text = state.msg)
                 }
             )
         }

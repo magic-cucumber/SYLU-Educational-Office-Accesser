@@ -109,7 +109,7 @@ private fun SummaryContent(
                     Text("数据同步失败")
                 },
                 message = {
-                    Text("详细信息请检查日志")
+                    Text(state.msg)
                 },
                 modifier = Modifier.fillMaxSize()
             )

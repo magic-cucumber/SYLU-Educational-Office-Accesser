@@ -33,7 +33,7 @@ class SummaryModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    SummaryState.Failed
+                    SummaryState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -134,7 +134,7 @@ sealed interface SummaryState {
     /**
      * 同步失败
      */
-    data object Failed : SummaryState
+    data class Failed(val msg: String) : SummaryState
 
     /**
      * 同步成功，但是有情况导致无法显示课表

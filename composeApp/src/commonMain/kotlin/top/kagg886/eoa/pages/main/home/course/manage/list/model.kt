@@ -29,7 +29,7 @@ class CourseManageListModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    CourseManageState.Failed
+                    CourseManageState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -62,9 +62,7 @@ class CourseManageListModel(
             )
         } catch (e: Exception) {
             reduce {
-                CourseManageState.FailedButSuccess(
-                    msg = e.message ?: "未知错误"
-                )
+                CourseManageState.Failed(e.message ?: "未知错误")
             }
             return@intent
         }
@@ -103,7 +101,7 @@ class CourseManageListModel(
 
 sealed interface CourseManageState {
     data object Loading : CourseManageState
-    data object Failed : CourseManageState
+    data class Failed(val msg: String) : CourseManageState
 
     data class Success(
         val currentWeek: Int,

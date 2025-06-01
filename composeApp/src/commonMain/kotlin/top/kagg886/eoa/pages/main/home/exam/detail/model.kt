@@ -27,7 +27,7 @@ class ExamDetailViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    ExamDetailState.Failed
+                    ExamDetailState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -77,7 +77,7 @@ sealed interface ExamDetailState {
         val records: ExamEntity,
     ) : ExamDetailState
 
-    data object Failed : ExamDetailState
+    data class Failed(val msg: String) : ExamDetailState
     data object Loading : ExamDetailState
 }
 
