@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -26,10 +25,10 @@ data class CourseEntity(
 @Dao
 interface CourseDao {
     @Query("DELETE FROM courses WHERE isUserAdded = false AND yearCode = :xnm AND semesterCode = :xqm")
-    suspend fun clear(xnm:String, xqm:String)
+    suspend fun clear(xnm: String, xqm: String)
 
-    @Query("SELECT * FROM courses")
-    suspend fun all(): List<CourseEntity>
+    @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
+    suspend fun all(onlyUserAdded: Boolean = false): List<CourseEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: CourseEntity): Long

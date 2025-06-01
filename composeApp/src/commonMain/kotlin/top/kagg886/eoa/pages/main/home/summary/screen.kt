@@ -116,36 +116,32 @@ private fun SummaryContent(
         }
 
         is SummaryState.FailedButSuccess -> {
-            //特殊情况下的提示(如正在假期)
-            Box(
+            ErrorPage(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                icon = {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Info",
                         modifier = Modifier.size(80.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                },
+                title = {
                     Text(
                         text = "提示",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                },
+                message = {
                     Text(
                         text = state.msg,
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center
                     )
+
                 }
-            }
+            )
         }
     }
 }
