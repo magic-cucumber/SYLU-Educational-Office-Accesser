@@ -96,6 +96,16 @@ class CourseManageListModel(
         }
         postSideEffect(CourseManageSideEffect.NavigateToEditOrAdd(data?.id))
     }
+
+    fun deleteCourse(it: CourseEntity) = intent {
+        if (!it.isUserAdded) {
+            postSideEffect(CourseManageSideEffect.Toast("系统课程不可删除"))
+            return@intent
+        }
+        courseDao.delete(it)
+        postSideEffect(CourseManageSideEffect.Toast("删除成功"))
+        setDataUnsafe().join()
+    }
 }
 
 

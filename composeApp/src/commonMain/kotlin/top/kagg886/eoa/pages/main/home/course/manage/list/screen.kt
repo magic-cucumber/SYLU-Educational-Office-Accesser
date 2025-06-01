@@ -121,6 +121,9 @@ fun CourseManageListScreen() {
                 state = state,
                 onCourseItemClicked = {
                     model.openAddOrEditCourse(it)
+                },
+                onCourseItemDeleted = {
+                    model.deleteCourse(it)
                 }
             )
         }
@@ -130,7 +133,8 @@ fun CourseManageListScreen() {
 @Composable
 private fun CoursePageScreenContent(
     state: CourseManageState,
-    onCourseItemClicked: (CourseEntity) -> Unit
+    onCourseItemClicked: (CourseEntity) -> Unit,
+    onCourseItemDeleted: (CourseEntity) -> Unit
 ): Unit = when (state) {
     is CourseManageState.Failed -> {
         ErrorPage(
@@ -168,14 +172,15 @@ private fun CoursePageScreenContent(
         )
     }
 
-    CourseManageState.Loading -> CoursePageScreenSuccessContent(null) {}
-    is CourseManageState.Success -> CoursePageScreenSuccessContent(state, onCourseItemClicked)
+    CourseManageState.Loading -> CoursePageScreenSuccessContent(null,{}) {}
+    is CourseManageState.Success -> CoursePageScreenSuccessContent(state, onCourseItemClicked,onCourseItemDeleted)
 }
 
 @Composable
 private fun CoursePageScreenSuccessContent(
     state: CourseManageState.Success?,
     onCourseItemClicked: (CourseEntity) -> Unit,
+    onCourseItemRemoveClicked: (CourseEntity) -> Unit
 ) {
     val visible by remember(state) {
         derivedStateOf {
@@ -218,6 +223,7 @@ private fun CoursePageScreenSuccessContent(
 
                         IconButton(
                             onClick = {
+                                onCourseItemRemoveClicked(it!!)
 //                                state.removeCourse(it!!)
                             },
                             enabled = it?.isUserAdded == true

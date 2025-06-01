@@ -1,6 +1,7 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -38,5 +39,8 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses WHERE id = :courseId")
     suspend fun getById(courseId: Long): CourseEntity
+
+    @Delete
+    suspend fun delete(item: CourseEntity)
 }
 
