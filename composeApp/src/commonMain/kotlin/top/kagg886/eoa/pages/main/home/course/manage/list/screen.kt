@@ -1,8 +1,10 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,14 +21,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,11 +49,13 @@ import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
@@ -172,8 +182,12 @@ private fun CoursePageScreenContent(
         )
     }
 
-    CourseManageState.Loading -> CoursePageScreenSuccessContent(null,{}) {}
-    is CourseManageState.Success -> CoursePageScreenSuccessContent(state, onCourseItemClicked,onCourseItemDeleted)
+    CourseManageState.Loading -> CoursePageScreenSuccessContent(null, {}) {}
+    is CourseManageState.Success -> CoursePageScreenSuccessContent(
+        state,
+        onCourseItemClicked,
+        onCourseItemDeleted
+    )
 }
 
 @Composable
@@ -193,6 +207,71 @@ private fun CoursePageScreenSuccessContent(
             message = { Text("请修改筛选器后重试") },
             modifier = Modifier.fillMaxSize()
         )
+        return
+    }
+    if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
+        //在安卓上不知道为什么会崩溃，先改成滑动删除/编辑先
+        LazyColumn {
+            items(state?.data ?: List(6) { null }) {
+                val swipeState = rememberSwipeToDismissBoxState()
+                LaunchedEffect(swipeState.currentValue) {
+                    when (swipeState.currentValue) {
+                        SwipeToDismissBoxValue.EndToStart -> {
+                            onCourseItemRemoveClicked(it!!)
+                        }
+
+                        SwipeToDismissBoxValue.StartToEnd -> {
+                            onCourseItemClicked(it!!)
+                        }
+
+                        else -> {}
+                    }
+                    swipeState.reset()
+                }
+                SwipeToDismissBox(
+                    state = swipeState,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer(),
+                    ),
+                    backgroundContent = {
+                        val color = when (swipeState.dismissDirection) {
+                            SwipeToDismissBoxValue.EndToStart -> Color.Red
+                            else -> MaterialTheme.colorScheme.secondary
+                        }
+                        Surface(color = color, modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                Modifier.fillMaxSize(),
+                                contentAlignment = if (swipeState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Alignment.CenterEnd else Alignment.CenterStart
+                            ) {
+                                Icon(
+                                    imageVector = if (swipeState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Icons.Default.Delete else Icons.Default.Edit,
+                                    contentDescription = "",
+                                    modifier = Modifier.padding(16.dp).size(24.dp)
+                                )
+                            }
+                        }
+                    },
+                    content = {
+                        ListItem(
+                            headlineContent = {
+                                Text(text = it?.name ?: "")
+                            },
+                            overlineContent = {
+                                Text(text = it?.teacherName ?: "")
+                            },
+                            supportingContent = {
+                                Text(text = it?.classroomName ?: "")
+                            },
+                            modifier = Modifier.placeholder(
+                                visible = visible,
+                                highlight = PlaceholderHighlight.shimmer(),
+                            )
+                        )
+                    },
+                )
+            }
+        }
         return
     }
     LazyColumn {

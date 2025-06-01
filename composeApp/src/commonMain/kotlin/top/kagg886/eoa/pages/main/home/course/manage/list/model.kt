@@ -12,6 +12,7 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.home.course.list.CourseListState
 import top.kagg886.util.calculateWeekNumber
 
 class CourseManageListModel(
@@ -55,7 +56,7 @@ class CourseManageListModel(
             }
         }
 
-    fun setDataUnsafe() = intent {
+    fun setDataUnsafe(onlyShowUserCourse:Boolean = false) = intent {
         val currentWeek = try { //从1开始
             AppSyncMMKV.calender!!.calculateWeekNumber(
                 Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -71,7 +72,7 @@ class CourseManageListModel(
             CourseManageState.Success(
                 currentWeek = currentWeek,
                 data = entity,
-                onlyShowUserCourse = false,
+                onlyShowUserCourse = onlyShowUserCourse,
             )
         }
     }
@@ -97,14 +98,17 @@ class CourseManageListModel(
         postSideEffect(CourseManageSideEffect.NavigateToEditOrAdd(data?.id))
     }
 
+    @OptIn(OrbitExperimental::class)
     fun deleteCourse(it: CourseEntity) = intent {
-        if (!it.isUserAdded) {
-            postSideEffect(CourseManageSideEffect.Toast("系统课程不可删除"))
-            return@intent
+        runOn<CourseManageState.Success> {
+            if (!it.isUserAdded) {
+                postSideEffect(CourseManageSideEffect.Toast("系统课程不可删除"))
+                return@runOn
+            }
+            courseDao.delete(it)
+            postSideEffect(CourseManageSideEffect.Toast("删除成功"))
+            setDataUnsafe(state.onlyShowUserCourse).join()
         }
-        courseDao.delete(it)
-        postSideEffect(CourseManageSideEffect.Toast("删除成功"))
-        setDataUnsafe().join()
     }
 }
 
