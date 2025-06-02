@@ -9,8 +9,9 @@ import top.kagg886.eoa.pages.main.about.AboutScreen
 import top.kagg886.eoa.pages.main.home.HomeRoute
 import top.kagg886.eoa.pages.main.home.installHomeGraph
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
-import top.kagg886.eoa.pages.main.settings.SettingRoute
-import top.kagg886.eoa.pages.main.settings.SettingScreen
+import top.kagg886.eoa.pages.main.settings.SettingsRoute
+import top.kagg886.eoa.pages.main.settings.installSettingsGraph
+import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
 
 @Serializable
 data object MainRoute
@@ -18,5 +19,5 @@ data object MainRoute
 val installMainGraph: NavGraphBuilder.() -> Unit = {
     composable<AboutRoute> { AboutScreen() }
     navigation<HomeRoute>(startDestination = SummaryRoute, builder = installHomeGraph)
-    composable<SettingRoute> { SettingScreen() }
+    navigation<SettingsRoute>(startDestination = SettingListRoute, builder = installSettingsGraph)
 }

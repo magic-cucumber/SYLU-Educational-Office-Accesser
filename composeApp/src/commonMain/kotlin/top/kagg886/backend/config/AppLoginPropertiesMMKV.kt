@@ -7,9 +7,10 @@ import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.sylu_eoa.api.v3.EOAHTMLClient
 import top.kagg886.util.string
 
-object AppLoginPropertiesMMKV : MMKV by MMKV.mmkvWithID("login-properties"), AppLoginPropertiesMMKVType {
-    override var username: String  by string("username", "")
-    override var password: String  by string("password", "")
+object AppLoginPropertiesMMKV : MMKV by MMKV.mmkvWithID("login-properties"),
+    AppLoginPropertiesMMKVType {
+    override var username: String by string("username", "")
+    override var password: String by string("password", "")
     override var token: String by string("session-key", "")
 
     override val client: EOAClient by lazy {

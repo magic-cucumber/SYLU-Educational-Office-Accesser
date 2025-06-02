@@ -181,6 +181,29 @@ class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRo
         }
     }
 
+    fun logout() = intent {
+        logger.i("开始登出")
+        AppLoginPropertiesMMKV.clear()
+        AppSyncMMKV.clear()
+        database.examDao().clear()
+        database.gpaSummaryDao().clear()
+        database.gpaDao().clear()
+        database.courseDao().clearAll()
+        database.examDao().clear()
+        syncDao.clear()
+
+        postSideEffect(
+            MainRouteViewEffect.Toast(
+                type = SnackBarType.Success,
+                message = "登出成功！"
+            )
+        )
+        delay(3. seconds)
+        postSideEffect(
+            MainRouteViewEffect.NavigateToLogin
+        )
+    }
+
     fun toast(type: SnackBarType, message: String) = intent {
         postSideEffect(MainRouteViewEffect.Toast(type, message))
     }
@@ -215,6 +238,7 @@ sealed interface MainRouteViewState {
 }
 
 sealed interface MainRouteViewEffect {
+    data object NavigateToLogin:  MainRouteViewEffect
     data class Toast(
         val type: SnackBarType,
         val message: String

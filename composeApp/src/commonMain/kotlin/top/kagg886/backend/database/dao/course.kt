@@ -29,6 +29,9 @@ interface CourseDao {
     @Query("DELETE FROM courses WHERE isUserAdded = false AND yearCode = :xnm AND semesterCode = :xqm")
     suspend fun clear(xnm: String, xqm: String)
 
+    @Query("DELETE FROM courses")
+    suspend fun clearAll()
+
     @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
     suspend fun all(onlyUserAdded: Boolean = false): List<CourseEntity>
 

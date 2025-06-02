@@ -2,35 +2,48 @@ package top.kagg886.eoa.pages.main.home
 
 import StackedSnackbarDuration
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.navigation.NavDestination.Companion.hasRoute
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.adaptive.NavigationSuiteScaffold
+import top.kagg886.eoa.pages.login.LoginRoute
 import top.kagg886.eoa.pages.main.MainRouteViewEffect
 import top.kagg886.eoa.pages.main.home.course.CourseRoute
 import top.kagg886.eoa.pages.main.home.exam.ExamRoute
+import top.kagg886.eoa.pages.main.home.gpa.GPARoute
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.util.SnackBarType.*
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.replace
 import top.kagg886.eoa.util.showSnackBar
 
 @Composable
 fun HomeScreen(
     route: NavigationRoute,
     enableNavigation: Boolean = true,
-    menu: @Composable (() -> Unit)? = null,
+    menu: @Composable (() -> Unit)? = {
+        val nav = LocalNavController.current
+        IconButton(
+            onClick = {
+                nav.navigate(SettingsRoute)
+            },
+        ) {
+            Icon(Icons.Default.AccountBox, contentDescription = "返回")
+        }
+    },
     back: @Composable (() -> Unit)? = null,
     title: @Composable (() -> Unit)? = null,
     fabIcon: @Composable (() -> Unit)? = null,
@@ -59,6 +72,14 @@ fun HomeScreen(
                     duration = StackedSnackbarDuration.Short
                 )
             }
+            is MainRouteViewEffect.NavigateToLogin -> {
+                nav.navigate(LoginRoute) {
+                    popUpTo(0) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
         }
     }
     NavigationSuiteScaffold(
@@ -69,7 +90,7 @@ fun HomeScreen(
             title(title)
             back(back)
 
-            fab(onClick = fabOnClick, icon = fabIcon, text = fabText,modifier = fabModifier)
+            fab(onClick = fabOnClick, icon = fabIcon, text = fabText, modifier = fabModifier)
 
             for (navigationRoute in NavigationRoute.entries) {
                 item(
@@ -79,7 +100,12 @@ fun HomeScreen(
                             nav.navigate(navigationRoute.target)
                         }
                     },
-                    icon = { Icon(navigationRoute.icon, contentDescription = navigationRoute.display) },
+                    icon = {
+                        Icon(
+                            navigationRoute.icon,
+                            contentDescription = navigationRoute.display
+                        )
+                    },
                     label = { Text(navigationRoute.display) },
                 )
             }
@@ -107,4 +133,10 @@ enum class NavigationRoute(val target: Any, val display: String, val icon: Image
         display = "考试",
         icon = Icons.Default.Bookmark
     ),
+
+    GPA(
+        target = GPARoute,
+        display = "绩点",
+        icon = Icons.Default.Star
+    )
 }

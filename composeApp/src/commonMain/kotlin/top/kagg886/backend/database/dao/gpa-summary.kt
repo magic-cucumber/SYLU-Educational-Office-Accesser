@@ -17,7 +17,7 @@ interface GPASummaryDao {
     suspend fun clear()
 
     @Query("SELECT * FROM gpa_summary")
-    fun allFlow(): Flow<List<GPASummaryEntity>>
+    suspend fun all(): List<GPASummaryEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: GPASummaryEntity): Long

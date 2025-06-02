@@ -7,9 +7,30 @@ import kotlinx.serialization.serializer
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.MMKVOptions
 import top.kagg886.mkmb.initialize
-import kotlin.properties.Delegates
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty
+
+class DirectMMKVDelegate<T>(
+    private val mmkv: MMKV,
+    private val key: String,
+    private val default: T,
+    private val reader: MMKV.(String) -> T,
+    private val writer: MMKV.(String, T) -> Unit
+) : ReadWriteProperty<Any?, T> {
+
+    override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        return if (mmkv.exists(key)) {
+            mmkv.reader(key)
+        } else {
+            default
+        }
+    }
+
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        mmkv.writer(key, value)
+    }
+}
 
 fun initializeMMKV() = MMKV.initialize(dataPath.resolve("config").absolutePath().toString()) {
     logFunc = { level,tag,it->
@@ -29,60 +50,50 @@ fun initializeMMKV() = MMKV.initialize(dataPath.resolve("config").absolutePath()
 }
 
 fun MMKV.string(key: String, default: String = "") =
-    Delegates.observable(getOrElse(key, default) { getString(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getString, MMKV::set)
 
 fun MMKV.int(key: String, default: Int = 0) =
-    Delegates.observable(getOrElse(key, default) { getInt(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getInt, MMKV::set)
 
 fun MMKV.boolean(key: String, default: Boolean = false) =
-    Delegates.observable(getOrElse(key, default) { getBoolean(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getBoolean, MMKV::set)
 
 fun MMKV.long(key: String, default: Long = 0L) =
-    Delegates.observable(getOrElse(key, default) { getLong(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getLong, MMKV::set)
 
 fun MMKV.float(key: String, default: Float = 0f) =
-    Delegates.observable(getOrElse(key, default) { getFloat(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getFloat, MMKV::set)
 
 fun MMKV.double(key: String, default: Double = 0.0) =
-    Delegates.observable(getOrElse(key, default) { getDouble(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getDouble, MMKV::set)
 
 fun MMKV.bytes(key: String, default: ByteArray = byteArrayOf()) =
-    Delegates.observable(getOrElse(key, default) { getByteArray(key) }) { _, _, new ->
-        set(key, new)
-    }
+    DirectMMKVDelegate(this, key, default, MMKV::getByteArray, MMKV::set)
 
 fun MMKV.stringSet(key: String, default: List<String> = listOf()) =
-    Delegates.observable(getOrElse(key, default) { getStringList(key) }) { _, _, new ->
-        set(key, new)
-    }
-
+    DirectMMKVDelegate(this, key, default, MMKV::getStringList, MMKV::set)
 
 @OptIn(InternalSerializationApi::class)
 fun <T : Any> MMKV.jsonOrNull(key: String, default: T? = null, clazz: KClass<T>, json: Json = Json): ReadWriteProperty<Any?, T?> {
-    val data = try {
-        json.decodeFromString(clazz.serializer(), getOrElse(key, "{}") { getString(key) })
-    } catch (_: Exception) {
-        default
-    }
-    return Delegates.observable(data) { _, _, new ->
-        if (new != null) {
-            set(key, json.encodeToString(clazz.serializer(), new))
-            return@observable
+    return DirectMMKVDelegate(
+        mmkv = this,
+        key = key,
+        default = default,
+        reader = { k ->
+            try {
+                json.decodeFromString(clazz.serializer(), getString(k))
+            } catch (_: Exception) {
+                default
+            }
+        },
+        writer = { k, value ->
+            if (value != null) {
+                set(k, json.encodeToString(clazz.serializer(), value))
+            } else {
+                remove(k)
+            }
         }
-        remove(key)
-    }
+    )
 }
 
 inline fun <reified T : Any> MMKV.jsonOrNull(key: String, default: T? = null, json: Json = Json) =
@@ -90,23 +101,22 @@ inline fun <reified T : Any> MMKV.jsonOrNull(key: String, default: T? = null, js
 
 @OptIn(InternalSerializationApi::class)
 fun <T : Any> MMKV.json(key: String, default: T, clazz: KClass<T>, json: Json = Json): ReadWriteProperty<Any?, T> {
-    val data = try {
-        json.decodeFromString(clazz.serializer(), getOrElse(key, "{}") { getString(key) })
-    } catch (_: Exception) {
-        default
-    }
-    return Delegates.observable(data) { _, _, new ->
-        if (new != null) {
-            set(key, json.encodeToString(clazz.serializer(), new))
-            return@observable
+    return DirectMMKVDelegate(
+        mmkv = this,
+        key = key,
+        default = default,
+        reader = { k ->
+            try {
+                json.decodeFromString(clazz.serializer(), getString(k))
+            } catch (_: Exception) {
+                default
+            }
+        },
+        writer = { k, value ->
+            set(k, json.encodeToString(clazz.serializer(), value))
         }
-        remove(key)
-    }
+    )
 }
 
 inline fun <reified T : Any> MMKV.json(key: String, default: T, json: Json = Json) =
     json(key, default, T::class, json)
-
-
-private fun <T> MMKV.getOrElse(key: String, fallback: T, value: MMKV.() -> T): T =
-    if (exists(key)) value() else fallback

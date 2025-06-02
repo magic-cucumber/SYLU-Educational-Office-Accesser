@@ -27,4 +27,7 @@ interface SyncRecordDao {
         duration: Long,
         now: Long = Clock.System.now().toEpochMilliseconds()
     ): Long?
+
+    @Query("DELETE FROM sync_records")
+    suspend fun clear()
 }

@@ -35,7 +35,7 @@ interface GPADao {
     suspend fun clear()
 
     @Query("SELECT * FROM gpa_scores")
-    fun allFlow(): Flow<List<GPAEntity>>
+    suspend fun all(): List<GPAEntity>
 
     @Query("SELECT * FROM gpa_scores WHERE summaryId = :summaryId")
     fun getByParentId(summaryId: Long): Flow<List<GPAEntity>>
