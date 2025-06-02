@@ -16,6 +16,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -51,10 +52,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -112,25 +117,13 @@ fun SummaryScreen() = HomeScreen(
 }
 
 @Composable
-private fun SummaryContent(
+private inline fun SummaryContent(
     state: SummaryState,
     syncState: MainRouteViewState,
-    onCourseItemClicked: (TodayClass) -> Unit = {},
-    onSyncActionStarted: () -> Unit = {}
+    noinline onCourseItemClicked: (TodayClass) -> Unit = {},
+    noinline onSyncActionStarted: () -> Unit = {}
 ) {
     when (state) {
-        is SummaryState.Loading -> {
-            SummaryContentPlaceHolder(null, syncState)
-        }
-
-        is SummaryState.Success -> {
-            SummaryContentPlaceHolder(
-                state = state,
-                syncState = syncState,
-                onCourseItemClicked = onCourseItemClicked,
-                onSyncActionStarted = onSyncActionStarted
-            )
-        }
 
         is SummaryState.Failed -> {
             // 加载失败的页面
@@ -173,13 +166,22 @@ private fun SummaryContent(
                 }
             )
         }
+
+        else -> {
+            SummaryContentPlaceHolder(
+                state = state as? SummaryState.Success,
+                syncState = syncState,
+                onCourseItemClicked = onCourseItemClicked,
+                onSyncActionStarted = onSyncActionStarted
+            )
+        }
     }
 }
 
 @Composable
-private fun SyncStateCard(
+private inline fun SyncStateCard(
     state: MainRouteViewState,
-    onSyncActionStarted: () -> Unit,
+    noinline onSyncActionStarted: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -334,7 +336,7 @@ private data class Tuple5<A, B, C, D, E>(
 )
 
 @Composable
-private fun SummaryCard(
+private inline fun SummaryCard(
     state: SummaryState.Success?,
     modifier: Modifier = Modifier
 ) {
@@ -378,12 +380,12 @@ private fun SummaryCard(
 }
 
 @Composable
-private fun SummaryContentPlaceHolderHeader(
+private inline fun SummaryContentPlaceHolderHeader(
     modifier: Modifier = Modifier,
     suiteType: NavigationSuiteType,
     syncState: MainRouteViewState,
     state: SummaryState.Success?,
-    onSyncActionStarted: () -> Unit,
+    noinline onSyncActionStarted: () -> Unit,
 ) {
     when (suiteType) {
         NavigationSuiteType.NavigationBar -> {
@@ -413,11 +415,11 @@ private fun SummaryContentPlaceHolderHeader(
 }
 
 @Composable
-private fun SummaryContentPlaceHolder(
+private inline fun SummaryContentPlaceHolder(
     state: SummaryState.Success?,
     syncState: MainRouteViewState,
-    onCourseItemClicked: (TodayClass) -> Unit = {},
-    onSyncActionStarted: () -> Unit = {},
+    noinline onCourseItemClicked: (TodayClass) -> Unit = {},
+    noinline onSyncActionStarted: () -> Unit = {},
 ) {
     val showPlaceHolder by remember(state) {
         derivedStateOf {
@@ -425,66 +427,65 @@ private fun SummaryContentPlaceHolder(
         }
     }
 
-    if (state?.plan?.isEmpty() == true) {
-        Column {
-            SummaryContentPlaceHolderHeader(
-                state = state,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                onSyncActionStarted = onSyncActionStarted,
-                syncState = syncState,
-                suiteType = currentLayoutType()
-            )
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "今天没有课程安排",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+        var cardHeight by remember {
+            mutableStateOf(0.dp)
+        }
+        val density = LocalDensity.current
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                SummaryContentPlaceHolderHeader(
+                    state = state,
+                    modifier = Modifier.fillMaxWidth().onGloballyPositioned {
+                        cardHeight = with(density) { it.size.height.toDp() }
+                    },
+                    onSyncActionStarted = onSyncActionStarted,
+                    syncState = syncState,
+                    suiteType = currentLayoutType()
                 )
             }
-        }
-        return
-    }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            SummaryContentPlaceHolderHeader(
-                state = state,
-                modifier = Modifier.fillMaxWidth(),
-                onSyncActionStarted = onSyncActionStarted,
-                syncState = MainRouteViewState.Empty,
-                suiteType = currentLayoutType()
-            )
-        }
+            if (state?.plan?.isEmpty() == true) {
+                item {
+                    Box(
+                        Modifier.fillMaxWidth().height(maxHeight - cardHeight - 64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("今日没有课程", textAlign = TextAlign.Center)
+                    }
+                }
+                return@LazyColumn
+            }
 
-        item {
-            Text(
-                text = "今日课程",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.placeholder(
-                    visible = showPlaceHolder,
-                    highlight = PlaceholderHighlight.shimmer()
+            item {
+                Text(
+                    text = "今日课程",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.placeholder(
+                        visible = showPlaceHolder,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
                 )
-            )
-        }
+            }
 
 
-        val items = state?.plan ?: List(3) { null }
-        items(items) { course ->
-            CourseItem(course, onCourseItemClicked)
+            val items = state?.plan ?: List(3) { null }
+            items(items) { course ->
+                CourseItem(course, onCourseItemClicked)
+            }
         }
     }
+
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseItem(
+private inline fun CourseItem(
     course: TodayClass?,
-    onCourseItemClicked: (TodayClass) -> Unit
+    noinline onCourseItemClicked: (TodayClass) -> Unit
 ) {
     val showPlaceHolder by remember {
         derivedStateOf {
@@ -633,7 +634,7 @@ private fun CourseItem(
 }
 
 @Composable
-private fun SummaryItem(
+private inline fun SummaryItem(
     showPlaceHolder: Boolean,
     details: String,
     title: String,
