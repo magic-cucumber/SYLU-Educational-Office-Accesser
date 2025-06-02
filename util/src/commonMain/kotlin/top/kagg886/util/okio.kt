@@ -11,6 +11,7 @@ import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.openZip
+import okio.use
 
 fun Path.meta() = FileSystem.SYSTEM.metadata(this)
 
