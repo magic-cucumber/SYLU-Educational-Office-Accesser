@@ -1,5 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -22,7 +24,16 @@ import top.kagg886.eoa.util.shared.AutoInject
 data object CourseRoute
 
 val installCourseGraph: NavGraphBuilder.() -> Unit = {
-    composable<CourseListRoute> { AutoInject { CourseListScreen() } }
+    composable<CourseListRoute>(
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() },
+        popEnterTransition = { fadeIn() },
+        popExitTransition = { fadeOut() }
+    ) {
+        AutoInject {
+            CourseListScreen()
+        }
+    }
     composable<CourseDetailRoute> { AutoInject { CourseDetailScreen(it.toRoute()) } }
     navigation<CourseManageRoute>(
         startDestination = CourseManageListRoute,

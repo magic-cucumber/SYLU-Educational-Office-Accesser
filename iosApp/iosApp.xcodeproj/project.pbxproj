@@ -154,7 +154,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "cd \"$SRCROOT/..\"\n./gradlew :composeApp:embedAndSignAppleFrameworkForXcode --stacktrace\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -301,6 +301,12 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"ComposeApp\"",
+					"-lsqlite3",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp;
 				PRODUCT_NAME = "SYLU-EOA";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -326,6 +332,12 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"ComposeApp\"",
+					"-lsqlite3",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp;
 				PRODUCT_NAME = "SYLU-EOA";
 				SWIFT_EMIT_LOC_STRINGS = YES;

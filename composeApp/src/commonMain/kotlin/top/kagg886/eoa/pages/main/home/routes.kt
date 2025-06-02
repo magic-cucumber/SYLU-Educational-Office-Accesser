@@ -1,8 +1,12 @@
 package top.kagg886.eoa.pages.main.home
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.pages.main.home.course.CourseRoute
 import top.kagg886.eoa.pages.main.home.course.installCourseGraph
@@ -20,8 +24,24 @@ import top.kagg886.eoa.util.shared.AutoInject
 data object HomeRoute
 
 val installHomeGraph: NavGraphBuilder.() -> Unit = {
-    composable<SummaryRoute> { AutoInject { SummaryScreen() } }
+    composable<SummaryRoute>(
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() },
+        popEnterTransition = { fadeIn() },
+        popExitTransition = { fadeOut() }
+    ) {
+        AutoInject {
+            SummaryScreen()
+        }
+    }
     navigation<CourseRoute>(startDestination = CourseListRoute, builder = installCourseGraph)
     navigation<ExamRoute>(startDestination = ExamListRoute, builder = installExamGraph)
-    composable<GPARoute> { GPAScreen() }
+    composable<GPARoute>(
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() },
+        popEnterTransition = { fadeIn() },
+        popExitTransition = { fadeOut() }
+    ) {
+        GPAScreen()
+    }
 }

@@ -3,7 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
 val appVersion = project.findProperty("app.version") as String
-val appVersionCode = getGitCommitCount()
+val appVersionCode = 100
 
 plugins {
     alias(libs.plugins.multiplatform)
@@ -33,6 +33,7 @@ kotlin {
         it.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            linkerOpts += "-lsqlite3"
         }
     }
 
@@ -170,7 +171,7 @@ buildConfig {
     buildConfigField("DATABASE_VERSION", 1)
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
-    buildConfigField("GIT_COMMIT_SHA", getLastCommitSha()!!)
+    buildConfigField("GIT_COMMIT_SHA", "123456")
 }
 
 room {

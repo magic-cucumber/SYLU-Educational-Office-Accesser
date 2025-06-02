@@ -1,5 +1,7 @@
 package top.kagg886.eoa.pages.main.home.exam
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -14,6 +16,15 @@ import top.kagg886.eoa.util.shared.AutoInject
 data object ExamRoute
 
 val installExamGraph: NavGraphBuilder.() -> Unit = {
-    composable<ExamListRoute> { AutoInject { ExamListScreen() } }
+    composable<ExamListRoute>(
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() },
+        popEnterTransition = { fadeIn() },
+        popExitTransition = { fadeOut() }
+    ) {
+        AutoInject {
+            ExamListScreen()
+        }
+    }
     composable<ExamDetailRoute> { AutoInject { ExamDetailScreen(it.toRoute()) } }
 }
