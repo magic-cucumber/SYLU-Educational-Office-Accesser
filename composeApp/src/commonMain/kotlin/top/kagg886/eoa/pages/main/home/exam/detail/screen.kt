@@ -68,6 +68,7 @@ data class ExamDetailRoute(val examId: Long)
 fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     route = NavigationRoute.EXAM,
     title = { Text("考试详情") },
+    menu = null,
     back = { BackIconButton() }
 ) {
     val mainViewModel = mainViewModel()
