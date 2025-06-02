@@ -2,6 +2,9 @@ import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
+val appVersion = project.findProperty("app.version") as String
+val appVersionCode = getGitCommitCount()
+
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.compose.compiler)
@@ -124,8 +127,8 @@ android {
         targetSdk = 35
 
         applicationId = "top.kagg886.eoa.androidApp"
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -144,7 +147,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SYLU-EOA"
-            packageVersion = "1.0.0"
+            packageVersion = appVersion
 
             linux {
                 iconFile.set(project.file("desktopAppIcons/LinuxIcon.png"))
@@ -164,7 +167,10 @@ buildConfig {
     // BuildConfig configuration here.
     // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
     packageName("top.kagg886.eoa.config")
-    buildConfigField("DATABASE_VERSION",1)
+    buildConfigField("DATABASE_VERSION", 1)
+    buildConfigField("APP_VERSION_CODE", appVersionCode)
+    buildConfigField("APP_VERSION_NAME", appVersion)
+    buildConfigField("GIT_COMMIT_SHA", getLastCommitSha()!!)
 }
 
 room {
@@ -177,5 +183,34 @@ dependencies {
         add("kspJvm", this)
         add("kspIosArm64", this)
         add("kspIosSimulatorArm64", this)
+    }
+}
+
+
+fun getGitCommitCount(): Int {
+    return try {
+        val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+            .redirectErrorStream(true)
+            .start()
+
+        val output = process.inputStream.bufferedReader().readText().trim()
+        output.toIntOrNull() ?: -1
+    } catch (e: Exception) {
+        println("Error getting git commit count: ${e.message}")
+        -1
+    }
+}
+
+fun getLastCommitSha(): String? {
+    return try {
+        val process = ProcessBuilder("git", "rev-parse", "HEAD")
+            .redirectErrorStream(true)
+            .start()
+
+        val output = process.inputStream.bufferedReader().readText().trim()
+        if (output.isNotEmpty()) output else null
+    } catch (e: Exception) {
+        println("Error getting last commit SHA: ${e.message}")
+        null
     }
 }

@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.pages.main.about.AboutRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
@@ -263,6 +266,24 @@ private fun SettingScreenContent(
                     }
                 }
             }
+        }
+
+        item {
+            val nav = LocalNavController.current
+            ListItem(
+                headlineContent = {
+                    Text("关于系统")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription =  "关于系统",
+                    )
+                },
+                modifier = Modifier.clickable {
+                     nav.navigate(AboutRoute)
+                }
+            )
         }
     }
 }
