@@ -1,6 +1,6 @@
-package top.kagg886.sylu_eoa.api.v3.util
+package top.kagg886.sylu_eoa.api.html.util
 
-actual val RSA: RSAPlatform by lazy {
+internal actual val RSA: RSAPlatform by lazy {
     System.loadLibrary("eoa_security")
     val internalRSA = NativeRSA()
     object : RSAPlatform {

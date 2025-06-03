@@ -487,7 +487,7 @@ private inline fun CourseItem(
     course: TodayClass?,
     noinline onCourseItemClicked: (TodayClass) -> Unit
 ) {
-    val showPlaceHolder by remember {
+    val showPlaceHolder by remember(course) {
         derivedStateOf {
             course == null
         }

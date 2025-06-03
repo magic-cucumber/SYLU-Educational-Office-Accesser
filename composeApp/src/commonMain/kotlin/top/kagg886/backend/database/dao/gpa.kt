@@ -9,7 +9,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
-import top.kagg886.backend.database.dao.GPASummaryEntity
 
 @Entity(
     tableName = "gpa_scores",

@@ -37,4 +37,5 @@ plugins {
 include(":composeApp")
 include(":eoa-lib:network-core")
 include(":eoa-lib:network-html-api")
+include(":eoa-lib:network-test-api")
 include(":util")

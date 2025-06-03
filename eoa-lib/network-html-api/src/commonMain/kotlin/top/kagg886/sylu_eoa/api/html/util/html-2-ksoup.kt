@@ -1,8 +1,7 @@
-package top.kagg886.sylu_eoa.api.v3.util
+package top.kagg886.sylu_eoa.api.html.util
 
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
-import io.ktor.http.ParametersBuilder
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationStrategy
@@ -12,8 +11,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.modules.SerializersModule
 
 internal object KsoupDocumentSerializer : KSerializer<Document> {

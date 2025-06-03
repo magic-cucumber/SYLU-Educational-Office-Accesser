@@ -1,6 +1,14 @@
 package top.kagg886.sylu_eoa.api.v2
 
-import top.kagg886.sylu_eoa.api.v2.bean.*
+import top.kagg886.sylu_eoa.api.v2.bean.ClassUnit
+import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
+import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
+import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
+import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
+import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
+import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
+import top.kagg886.sylu_eoa.api.v2.bean.TermResult
+import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
 
 /**
  * 沈阳理工大学教务系统客户端接口

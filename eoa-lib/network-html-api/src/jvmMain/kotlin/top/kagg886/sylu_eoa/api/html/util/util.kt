@@ -1,4 +1,4 @@
-package top.kagg886.sylu_eoa.api.v3.util
+package top.kagg886.sylu_eoa.api.html.util
 
 internal val jvmTarget by lazy {
     val osName = System.getProperty("os.name")

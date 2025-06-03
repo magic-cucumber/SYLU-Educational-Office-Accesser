@@ -1,7 +1,6 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.*
-import kotlinx.coroutines.flow.Flow
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
 
 @Entity(tableName = "gpa_summary")

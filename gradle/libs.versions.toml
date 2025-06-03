@@ -29,6 +29,7 @@ ksp = "2.1.21-2.0.1"
 buildConfig = "5.6.5"
 materialKolor = "2.1.1"
 sqliteBundled = "2.5.1"
+sweet = "0.1.2"
 
 [libraries]
 adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
@@ -75,7 +76,8 @@ orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orb
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
-
+sweet-api-runtime = { module = "dev.whyoleg.sweetspi:sweetspi-runtime", version.ref = "sweet" }
+sweet-compiler = { module = "dev.whyoleg.sweetspi:sweetspi-processor", version.ref = "sweet" }
 [plugins]
 
 multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -89,3 +91,4 @@ kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", vers
 room = { id = "androidx.room", version.ref = "room" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 buildConfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildConfig" }
+sweet-api = { id = "dev.whyoleg.sweetspi", version.ref = "sweet" }

@@ -1,9 +1,9 @@
-package top.kagg886.sylu_eoa.api.v3.util
+package top.kagg886.sylu_eoa.api.html.util
 
 import kotlinx.coroutines.runBlocking
 import top.kagg886.sylu_eoa.api.v2.EOAClientException
 import top.kagg886.sylu_eoa.api.v2.Storage
-import top.kagg886.sylu_eoa.api.v3.EOAHTMLClient
+import top.kagg886.sylu_eoa.api.html.EOAHTMLClient
 import top.kagg886.util.logger
 import kotlin.test.Test
 import kotlin.test.assertFailsWith

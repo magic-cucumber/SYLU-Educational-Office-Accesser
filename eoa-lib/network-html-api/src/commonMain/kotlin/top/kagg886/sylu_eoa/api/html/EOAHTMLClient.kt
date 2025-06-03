@@ -1,4 +1,4 @@
-package top.kagg886.sylu_eoa.api.v3
+package top.kagg886.sylu_eoa.api.html
 
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.select.Elements
@@ -18,13 +18,24 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import top.kagg886.sylu_eoa.api.v2.*
-import top.kagg886.sylu_eoa.api.v2.bean.*
-import top.kagg886.sylu_eoa.api.v3.util.*
+import top.kagg886.sylu_eoa.api.html.util.*
+import top.kagg886.sylu_eoa.api.v2.EOAClient
+import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
+import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
+import top.kagg886.sylu_eoa.api.v2.Storage
+import top.kagg886.sylu_eoa.api.v2.UnknownException
+import top.kagg886.sylu_eoa.api.v2.bean.ClassUnit
+import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
+import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
+import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
+import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
+import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
+import top.kagg886.sylu_eoa.api.v2.bean.TermResult
+import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
 import kotlin.properties.Delegates
 import top.kagg886.util.logger as kermit
 
-class EOAHTMLClient : EOAClient {
+internal class EOAHTMLClient : EOAClient {
     private var storage by Delegates.notNull<StorageCookieStorage>()
     override var username by Delegates.notNull<String>()
     override var password by Delegates.notNull<String>()

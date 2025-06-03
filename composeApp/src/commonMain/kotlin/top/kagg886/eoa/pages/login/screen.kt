@@ -31,14 +31,20 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,8 +70,11 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.util.replace
+import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 
 @Serializable
 data object LoginRoute
@@ -76,10 +85,18 @@ fun LoginScreen() {
     val state by model.collectAsState()
 
     val nav = LocalNavController.current
+    val snack = LocalSnackBarHost.current
     model.collectSideEffect {
         when (it) {
             is LoginSideEffect.NavigateToMain -> {
                 nav.replace(MainRoute)
+            }
+
+            is LoginSideEffect.Toast -> {
+                snack.showSnackBar(
+                    it.type,
+                    it.message
+                )
             }
         }
     }
@@ -95,30 +112,27 @@ fun LoginScreen() {
         },
         onVerifyCodeInput = {
             model.processVerifyCode(it.ifBlank { null })
+        },
+        onLoginBackendChanged = {
+            model.setLoginClient(it)
         }
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LoginScreenContent(
     state: LoginViewModelState,
+    onLoginBackendChanged: (EOAClientProvider) -> Unit,
     onLoginButtonClicked: (String, String) -> Unit,
     onForgetPasswordButtonClicked: () -> Unit,
-    onVerifyCodeInput: (String) ->Unit
+    onVerifyCodeInput: (String) -> Unit
 ) = when (state) {
     is LoginViewModelState.WaitLogin -> {
         var username by remember { mutableStateOf(AppLoginPropertiesMMKV.username) }
         var password by remember { mutableStateOf(AppLoginPropertiesMMKV.password) }
         var passwordVisible by remember { mutableStateOf(false) }
         val focusManager = LocalFocusManager.current
-
-        var errorMessage by remember { mutableStateOf("") }
-
-        LaunchedEffect(state) {
-            if  (state is LoginViewModelState.WaitLogin.Failed) {
-                errorMessage = state.msg
-            }
-        }
 
         if (state is LoginViewModelState.WaitLogin.VerifyCode) {
             var captchaText by remember { mutableStateOf("") }
@@ -187,150 +201,207 @@ private fun LoginScreenContent(
             )
         }
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            Text(
+                text = "登录到教务网",
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("教务网账号") },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = "用户名") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = {
+                    focusManager.moveFocus(
+                        FocusDirection.Down
+                    )
+                }),
+                enabled = state !is LoginViewModelState.WaitLogin.Processing
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("教务网密码") },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "密码") },
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                        )
+                    }
+                },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = {
+                    focusManager.clearFocus()
+                    if (username.isNotBlank() && password.isNotBlank() && state !is LoginViewModelState.WaitLogin.Processing) {
+                        onLoginButtonClicked(username, password)
+                    }
+                }),
+                enabled = state !is LoginViewModelState.WaitLogin.Processing
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            //TODO 实现登录后端选择。
+            AnimatedVisibility(
+                visible = state is LoginViewModelState.WaitLogin.Waiting
             ) {
-                Text(
-                    text = "登录到教务网",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 32.dp)
-                )
+                if (state is LoginViewModelState.WaitLogin.Waiting) {
+                    var expanded by remember { mutableStateOf(false) }
 
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text("教务网账号") },
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = "用户名") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                    enabled = state !is LoginViewModelState.WaitLogin.Processing
-                )
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "选择登录后端",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = !expanded },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = state.selected.name,
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded = expanded
+                                    )
+                                },
+                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                label = { Text("后端选择") }
+                            )
 
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("教务网密码") },
-                    singleLine = true,
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "密码") },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                state.provider.forEach { provider ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            ListItem(
+                                                headlineContent = { Text(provider.name) },
+                                                supportingContent = {
+                                                    Column {
+                                                        Text(provider.description)
+                                                        Text(
+                                                            text = "版本: ${provider.version}",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            )
+                                        },
+                                        onClick = {
+                                            onLoginBackendChanged(provider)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Button row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Login button
+                Button(
+                    onClick = { onLoginButtonClicked(username, password) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    enabled = username.isNotBlank() && password.isNotBlank() && state !is LoginViewModelState.WaitLogin.Processing,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    AnimatedContent(
+                        targetState = state,
+                        transitionSpec = {
+                            (fadeIn() + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Down)).togetherWith(
+                                fadeOut() + slideOutOfContainer(
+                                    AnimatedContentTransitionScope.SlideDirection.Down
+                                )
                             )
                         }
-                    },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = {
-                        focusManager.clearFocus()
-                        if (username.isNotBlank() && password.isNotBlank() && state !is LoginViewModelState.WaitLogin.Processing) {
-                            onLoginButtonClicked(username, password)
-                        }
-                    }),
-                    enabled = state !is LoginViewModelState.WaitLogin.Processing
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Button row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Login button
-                    Button(
-                        onClick = { onLoginButtonClicked(username, password) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(50.dp),
-                        enabled = username.isNotBlank() && password.isNotBlank() && state !is LoginViewModelState.WaitLogin.Processing,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        AnimatedContent(
-                            targetState = state,
-                            transitionSpec = {
-                                (fadeIn() + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Down)).togetherWith(
-                                    fadeOut() + slideOutOfContainer(
-                                        AnimatedContentTransitionScope.SlideDirection.Down
-                                    )
+                    ) { processingState ->
+                        val inLogin =
+                            processingState is LoginViewModelState.WaitLogin.Processing
+                        if (inLogin) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    strokeWidth = 2.dp
                                 )
+                                Spacer(Modifier.width(16.dp))
+                                Text((processingState as LoginViewModelState.WaitLogin.Processing).toast)
                             }
-                        ) { processingState->
-                            val inLogin = processingState is LoginViewModelState.WaitLogin.Processing
-                            if (inLogin) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Text((processingState as LoginViewModelState.WaitLogin.Processing).toast)
-                                }
-                                return@AnimatedContent
-                            }
-                            Text("登录",modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                            return@AnimatedContent
                         }
-                    }
-
-                    // Forgot password button
-                    OutlinedButton(
-                        onClick = onForgetPasswordButtonClicked,
-                        modifier = Modifier
-                            .height(50.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text("找回密码")
+                        Text(
+                            "登录",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
 
-                // Fix height jitter by using a fixed height spacer
-                Spacer(modifier = Modifier.height(40.dp))
-            }
-
-            // Move error message outside the main column to prevent layout shifts
-            AnimatedVisibility(
-                visible = state is LoginViewModelState.WaitLogin.Failed,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
+                // Forgot password button
+                OutlinedButton(
+                    onClick = onForgetPasswordButtonClicked,
+                    modifier = Modifier
+                        .height(50.dp),
                     shape = MaterialTheme.shapes.medium,
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    Text("找回密码")
                 }
             }
+
+            // Fix height jitter by using a fixed height spacer
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 

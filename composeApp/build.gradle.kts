@@ -3,7 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
 val appVersion = project.findProperty("app.version") as String
-val appVersionCode = 100
+val appVersionCode = (project.findProperty("app.code") as String).toInt()
 
 plugins {
     alias(libs.plugins.multiplatform)
@@ -85,6 +85,7 @@ kotlin {
             implementation(project(":util"))
             //方便切换到闭源后端
             implementation(project(":eoa-lib:network-html-api"))
+            implementation(project(":eoa-lib:network-test-api"))
         }
 
         commonTest.dependencies {
@@ -92,6 +93,7 @@ kotlin {
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.uiTest)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.sweet.api.runtime)
         }
 
         androidMain.dependencies {

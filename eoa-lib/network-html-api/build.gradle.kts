@@ -1,9 +1,14 @@
 import java.security.MessageDigest
+import dev.whyoleg.sweetspi.gradle.*
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
+
+
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.sweet.api)
 }
 
 group = "top.kagg886.sylu_eoa.api.v3"
@@ -11,7 +16,7 @@ version = "1.0"
 
 android {
     ndkVersion = "28.1.13356709"
-    namespace = "top.kagg886.sylu_eoa.api.v3"
+    namespace = "top.kagg886.sylu_eoa.api.html"
 
     compileSdk = 35
 
@@ -52,8 +57,10 @@ val kotlinArchToRustArch = mapOf(
 )
 
 kotlin {
+    withSweetSpi()
     jvmToolchain(22)
     jvm()
+
 
     listOf(iosArm64(), iosSimulatorArm64()).forEach { t ->
         t.apply {
@@ -80,6 +87,7 @@ kotlin {
             implementation(libs.ksoup)
 
             implementation(libs.mkmb.core)
+            implementation(libs.sweet.api.runtime)
 
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)

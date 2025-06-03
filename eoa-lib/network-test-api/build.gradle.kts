@@ -1,20 +1,23 @@
 import dev.whyoleg.sweetspi.gradle.*
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
 
+
     alias(libs.plugins.ksp)
     alias(libs.plugins.sweet.api)
 }
 
-group = "top.kagg886.eoa.network.core"
+group = "top.kagg886.sylu_eoa.api.test"
 version = "1.0"
 
 android {
-    namespace = "top.kagg886.eoa.network.core"
+    namespace = "top.kagg886.sylu_eoa.api.test"
 
     compileSdk = 35
+
     defaultConfig {
         minSdk = 28
         targetSdk = 35
@@ -23,18 +26,19 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
 
 kotlin {
-    jvmToolchain(22)
-
     withSweetSpi()
-
+    jvmToolchain(22)
     jvm()
+
     iosArm64()
     iosSimulatorArm64()
 
@@ -43,12 +47,9 @@ kotlin {
     }
 
     sourceSets {
-        commonMain {
-            dependencies {
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.sweet.api.runtime)
-                api(libs.kotlinx.datetime)
-            }
+        commonMain.dependencies {
+            api(project(":eoa-lib:network-core"))
+            implementation(libs.sweet.api.runtime)
         }
 
         commonTest.dependencies {
@@ -56,12 +57,3 @@ kotlin {
         }
     }
 }
-
-//dependencies {
-//    with(libs.sweet.compiler) {
-//        add("kspAndroid", this)
-//        add("kspJvm", this)
-//        add("kspIosArm64", this)
-//        add("kspIosSimulatorArm64", this)
-//    }
-//}

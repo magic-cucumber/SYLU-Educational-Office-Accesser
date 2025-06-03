@@ -1,4 +1,4 @@
-package top.kagg886.sylu_eoa.api.v3.util
+package top.kagg886.sylu_eoa.api.html.util
 
 import okio.BufferedSource
 import okio.HashingSink
@@ -16,7 +16,7 @@ import top.kagg886.util.sink
 import top.kagg886.util.source
 import java.nio.charset.StandardCharsets
 
-actual val RSA: RSAPlatform by lazy {
+internal actual val RSA: RSAPlatform by lazy {
     val name = when (jvmTarget) {
         JvmTarget.WINDOWS -> "eoa_security.dll"
         JvmTarget.LINUX -> "libeoa_security.so"
