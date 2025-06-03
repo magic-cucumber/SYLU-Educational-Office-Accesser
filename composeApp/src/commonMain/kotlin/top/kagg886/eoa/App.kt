@@ -14,22 +14,31 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
+import org.orbitmvi.orbit.compose.collectSideEffect
 import rememberStackedSnackbarHostState
 import top.kagg886.util.initializeMMKV
 import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.main.MainRoute
+import top.kagg886.eoa.pages.update.UpdateEvent
+import top.kagg886.eoa.pages.update.UpdateModel
+import top.kagg886.eoa.pages.update.UpdateRoute
 import top.kagg886.eoa.pages.welcome.WelcomeRoute
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
+import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.logger
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
@@ -37,6 +46,10 @@ val LocalNavController = staticCompositionLocalOf<NavHostController> {
 }
 
 val LocalSnackBarHost = staticCompositionLocalOf<StackedSnakbarHostState> {
+    error("not provided")
+}
+
+val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwner> {
     error("not provided")
 }
 
@@ -51,7 +64,12 @@ internal fun App() = AppTheme {
         LocalSnackBarHost provides rememberStackedSnackbarHostState(
             maxStack = 3,
             animation = StackedSnackbarAnimation.Slide
-        )
+        ),
+        LocalGlobalViewModelStoreOwner provides rememberSaveable {
+            object : ViewModelStoreOwner {
+                override val viewModelStore: ViewModelStore = ViewModelStore()
+            }
+        }
     ) {
         Box(Modifier.fillMaxSize()) {
             Surface(Modifier.fillMaxSize()) {
@@ -75,7 +93,6 @@ internal fun App() = AppTheme {
                     }
                     val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
                     logger.i("Route Stack Modified: $flow")
-
                 }
             }
 
@@ -85,6 +102,26 @@ internal fun App() = AppTheme {
                 )
             }
 
+            val updateState = viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
+            val snack = LocalSnackBarHost.current
+            val nav = LocalNavController.current
+            updateState.collectSideEffect {
+                when (it) {
+                    is UpdateEvent.NavigateToUpdatePage -> {
+                        nav.navigate(
+                            UpdateRoute(
+                                it.data.tag_name,
+                                it.data.body.replace("\r",""),
+                                "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
+                            )
+                        )
+                    }
+
+                    is UpdateEvent.Toast -> {
+                        snack.showSnackBar(it.type, it.msg)
+                    }
+                }
+            }
         }
     }
 

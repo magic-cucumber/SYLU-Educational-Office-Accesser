@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -42,12 +43,14 @@ import coil3.compose.AsyncImage
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.about.AboutRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
+import top.kagg886.eoa.pages.update.UpdateModel
 
 @Serializable
 data object SettingListRoute
@@ -266,6 +269,24 @@ private fun SettingScreenContent(
                     }
                 }
             }
+        }
+
+        item {
+            val updateState = viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
+            ListItem(
+                headlineContent = {
+                    Text("检查更新")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Update,
+                        contentDescription = "设置",
+                    )
+                },
+                modifier = Modifier.clickable {
+                    updateState.checkUpdate()
+                }
+            )
         }
 
         item {

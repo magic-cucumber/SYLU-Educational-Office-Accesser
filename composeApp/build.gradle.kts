@@ -53,6 +53,8 @@ kotlin {
 
             implementation(libs.kermit)
             implementation(libs.okio)
+            implementation(libs.multiplatform.markdown.renderer.m3)
+            implementation(libs.multiplatform.markdown.renderer.coil3)
 
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
