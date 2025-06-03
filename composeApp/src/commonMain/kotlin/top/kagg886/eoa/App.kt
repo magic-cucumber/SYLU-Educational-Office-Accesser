@@ -141,7 +141,7 @@ internal fun App() = AppTheme {
                         return@LaunchedEffect
                     }
                     val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
-                    logger.i("Route Stack Modified: $flow")
+                    logger.d("Route Stack Modified: $flow")
                 }
             }
 

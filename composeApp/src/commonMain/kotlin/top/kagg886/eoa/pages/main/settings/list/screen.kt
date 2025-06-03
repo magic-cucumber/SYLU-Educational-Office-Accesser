@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeveloperMode
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
@@ -47,6 +48,7 @@ import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.about.AboutRoute
+import top.kagg886.eoa.pages.main.logcat.LogcatRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
@@ -269,6 +271,24 @@ private fun SettingScreenContent(
                     }
                 }
             }
+        }
+
+        item {
+            val nav = LocalNavController.current
+            ListItem(
+                headlineContent = {
+                    Text("系统日志")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.DeveloperMode,
+                        contentDescription = "系统设置",
+                    )
+                },
+                modifier = Modifier.clickable {
+                    nav.navigate(LogcatRoute)
+                }
+            )
         }
 
         item {

@@ -74,10 +74,10 @@ class EOAClientTest {
 class MemoryStorage : Storage {
     private var storage = ""
     override fun get(): String? = storage.apply {
-        logger.i("Get Token: $this")
+        logger.d("Get Token: $this")
     }
     override fun set(value: String) {
         this.storage = value
-        logger.i("Set Token: $value")
+        logger.d("Set Token: $value")
     }
 }

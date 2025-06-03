@@ -20,7 +20,7 @@ fun currentLayoutType(): NavigationSuiteType {
     }
 
     LaunchedEffect(windowWidth,windowHeight) {
-        logger.i("当前窗口大小：$windowWidth x $windowHeight")
+        logger.d("当前窗口大小：$windowWidth x $windowHeight")
     }
 
     val layoutType = if (windowWidth >= 1200.dp) {
@@ -32,7 +32,7 @@ fun currentLayoutType(): NavigationSuiteType {
     }
 
     LaunchedEffect(layoutType) {
-        logger.i("当前窗口布局：$layoutType")
+        logger.d("当前窗口布局：$layoutType")
     }
 
     return layoutType
