@@ -74,7 +74,12 @@ internal fun App() = AppTheme {
     }
     val scope = rememberCoroutineScope(getContext = { Dispatchers.IO })
     val database = remember {
-        val database = databaseBuilder().build()
+        val database = databaseBuilder().apply {
+            fallbackToDestructiveMigrationOnDowngrade(true)
+            fallbackToDestructiveMigration(true)
+            fallbackToDestructiveMigrationFrom(true, 1)
+            setQueryCoroutineContext(Dispatchers.IO)
+        }.build()
         val logDao = database.appLogDao()
         co.touchlab.kermit.Logger.addLogWriter(
             object : LogWriter() {
