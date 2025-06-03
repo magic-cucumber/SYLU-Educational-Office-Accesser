@@ -15,10 +15,12 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSyncMMKV
+import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.toEntity
 import top.kagg886.backend.database.databaseBuilder
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.logger
@@ -31,14 +33,15 @@ fun mainViewModel(): MainRouteViewModel {
     val parentEntry = remember {
         nav.getBackStackEntry(MainRoute) // 嵌套图 route
     }
-    return viewModel(parentEntry) {
-        MainRouteViewModel()
+    return LocalDatabase.current.let {
+        viewModel(parentEntry) {
+            MainRouteViewModel(it)
+        }
     }
 }
 
 
-class MainRouteViewModel : ViewModel(), ContainerHost<MainRouteViewState, MainRouteViewEffect> {
-    val database = databaseBuilder().build()
+class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost<MainRouteViewState, MainRouteViewEffect> {
     private val syncDao = database.syncRecordDao()
 
     override val container: Container<MainRouteViewState, MainRouteViewEffect> =

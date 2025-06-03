@@ -68,12 +68,15 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime)
             implementation(libs.androidx.navigation.compose)
+            implementation(libs.androidx.paging)
+
 
             implementation(libs.coil)
             implementation(libs.coil.network.ktor)
             implementation(libs.multiplatformSettings)
             implementation(libs.kotlinx.datetime)
             implementation(libs.room.runtime)
+            implementation(libs.room.paging)
             implementation(libs.materialKolor)
 
             implementation(libs.orbit.core)

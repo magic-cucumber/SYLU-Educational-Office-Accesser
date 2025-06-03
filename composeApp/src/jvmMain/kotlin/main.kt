@@ -4,7 +4,6 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
-import java.awt.Dimension
 import top.kagg886.eoa.App
 import top.kagg886.eoa.installCoilConfig
 

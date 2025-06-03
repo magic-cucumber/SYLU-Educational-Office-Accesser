@@ -4,6 +4,8 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import top.kagg886.backend.database.dao.AppLog
+import top.kagg886.backend.database.dao.AppLogDao
 import top.kagg886.backend.database.dao.CourseDao
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordDao
@@ -27,7 +29,8 @@ import top.kagg886.util.dataPath
         GPAEntity::class,
         CourseEntity::class,
         CourseRecordEntity::class,
-        SyncRecordEntity::class
+        SyncRecordEntity::class,
+        AppLog::class
     ],
     version = BuildConfig.DATABASE_VERSION,
 )
@@ -38,8 +41,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun gpaDao(): GPADao
     abstract fun courseDao(): CourseDao
     abstract fun courseRecordDao(): CourseRecordDao
-
     abstract fun syncRecordDao(): SyncRecordDao
+    abstract fun appLogDao(): AppLogDao
 }
 
 // The Room compiler generates the `actual` implementations.

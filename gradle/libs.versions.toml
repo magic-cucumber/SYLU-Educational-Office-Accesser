@@ -9,6 +9,7 @@ mkmb-core = "1.0.1"
 mkmb-platform = "1.0.0"
 kotlin = "2.1.21"
 compose = "1.8.1"
+paging = "3.3.6"
 agp = "8.9.3"
 androidx-activityCompose = "1.10.1"
 androidx-uiTest = "1.8.2"
@@ -37,7 +38,7 @@ adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", versi
 adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "adaptive" }
 adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptive" }
 adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "adaptive-suite" }
-
+androidx-paging = { module = "androidx.paging:paging-common", version.ref = "paging" }
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteBundled" }
 androidx-uitest-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
@@ -78,6 +79,7 @@ orbit-core = { module = "org.orbit-mvi:orbit-core", version.ref = "orbitViewmode
 orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orbitViewmodel" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 sweet-api-runtime = { module = "dev.whyoleg.sweetspi:sweetspi-runtime", version.ref = "sweet" }
 sweet-compiler = { module = "dev.whyoleg.sweetspi:sweetspi-processor", version.ref = "sweet" }
