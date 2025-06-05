@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import top.kagg886.eoa.component.adaptive.NavigationSuiteScaffoldDefaults
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.logger
 
 @Composable
@@ -20,7 +21,7 @@ fun currentLayoutType(): NavigationSuiteType {
     }
 
     LaunchedEffect(windowWidth,windowHeight) {
-        logger.d("当前窗口大小：$windowWidth x $windowHeight")
+       "adaptive.kt".asTaggedLogger.d("当前窗口大小：$windowWidth x $windowHeight")
     }
 
     val layoutType = if (windowWidth >= 1200.dp) {
@@ -32,7 +33,7 @@ fun currentLayoutType(): NavigationSuiteType {
     }
 
     LaunchedEffect(layoutType) {
-        logger.d("当前窗口布局：$layoutType")
+        "adaptive.kt".asTaggedLogger.d("当前窗口布局：$layoutType")
     }
 
     return layoutType

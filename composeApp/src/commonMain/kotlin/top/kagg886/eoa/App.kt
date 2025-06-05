@@ -13,8 +13,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -29,24 +27,19 @@ import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import org.orbitmvi.orbit.compose.collectSideEffect
 import rememberStackedSnackbarHostState
-import top.kagg886.backend.database.AppDatabase
-import top.kagg886.backend.database.dao.AppLog
-import top.kagg886.backend.database.databaseBuilder
+import top.kagg886.eoa.pages.RootRoute
 import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.main.MainRoute
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.pages.update.UpdateEvent
 import top.kagg886.eoa.pages.update.UpdateModel
 import top.kagg886.eoa.pages.update.UpdateRoute
-import top.kagg886.eoa.pages.welcome.WelcomeRoute
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 
@@ -62,50 +55,26 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
     error("not provided")
 }
 
-val LocalDatabase = staticCompositionLocalOf<AppDatabase> {
-    error("not provided")
-}
-
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun App() = AppTheme {
-    LaunchedEffect(Unit) {
-        initializeMMKV()
+    val rootModel = rootViewModel()
+    rootModel.collectSideEffect { // 触发初始化器
+
     }
-    val scope = rememberCoroutineScope(getContext = { Dispatchers.IO })
-    val database = remember {
-        val database = databaseBuilder().apply {
-            fallbackToDestructiveMigrationOnDowngrade(true)
-            fallbackToDestructiveMigration(true)
-            fallbackToDestructiveMigrationFrom(true, 1)
-            setQueryCoroutineContext(Dispatchers.IO)
-        }.build()
-        val logDao = database.appLogDao()
+
+    LaunchedEffect(Unit) {
         co.touchlab.kermit.Logger.addLogWriter(
             object : LogWriter() {
                 override fun log(
-                    severity: Severity,
-                    message: String,
-                    tag: String,
-                    throwable: Throwable?
+                    severity: Severity, message: String, tag: String, throwable: Throwable?
                 ) {
-                    scope.launch {
-                        logDao.insert(
-                            AppLog(
-                                tag = tag,
-                                message = message,
-                                level = severity,
-                                time = Clock.System.now().toEpochMilliseconds(),
-                                stacktrace = throwable?.stackTraceToString()
-                            )
-                        )
-                    }
+                    rootModel.log(severity, tag, message, throwable)
                 }
             }
         )
-        database
+        initializeMMKV()
     }
-
     CompositionLocalProvider(
         LocalNavController provides rememberNavController(),
         LocalSnackBarHost provides rememberStackedSnackbarHostState(
@@ -117,7 +86,6 @@ internal fun App() = AppTheme {
                 override val viewModelStore: ViewModelStore = ViewModelStore()
             }
         },
-        LocalDatabase provides database
     ) {
         Box(Modifier.fillMaxSize()) {
             //业务
@@ -128,7 +96,7 @@ internal fun App() = AppTheme {
                         NavHost(
                             modifier = Modifier.fillMaxSize(),
                             navController = nav,
-                            startDestination = WelcomeRoute,
+                            startDestination = RootRoute,
                             builder = installEOAGraph,
                         )
                     }
@@ -141,7 +109,7 @@ internal fun App() = AppTheme {
                         return@LaunchedEffect
                     }
                     val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
-                    logger.d("Route Stack Modified: $flow")
+                    "App.kt".asTaggedLogger.d("Route Stack Modified: $flow")
                 }
             }
 
