@@ -151,19 +151,22 @@ android {
         )
     }
 
-    buildTypes {
-        //预发行测试，正式调试需要注掉
-        debug {
-            isDebuggable = false
-            isJniDebuggable = false
+    signingConfigs {
+        create("test") {
+            storeFile = file("key.jks")
+            storePassword = "123456"
 
-            isMinifyEnabled = true
-            isShrinkResources = true
+            keyAlias = "kagg886"
+            keyPassword = "123456"
         }
+    }
 
+    buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+
+            signingConfig = signingConfigs.getByName("test")
         }
     }
 }
