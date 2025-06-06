@@ -150,11 +150,11 @@ android {
     buildTypes {
         //预发行测试，正式调试需要注掉
         debug {
-//            isDebuggable = false
-//            isJniDebuggable = false
-//
-//            isMinifyEnabled = true
-//            isShrinkResources = true
+            isDebuggable = false
+            isJniDebuggable = false
+
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
 
         release {
