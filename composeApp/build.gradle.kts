@@ -1,6 +1,10 @@
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
+import java.io.BufferedOutputStream
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 val appVersion = project.findProperty("app.version") as String
 val appVersionCode = (project.findProperty("app.code") as String).toInt()
@@ -242,5 +246,104 @@ fun getLastCommitSha(): String? {
     } catch (e: Exception) {
         println("Error getting last commit SHA: ${e.message}")
         null
+    }
+}
+
+// ------------------ IOS Packages Build ------------------
+
+// context path is rootProject.dir("iosApp")
+fun ipaArguments(
+    destination: String = "generic/platform=iOS",
+    sdk: String = "iphoneos",
+): Array<String> = arrayOf(
+    "xcodebuild",
+    "-project", "iosApp.xcodeproj",
+    "-scheme", "iosApp",
+    "-destination", destination,
+    "-sdk", sdk,
+    "CODE_SIGNING_ALLOWED=NO",
+    "CODE_SIGNING_REQUIRED=NO",
+)
+
+val buildReleaseArchive = tasks.register("buildReleaseArchive", Exec::class) {
+    group = "build"
+    description = "Builds the iOS framework for Release"
+    workingDir(rootProject.file("iosApp"))
+
+    val output = layout.buildDirectory.dir("archives/release/iosApp.xcarchive")
+    outputs.dir(output)
+    commandLine(
+        *ipaArguments(),
+        "archive",
+        "-configuration",
+        "Release",
+        "-archivePath",
+        output.get().asFile.absolutePath,
+    )
+}
+
+tasks.register("buildReleaseIpa", BuildIpaTask::class) {
+    description = "Manually packages the .app from the .xcarchive into an unsigned .ipa"
+    group = "build"
+
+    // Adjust these paths as needed
+    archiveDir = layout.buildDirectory.dir("archives/release/iosApp.xcarchive")
+    outputIpa = layout.buildDirectory.file("archives/release/iosApp.ipa")
+    dependsOn(buildReleaseArchive)
+}
+
+@CacheableTask
+abstract class BuildIpaTask : DefaultTask() {
+
+    @get:PathSensitive(PathSensitivity.ABSOLUTE)
+    @get:InputDirectory
+    abstract val archiveDir: DirectoryProperty
+
+    @get:OutputFile
+    abstract val outputIpa: RegularFileProperty
+
+    @TaskAction
+    fun buildIpa() {
+        // 1. Locate the .app in the .xcarchive
+        val appDir = archiveDir.get().asFile.resolve("Products/Applications/iosApp.app")
+        if (!appDir.exists()) {
+            throw GradleException("Could not find iosApp.app in archive at: ${appDir.absolutePath}")
+        }
+
+        // 2. Create a temporary Payload folder
+        val payloadDir = File(temporaryDir, "Payload").apply { mkdirs() }
+        val destApp = File(payloadDir, "iosApp.app")
+
+        // 3. Copy the .app into Payload/
+        appDir.copyRecursively(destApp, overwrite = true)
+
+        // 4. Zip the Payload folder
+        val zipFile = File(temporaryDir, "iosApp.zip")
+        zipDirectory(payloadDir, zipFile)
+
+        // 5. Rename .zip to .ipa
+        val ipaFile = outputIpa.get().asFile
+        ipaFile.parentFile.mkdirs()
+        if (ipaFile.exists()) ipaFile.delete()
+        zipFile.renameTo(ipaFile)
+
+        logger.lifecycle("Created unsigned IPA at: ${ipaFile.absolutePath}")
+    }
+
+    /**
+     * Zips the given [sourceDir] (including all subdirectories) into [outputFile].
+     */
+    private fun zipDirectory(sourceDir: File, outputFile: File) {
+        ZipOutputStream(BufferedOutputStream(FileOutputStream(outputFile))).use { zipOut ->
+            sourceDir.walkTopDown().forEach { file ->
+                if (file.isFile) {
+                    val relativePath = file.relativeTo(sourceDir.parentFile).path
+                    val zipEntry = ZipEntry(relativePath)
+                    zipOut.putNextEntry(zipEntry)
+                    file.inputStream().use { it.copyTo(zipOut) }
+                    zipOut.closeEntry()
+                }
+            }
+        }
     }
 }
