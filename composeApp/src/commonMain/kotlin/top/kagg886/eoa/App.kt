@@ -59,10 +59,6 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
 @Composable
 internal fun App() = AppTheme {
     val rootModel = rootViewModel()
-    rootModel.collectSideEffect { // 触发初始化器
-
-    }
-
     LaunchedEffect(Unit) {
         co.touchlab.kermit.Logger.addLogWriter(
             object : LogWriter() {

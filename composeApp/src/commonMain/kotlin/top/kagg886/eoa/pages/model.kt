@@ -14,18 +14,12 @@ import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.databaseBuilder
-import top.kagg886.eoa.LocalNavController
 import top.kagg886.util.asTaggedLogger
-import top.kagg886.util.logger
 import kotlin.time.Duration.Companion.days
 
 @Composable
 fun rootViewModel(): RootViewModel {
-    val nav = LocalNavController.current
-    val parentEntry = remember {
-        nav.getBackStackEntry(RootRoute) // 嵌套图 route
-    }
-    return viewModel(parentEntry) {
+    return viewModel {
         RootViewModel()
     }
 }
