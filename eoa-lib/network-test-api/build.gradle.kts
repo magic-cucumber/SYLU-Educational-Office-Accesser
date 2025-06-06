@@ -1,4 +1,4 @@
-import dev.whyoleg.sweetspi.gradle.*
+
 
 plugins {
     alias(libs.plugins.android.library)
@@ -7,7 +7,6 @@ plugins {
 
 
     alias(libs.plugins.ksp)
-    alias(libs.plugins.sweet.api)
 }
 
 group = "top.kagg886.sylu_eoa.api.test"
@@ -35,7 +34,6 @@ android {
 }
 
 kotlin {
-    withSweetSpi()
     jvmToolchain(22)
     jvm()
 
@@ -55,5 +53,14 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+    }
+}
+
+dependencies {
+    with(libs.sweet.compiler) {
+        add("kspAndroid", this)
+        add("kspJvm", this)
+        add("kspIosArm64", this)
+        add("kspIosSimulatorArm64", this)
     }
 }

@@ -1,11 +1,10 @@
-import dev.whyoleg.sweetspi.gradle.*
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
 
     alias(libs.plugins.ksp)
-    alias(libs.plugins.sweet.api)
 }
 
 group = "top.kagg886.eoa.network.core"
@@ -32,8 +31,6 @@ android {
 kotlin {
     jvmToolchain(22)
 
-    withSweetSpi()
-
     jvm()
     iosArm64()
     iosSimulatorArm64()
@@ -57,11 +54,11 @@ kotlin {
     }
 }
 
-//dependencies {
-//    with(libs.sweet.compiler) {
-//        add("kspAndroid", this)
-//        add("kspJvm", this)
-//        add("kspIosArm64", this)
-//        add("kspIosSimulatorArm64", this)
-//    }
-//}
+dependencies {
+    with(libs.sweet.compiler) {
+        add("kspAndroid", this)
+        add("kspJvm", this)
+        add("kspIosArm64", this)
+        add("kspIosSimulatorArm64", this)
+    }
+}

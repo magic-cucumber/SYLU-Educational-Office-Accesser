@@ -139,6 +139,28 @@ android {
         versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "proguard-rules.pro"
+        )
+    }
+
+    buildTypes {
+        //预发行测试，正式调试需要注掉
+        debug {
+//            isDebuggable = false
+//            isJniDebuggable = false
+//
+//            isMinifyEnabled = true
+//            isShrinkResources = true
+        }
+
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+        }
     }
 }
 
