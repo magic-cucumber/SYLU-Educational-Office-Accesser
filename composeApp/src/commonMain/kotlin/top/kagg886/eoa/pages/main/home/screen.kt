@@ -97,7 +97,7 @@ fun HomeScreen(
                     selected = navigationRoute == route,
                     onClick = {
                         if (navigationRoute != route) {
-                            nav.navigate(navigationRoute.target)
+                            nav.replace(navigationRoute.target)
                         }
                     },
                     icon = {
