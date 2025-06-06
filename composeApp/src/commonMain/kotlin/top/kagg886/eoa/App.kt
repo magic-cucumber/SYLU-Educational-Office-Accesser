@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -77,11 +78,7 @@ internal fun App() = AppTheme {
             maxStack = 3,
             animation = StackedSnackbarAnimation.Slide
         ),
-        LocalGlobalViewModelStoreOwner provides rememberSaveable {
-            object : ViewModelStoreOwner {
-                override val viewModelStore: ViewModelStore = ViewModelStore()
-            }
-        },
+        LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!
     ) {
         Box(Modifier.fillMaxSize()) {
             //业务
