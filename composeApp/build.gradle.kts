@@ -308,20 +308,20 @@ abstract class BuildIpaTask : DefaultTask() {
     @TaskAction
     fun buildIpa() {
         // 1. Locate the .app in the .xcarchive
-        val appDir = archiveDir.get().asFile.resolve("Products/Applications/iosApp.app")
+        val appDir = archiveDir.get().asFile.resolve("Products/Applications/SYLU-EOA.app")
         if (!appDir.exists()) {
             throw GradleException("Could not find iosApp.app in archive at: ${appDir.absolutePath}")
         }
 
         // 2. Create a temporary Payload folder
         val payloadDir = File(temporaryDir, "Payload").apply { mkdirs() }
-        val destApp = File(payloadDir, "iosApp.app")
+        val destApp = File(payloadDir, "SYLU-EOA.app")
 
         // 3. Copy the .app into Payload/
         appDir.copyRecursively(destApp, overwrite = true)
 
         // 4. Zip the Payload folder
-        val zipFile = File(temporaryDir, "iosApp.zip")
+        val zipFile = File(temporaryDir, "SYLU-EOA.zip")
         zipDirectory(payloadDir, zipFile)
 
         // 5. Rename .zip to .ipa
