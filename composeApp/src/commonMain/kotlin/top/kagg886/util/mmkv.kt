@@ -1,14 +1,13 @@
 package top.kagg886.util
 
 import co.touchlab.kermit.Severity
-import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.MMKVOptions
 import top.kagg886.mkmb.initialize
 import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
 class DirectMMKVDelegate<T>(
@@ -33,7 +32,7 @@ class DirectMMKVDelegate<T>(
 }
 
 fun initializeMMKV() = MMKV.initialize(dataPath.resolve("config").absolutePath().toString()) {
-    logFunc = { level,tag,it->
+    logFunc = { level, tag, it ->
         logger.log(
             severity = when (level) {
                 MMKVOptions.LogLevel.Debug -> Severity.Debug
@@ -73,22 +72,26 @@ fun MMKV.bytes(key: String, default: ByteArray = byteArrayOf()) =
 fun MMKV.stringSet(key: String, default: List<String> = listOf()) =
     DirectMMKVDelegate(this, key, default, MMKV::getStringList, MMKV::set)
 
-@OptIn(InternalSerializationApi::class)
-fun <T : Any> MMKV.jsonOrNull(key: String, default: T? = null, clazz: KClass<T>, json: Json = Json): ReadWriteProperty<Any?, T?> {
+fun <T : Any> MMKV.jsonOrNull(
+    key: String,
+    default: T? = null,
+    json: Json = Json,
+    module: KSerializer<T>
+): ReadWriteProperty<Any?, T?> {
     return DirectMMKVDelegate(
         mmkv = this,
         key = key,
         default = default,
         reader = { k ->
             try {
-                json.decodeFromString(clazz.serializer(), getString(k))
+                json.decodeFromString(module, getString(k))
             } catch (_: Exception) {
                 default
             }
         },
         writer = { k, value ->
             if (value != null) {
-                set(k, json.encodeToString(clazz.serializer(), value))
+                set(k, json.encodeToString(module, value))
             } else {
                 remove(k)
             }
@@ -97,26 +100,30 @@ fun <T : Any> MMKV.jsonOrNull(key: String, default: T? = null, clazz: KClass<T>,
 }
 
 inline fun <reified T : Any> MMKV.jsonOrNull(key: String, default: T? = null, json: Json = Json) =
-    jsonOrNull(key, default, T::class, json)
+    jsonOrNull(key, default, json, json.serializersModule.serializer<T>())
 
-@OptIn(InternalSerializationApi::class)
-fun <T : Any> MMKV.json(key: String, default: T, clazz: KClass<T>, json: Json = Json): ReadWriteProperty<Any?, T> {
+fun <T : Any> MMKV.json(
+    key: String,
+    default: T,
+    json: Json = Json,
+    module: KSerializer<T>
+): ReadWriteProperty<Any?, T> {
     return DirectMMKVDelegate(
         mmkv = this,
         key = key,
         default = default,
         reader = { k ->
             try {
-                json.decodeFromString(clazz.serializer(), getString(k))
+                json.decodeFromString(module, getString(k))
             } catch (_: Exception) {
                 default
             }
         },
         writer = { k, value ->
-            set(k, json.encodeToString(clazz.serializer(), value))
+            set(k, json.encodeToString(module, value))
         }
     )
 }
 
 inline fun <reified T : Any> MMKV.json(key: String, default: T, json: Json = Json) =
-    json(key, default, T::class, json)
+    json(key, default, json, json.serializersModule.serializer())
