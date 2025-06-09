@@ -325,7 +325,7 @@ private fun SettingScreenContent(
                                     expanded = true,
                                     onDismissRequest = { dialog = false }
                                 ) {
-                                    for (i in AppSettingsMMKVType.AppTheme.entities) {
+                                    for (i in AppSettingsMMKVType.AppTheme.entries) {
                                         DropdownMenuItem(
                                             text = {
                                                 Text(

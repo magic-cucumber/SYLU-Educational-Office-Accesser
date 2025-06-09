@@ -34,21 +34,9 @@ sealed interface AppSettingsMMKVType {
     var theme: AppTheme
     var ktorLogLevel: LogLevel
 
-    @Serializable
-    @Polymorphic
-    sealed interface AppTheme {
-        @Serializable
-        @SerialName("light")
-        data object Light : AppTheme
-        @Serializable
-        @SerialName("default")
-        data object SystemDefault : AppTheme
-        @Serializable
-        @SerialName("dark")
-        data object Dark : AppTheme
-
-        companion object {
-            val entities = listOf(Light, SystemDefault, Dark)
-        }
+    enum class AppTheme {
+        Light,
+        SystemDefault,
+        Dark;
     }
 }
