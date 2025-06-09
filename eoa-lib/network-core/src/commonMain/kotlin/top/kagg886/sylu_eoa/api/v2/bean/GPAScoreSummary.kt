@@ -9,5 +9,5 @@ data class GPAScoreSummary(
     val name: String,
 
     @SerialName("hdfz")
-    val score: Double
+    val score: Double = 0.0
 )

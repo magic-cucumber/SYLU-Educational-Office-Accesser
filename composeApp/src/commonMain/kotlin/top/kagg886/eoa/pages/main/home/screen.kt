@@ -74,7 +74,7 @@ fun HomeScreen(
             }
             is MainRouteViewEffect.NavigateToLogin -> {
                 nav.navigate(LoginRoute) {
-                    popUpTo(0) {
+                    popUpTo(nav.graph.id) {
                         inclusive = true
                     }
                     launchSingleTop = true

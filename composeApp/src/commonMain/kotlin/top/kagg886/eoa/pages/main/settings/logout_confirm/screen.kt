@@ -65,7 +65,7 @@ fun LogoutConfirmScreen() {
 
             is MainRouteViewEffect.NavigateToLogin -> {
                 nav.replace(LoginRoute) {
-                    popUpTo(LoginRoute) {
+                    popUpTo(nav.graph.id) {
                         inclusive = true
                     }
                     launchSingleTop = true
