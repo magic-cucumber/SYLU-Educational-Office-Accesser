@@ -63,7 +63,7 @@ class CourseManageListModel(
             )
         } catch (e: Exception) {
             reduce {
-                CourseManageState.Failed(e.message ?: "未知错误")
+                CourseManageState.FailedButSuccess(e.message ?: "未知错误")
             }
             return@intent
         }
@@ -110,6 +110,17 @@ class CourseManageListModel(
             setDataUnsafe(state.onlyShowUserCourse).join()
         }
     }
+
+    fun startExportICS() = intent {
+        when(val s = state) {
+            is CourseManageState.Success -> {
+                postSideEffect(CourseManageSideEffect.StartExportIcs(s.data))
+            }
+            else -> {
+                postSideEffect(CourseManageSideEffect.Toast("此时不允许数据导出，请稍后再试"))
+            }
+        }
+    }
 }
 
 
@@ -131,4 +142,5 @@ sealed interface CourseManageState {
 sealed interface CourseManageSideEffect {
     data class Toast(val msg: String) : CourseManageSideEffect
     data class NavigateToEditOrAdd(val courseId: Long?) : CourseManageSideEffect
+    data class StartExportIcs(val course: List<CourseEntity>): CourseManageSideEffect
 }

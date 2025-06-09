@@ -39,3 +39,5 @@ include(":eoa-lib:network-core")
 include(":eoa-lib:network-html-api")
 include(":eoa-lib:network-test-api")
 include(":util")
+
+include(":lib:ics-generator")

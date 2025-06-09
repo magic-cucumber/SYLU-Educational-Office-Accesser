@@ -52,6 +52,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
+import top.kagg886.eoa.pages.main.home.course.export.CourseExportRoute
 import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
@@ -99,6 +100,13 @@ fun CourseManageListScreen() {
                     },
                     text = { Text("${if ((state as? CourseManageState.Success)?.onlyShowUserCourse == true) "显示" else "隐藏"}系统课程") },
                 )
+
+                DropdownMenuItem(
+                    onClick = {
+                        model.startExportICS()
+                    },
+                    text = { Text("保存为ICS文件") }
+                )
             }
         },
         fabIcon = {
@@ -118,6 +126,10 @@ fun CourseManageListScreen() {
 
                 is CourseManageSideEffect.Toast -> {
                     mainModel.toast(SnackBarType.Error, it.msg)
+                }
+
+                is CourseManageSideEffect.StartExportIcs -> {
+                    nav.navigate(CourseExportRoute)
                 }
             }
         }
