@@ -7,7 +7,8 @@ import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.util.string
 
-object AppLoginPropertiesMMKV : MMKV by MMKV.mmkvWithID("login-properties"),
+private val mmkv = MMKV.mmkvWithID("login-properties")
+object AppLoginPropertiesMMKV : MMKV by mmkv,
     AppLoginPropertiesMMKVType {
     override var username: String by string("username", "")
     override var password: String by string("password", "")
@@ -52,6 +53,20 @@ object AppLoginPropertiesMMKV : MMKV by MMKV.mmkvWithID("login-properties"),
             password = this@AppLoginPropertiesMMKV.password
         }
         private set
+
+    override fun clear() {
+        mmkv.clear()
+        client = EOAClientProvider.providers.first { it.id == clientId }.provide().apply {
+            init(
+                object : Storage {
+                    override fun get(): String = token
+                    override fun set(value: String) {
+                        token = value
+                    }
+                }
+            )
+        }
+    }
 }
 
 sealed interface AppLoginPropertiesMMKVType {
