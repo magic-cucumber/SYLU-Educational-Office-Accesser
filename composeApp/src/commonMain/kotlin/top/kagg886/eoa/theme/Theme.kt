@@ -7,15 +7,16 @@ import com.materialkolor.DynamicMaterialTheme
 
 @Composable
 internal fun AppTheme(
+    color: Color,
+    nightTheme: Boolean,
     content: @Composable () -> Unit
 ) {
     val systemIsDark = isSystemInDarkTheme()
 
-
     SystemAppearance(systemIsDark)
     DynamicMaterialTheme(
-        seedColor = Color(0x20c997),
-        useDarkTheme = systemIsDark,
+        seedColor = color,
+        useDarkTheme = nightTheme,
         content = content
     )
 }

@@ -1,6 +1,5 @@
 package top.kagg886.backend.config
 
-import io.ktor.client.HttpClient
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.sylu_eoa.api.v2.EOAClient

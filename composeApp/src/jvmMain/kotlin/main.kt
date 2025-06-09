@@ -6,6 +6,7 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import top.kagg886.eoa.App
 import top.kagg886.eoa.installCoilConfig
+import top.kagg886.util.initializeMMKV
 
 fun main() = application {
     setSingletonImageLoaderFactory { context ->
@@ -13,6 +14,7 @@ fun main() = application {
             .installCoilConfig()
             .build()
     }
+    initializeMMKV()
     Window(
         title = "SYLU-EOA",
         state = rememberWindowState(width = 800.dp, height = 600.dp),

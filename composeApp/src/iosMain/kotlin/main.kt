@@ -4,6 +4,7 @@ import coil3.compose.setSingletonImageLoaderFactory
 import top.kagg886.eoa.App
 import platform.UIKit.UIViewController
 import top.kagg886.eoa.installCoilConfig
+import top.kagg886.util.initializeMMKV
 
 fun MainViewController(): UIViewController = ComposeUIViewController {
     setSingletonImageLoaderFactory { context ->
@@ -11,5 +12,7 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
             .installCoilConfig()
             .build()
     }
+
+    initializeMMKV()
     App()
 }

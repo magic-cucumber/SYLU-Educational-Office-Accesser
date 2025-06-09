@@ -5,6 +5,7 @@ import StackedSnackbarHost
 import StackedSnakbarHostState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -17,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -28,8 +30,11 @@ import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
+import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import rememberStackedSnackbarHostState
+import top.kagg886.backend.config.AppSettingsMMKVType
+import top.kagg886.eoa.pages.RootEffect
 import top.kagg886.eoa.pages.RootRoute
 import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.main.MainRoute
@@ -38,6 +43,7 @@ import top.kagg886.eoa.pages.update.UpdateEvent
 import top.kagg886.eoa.pages.update.UpdateModel
 import top.kagg886.eoa.pages.update.UpdateRoute
 import top.kagg886.eoa.theme.AppTheme
+import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.asTaggedLogger
@@ -58,8 +64,14 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-internal fun App() = AppTheme {
+internal fun App() = CompositionLocalProvider(
+    LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!
+) {
     val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+    val color by rootState.color.collectAsState()
+    val theme by rootState.theme.collectAsState()
+
     LaunchedEffect(Unit) {
         co.touchlab.kermit.Logger.addLogWriter(
             object : LogWriter() {
@@ -70,73 +82,84 @@ internal fun App() = AppTheme {
                 }
             }
         )
-        initializeMMKV()
     }
-    CompositionLocalProvider(
-        LocalNavController provides rememberNavController(),
-        LocalSnackBarHost provides rememberStackedSnackbarHostState(
-            maxStack = 3,
-            animation = StackedSnackbarAnimation.Slide
-        ),
-        LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!
+
+    AppTheme(
+        color = color,
+        nightTheme = (theme == AppSettingsMMKVType.AppTheme.Dark) || (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
     ) {
-        Box(Modifier.fillMaxSize()) {
-            //业务
-            Surface(Modifier.fillMaxSize()) {
-                val nav = LocalNavController.current
-                SharedTransitionLayout {
-                    CompositionLocalProvider(LocalShareTransitionScope provides this) {
-                        NavHost(
-                            modifier = Modifier.fillMaxSize(),
-                            navController = nav,
-                            startDestination = RootRoute,
-                            builder = installEOAGraph,
-                        )
-                    }
-                }
-                val stack by nav.currentBackStack.collectAsState()
-                LaunchedEffect(stack) {
-                    if (stack.isEmpty()) {
-                        //出bug了！速速补救。
-                        nav.navigate(MainRoute)
-                        return@LaunchedEffect
-                    }
-                    val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
-                    "App.kt".asTaggedLogger.d("Route Stack Modified: $flow")
-                }
-            }
-
-            //toaster
-            Box(Modifier.align(Alignment.BottomCenter)) {
-                StackedSnackbarHost(
-                    hostState = LocalSnackBarHost.current,
-                )
-            }
-            //更新检查器
-            val updateState =
-                viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
-            val snack = LocalSnackBarHost.current
-            val nav = LocalNavController.current
-            updateState.collectSideEffect {
-                when (it) {
-                    is UpdateEvent.NavigateToUpdatePage -> {
-                        nav.navigate(
-                            UpdateRoute(
-                                it.data.tag_name,
-                                it.data.body.replace("\r", ""),
-                                "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
+        CompositionLocalProvider(
+            LocalNavController provides rememberNavController(),
+            LocalSnackBarHost provides rememberStackedSnackbarHostState(
+                maxStack = 3,
+                animation = StackedSnackbarAnimation.Slide
+            ),
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                //业务
+                Surface(Modifier.fillMaxSize()) {
+                    val nav = LocalNavController.current
+                    SharedTransitionLayout {
+                        CompositionLocalProvider(LocalShareTransitionScope provides this) {
+                            NavHost(
+                                modifier = Modifier.fillMaxSize(),
+                                navController = nav,
+                                startDestination = RootRoute,
+                                builder = installEOAGraph,
                             )
-                        )
+                        }
                     }
+                    val stack by nav.currentBackStack.collectAsState()
+                    LaunchedEffect(stack) {
+                        if (stack.isEmpty()) {
+                            //出bug了！速速补救。
+                            nav.navigate(MainRoute)
+                            return@LaunchedEffect
+                        }
+                        val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
+                        "App.kt".asTaggedLogger.d("Route Stack Modified: $flow")
+                    }
+                }
 
-                    is UpdateEvent.Toast -> {
-                        snack.showSnackBar(it.type, it.msg)
+                //toaster
+                Box(Modifier.align(Alignment.BottomCenter)) {
+                    StackedSnackbarHost(
+                        hostState = LocalSnackBarHost.current,
+                    )
+                }
+                //更新检查器
+                val updateState =
+                    viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
+                val snack = LocalSnackBarHost.current
+                val nav = LocalNavController.current
+                updateState.collectSideEffect {
+                    when (it) {
+                        is UpdateEvent.NavigateToUpdatePage -> {
+                            nav.navigate(
+                                UpdateRoute(
+                                    it.data.tag_name,
+                                    it.data.body.replace("\r", ""),
+                                    "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
+                                )
+                            )
+                        }
+
+                        is UpdateEvent.Toast -> {
+                            snack.showSnackBar(it.type, it.msg)
+                        }
+                    }
+                }
+
+                rootModel.collectSideEffect {
+                    when (it) {
+                        is RootEffect.Toast -> {
+                            snack.showSnackBar(SnackBarType.Info, it.msg)
+                        }
                     }
                 }
             }
         }
     }
-
 }
 
 fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this.logger(
