@@ -24,8 +24,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +53,7 @@ import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.getTimeByLessonNumber
+import kotlin.random.Random
 
 @Composable
 fun CoursePageListScreen(
@@ -242,6 +246,13 @@ private fun CoursePageScreenSuccess(
                 Box(modifier = Modifier.height(columnHeight)) {
                     for ((next, course) in state.currentWeekCourse[i].orEmpty()) {
                         val topOffset = cardHeight * (next - 1) // 节次从1开始
+                        val scheme = MaterialTheme.colorScheme
+                        val basicColor = remember {
+                            if  (course.hasConflict)
+                                scheme.errorContainer
+                            else
+                                Color.hsv(Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f, 0.1412f, 1f)
+                        }
 
                         ElevatedCard(
                             modifier = Modifier
@@ -272,12 +283,11 @@ private fun CoursePageScreenSuccess(
                             colors = if (course.hasConflict) {
                                 CardDefaults.elevatedCardColors(
                                     containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             } else {
                                 CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    //使用hsv避免过于鲜艳的颜色
+                                    containerColor = basicColor,
                                 )
                             }
                         ) {
@@ -295,9 +305,7 @@ private fun CoursePageScreenSuccess(
                                 Text(
                                     "点击查看",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(
-                                        alpha = 0.7f
-                                    ),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                         .padding(bottom = 4.dp)
@@ -318,9 +326,7 @@ private fun CoursePageScreenSuccess(
                                 Text(
                                     course.asNoConflict.course.classroomName,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(
-                                        alpha = 0.7f
-                                    ),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                         .padding(bottom = 4.dp)
