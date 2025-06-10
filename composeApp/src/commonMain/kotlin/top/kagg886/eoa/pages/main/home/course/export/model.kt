@@ -12,6 +12,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.ContainerHost
@@ -77,7 +78,15 @@ class CourseExportModel(
 
                             event {
                                 summary(course.course.name)
-                                description(course.course.classroomName)
+                                location(course.course.classroomName)
+                                description(
+                                    """
+                                        1. 任课教师: ${course.course.teacherName}
+                                        2. 课程属性: ${if (course.course.isDegreeRequired) "必修" else "选修"}
+                                        3. 学分: ${course.course.credits}
+                                        4. 属于系统课程: ${if (course.course.isUserAdded) "是" else "否"}
+                                    """.trimIndent()
+                                )
 
                                 startTime(startDate.atTime(startTime))
                                 endTime(startDate.atTime(endTime))

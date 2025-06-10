@@ -9,6 +9,8 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.properties.Delegates
 import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * ICS 日历构建器，用于创建符合 RFC 5545 标准的 iCalendar 格式日历文件
@@ -167,6 +169,7 @@ class IcsBuilder internal constructor() {
      * 生成事件内容
      */
     private fun generateEventContent(event: IcsEvent): String {
+
         val builder = StringBuilder()
         
         builder.appendLine("BEGIN:VEVENT")
@@ -174,14 +177,26 @@ class IcsBuilder internal constructor() {
         builder.appendLine("DTSTAMP:${formatDateTime(event.dtStamp)}Z")
         
         if (event.isAllDay) {
+            // 全天事件只使用日期，不涉及时区
             builder.appendLine("DTSTART;VALUE=DATE:${formatDateTime(event.dtStart, true)}")
             event.dtEnd?.let { 
                 builder.appendLine("DTEND;VALUE=DATE:${formatDateTime(it, true)}")
             }
         } else {
-            builder.appendLine("DTSTART:${formatDateTime(event.dtStart)}Z")
-            event.dtEnd?.let { 
-                builder.appendLine("DTEND:${formatDateTime(it)}Z")
+            // 根据时区情况格式化时间
+            val timeZoneId = event.timeZone.id
+            if (timeZoneId == "UTC" || timeZoneId == "Z") {
+                // UTC 时间使用 Z 后缀
+                builder.appendLine("DTSTART:${formatDateTime(event.dtStart)}Z")
+                event.dtEnd?.let { 
+                    builder.appendLine("DTEND:${formatDateTime(it)}Z")
+                }
+            } else {
+                // 其他时区使用 TZID 参数
+                builder.appendLine("DTSTART;TZID=${timeZoneId}:${formatDateTime(event.dtStart)}")
+                event.dtEnd?.let { 
+                    builder.appendLine("DTEND;TZID=${timeZoneId}:${formatDateTime(it)}")
+                }
             }
         }
         
@@ -208,12 +223,25 @@ class IcsBuilder internal constructor() {
         
         // 重复规则
         event.recurrenceRule?.let { builder.appendLine("RRULE:$it") }
-        event.recurrenceId?.let { builder.appendLine("RECURRENCE-ID:${formatDateTime(it)}Z") }
+        event.recurrenceId?.let { 
+            val timeZoneId = event.timeZone.id
+            if (timeZoneId == "UTC" || timeZoneId == "Z") {
+                builder.appendLine("RECURRENCE-ID:${formatDateTime(it)}Z")
+            } else {
+                builder.appendLine("RECURRENCE-ID;TZID=${timeZoneId}:${formatDateTime(it)}")
+            }
+        }
         
         // 例外日期
         if (event.exceptionDates.isNotEmpty()) {
-            val exDates = event.exceptionDates.joinToString(",") { "${formatDateTime(it)}Z" }
-            builder.appendLine("EXDATE:$exDates")
+            val timeZoneId = event.timeZone.id
+            if (timeZoneId == "UTC" || timeZoneId == "Z") {
+                val exDates = event.exceptionDates.joinToString(",") { "${formatDateTime(it)}Z" }
+                builder.appendLine("EXDATE:$exDates")
+            } else {
+                val exDates = event.exceptionDates.joinToString(",") { formatDateTime(it) }
+                builder.appendLine("EXDATE;TZID=${timeZoneId}:$exDates")
+            }
         }
         
         // 提醒
@@ -281,7 +309,8 @@ class IcsBuilder internal constructor() {
  */
 class EventBuilder internal constructor() {
     private var uid: String = generateUID()
-    private var dtStamp: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+    private var timeZone: TimeZone = TimeZone.currentSystemDefault()
+    private var dtStamp: LocalDateTime = Clock.System.now().toLocalDateTime(timeZone)
     private var dtStart: LocalDateTime by Delegates.notNull()
     private var dtEnd: LocalDateTime? = null
     private var duration: String? = null
@@ -319,6 +348,10 @@ class EventBuilder internal constructor() {
      */
     fun uid(uid: String) {
         this.uid = uid
+    }
+
+    fun timeZone(timeZone: TimeZone) {
+        this.timeZone = timeZone
     }
 
     /**
@@ -744,6 +777,7 @@ class EventBuilder internal constructor() {
     internal fun build(): IcsEvent {
         return IcsEvent(
             uid = uid,
+            timeZone = timeZone,
             dtStamp = dtStamp,
             dtStart = dtStart,
             dtEnd = dtEnd,
@@ -770,11 +804,8 @@ class EventBuilder internal constructor() {
     /**
      * 生成唯一标识符
      */
-    private fun generateUID(): String {
-        val timestamp = Clock.System.now().epochSeconds
-        val random = Random.nextInt(1000, 9999)
-        return "$timestamp-$random@ics-generator"
-    }
+    @OptIn(ExperimentalUuidApi::class)
+    private fun generateUID(): String = Uuid.random().toHexString()
 }
 
 /**

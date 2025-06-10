@@ -2,6 +2,9 @@ package top.kagg886.ics.data
 
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.char
 import kotlin.time.Duration
 
 /**
@@ -13,7 +16,6 @@ data class IcsCalendar(
     val calScale: String = "GREGORIAN",
     val method: String? = null,
     val events: MutableList<IcsEvent> = mutableListOf(),
-    val timeZone: TimeZone? = null
 )
 
 /**
@@ -21,6 +23,7 @@ data class IcsCalendar(
  */
 data class IcsEvent(
     val uid: String,
+    val timeZone: TimeZone,
     val dtStamp: LocalDateTime,
     val dtStart: LocalDateTime,
     val dtEnd: LocalDateTime? = null,
@@ -152,13 +155,19 @@ enum class Frequency {
  * - 普通事件：YYYYMMDDTHHMMSS
  * - 全天事件：YYYYMMDD
  */
-internal fun formatDateTime(dateTime: LocalDateTime, isAllDay: Boolean = false): String {
-    return if (isAllDay) {
-        "${dateTime.year}${dateTime.monthNumber.toString().padStart(2, '0')}${dateTime.dayOfMonth.toString().padStart(2, '0')}"
-    } else {
-        "${dateTime.year}${dateTime.monthNumber.toString().padStart(2, '0')}${dateTime.dayOfMonth.toString().padStart(2, '0')}T${dateTime.hour.toString().padStart(2, '0')}${dateTime.minute.toString().padStart(2, '0')}${dateTime.second.toString().padStart(2, '0')}"
+internal fun formatDateTime(dateTime: LocalDateTime, isAllDay: Boolean = false): String = dateTime.format(
+    LocalDateTime.Format {
+        year()
+        monthNumber()
+        dayOfMonth()
+        if (!isAllDay) {
+            char('T')
+            hour()
+            minute()
+            second()
+        }
     }
-}
+)
 
 /**
  * 格式化文本，处理 ICS 格式中的特殊字符

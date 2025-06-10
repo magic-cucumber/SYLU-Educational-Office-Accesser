@@ -58,6 +58,9 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
         }
 
     fun startSync() = intent {
+        if (state is MainRouteViewState.SyncProcess) {
+            return@intent
+        }
         val lastSyncTime = syncDao.getLastSyncTime(7.days.inWholeMilliseconds) ?: 0
         if (Clock.System.now() - Instant.fromEpochMilliseconds(lastSyncTime) > 3.days) {
             startSyncForce()
