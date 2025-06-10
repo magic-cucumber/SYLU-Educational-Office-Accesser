@@ -51,8 +51,6 @@ kotlin {
             implementation(libs.material.icons.extended)
 
             implementation(libs.adaptive)
-//            implementation(libs.adaptive.layout)
-//            implementation(libs.adaptive.navigation)
             implementation(libs.adaptive.navigation.suite)
 
             implementation(libs.kermit)
@@ -77,11 +75,12 @@ kotlin {
 
             implementation(libs.coil)
             implementation(libs.coil.network.ktor)
-            implementation(libs.multiplatformSettings)
             implementation(libs.kotlinx.datetime)
             implementation(libs.room.runtime)
             implementation(libs.room.paging)
             implementation(libs.materialKolor)
+            implementation(libs.kolor.picker)
+
 
             implementation(libs.orbit.core)
             implementation(libs.orbit.viewmodel)

@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.DynamicMaterialTheme
+import com.materialkolor.PaletteStyle
 
 @Composable
 internal fun AppTheme(
@@ -17,6 +18,7 @@ internal fun AppTheme(
     DynamicMaterialTheme(
         seedColor = color,
         useDarkTheme = nightTheme,
+        style = PaletteStyle.Fidelity,
         content = content
     )
 }

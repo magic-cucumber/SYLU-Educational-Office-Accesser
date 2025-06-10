@@ -4,6 +4,7 @@ adaptive = "1.1.1"
 composePlaceholderMaterial3 = "1.0.11"
 composeStackedSnackbar = "1.0.4"
 filekitCore = "0.10.0-beta04"
+kolorPicker = "0.1.2"
 ksoup = "0.2.3"
 materialIconsExtended = "1.7.3"
 mkmb-core = "1.0.1"
@@ -23,7 +24,6 @@ androidx-navigation = "2.9.0-beta01"
 kotlinx-serialization = "1.8.1"
 coil = "3.2.0"
 markdown = "0.35.0"
-multiplatformSettings = "1.3.0"
 kotlinx-datetime = "0.6.2"
 okio = "3.11.0"
 orbitViewmodel = "10.0.0"
@@ -36,8 +36,6 @@ sweet = "0.1.2"
 
 [libraries]
 adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "adaptive" }
-adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptive" }
 adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "adaptive-suite" }
 androidx-paging = { module = "androidx.paging:paging-common", version.ref = "paging" }
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
@@ -47,6 +45,7 @@ androidx-uitest-junit4 = { module = "androidx.compose.ui:ui-test-junit4", versio
 compose-placeholder-material3 = { module = "com.eygraber:compose-placeholder-material3", version.ref = "composePlaceholderMaterial3" }
 compose-stacked-snackbar = { module = "io.github.rizmaulana:compose-stacked-snackbar", version.ref = "composeStackedSnackbar" }
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
+kolor-picker = { module = "com.kborowy:kolor-picker", version.ref = "kolorPicker" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 mkmb-core = { module = "top.kagg886.mkmb:core", version.ref = "mkmb-core" }
@@ -73,7 +72,6 @@ coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 multiplatform-markdown-renderer-coil3 = { module = "com.mikepenz:multiplatform-markdown-renderer-coil3", version.ref = "markdown" }
 multiplatform-markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdown" }
-multiplatformSettings = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 orbit-compose = { module = "org.orbit-mvi:orbit-compose", version.ref = "orbitViewmodel" }

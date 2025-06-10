@@ -1,8 +1,10 @@
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,7 +36,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -50,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.kborowy.colorpicker.KolorPicker
 import io.ktor.client.plugins.logging.LogLevel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -109,7 +115,6 @@ fun SettingListScreen() {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingScreenContent(
     state: SettingsState,
@@ -290,12 +295,15 @@ private fun SettingScreenContent(
                 text = "设置",
             )
         },
-        navigationIcon =  {
+        navigationIcon = {
             BackIconButton()
         },
         content = {
             val columnState = rememberLazyListState()
-            LazyColumn(it.fixComposeListScrollToTopBug(columnState).fillMaxWidth(), state = columnState) {
+            LazyColumn(
+                it.fixComposeListScrollToTopBug(columnState).fillMaxWidth(),
+                state = columnState
+            ) {
                 item {
                     Text(
                         text = "外观设置",
@@ -342,6 +350,72 @@ private fun SettingScreenContent(
                                             }
                                         )
                                     }
+                                }
+                            }
+                        },
+                        modifier = Modifier.clickable { dialog = true },
+                    )
+                }
+
+                item {
+                    var dialog by remember { mutableStateOf(false) }
+                    ListItem(
+                        headlineContent = { Text("主题色") },
+                        trailingContent = {
+                            Text(
+                                BUILTIN_COLORS.entries.find { (_, value) -> value == color }?.key
+                                    ?: "自定义",
+                                color = color
+                            )
+                            if (dialog) {
+                                DropdownMenu(
+                                    modifier = Modifier.width(150.dp),
+                                    expanded = true,
+                                    onDismissRequest = { dialog = false }
+                                ) {
+                                    for ((key, builtInColor) in BUILTIN_COLORS) {
+                                        DropdownMenuItem(
+                                            text = { Text(key) },
+                                            leadingIcon = {
+                                                Box(
+                                                    Modifier.size(16.dp).background(color = builtInColor)
+                                                )
+                                            },
+                                            onClick = { onColorSettingsClicked(builtInColor) }
+                                        )
+                                    }
+
+                                    var pickerDialog by remember { mutableStateOf(false) }
+
+                                    if (pickerDialog) {
+                                        AlertDialog(
+                                            onDismissRequest = {
+                                                pickerDialog = false
+                                            },
+                                            confirmButton = {
+                                                TextButton(
+                                                    onClick = {
+                                                        pickerDialog = false
+                                                    }
+                                                ) {
+                                                    Text("确定")
+                                                }
+                                            },
+                                            title = { Text("自定义取色") },
+                                            text = {
+                                                KolorPicker(
+                                                    initialColor = color,
+                                                    onColorSelected = onColorSettingsClicked,
+                                                    modifier = Modifier.width(250.dp).height(200.dp),
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    DropdownMenuItem(
+                                        text = { Text("自定义") },
+                                        onClick = { pickerDialog = true }
+                                    )
                                 }
                             }
                         },
@@ -519,3 +593,11 @@ private fun ProfileCard(
         }
     }
 }
+
+private val BUILTIN_COLORS = mapOf(
+    "姨妈红" to Color(188, 1, 4),
+    "闪耀橙" to Color(255, 85, 34),
+    "贝斯黄" to Color(255, 221, 136),
+    "风祝绿" to Color(26, 240, 79),
+    "拉格蓝" to Color(118, 145, 217)
+)
