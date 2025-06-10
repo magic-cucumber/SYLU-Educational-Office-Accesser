@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.init
 import top.kagg886.util.initializeMMKV
 
 class AppActivity : ComponentActivity() {
@@ -13,6 +15,7 @@ class AppActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         initializeMMKV()
+        FileKit.init(this)
         setContent { App() }
     }
 }

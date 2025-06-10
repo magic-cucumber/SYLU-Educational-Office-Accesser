@@ -16,7 +16,7 @@ class CourseConflictViewModel(
     private val courseRecordDao = database.courseRecordDao()
     override val container =
         container<CourseConflictState, CourseConflictSideEffect>(CourseConflictState.Loading) {
-            val date = courseRecordDao.getCoursesWithRecordInfoByDate(weekNumber, dayOfWeek, periodOfDay)
+            val date = courseRecordDao.getCoursesWithRecordInfo(weekNumber, dayOfWeek, periodOfDay)
             reduce {
                 CourseConflictState.Success(date)
             }

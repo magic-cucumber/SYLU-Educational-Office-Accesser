@@ -64,7 +64,7 @@ class CoursePageViewModel(
     fun setDataUnsafe() = intent {
         withContext(Dispatchers.IO) {
             val courseGroupByWeekNumber = courseRecordDao
-                .getCoursesWithRecordInfoByDate(weekNumber = weekNumber)
+                .getCoursesWithRecordInfo(weekNumber = weekNumber)
                 .groupBy { it.record.dayOfWeek }
                 .map { (weekNumber, courseAndRecord) ->
                     weekNumber to courseAndRecord.groupBy { it.record.periodOfDay }

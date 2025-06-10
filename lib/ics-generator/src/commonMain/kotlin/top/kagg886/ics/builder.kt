@@ -34,7 +34,7 @@ import kotlin.time.Duration
  */
 class IcsBuilder internal constructor() {
     private var writeTo by Delegates.notNull<IcsWriter>()
-    private val calendar = IcsCalendar()
+    private var calendar = IcsCalendar()
 
     /**
      * 设置 ICS 内容的输出目标
@@ -62,7 +62,7 @@ class IcsBuilder internal constructor() {
      * 格式通常为："-//Company//Product//Language"
      * 
      * @param prodId 产品标识符字符串，默认为 "-//Kagg886//ICS Generator//EN"
-     * 
+     *
      * ```kotlin
      * ics {
      *     prodId("-//MyCompany//MyCalendarApp//EN")
@@ -71,7 +71,7 @@ class IcsBuilder internal constructor() {
      * ```
      */
     fun prodId(prodId: String) {
-        calendar.copy(prodId = prodId)
+        calendar = calendar.copy(prodId = prodId)
     }
 
     /**
@@ -93,7 +93,7 @@ class IcsBuilder internal constructor() {
      * ```
      */
     fun method(method: String) {
-        calendar.copy(method = method)
+        calendar = calendar.copy(method = method)
     }
 
     /**

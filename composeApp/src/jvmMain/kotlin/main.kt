@@ -4,7 +4,9 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
+import io.github.vinceglb.filekit.FileKit
 import top.kagg886.eoa.App
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.util.initializeMMKV
 
@@ -15,8 +17,9 @@ fun main() = application {
             .build()
     }
     initializeMMKV()
+    FileKit.init(appId = BuildConfig.APP_VERSION_NAME)
     Window(
-        title = "SYLU-EOA",
+        title = BuildConfig.APP_VERSION_NAME,
         state = rememberWindowState(width = 800.dp, height = 600.dp),
         onCloseRequest = ::exitApplication,
     ) {

@@ -90,11 +90,17 @@ kotlin {
             implementation(libs.mkmb.core)
             implementation(libs.compose.stacked.snackbar)
             implementation(libs.compose.placeholder.material3)
+            implementation(libs.filekit.dialog)
 
             implementation(project(":util"))
             //方便切换到闭源后端
             implementation(project(":eoa-lib:network-html-api"))
             implementation(project(":eoa-lib:network-test-api"))
+
+
+            implementation(project(":lib:ics-generator"))
+
+
         }
 
         commonTest.dependencies {

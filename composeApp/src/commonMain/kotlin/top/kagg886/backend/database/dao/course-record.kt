@@ -9,7 +9,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 
 @Entity(
     tableName = "course_records",
@@ -78,7 +77,7 @@ interface CourseRecordDao {
     ORDER BY cr.periodOfDay
 """
     )
-    suspend fun getCoursesWithRecordInfoByDate(
+    suspend fun getCoursesWithRecordInfo(
         weekNumber: Int,
         dayOfWeek: Int? = null,
         periodOfDay: Int? = null

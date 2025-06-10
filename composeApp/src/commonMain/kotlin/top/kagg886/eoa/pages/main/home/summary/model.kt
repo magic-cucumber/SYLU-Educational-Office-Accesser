@@ -74,7 +74,7 @@ class SummaryModel(
         }
 
         //获取今天的课表计划
-        val plan = courseRecordDao.getCoursesWithRecordInfoByDate(
+        val plan = courseRecordDao.getCoursesWithRecordInfo(
             weekNumber = weekNumber,
             dayOfWeek = today.dayOfWeek.isoDayNumber,
         )
