@@ -5,8 +5,10 @@ import androidx.compose.ui.window.rememberWindowState
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import io.github.vinceglb.filekit.FileKit
+import org.jetbrains.compose.resources.painterResource
+import sylu_eoa.composeapp.generated.resources.Res
+import sylu_eoa.composeapp.generated.resources.icon
 import top.kagg886.eoa.App
-import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.util.initializeMMKV
 
@@ -17,10 +19,11 @@ fun main() = application {
             .build()
     }
     initializeMMKV()
-    FileKit.init(appId = BuildConfig.APP_VERSION_NAME)
+    FileKit.init(appId = "SYLU-EOA")
     Window(
-        title = BuildConfig.APP_VERSION_NAME,
+        title = "SYLU-EOA",
         state = rememberWindowState(width = 800.dp, height = 600.dp),
+        icon = painterResource(Res.drawable.icon),
         onCloseRequest = ::exitApplication,
     ) {
         App()

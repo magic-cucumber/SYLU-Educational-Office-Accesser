@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,11 +42,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,12 +61,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.kborowy.colorpicker.KolorPicker
 import io.ktor.client.plugins.logging.LogLevel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.collapse.CollapsableTopAppBarScaffold
 import top.kagg886.eoa.pages.main.about.AboutRoute
@@ -72,6 +85,10 @@ import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.pages.update.UpdateModel
+import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.util.logger
+import kotlin.time.Duration.Companion.seconds
 
 @Serializable
 data object SettingListRoute
@@ -96,7 +113,7 @@ fun SettingListScreen() {
     val color by rootState.color.collectAsState()
     val theme by rootState.theme.collectAsState()
     val ktorLogLevel by rootState.ktorLogLevel.collectAsState()
-
+    val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
         onLogoutButtonClicked = {
@@ -111,7 +128,12 @@ fun SettingListScreen() {
         ktorLogLevel = ktorLogLevel,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
-        onKtorLogLevelSettingsClicked = rootModel::postNewKtorLogLevelSetting
+        onKtorLogLevelSettingsClicked = rootModel::postNewKtorLogLevelSetting,
+
+
+        onEggClicked = {
+            snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
+        }
     )
 }
 
@@ -126,21 +148,22 @@ private fun SettingScreenContent(
     ktorLogLevel: LogLevel,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
-    onKtorLogLevelSettingsClicked: (LogLevel) -> Unit
+    onKtorLogLevelSettingsClicked: (LogLevel) -> Unit,
+
+    onEggClicked: () -> Unit,
 ) {
     CollapsableTopAppBarScaffold(
         modifier = Modifier.fillMaxSize(),
         background = {
             AnimatedContent(
                 targetState = state,
-                modifier = it
+                modifier = it.systemBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 when (it) {
                     is SettingsState.Failed -> {
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .fillMaxWidth(),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer
@@ -188,8 +211,7 @@ private fun SettingScreenContent(
                     is SettingsState.Loading -> {
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .fillMaxWidth(),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -241,48 +263,45 @@ private fun SettingScreenContent(
                                 it.profile.name,
                                 it.profile.studyName
                             )
-                            Row {
-                                //详细信息按钮和退出登录按钮。
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                // 详细信息按钮
+                                OutlinedButton(
+                                    onClick = onDetailButtonClicked,
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    )
                                 ) {
-                                    // 详细信息按钮
-                                    OutlinedButton(
-                                        onClick = onDetailButtonClicked,
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Info,
-                                            contentDescription = "详细信息",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("详细信息")
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "详细信息",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("详细信息")
+                                }
 
-                                    // 登出按钮
-                                    Button(
-                                        onClick = onLogoutButtonClicked,
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.error,
-                                            contentColor = MaterialTheme.colorScheme.onError
-                                        )
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Logout,
-                                            contentDescription = "登出",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("登出")
-                                    }
+                                // 登出按钮
+                                Button(
+                                    onClick = onLogoutButtonClicked,
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Logout,
+                                        contentDescription = "登出",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("登出")
                                 }
                             }
                         }
@@ -298,10 +317,10 @@ private fun SettingScreenContent(
         navigationIcon = {
             BackIconButton()
         },
-        content = {
+        content = { modifier ->
             val columnState = rememberLazyListState()
             LazyColumn(
-                it.fixComposeListScrollToTopBug(columnState).fillMaxWidth(),
+                modifier.fixComposeListScrollToTopBug(columnState).fillMaxWidth(),
                 state = columnState
             ) {
                 item {
@@ -374,6 +393,9 @@ private fun SettingScreenContent(
                                     onDismissRequest = { dialog = false }
                                 ) {
                                     for ((key, builtInColor) in BUILTIN_COLORS) {
+                                        var count by remember {
+                                            mutableStateOf(0)
+                                        }
                                         DropdownMenuItem(
                                             text = { Text(key) },
                                             leadingIcon = {
@@ -381,7 +403,15 @@ private fun SettingScreenContent(
                                                     Modifier.size(16.dp).background(color = builtInColor)
                                                 )
                                             },
-                                            onClick = { onColorSettingsClicked(builtInColor) }
+                                            onClick = {
+                                                onColorSettingsClicked(builtInColor)
+                                                if (key == "贝斯黄") {
+                                                    count++
+                                                }
+                                                if (count == 5) {
+                                                    onEggClicked()
+                                                }
+                                            }
                                         )
                                     }
 
@@ -545,8 +575,7 @@ private fun ProfileCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

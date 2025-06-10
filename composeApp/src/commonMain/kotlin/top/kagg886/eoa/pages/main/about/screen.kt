@@ -32,6 +32,7 @@ import androidx.compose.ui.text.withLink
 import kotlinx.coroutines.launch
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.config.BuildConfig
 
 @Serializable
 data object AboutRoute
@@ -83,7 +84,7 @@ fun AboutScreen() {
                     )
 
                     Text(
-                        text = "版本：4.0",
+                        text = "版本：${BuildConfig.APP_VERSION_NAME}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
