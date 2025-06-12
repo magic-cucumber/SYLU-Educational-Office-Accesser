@@ -52,7 +52,8 @@ data object GPARoute
 
 @Composable
 fun GPAScreen() = HomeScreen(
-    route = NavigationRoute.GPA
+    route = NavigationRoute.GPA,
+    title = { Text(text = "绩点") },
 ) {
     val mainModel = mainViewModel()
     val syncState by mainModel.collectAsState()

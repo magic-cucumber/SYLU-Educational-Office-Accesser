@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,12 +44,14 @@ import kotlinx.datetime.format.char
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
@@ -78,8 +82,22 @@ fun CoursePageListScreen(
     }
     val state by model.collectAsState()
 
+    val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+    val theme by rootState.theme.collectAsState()
+
+    val systemNight = isSystemInDarkTheme()
+    val useNightMode = remember(theme, systemNight) {
+        when (theme) {
+            AppSettingsMMKVType.AppTheme.Dark -> true
+            AppSettingsMMKVType.AppTheme.Light -> false
+            AppSettingsMMKVType.AppTheme.SystemDefault -> systemNight
+        }
+    }
+
     CoursePageScreenContent(
         state = state,
+        useNightMode = useNightMode,
         onCourseItemClicked = {
             model.navigateToCourseDetail(it)
         },
@@ -92,6 +110,7 @@ fun CoursePageListScreen(
 @Composable
 private fun CoursePageScreenContent(
     state: CoursePageState,
+    useNightMode: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
     onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit
 ) {
@@ -120,6 +139,7 @@ private fun CoursePageScreenContent(
         is CoursePageState.Success -> {
             CoursePageScreenSuccess(
                 state = state,
+                useNightMode = useNightMode,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
                 modifier = Modifier.fillMaxSize()
@@ -132,6 +152,7 @@ private fun CoursePageScreenContent(
 @Composable
 private fun CoursePageScreenSuccess(
     state: CoursePageState.Success,
+    useNightMode: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
     onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit,
     modifier: Modifier = Modifier
@@ -247,11 +268,20 @@ private fun CoursePageScreenSuccess(
                     for ((next, course) in state.currentWeekCourse[i].orEmpty()) {
                         val topOffset = cardHeight * (next - 1) // 节次从1开始
                         val scheme = MaterialTheme.colorScheme
-                        val basicColor = remember {
-                            if  (course.hasConflict)
-                                scheme.errorContainer
-                            else
-                                Color.hsv(Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f, 0.1412f, 1f)
+                        val basicColor = remember(course,useNightMode) {
+                            when {
+                                course.hasConflict -> scheme.errorContainer
+                                !useNightMode -> Color.hsv(
+                                    hue = Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f,
+                                    saturation = 0.1412f,
+                                    value = 1f
+                                )
+                                else -> Color.hsv(
+                                    hue = Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f,
+                                    saturation = 0.3038f,
+                                    value = 0.3039f
+                                )
+                            }
                         }
 
                         ElevatedCard(
