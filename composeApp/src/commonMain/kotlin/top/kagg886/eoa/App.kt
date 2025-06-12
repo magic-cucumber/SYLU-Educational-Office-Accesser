@@ -65,9 +65,26 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 internal fun App() = CompositionLocalProvider(
-    LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!
+    LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
+    LocalNavController provides rememberNavController(),
+    LocalSnackBarHost provides rememberStackedSnackbarHostState(
+        maxStack = 3,
+        animation = StackedSnackbarAnimation.Slide
+    ),
 ) {
+    val nav = LocalNavController.current
+    val snack = LocalSnackBarHost.current
+
+
     val rootModel = rootViewModel()
+    rootModel.collectSideEffect {
+        when (it) {
+            is RootEffect.Toast -> {
+                snack.showSnackBar(SnackBarType.Info, it.msg)
+            }
+        }
+    }
+
     val rootState by rootModel.collectAsState()
     val color by rootState.color.collectAsState()
     val theme by rootState.theme.collectAsState()
@@ -84,79 +101,64 @@ internal fun App() = CompositionLocalProvider(
         )
     }
 
+    //更新检查器
+    val updateState =
+        viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
+
+    updateState.collectSideEffect {
+        when (it) {
+            is UpdateEvent.NavigateToUpdatePage -> {
+                nav.navigate(
+                    UpdateRoute(
+                        it.data.tag_name,
+                        it.data.body.replace("\r", ""),
+                        "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
+                    )
+                )
+            }
+
+            is UpdateEvent.Toast -> {
+                snack.showSnackBar(it.type, it.msg)
+            }
+        }
+    }
+
     AppTheme(
         color = color,
         nightTheme = (theme == AppSettingsMMKVType.AppTheme.Dark) || (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
     ) {
-        CompositionLocalProvider(
-            LocalNavController provides rememberNavController(),
-            LocalSnackBarHost provides rememberStackedSnackbarHostState(
-                maxStack = 3,
-                animation = StackedSnackbarAnimation.Slide
-            ),
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                //业务
-                Surface(Modifier.fillMaxSize()) {
-                    val nav = LocalNavController.current
-                    SharedTransitionLayout {
-                        CompositionLocalProvider(LocalShareTransitionScope provides this) {
-                            NavHost(
-                                modifier = Modifier.fillMaxSize(),
-                                navController = nav,
-                                startDestination = RootRoute,
-                                builder = installEOAGraph,
-                            )
-                        }
-                    }
-                    val stack by nav.currentBackStack.collectAsState()
-                    LaunchedEffect(stack) {
-                        if (stack.isEmpty()) {
-                            //出bug了！速速补救。
-                            nav.navigate(MainRoute)
-                            return@LaunchedEffect
-                        }
-                        val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
-                        "App.kt".asTaggedLogger.d("Route Stack Modified: $flow")
+        Box(Modifier.fillMaxSize()) {
+            //业务
+            Surface(Modifier.fillMaxSize()) {
+                SharedTransitionLayout {
+                    CompositionLocalProvider(LocalShareTransitionScope provides this) {
+                        NavHost(
+                            modifier = Modifier.fillMaxSize(),
+                            navController = nav,
+                            startDestination = RootRoute,
+                            builder = installEOAGraph,
+                        )
                     }
                 }
 
-                //toaster
-                Box(Modifier.align(Alignment.BottomCenter)) {
-                    StackedSnackbarHost(
-                        hostState = LocalSnackBarHost.current,
-                    )
-                }
-                //更新检查器
-                val updateState =
-                    viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
-                val snack = LocalSnackBarHost.current
-                val nav = LocalNavController.current
-                updateState.collectSideEffect {
-                    when (it) {
-                        is UpdateEvent.NavigateToUpdatePage -> {
-                            nav.navigate(
-                                UpdateRoute(
-                                    it.data.tag_name,
-                                    it.data.body.replace("\r", ""),
-                                    "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
-                                )
-                            )
-                        }
 
-                        is UpdateEvent.Toast -> {
-                            snack.showSnackBar(it.type, it.msg)
-                        }
+                val stack by nav.currentBackStack.collectAsState()
+                LaunchedEffect(stack) {
+                    if (stack.isEmpty()) {
+                        //出bug了！速速补救。
+                        nav.navigate(MainRoute)
+                        return@LaunchedEffect
                     }
+                    val flow = stack.joinToString(" -> ") { s -> s.destination.route ?: "root" }
+                    "App.kt".asTaggedLogger.d("Route Stack Modified: $flow")
                 }
+            }
 
-                rootModel.collectSideEffect {
-                    when (it) {
-                        is RootEffect.Toast -> {
-                            snack.showSnackBar(SnackBarType.Info, it.msg)
-                        }
-                    }
-                }
+            //toaster
+            Box(Modifier.align(Alignment.BottomCenter)) {
+                StackedSnackbarHost(
+                    hostState = LocalSnackBarHost.current,
+                )
             }
         }
     }

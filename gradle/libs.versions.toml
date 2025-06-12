@@ -27,6 +27,7 @@ markdown = "0.35.0"
 kotlinx-datetime = "0.6.2"
 okio = "3.11.0"
 orbitViewmodel = "10.0.0"
+revealCore = "3.2.2"
 room = "2.7.1"
 ksp = "2.1.20-1.0.32"
 buildConfig = "5.6.5"
@@ -77,6 +78,7 @@ okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 orbit-compose = { module = "org.orbit-mvi:orbit-compose", version.ref = "orbitViewmodel" }
 orbit-core = { module = "org.orbit-mvi:orbit-core", version.ref = "orbitViewmodel" }
 orbit-viewmodel = { module = "org.orbit-mvi:orbit-viewmodel", version.ref = "orbitViewmodel" }
+reveal-core = { module = "com.svenjacobs.reveal:reveal-core", version.ref = "revealCore" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
