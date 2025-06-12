@@ -186,153 +186,142 @@ fun ExamListScreenDrawer(
             state == null
         }
     }
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
     ) {
-        // Filter Section
-        Card(
-            modifier = Modifier.padding(16.dp),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        Text(
+            text = "筛选",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // Combined Filters Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Left column - Pass Status Filter
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "筛选",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    text = "考试状态:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
 
-                // Combined Filters Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Left column - Pass Status Filter
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "考试状态:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-
-                        PassFilterDropdown(
-                            selectedFilter = state?.passFilter ?: PassFilter.ALL,
-                            enabled = !visible,
-                            onFilterChanged = { filter ->
-                                if (!visible) {
-                                    onFilterChanged(
-                                        filter,
-                                        state?.degreeFilter ?: DegreeFilter.ALL,
-                                        state?.currentYearIndex ?: 0,
-                                        state?.currentTermIndex ?: 0
-                                    )
-                                }
-                            }
-                        )
+                PassFilterDropdown(
+                    selectedFilter = state?.passFilter ?: PassFilter.ALL,
+                    enabled = !visible,
+                    onFilterChanged = { filter ->
+                        if (!visible) {
+                            onFilterChanged(
+                                filter,
+                                state?.degreeFilter ?: DegreeFilter.ALL,
+                                state?.currentYearIndex ?: 0,
+                                state?.currentTermIndex ?: 0
+                            )
+                        }
                     }
+                )
+            }
 
-                    // Right column - Degree Filter
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "学位课程:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
+            // Right column - Degree Filter
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "学位课程:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
 
-                        DegreeFilterDropdown(
-                            selectedFilter = state?.degreeFilter ?: DegreeFilter.ALL,
-                            enabled = !visible,
-                            onFilterChanged = { filter ->
-                                if (!visible) {
-                                    onFilterChanged(
-                                        state?.passFilter ?: PassFilter.ALL,
-                                        filter,
-                                        state?.currentYearIndex ?: 0,
-                                        state?.currentTermIndex ?: 0
-                                    )
-                                }
-                            }
-                        )
+                DegreeFilterDropdown(
+                    selectedFilter = state?.degreeFilter ?: DegreeFilter.ALL,
+                    enabled = !visible,
+                    onFilterChanged = { filter ->
+                        if (!visible) {
+                            onFilterChanged(
+                                state?.passFilter ?: PassFilter.ALL,
+                                filter,
+                                state?.currentYearIndex ?: 0,
+                                state?.currentTermIndex ?: 0
+                            )
+                        }
                     }
-                }
+                )
+            }
+        }
 
-                // Year and Term Filters Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Left column - Year Filter
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "学年:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
+        // Year and Term Filters Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Left column - Year Filter
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "学年:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
 
-                        YearFilterDropdown(
-                            selector = state?.selector ?: emptyList(),
-                            currentYearIndex = state?.currentYearIndex ?: 0,
-                            enabled = !visible,
-                            onYearChanged = { yearIndex ->
-                                if (!visible) {
-                                    onFilterChanged(
-                                        state?.passFilter ?: PassFilter.ALL,
-                                        state?.degreeFilter ?: DegreeFilter.ALL,
-                                        yearIndex,
-                                        0 // Reset term index when year changes
-                                    )
-                                }
-                            }
-                        )
+                YearFilterDropdown(
+                    selector = state?.selector ?: emptyList(),
+                    currentYearIndex = state?.currentYearIndex ?: 0,
+                    enabled = !visible,
+                    onYearChanged = { yearIndex ->
+                        if (!visible) {
+                            onFilterChanged(
+                                state?.passFilter ?: PassFilter.ALL,
+                                state?.degreeFilter ?: DegreeFilter.ALL,
+                                yearIndex,
+                                0 // Reset term index when year changes
+                            )
+                        }
                     }
+                )
+            }
 
-                    // Right column - Term Filter
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "学期:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
+            // Right column - Term Filter
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "学期:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
 
-                        TermFilterDropdown(
-                            selector = state?.selector ?: emptyList(),
-                            currentYearIndex = state?.currentYearIndex ?: 0,
-                            currentTermIndex = state?.currentTermIndex ?: 0,
-                            enabled = !visible,
-                            onTermChanged = { termIndex ->
-                                if (!visible) {
-                                    onFilterChanged(
-                                        state?.passFilter ?: PassFilter.ALL,
-                                        state?.degreeFilter ?: DegreeFilter.ALL,
-                                        state?.currentYearIndex ?: 0,
-                                        termIndex
-                                    )
-                                }
-                            }
-                        )
+                TermFilterDropdown(
+                    selector = state?.selector ?: emptyList(),
+                    currentYearIndex = state?.currentYearIndex ?: 0,
+                    currentTermIndex = state?.currentTermIndex ?: 0,
+                    enabled = !visible,
+                    onTermChanged = { termIndex ->
+                        if (!visible) {
+                            onFilterChanged(
+                                state?.passFilter ?: PassFilter.ALL,
+                                state?.degreeFilter ?: DegreeFilter.ALL,
+                                state?.currentYearIndex ?: 0,
+                                termIndex
+                            )
+                        }
                     }
-                }
+                )
             }
         }
     }
+
 }
 
 @Composable
