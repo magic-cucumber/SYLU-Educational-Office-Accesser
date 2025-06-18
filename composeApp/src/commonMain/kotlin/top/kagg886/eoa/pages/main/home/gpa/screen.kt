@@ -122,6 +122,34 @@ private fun GPAContent(
         return
     }
 
+    if (state.gpa.isEmpty()) {
+        ErrorPage(
+            modifier = Modifier.fillMaxSize(),
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Info",
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = {
+                Text(
+                    text = "没有大创学分！",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            message = {
+                Text(
+                    text = "或许您需要再努努力？",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
+        )
+     }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -190,6 +218,15 @@ private fun GPASummaryCard(
                     shrinkTowards = Alignment.Top
                 ) + fadeOut(animationSpec = tween(durationMillis = 200))
             ) {
+                if (scores.isEmpty()) {
+                    Text(
+                        text = "没有条目",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    return@AnimatedVisibility
+                }
                 Column {
                     scores.forEach { score ->
                         ListItem(

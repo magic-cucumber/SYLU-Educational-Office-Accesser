@@ -108,7 +108,7 @@ fun SummaryScreen() = HomeScreen(
     }
     val state by model.collectAsState()
 
-    SummaryContent(
+    SummaryContentV2(
         state = state,
         syncState = syncState,
         onCourseItemClicked = { model.redirectToCourse(it) },
@@ -117,63 +117,118 @@ fun SummaryScreen() = HomeScreen(
 }
 
 @Composable
-private inline fun SummaryContent(
+private inline fun SummaryContentV2(
     state: SummaryState,
     syncState: MainRouteViewState,
     noinline onCourseItemClicked: (TodayClass) -> Unit = {},
     noinline onSyncActionStarted: () -> Unit = {}
 ) {
-    when (state) {
-
-        is SummaryState.Failed -> {
-            // 加载失败的页面
-            ErrorPage(
-                title = {
-                    Text("数据同步失败")
-                },
-                message = {
-                    Text(state.msg)
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+        var cardHeight by remember {
+            mutableStateOf(0.dp)
         }
+        val density = LocalDensity.current
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.matchParentSize()
+        ) {
+            item {
+                SummaryContentPlaceHolderHeader(
+                    state = state,
+                    modifier = Modifier.fillMaxWidth().onGloballyPositioned {
+                        cardHeight = with(density) { it.size.height.toDp() }
+                    },
+                    onSyncActionStarted = onSyncActionStarted,
+                    syncState = syncState,
+                    suiteType = currentLayoutType()
+                )
+            }
 
-        is SummaryState.FailedButSuccess -> {
-            ErrorPage(
-                modifier = Modifier.fillMaxSize(),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Info",
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
+            when (state) {
+                is SummaryState.Failed -> item {
+                    // 加载失败的页面
+                    ErrorPage(
+                        title = {
+                            Text("数据同步失败")
+                        },
+                        message = {
+                            Text(state.msg)
+                        },
+                        modifier = Modifier.fillMaxWidth().height(maxHeight - cardHeight - 64.dp),
                     )
-                },
-                title = {
-                    Text(
-                        text = "提示",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                message = {
-                    Text(
-                        text = state.msg,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
-
                 }
-            )
-        }
 
-        else -> {
-            SummaryContentPlaceHolder(
-                state = state as? SummaryState.Success,
-                syncState = syncState,
-                onCourseItemClicked = onCourseItemClicked,
-                onSyncActionStarted = onSyncActionStarted
-            )
+                is SummaryState.FailedButSuccess -> item {
+                    ErrorPage(
+                        modifier = Modifier.fillMaxWidth().height(maxHeight - cardHeight - 64.dp),
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Info",
+                                modifier = Modifier.size(80.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        title = {
+                            Text(
+                                text = "提示",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        message = {
+                            Text(
+                                text = state.msg,
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center
+                            )
+
+                        }
+                    )
+                }
+
+                is SummaryState.Loading -> items(3) { _ ->
+                    CourseItem(null, onCourseItemClicked)
+                }
+
+                is SummaryState.Success -> {
+                    if (state.plan.isEmpty()) {
+                        item {
+                            ErrorPage(
+                                modifier = Modifier.fillMaxWidth()
+                                    .height(maxHeight - cardHeight - 64.dp),
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Info",
+                                        modifier = Modifier.size(80.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                title = {
+                                    Text(
+                                        text = "提示",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                message = {
+                                    Text(
+                                        text = "今天没有课程",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                }
+                            )
+                        }
+                        return@LazyColumn
+                    }
+                    items(state.plan) { course ->
+                        CourseItem(course, onCourseItemClicked)
+                    }
+                }
+            }
         }
     }
 }
@@ -337,12 +392,12 @@ private data class Tuple5<A, B, C, D, E>(
 
 @Composable
 private inline fun SummaryCard(
-    state: SummaryState.Success?,
+    state: SummaryState,
     modifier: Modifier = Modifier
 ) {
     val showPlaceHolder by remember(state) {
         derivedStateOf {
-            state == null
+            state is SummaryState.Loading
         }
     }
     Card(
@@ -363,15 +418,36 @@ private inline fun SummaryCard(
                 // Current week indicator
                 SummaryItem(
                     showPlaceHolder = showPlaceHolder,
-                    details = "第 ${state?.weekNumber} 周",
+                    details = when (state) {
+                        is SummaryState.Success -> "第 ${state.weekNumber} 周"
+                        is SummaryState.Failed -> "获取失败"
+                        is SummaryState.Loading -> "加载中"
+                        is SummaryState.FailedButSuccess -> state.msg
+                    },
                     title = "当前周数",
                 )
-                // Today's classes count
                 SummaryItem(
                     showPlaceHolder = showPlaceHolder,
-                    details = "${state?.plan?.size ?: 0} 门",
+                    details = when (state) {
+                        is SummaryState.Success -> "共 ${state.plan.size} 节课"
+                        is SummaryState.Failed -> "获取失败"
+                        is SummaryState.Loading -> "加载中"
+                        is SummaryState.FailedButSuccess -> state.msg
+                    },
                     title = "今日课程数",
                 )
+
+                SummaryItem(
+                    showPlaceHolder = showPlaceHolder,
+                    details = when (state) {
+                        is SummaryState.Success -> "${state.progress}"
+                        is SummaryState.Failed -> "获取失败"
+                        is SummaryState.Loading -> "加载中"
+                        is SummaryState.FailedButSuccess -> state.msg
+                    },
+                    title = "学期进度"
+                )
+
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -384,7 +460,7 @@ private inline fun SummaryContentPlaceHolderHeader(
     modifier: Modifier = Modifier,
     suiteType: NavigationSuiteType,
     syncState: MainRouteViewState,
-    state: SummaryState.Success?,
+    state: SummaryState,
     noinline onSyncActionStarted: () -> Unit,
 ) {
     when (suiteType) {
@@ -412,73 +488,6 @@ private inline fun SummaryContentPlaceHolderHeader(
             }
         }
     }
-}
-
-@Composable
-private inline fun SummaryContentPlaceHolder(
-    state: SummaryState.Success?,
-    syncState: MainRouteViewState,
-    noinline onCourseItemClicked: (TodayClass) -> Unit = {},
-    noinline onSyncActionStarted: () -> Unit = {},
-) {
-    val showPlaceHolder by remember(state) {
-        derivedStateOf {
-            state == null
-        }
-    }
-
-    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
-        var cardHeight by remember {
-            mutableStateOf(0.dp)
-        }
-        val density = LocalDensity.current
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                SummaryContentPlaceHolderHeader(
-                    state = state,
-                    modifier = Modifier.fillMaxWidth().onGloballyPositioned {
-                        cardHeight = with(density) { it.size.height.toDp() }
-                    },
-                    onSyncActionStarted = onSyncActionStarted,
-                    syncState = syncState,
-                    suiteType = currentLayoutType()
-                )
-            }
-
-            if (state?.plan?.isEmpty() == true) {
-                item {
-                    Box(
-                        Modifier.fillMaxWidth().height(maxHeight - cardHeight - 64.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("今日没有课程", textAlign = TextAlign.Center)
-                    }
-                }
-                return@LazyColumn
-            }
-
-            item {
-                Text(
-                    text = "今日课程",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.placeholder(
-                        visible = showPlaceHolder,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
-                )
-            }
-
-
-            val items = state?.plan ?: List(3) { null }
-            items(items) { course ->
-                CourseItem(course, onCourseItemClicked)
-            }
-        }
-    }
-
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)

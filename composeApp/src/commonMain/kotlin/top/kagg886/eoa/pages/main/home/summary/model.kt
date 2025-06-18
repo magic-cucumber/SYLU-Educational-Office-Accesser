@@ -2,9 +2,12 @@ package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.lifecycle.ViewModel
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.until
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -62,20 +65,19 @@ class SummaryModel(
     fun setDataUnsafe() = intent {
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
-        //计算今天是校历第几周
-        val weekNumber = try {
-            AppSyncMMKV.calender!!.calculateWeekNumber(today.date)
-        } catch (e: IllegalStateException) {
-            //如果是假期则报错
+        val currentWeek = AppSyncMMKV.calender!!.currentWeek()
+        if (currentWeek <= 0) {
             reduce {
-                SummaryState.FailedButSuccess(e.message!!)
+                SummaryState.FailedButSuccess(
+                    msg = "当前学期未开始或已结束"
+                )
             }
             return@intent
         }
 
         //获取今天的课表计划
         val plan = courseRecordDao.getCoursesWithRecordInfo(
-            weekNumber = weekNumber,
+            weekNumber = currentWeek,
             dayOfWeek = today.dayOfWeek.isoDayNumber,
         )
 
@@ -89,9 +91,11 @@ class SummaryModel(
         }
         reduce {
             SummaryState.Success(
-                weekNumber = weekNumber,
+                weekNumber = currentWeek,
                 dayPeriod = period,
-                progress = progress,
+                progress = with(AppSyncMMKV.calender!!) {
+                    start.until(today.date, DateTimeUnit.DAY).toFloat() /  start.until(end,DateTimeUnit.DAY)
+                },
                 plan = plan.groupBy { it.course }.flatMap { (course, records) ->
                     records.map { record ->
                         TodayClass(
@@ -126,7 +130,7 @@ sealed interface SummaryState {
     data class Success(
         val weekNumber: Int,
         val dayPeriod:Int?,
-        val progress: Float?,
+        val progress: Float,
         val plan: List<TodayClass>,
     ) : SummaryState
 

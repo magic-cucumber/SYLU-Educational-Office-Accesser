@@ -77,8 +77,6 @@ fun CourseListScreen() {
     HomeScreen(
         route = NavigationRoute.COURSE,
         title = {
-
-
             AnimatedContent(
                 targetState = (state as? CourseListState.Success)?.state?.currentPage ?: -1,
                 transitionSpec = {
@@ -109,6 +107,7 @@ fun CourseListScreen() {
                 onClick = {
                     iconExpanded = true
                 },
+                enabled = state is CourseListState.Success
             ) {
                 Icon(
                     Icons.Default.Menu,

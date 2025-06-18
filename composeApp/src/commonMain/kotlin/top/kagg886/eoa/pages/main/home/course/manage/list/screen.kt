@@ -83,6 +83,7 @@ fun CourseManageListScreen() {
             var showDropdownMenu by remember { mutableStateOf(false) }
             IconButton(
                 onClick = { showDropdownMenu = true },
+                enabled = state is CourseManageState.Success
             ) {
                 Icon(
                     imageVector = Icons.Default.Menu,

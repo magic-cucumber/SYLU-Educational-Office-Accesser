@@ -57,13 +57,12 @@ class CourseManageListModel(
         }
 
     fun setDataUnsafe(onlyShowUserCourse:Boolean = false) = intent {
-        val currentWeek = try { //从1开始
-            AppSyncMMKV.calender!!.calculateWeekNumber(
-                Clock.System.todayIn(TimeZone.currentSystemDefault())
-            )
-        } catch (e: Exception) {
+        val currentWeek = AppSyncMMKV.calender!!.currentWeek()
+        if (currentWeek <= 0) {
             reduce {
-                CourseManageState.FailedButSuccess(e.message ?: "未知错误")
+                CourseManageState.FailedButSuccess(
+                    msg = "当前学期未开始或已结束"
+                )
             }
             return@intent
         }
