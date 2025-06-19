@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "8d91597984581ad2963df6598f85728a",
+    "identityHash": "ef9ad5dfeb68c9b0bb780f089d1a6c81",
     "entities": [
       {
         "tableName": "exams",
@@ -362,11 +362,45 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "SystemNotice",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`createTime` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `id` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "createTime",
+            "columnName": "createTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": []
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8d91597984581ad2963df6598f85728a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ef9ad5dfeb68c9b0bb780f089d1a6c81')"
     ]
   }
 }

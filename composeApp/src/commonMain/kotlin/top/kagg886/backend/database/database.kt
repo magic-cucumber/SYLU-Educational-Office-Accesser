@@ -18,7 +18,10 @@ import top.kagg886.backend.database.dao.GPASummaryDao
 import top.kagg886.backend.database.dao.GPASummaryEntity
 import top.kagg886.backend.database.dao.SyncRecordEntity
 import top.kagg886.backend.database.dao.SyncRecordDao
+import top.kagg886.backend.database.dao.SystemNoticeDao
+import top.kagg886.backend.database.dao.SystemNoticeEntity
 import top.kagg886.eoa.config.BuildConfig
+import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
 
@@ -30,7 +33,8 @@ import top.kagg886.util.dataPath
         CourseEntity::class,
         CourseRecordEntity::class,
         SyncRecordEntity::class,
-        AppLog::class
+        AppLog::class,
+        SystemNoticeEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
 )
@@ -41,6 +45,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun gpaDao(): GPADao
     abstract fun courseDao(): CourseDao
     abstract fun courseRecordDao(): CourseRecordDao
+    abstract fun noticeDao(): SystemNoticeDao
+
     abstract fun syncRecordDao(): SyncRecordDao
     abstract fun appLogDao(): AppLogDao
 }

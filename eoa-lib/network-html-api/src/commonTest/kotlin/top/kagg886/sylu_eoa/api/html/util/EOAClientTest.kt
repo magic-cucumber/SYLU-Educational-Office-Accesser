@@ -69,6 +69,26 @@ class EOAClientTest {
             assertTrue(hasVerifyCode)
         }
     }
+
+    @Test
+    fun testEOASystemNotice() {
+        val user = EOAHTMLClient()
+        user.init(MemoryStorage())
+        runBlocking {
+            user.username = "2203050528"
+            user.password = "Baleitem103"
+            user.login()
+            val picker = user.getNotice()
+            for (term in picker) {
+                logger.i(term.toString())
+            }
+
+            val picker1 = user.getNotice(true)
+            for (term in picker1) {
+                logger.i(term.toString())
+            }
+        }
+    }
 }
 
 class MemoryStorage : Storage {

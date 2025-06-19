@@ -17,6 +17,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
+import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
 import top.kagg886.sylu_eoa.api.v2.bean.Term
 import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
 import top.kagg886.sylu_eoa.api.v2.bean.TermResult
@@ -84,6 +85,28 @@ internal class TestEOAClient : EOAClient {
 
     override suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore> {
         return listOf()
+    }
+
+    override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
+        return if (hasRead) {
+            listOf(
+                SystemNotice(
+                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    title = "测试公告",
+                    content = "这是测试公告",
+                    id = "1",
+                )
+            )
+        } else {
+            listOf(
+                SystemNotice(
+                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    title = "测试公告",
+                    content = "这是测试公告",
+                    id = "2",
+                )
+            )
+        }
     }
 
     override fun init(storage: Storage) {

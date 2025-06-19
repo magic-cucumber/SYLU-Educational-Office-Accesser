@@ -5,6 +5,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
+import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
 import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
 import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
 import top.kagg886.sylu_eoa.api.v2.bean.TermResult
@@ -71,6 +72,13 @@ interface EOAClient {
      * @return 成绩列表
      */
     suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore>
+
+    /**
+     * 获取学校系统通知
+     *
+     * @return 通知列表
+     */
+    suspend fun getNotice(hasRead: Boolean = false): List<SystemNotice>
 
     /**
      * 初始化存储

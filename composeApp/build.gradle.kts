@@ -210,7 +210,7 @@ buildConfig {
     // BuildConfig configuration here.
     // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
     packageName("top.kagg886.eoa.config")
-    buildConfigField("DATABASE_VERSION", 1)
+    buildConfigField("DATABASE_VERSION", 2)
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
     buildConfigField("GIT_COMMIT_SHA", "123456")

@@ -18,6 +18,7 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
+import top.kagg886.backend.database.dao.SystemNoticeEntity
 import top.kagg886.backend.database.dao.toEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.rootViewModel
@@ -115,8 +116,35 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
                         }
                     }
                 }
-
                 logger.i("成功同步GPA信息")
+
+                database.noticeDao().let { dao->
+                    dao.clear()
+                    getNotice(true).forEach {
+                        dao.insert(
+                            SystemNoticeEntity(
+                                id = it.id,
+                                title = it.title,
+                                content = it.content,
+                                time = it.createTime,
+                                isRead = true
+                            )
+                        )
+                    }
+
+                    getNotice(false).forEach {
+                        dao.insert(
+                            SystemNoticeEntity(
+                                id = it.id,
+                                title = it.title,
+                                content = it.content,
+                                time = it.createTime,
+                                isRead = false
+                            )
+                        )
+                    }
+                }
+                logger.i("成功同步系统通知")
 
                 val courseDao = database.courseDao()
                 val recordDao = database.courseRecordDao()

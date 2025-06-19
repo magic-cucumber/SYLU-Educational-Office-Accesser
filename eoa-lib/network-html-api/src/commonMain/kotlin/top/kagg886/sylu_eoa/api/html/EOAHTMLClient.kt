@@ -30,6 +30,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
+import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
 import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
 import top.kagg886.sylu_eoa.api.v2.bean.TermResult
 import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
@@ -145,7 +146,11 @@ internal class EOAHTMLClient : EOAClient {
             val modulus: String, val exponent: String
         )
 
-        val rsaReturn = client.get("xtgl/login_getPublicKey.html?time=${Clock.System.now().toEpochMilliseconds()}")
+        val rsaReturn = client.get(
+            "xtgl/login_getPublicKey.html?time=${
+                Clock.System.now().toEpochMilliseconds()
+            }"
+        )
             .body<RSAReturn>()
 
 
@@ -188,7 +193,8 @@ internal class EOAHTMLClient : EOAClient {
 
     override suspend fun getUserProfile(): UserProfile {
         val document =
-            client.get("xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su=$username").body<Document>()
+            client.get("xsxxxggl/xsgrxxwh_cxXsgrxx.html?gnmkdm=N100801&layout=default&su=$username")
+                .body<Document>()
         val avt = document.getElementsByTag("img")[0].attr("src")
 
         val img: ByteArray = client.get(avt).body()
@@ -207,15 +213,17 @@ internal class EOAHTMLClient : EOAClient {
     }
 
     override suspend fun getSchoolCalender(): SchoolCalender {
-        val document = client.post("xtgl/index_cxAreaSix.html?localeKey=zh_CN&gnmkdm=index&su=$username")
-            .body<Document>()
+        val document =
+            client.post("xtgl/index_cxAreaSix.html?localeKey=zh_CN&gnmkdm=index&su=$username")
+                .body<Document>()
 
-        val (startDateString, endDateString) = document.getElementsByAttribute("colspan")[0].text().let {
-            val l = it.indexOf("(")
-            val r = it.indexOf(")")
+        val (startDateString, endDateString) = document.getElementsByAttribute("colspan")[0].text()
+            .let {
+                val l = it.indexOf("(")
+                val r = it.indexOf(")")
 
-            it.substring(l + 1, r).split("至").toList()
-        }
+                it.substring(l + 1, r).split("至").toList()
+            }
         return SchoolCalender(
             start = LocalDate.parse(startDateString),
             end = LocalDate.parse(endDateString)
@@ -230,7 +238,9 @@ internal class EOAHTMLClient : EOAClient {
         var defaultYearCode: String? = null
         var defaultYearCodeVal: String? = null
 
-        val document = client.get("cjcx/cjcx_cxDgXscj.html?gnmkdm=N305005&layout=default&su=$username").body<Document>()
+        val document =
+            client.get("cjcx/cjcx_cxDgXscj.html?gnmkdm=N305005&layout=default&su=$username")
+                .body<Document>()
 
         val tempYearNameMap = mutableMapOf<String, String>()
         val tempYearCodeMap = mutableMapOf<String, String>()
@@ -262,7 +272,10 @@ internal class EOAHTMLClient : EOAClient {
 
         return TermResult(
             termPickers,
-            TermPicker(Pair(defaultYearName!!, defaultYearNameVal!!), Pair(defaultYearCode!!, defaultYearCodeVal!!))
+            TermPicker(
+                Pair(defaultYearName!!, defaultYearNameVal!!),
+                Pair(defaultYearCode!!, defaultYearCodeVal!!)
+            )
         )
     }
 
@@ -363,6 +376,28 @@ internal class EOAHTMLClient : EOAClient {
                 this["xmlbmc"] = summary.name
             }
         ).body<GPAListReturn>()
+        return doc.items
+    }
+
+    override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
+        @Serializable
+        data class SystemNoticeReturn(
+            val items: List<SystemNotice>
+        )
+
+        val doc = client.submitForm(
+            url = "xtgl/index_cxDbsy.html?doType=query",
+            formParameters = Parameters.build {
+                this["sfyy"] = if (hasRead) "2" else "1"
+                this["queryModel.showCount"] = "5000"
+                this["queryModel.currentPage"] = "1"
+                this["queryModel.sortName"] = "cjsj"
+                this["queryModel.sortOrder"] = "desc"
+                this["_search"] = "false"
+                this["nd"] = "${Clock.System.now().toEpochMilliseconds()}"
+            }
+        ).body<SystemNoticeReturn>()
+
         return doc.items
     }
 
