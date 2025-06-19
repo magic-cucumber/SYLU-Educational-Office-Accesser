@@ -92,18 +92,30 @@ internal class TestEOAClient : EOAClient {
             listOf(
                 SystemNotice(
                     createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    title = "测试公告",
-                    content = "这是测试公告",
+                    title = "羽丘第一学期测评公告",
+                    content = "无",
                     id = "1",
+                ),
+                SystemNotice(
+                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    title = "关于MyGO!!!乐团的演唱延时通知",
+                    content = "无",
+                    id = "4",
                 )
             )
         } else {
             listOf(
                 SystemNotice(
                     createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    title = "测试公告",
-                    content = "这是测试公告",
+                    title = "羽丘第二学期测评公告",
+                    content = "无",
                     id = "2",
+                ),
+                SystemNotice(
+                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    title = "羽丘第三学期测评公告",
+                    content = "无",
+                    id = "3",
                 )
             )
         }
@@ -124,5 +136,7 @@ internal class TestEOAClient : EOAClient {
 
     override suspend fun logout() {
     }
+
+    override suspend fun markNoticeReadable(noticeId: String): Boolean = true
 
 }

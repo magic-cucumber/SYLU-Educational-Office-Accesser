@@ -103,4 +103,11 @@ interface EOAClient {
      * 从系统登出
      */
     suspend fun logout()
+
+    /**
+     * 标记通知为已读
+     * @param noticeId 要标记为已读的通知的ID
+     * @return 是否成功标记为已读
+     */
+    suspend fun markNoticeReadable(noticeId: String): Boolean
 }

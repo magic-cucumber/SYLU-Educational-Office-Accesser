@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
@@ -77,6 +78,7 @@ import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
+import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -88,33 +90,44 @@ import top.kagg886.util.toFixed
 data object SummaryRoute
 
 @Composable
-fun SummaryScreen() = HomeScreen(
-    route = NavigationRoute.SUMMARY,
-    title = {
-        Text("概要")
-    }
-) {
-    val mainViewModel = mainViewModel()
-    val syncState by mainViewModel.collectAsState()
-    val model = viewModel<SummaryModel>(key = syncState.toString()) {
-        SummaryModel(syncState, mainViewModel.database)
-    }
+fun SummaryScreen() {
     val nav = LocalNavController.current
-    model.collectSideEffect {
-        when (it) {
-            is SummarySideEffect.NavigateToCourseInfo -> {
-                nav.navigate(CourseDetailRoute(it.courseId))
+    HomeScreen(
+        route = NavigationRoute.SUMMARY,
+        title = {
+            Text("概要")
+        },
+        fabIcon = {
+            Icon(Icons.Default.Mail,"mail")
+        },
+        fabText = {
+            Text("通知")
+        },
+        fabOnClick = {
+            nav.navigate(SystemNoticeRoute)
+        }
+    ) {
+        val mainViewModel = mainViewModel()
+        val syncState by mainViewModel.collectAsState()
+        val model = viewModel<SummaryModel>(key = syncState.toString()) {
+            SummaryModel(syncState, mainViewModel.database)
+        }
+        model.collectSideEffect {
+            when (it) {
+                is SummarySideEffect.NavigateToCourseInfo -> {
+                    nav.navigate(CourseDetailRoute(it.courseId))
+                }
             }
         }
-    }
-    val state by model.collectAsState()
+        val state by model.collectAsState()
 
-    SummaryContentV2(
-        state = state,
-        syncState = syncState,
-        onCourseItemClicked = { model.redirectToCourse(it) },
-        onSyncActionStarted = { mainViewModel.startSyncForce() }
-    )
+        SummaryContentV2(
+            state = state,
+            syncState = syncState,
+            onCourseItemClicked = { model.redirectToCourse(it) },
+            onSyncActionStarted = { mainViewModel.startSyncForce() }
+        )
+    }
 }
 
 @Composable

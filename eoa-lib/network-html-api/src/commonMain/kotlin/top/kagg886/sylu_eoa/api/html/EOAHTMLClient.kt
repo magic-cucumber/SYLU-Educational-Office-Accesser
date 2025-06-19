@@ -401,6 +401,17 @@ internal class EOAHTMLClient : EOAClient {
         return doc.items
     }
 
+    override suspend fun markNoticeReadable(noticeId: String): Boolean {
+        val data = client.submitForm(
+            url = "/xtgl/index_cxXxdlztgx.html",
+            formParameters = Parameters.build {
+                this["zjxx"] = noticeId
+            }
+        ).body<String>()
+
+        return data.contains("操作成功")
+    }
+
     override fun init(storage: Storage) {
         this.storage = StorageCookieStorage(storage)
     }

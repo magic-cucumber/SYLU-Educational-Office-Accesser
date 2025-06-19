@@ -25,8 +25,8 @@ interface SystemNoticeDao {
     @Query("DELETE FROM system_notices")
     suspend fun clear()
 
-    @Query("SELECT * FROM system_notices ORDER BY time DESC")
-    suspend fun all(): List<SystemNoticeEntity>
+    @Query("SELECT * FROM system_notices WHERE (:includeAll = true OR isRead = false) ORDER BY time DESC")
+    suspend fun all(includeAll: Boolean = false): List<SystemNoticeEntity>
 
     @Query("UPDATE system_notices SET isRead = true WHERE id = :id")
     suspend fun markAsRead(id: String)
