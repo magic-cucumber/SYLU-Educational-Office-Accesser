@@ -82,6 +82,7 @@ import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.util.toFixed
 
 @Serializable
 data object SummaryRoute
@@ -440,7 +441,7 @@ private inline fun SummaryCard(
                 SummaryItem(
                     showPlaceHolder = showPlaceHolder,
                     details = when (state) {
-                        is SummaryState.Success -> "${state.progress}"
+                        is SummaryState.Success -> "${(state.progress * 100).toFixed(2)}%"
                         is SummaryState.Failed -> "获取失败"
                         is SummaryState.Loading -> "加载中"
                         is SummaryState.FailedButSuccess -> state.msg

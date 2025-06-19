@@ -53,6 +53,7 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.util.toFixed
 
 @Serializable
 data class CourseDetailRoute(val recordId: Long)
@@ -251,7 +252,7 @@ private fun CourseCard(
                 onClick = {},
                 shape = RoundedCornerShape(8.dp),
                 label = {
-                    Text("课程进度： ${state?.progress}")
+                    Text("课程进度： ${((state?.progress ?: 0f) * 100).toFixed(2)}%")
                 },
                 modifier = Modifier.placeholder(
                     visible = visible,
