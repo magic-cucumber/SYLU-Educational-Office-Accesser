@@ -173,6 +173,17 @@ android {
             isShrinkResources = true
 
             signingConfig = signingConfigs.getByName("test")
+
+            ndk {
+                //noinspection ChromeOsAbiSupport
+                abiFilters += "arm64-v8a"
+            }
+        }
+
+        debug {
+            ndk {
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
         }
     }
 }
