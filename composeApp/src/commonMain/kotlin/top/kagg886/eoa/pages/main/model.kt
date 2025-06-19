@@ -22,6 +22,7 @@ import top.kagg886.backend.database.dao.toEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.util.asTaggedLogger
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
@@ -170,14 +171,29 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
             }
             return@intent
         }
+        val ex = result.exceptionOrNull()
+
+        if (ex is InvalidCredentialsException) {
+            postSideEffect(
+                MainRouteViewEffect.Toast(
+                    type = SnackBarType.Error,
+                    message = "登录凭证已过期！请重新登录"
+                )
+            )
+            clear()
+            delay(3. seconds)
+            postSideEffect(
+                MainRouteViewEffect.NavigateToLogin
+            )
+            return@intent
+        }
         postSideEffect(
             MainRouteViewEffect.Toast(
                 type = SnackBarType.Error,
                 message = "同步失败！详情请参阅日志"
             )
         )
-
-        logger.e("同步失败！", result.exceptionOrNull())
+        logger.e("同步失败！", ex)
         reduce {
             MainRouteViewState.SyncFailed(
                 haveDirtyData,
@@ -186,8 +202,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
         }
     }
 
-    fun logout() = intent {
-        logger.i("开始登出")
+    private suspend fun clear() {
         AppLoginPropertiesMMKV.clear()
         AppSyncMMKV.clear()
         database.examDao().clear()
@@ -196,7 +211,11 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
         database.courseDao().clearAll()
         database.examDao().clear()
         syncDao.clear()
+    }
 
+    fun logout() = intent {
+        logger.i("开始登出")
+        clear()
         postSideEffect(
             MainRouteViewEffect.Toast(
                 type = SnackBarType.Success,

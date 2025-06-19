@@ -22,6 +22,7 @@ import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.EOAClient
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
+import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.sylu_eoa.api.v2.UnknownException
 import top.kagg886.sylu_eoa.api.v2.bean.ClassUnit
@@ -100,17 +101,30 @@ internal class EOAHTMLClient : EOAClient {
                     if (retryCount == 0) {
                         return@modifyRequest
                     }
-                    //重新登录
-                    val cookie = runBlocking {
-                        internalLogin()
-                        storage.get(req.url.build())
+                    for (i in 1..maxRetries) {
+                        //重新登录
+                        val cookie = runBlocking {
+                            try {
+                                internalLogin()
+                                storage.get(req.url.build())
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+
+                        if (cookie == null) {
+                            continue
+                        }
+
+                        //清空原请求cookie
+                        req.clearCookie()
+                        //设置新cookie
+                        for (c in cookie) {
+                            req.cookie(c)
+                        }
+                        return@modifyRequest
                     }
-                    //清空原请求cookie
-                    req.clearCookie()
-                    //设置新cookie
-                    for (c in cookie) {
-                        req.cookie(c)
-                    }
+                    throw RetryLimitException()
                 }
             }
         }
