@@ -41,3 +41,4 @@ include(":eoa-lib:network-test-api")
 include(":util")
 
 include(":lib:ics-generator")
+include(":lib:calender-exporter")
