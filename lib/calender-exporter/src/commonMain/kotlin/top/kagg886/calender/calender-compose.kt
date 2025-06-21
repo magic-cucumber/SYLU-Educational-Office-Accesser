@@ -15,15 +15,16 @@ import top.kagg886.calender.util.ObservableMutableList
 import top.kagg886.calender.util.rememberCalenderPermissionRequester
 
 internal interface NativeCalenderManager {
-    fun getEvents(): List<Event>
-    fun clearEvents()
-    fun insertEvent(event: Event)
-    fun deleteEvent(event: Event)
-    fun updateEvent(event: Event)
+    fun getEvents(account: String): List<Event>
+    fun clearEvents(account: String)
+    fun insertEvent(account: String, event: Event)
+    fun deleteEvent(account: String, event: Event)
+    fun updateEvent(account: String, event: Event)
 }
 
 class CalenderState internal constructor(
-    private val nativeCalenderManager: NativeCalenderManager
+    private val nativeCalenderManager: NativeCalenderManager,
+    private val name: String
 ) {
     var permission by mutableStateOf(CalenderPermissionGrantType.WAIT)
         internal set
@@ -31,17 +32,19 @@ class CalenderState internal constructor(
     val events = ObservableMutableList<Event>(mutableStateListOf())
 
     init {
-        events.addAll(nativeCalenderManager.getEvents())
+        events.addAll(nativeCalenderManager.getEvents(name))
         events.addObserver {
-            when(it) {
+            when (it) {
                 is ListChange.Added -> {
-                    nativeCalenderManager.insertEvent(it.item)
+                    nativeCalenderManager.insertEvent(name, it.item)
                 }
+
                 is ListChange.Removed -> {
-                    nativeCalenderManager.deleteEvent(it.item)
+                    nativeCalenderManager.deleteEvent(name, it.item)
                 }
+
                 is ListChange.Updated -> {
-                    nativeCalenderManager.updateEvent(it.newItem)
+                    nativeCalenderManager.updateEvent(name, it.newItem)
                 }
             }
         }
@@ -56,13 +59,13 @@ class CalenderState internal constructor(
  * 最好的实践是创建一个单例，然后使用[staticCompositionLocalOf]暴露它
  */
 @Composable
-fun rememberCalenderState(vararg key: Any? = arrayOf()): CalenderState {
+fun rememberCalenderState(name: String = "default", vararg key: Any? = arrayOf()): CalenderState {
     val nativeCalenderManager = rememberNativeCalenderManager()
 
     val permission = rememberCalenderPermissionRequester(nativeCalenderManager)
 
     val state = remember(*key, nativeCalenderManager) {
-        CalenderState(nativeCalenderManager)
+        CalenderState(nativeCalenderManager, name)
     }
 
     LaunchedEffect(permission) {

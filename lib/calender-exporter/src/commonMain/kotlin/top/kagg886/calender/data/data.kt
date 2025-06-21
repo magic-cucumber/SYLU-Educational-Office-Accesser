@@ -1,5 +1,7 @@
 package top.kagg886.calender.data
 
+import kotlinx.datetime.LocalDateTime
+
 enum class CalenderPermissionGrantType {
     WAIT,
     PROCESSING,
@@ -12,7 +14,12 @@ enum class CalenderPermissionGrantType {
 }
 
 data class Event(
+    val id: String,
     val title: String,
-    val start: Long,
-    val end: Long
+
+    val startTime: LocalDateTime,
+    val endTime: LocalDateTime,
+
+    val description: String,
+    val location: String,
 )
