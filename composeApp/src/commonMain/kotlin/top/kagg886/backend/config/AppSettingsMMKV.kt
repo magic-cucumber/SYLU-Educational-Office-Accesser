@@ -1,9 +1,6 @@
 package top.kagg886.backend.config
 
 import androidx.compose.ui.graphics.Color
-import io.ktor.client.plugins.logging.LogLevel
-import kotlinx.serialization.Polymorphic
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -23,9 +20,9 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings"), AppSettingsMMK
         }
     })
 
-    override var ktorLogLevel: LogLevel by json(
+    override var ktorLogLevel: AppSettingsMMKVType.LogLevel by json(
         "ktor-log-level",
-        LogLevel.HEADERS
+        AppSettingsMMKVType.LogLevel.HEADERS
     )
 }
 
@@ -34,9 +31,26 @@ sealed interface AppSettingsMMKVType {
     var theme: AppTheme
     var ktorLogLevel: LogLevel
 
+    /**
+     * 需要@Serializable支持
+     * 使得iOS程序不崩溃
+     */
+    @Serializable
     enum class AppTheme {
         Light,
         SystemDefault,
         Dark;
+    }
+
+    @Serializable
+    enum class LogLevel {
+        ALL,
+        HEADERS,
+        BODY,
+        INFO,
+        NONE;
+
+        fun toKtorLogLevel(): io.ktor.client.plugins.logging.LogLevel =
+            io.ktor.client.plugins.logging.LogLevel.valueOf(name)
     }
 }

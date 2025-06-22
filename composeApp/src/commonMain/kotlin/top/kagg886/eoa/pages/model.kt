@@ -73,7 +73,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         state.theme.value = theme
     }
 
-    fun postNewKtorLogLevelSetting(level: LogLevel) = intent {
+    fun postNewKtorLogLevelSetting(level: AppSettingsMMKVType.LogLevel) = intent {
         state.ktorLogLevel.value = level
         postSideEffect(RootEffect.Toast("重启生效"))
     }
@@ -95,7 +95,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 data class RootState(
     val color: MutableStateFlow<Color> = MutableStateFlow(AppSettingsMMKV.color),
     val theme: MutableStateFlow<AppSettingsMMKVType.AppTheme> = MutableStateFlow(AppSettingsMMKV.theme),
-    val ktorLogLevel: MutableStateFlow<LogLevel> = MutableStateFlow(AppSettingsMMKV.ktorLogLevel),
+    val ktorLogLevel: MutableStateFlow<AppSettingsMMKVType.LogLevel> = MutableStateFlow(AppSettingsMMKV.ktorLogLevel),
 )
 
 sealed interface RootEffect {

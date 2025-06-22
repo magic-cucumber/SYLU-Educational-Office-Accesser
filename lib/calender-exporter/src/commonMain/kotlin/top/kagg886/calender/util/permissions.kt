@@ -6,4 +6,4 @@ import top.kagg886.calender.NativeCalenderManager
 import top.kagg886.calender.data.CalenderPermissionGrantType
 
 @Composable
-expect fun rememberCalenderPermissionRequester(manager: NativeCalenderManager): State<CalenderPermissionGrantType>
+internal expect fun rememberCalenderPermissionRequester(manager: NativeCalenderManager): State<CalenderPermissionGrantType>
