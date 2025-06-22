@@ -75,8 +75,6 @@ class EOAClientTest {
         val user = EOAHTMLClient()
         user.init(MemoryStorage())
         runBlocking {
-            user.username = "2203050528"
-            user.password = "Baleitem103"
             user.login()
             val picker = user.getNotice()
             for (term in picker) {
