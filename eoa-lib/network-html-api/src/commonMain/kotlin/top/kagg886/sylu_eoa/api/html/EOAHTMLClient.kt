@@ -19,21 +19,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import top.kagg886.sylu_eoa.api.html.util.*
-import top.kagg886.sylu_eoa.api.v2.EOAClient
-import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
-import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
-import top.kagg886.sylu_eoa.api.v2.RetryLimitException
-import top.kagg886.sylu_eoa.api.v2.Storage
-import top.kagg886.sylu_eoa.api.v2.UnknownException
-import top.kagg886.sylu_eoa.api.v2.bean.ClassUnit
-import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
-import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
-import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
-import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
-import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
-import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
-import top.kagg886.sylu_eoa.api.v2.bean.TermResult
-import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
+import top.kagg886.sylu_eoa.api.v2.*
+import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
 import top.kagg886.util.logger as kermit
 
@@ -68,21 +55,29 @@ internal class EOAHTMLClient : EOAClient {
                 storage = this@EOAHTMLClient.storage
             }
 
+            install(HttpTimeout) {
+                requestTimeoutMillis = 3000
+            }
+
             install(HttpRequestRetry) {
-                retryOnExceptionIf { _, cause ->
-                    cause !is InvalidCredentialsException
-                }
-                retryIf { req, resp ->
+                retryOnExceptionIf { req, cause ->
+                    val url = req.url.build().fullPath
                     //登出接口不需要retry
-                    if (req.url.fullPath.startsWith("/logout")) {
-                        return@retryIf false
+                    if (url.startsWith("/logout")) {
+                        return@retryOnExceptionIf false
+                    }
+
+                    if (url.startsWith("/xtgl/login_getPublicKey.html")) {
+                        return@retryOnExceptionIf false
                     }
 
                     //登录接口下放在业务端处理
-                    if (req.url.fullPath.startsWith("/xtgl/login_slogin.html")) {
-                        return@retryIf false
+                    if (url.startsWith("/xtgl/login_slogin.html")) {
+                        return@retryOnExceptionIf false
                     }
-
+                    cause !is InvalidCredentialsException && cause !is RetryLimitException
+                }
+                retryIf { _, resp ->
                     //除此之外全部redirect到登录页面的均需要重发
                     if (resp.headers[HttpHeaders.Location] == "/xtgl/login_slogin.html") {
                         return@retryIf true
@@ -93,22 +88,24 @@ internal class EOAHTMLClient : EOAClient {
                         return@retryIf true
                     }
 
-                    return@retryIf false
+                    false
                 }
                 exponentialDelay()
-                maxRetries = 5
+                maxRetries = 3
 
                 modifyRequest { req ->
                     if (retryCount == 0) {
                         return@modifyRequest
                     }
                     for (i in 1..maxRetries) {
+                        kermit.d("Retry request: ${req.url.build().fullPath}, $i / $maxRetries")
                         //重新登录
                         val cookie = runBlocking {
                             try {
                                 internalLogin()
                                 storage.get(req.url.build())
                             } catch (e: Exception) {
+                                kermit.d("Retry request: ${req.url.build().fullPath} failed.",e)
                                 null
                             }
                         }
