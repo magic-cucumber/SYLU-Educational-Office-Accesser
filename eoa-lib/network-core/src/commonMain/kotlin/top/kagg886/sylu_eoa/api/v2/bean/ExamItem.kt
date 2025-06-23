@@ -17,7 +17,7 @@ data class ExamItem(
     @SerialName("kcmc")
     val name: String, //课程名称
 
-    @SerialName("tjrxm")
+    @SerialName("jsxm")
     val teacher: String, //老师名字
 
     @SerialName("xf")
