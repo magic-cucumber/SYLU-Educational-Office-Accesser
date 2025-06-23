@@ -74,6 +74,12 @@ private fun ProfileSuccess(
     profile: SettingsState.Success,
 ) {
     val userProfile = profile.profile
+
+    ProfileItem(
+        label = "学号",
+        value = profile.stuId
+    )
+
     // 姓名
     ProfileItem(
         label = "姓名",
@@ -104,9 +110,9 @@ private fun ProfileSuccess(
         value = userProfile.phone
     )
 
-    // 学号/ID
+    // 身份证
     ProfileItem(
-        label = "学号",
+        label = "身份证号",
         value = userProfile.id
     )
 

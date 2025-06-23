@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
+import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.pages.main.MainRouteViewState
@@ -52,7 +53,10 @@ class SettingsModel(
     private fun setDataUnsafe() = intent {
         val profile = AppSyncMMKV.profile!!
         reduce {
-            SettingsState.Success(profile)
+            SettingsState.Success(
+                stuId = AppLoginPropertiesMMKV.username,
+                profile = profile,
+            )
         }
     }
 }
@@ -61,6 +65,7 @@ sealed interface SettingsState {
     data object Loading : SettingsState
     data class Failed(val msg: String) : SettingsState
     data class Success(
+        val stuId: String,
         val profile: UserProfile,
     ) : SettingsState
 }
