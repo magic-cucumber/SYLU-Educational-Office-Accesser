@@ -105,6 +105,10 @@ internal class EOAHTMLClient : EOAClient {
                                 internalLogin()
                                 storage.get(req.url.build())
                             } catch (e: Exception) {
+                                //同样这里需要throw，否则未登录异常会被忽略
+                                if (e is InvalidCredentialsException) {
+                                    throw e
+                                }
                                 kermit.d("Retry request: ${req.url.build().fullPath} failed.",e)
                                 null
                             }
@@ -136,7 +140,7 @@ internal class EOAHTMLClient : EOAClient {
         captchaHandler: (suspend (ByteArray) -> String)? = null
     ) {
         if (username.isBlank() || password.isBlank()) {
-            throw InvalidCredentialsException()
+            throw BadCredentialsException()
         }
         @Serializable
         data class RSAReturn(
@@ -176,7 +180,7 @@ internal class EOAHTMLClient : EOAClient {
             return
         }
         if (message.isUserNameAndPasswordInvalid()) {
-            throw InvalidCredentialsException()
+            throw BadCredentialsException()
         }
         throw UnknownException(message)
     }

@@ -9,6 +9,7 @@ import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
+import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
 import top.kagg886.sylu_eoa.api.v2.EOAClient
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.sylu_eoa.api.v2.Storage
@@ -130,7 +131,7 @@ internal class TestEOAClient : EOAClient {
 
     override suspend fun login(captchaHandler: (suspend (a: ByteArray) -> String)?) {
         if (username != "test" || password != "test") {
-            throw InvalidCredentialsException()
+            throw BadCredentialsException()
         }
     }
 
