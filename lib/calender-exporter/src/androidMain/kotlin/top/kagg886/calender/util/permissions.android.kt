@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
+import top.kagg886.calender.AndroidCalenderManager
 import top.kagg886.calender.NativeCalenderManager
 import top.kagg886.calender.data.CalenderPermissionGrantType
 
@@ -19,8 +20,8 @@ private val CALENDER_PERMISSION = arrayOf(
 )
 
 @Composable
-actual fun rememberCalenderPermissionRequester(manager: NativeCalenderManager): State<CalenderPermissionGrantType> {
-    val ctx = manager.ctx as Activity
+internal actual fun rememberCalenderPermissionRequester(manager: NativeCalenderManager): State<CalenderPermissionGrantType> {
+    val ctx = (manager as AndroidCalenderManager).ctx as Activity
 
     val state = remember {
         mutableStateOf(CalenderPermissionGrantType.WAIT)
