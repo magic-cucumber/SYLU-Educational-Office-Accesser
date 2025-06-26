@@ -79,7 +79,6 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kermit)
             implementation(libs.okio)
             implementation(libs.ksoup)
 

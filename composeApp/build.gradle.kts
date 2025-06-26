@@ -99,6 +99,7 @@ kotlin {
 
 
             implementation(project(":lib:ics-generator"))
+            implementation(project(":lib:calender-exporter"))
 
 
         }

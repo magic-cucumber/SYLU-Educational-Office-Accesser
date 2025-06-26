@@ -12,6 +12,7 @@ import top.kagg886.calender.data.CalenderPermissionGrantType
 import top.kagg886.calender.data.Event
 import top.kagg886.calender.util.ListChange
 import top.kagg886.calender.util.ObservableMutableList
+import top.kagg886.calender.util.logger
 import top.kagg886.calender.util.rememberCalenderPermissionRequester
 
 internal interface NativeCalenderManager {
@@ -30,25 +31,6 @@ class CalenderState internal constructor(
         internal set
 
     val events = ObservableMutableList<Event>(mutableStateListOf())
-
-    init {
-        events.addAll(nativeCalenderManager.getEvents(name))
-        events.addObserver {
-            when (it) {
-                is ListChange.Added -> {
-                    nativeCalenderManager.insertEvent(name, it.item)
-                }
-
-                is ListChange.Removed -> {
-                    nativeCalenderManager.deleteEvent(name, it.item)
-                }
-
-                is ListChange.Updated -> {
-                    nativeCalenderManager.updateEvent(name, it.newItem)
-                }
-            }
-        }
-    }
 }
 
 /**
@@ -62,16 +44,44 @@ class CalenderState internal constructor(
 fun rememberCalenderState(name: String = "default", vararg key: Any? = arrayOf()): CalenderState {
     val nativeCalenderManager = rememberNativeCalenderManager()
 
-    val permission = rememberCalenderPermissionRequester(nativeCalenderManager)
+    val permission by rememberCalenderPermissionRequester(nativeCalenderManager)
 
     val state = remember(*key, nativeCalenderManager) {
         CalenderState(nativeCalenderManager, name)
     }
 
     LaunchedEffect(permission) {
-        state.permission = permission.value
+        logger.d("Permission changed to $permission")
+        state.permission = permission
     }
 
+    LaunchedEffect(state.permission) {
+        if (state.permission != CalenderPermissionGrantType.ALL_GRANTED) {
+            return@LaunchedEffect
+        }
+        with(state) {
+            events.addAll(nativeCalenderManager.getEvents(name))
+            logger.i("Loaded ${events.size} events")
+            events.addObserver {
+                when (it) {
+                    is ListChange.Added -> {
+                        logger.d("Event added: ${it.item}")
+                        nativeCalenderManager.insertEvent(name, it.item)
+                    }
+
+                    is ListChange.Removed -> {
+                        logger.d("Event removed: ${it.item}")
+                        nativeCalenderManager.deleteEvent(name, it.item)
+                    }
+
+                    is ListChange.Updated -> {
+                        logger.d("Event updated: ${it.oldItem} -> ${it.newItem}")
+                        nativeCalenderManager.updateEvent(name, it.newItem)
+                    }
+                }
+            }
+        }
+    }
     return state
 }
 

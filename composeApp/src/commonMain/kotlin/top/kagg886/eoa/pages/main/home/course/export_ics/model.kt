@@ -1,18 +1,14 @@
-package top.kagg886.eoa.pages.main.home.course.export
+package top.kagg886.eoa.pages.main.home.course.export_ics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.writeString
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.ContainerHost
@@ -27,24 +23,24 @@ import top.kagg886.util.getTimeByLessonNumber
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.minutes
 
-class CourseExportModel(
+class CourseExportIcsModel(
     database: AppDatabase
-) : ViewModel(), ContainerHost<CourseExportState, CourseExportSideEffect> {
+) : ViewModel(), ContainerHost<CourseExportIcsState, CourseIcsExportSideEffect> {
     private val dao = database.courseRecordDao()
     override val container =
-        container<CourseExportState, CourseExportSideEffect>(CourseExportState("正在导出...")) {
+        container<CourseExportIcsState, CourseIcsExportSideEffect>(CourseExportIcsState("正在导出...")) {
             exportICS().join()
         }
 
     @OptIn(OrbitExperimental::class)
     fun exportICS() = intent {
         reduce {
-            CourseExportState("正在获取数据库...")
+            CourseExportIcsState("正在获取数据库...")
         }
         val calendar = AppSyncMMKV.calender!!
 
         if (calendar.currentWeek() == -1) {
-            postSideEffect(CourseExportSideEffect.NavigateBack("当前未处于学期内，请等待开学后再进行导出"))
+            postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前未处于学期内，请等待开学后再进行导出"))
             return@intent
         }
 
@@ -62,7 +58,7 @@ class CourseExportModel(
         }.awaitAll()
 
         reduce {
-            CourseExportState("正在构建ICS文件...")
+            CourseExportIcsState("正在构建ICS文件...")
         }
 
         val ics = suspendCancellableCoroutine { continuation ->
@@ -112,19 +108,19 @@ class CourseExportModel(
             extension = "ics",
         )
         if (file == null) {
-            postSideEffect(CourseExportSideEffect.NavigateBack("用户取消导出"))
+            postSideEffect(CourseIcsExportSideEffect.NavigateBack("用户取消导出"))
             return@intent
         }
         file.writeString(ics)
-        postSideEffect(CourseExportSideEffect.NavigateBack("导出成功"))
+        postSideEffect(CourseIcsExportSideEffect.NavigateBack("导出成功"))
     }
 }
 
-data class CourseExportState(
+data class CourseExportIcsState(
     val message: String
 )
 
-sealed interface CourseExportSideEffect {
+sealed interface CourseIcsExportSideEffect {
     data class NavigateBack(val msg: String, val type: SnackBarType = SnackBarType.Info) :
-        CourseExportSideEffect
+        CourseIcsExportSideEffect
 }

@@ -52,7 +52,8 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.NavigationRoute
-import top.kagg886.eoa.pages.main.home.course.export.CourseExportRoute
+import top.kagg886.eoa.pages.main.home.course.export_calender.CourseExportCalenderRoute
+import top.kagg886.eoa.pages.main.home.course.export_ics.CourseExportIcsRoute
 import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
@@ -108,6 +109,13 @@ fun CourseManageListScreen() {
                     },
                     text = { Text("保存为ICS文件") }
                 )
+
+                DropdownMenuItem(
+                    onClick = {
+                        model.startExportCalender()
+                    },
+                    text = { Text("写入系统日历") }
+                )
             }
         },
         fabIcon = {
@@ -130,7 +138,12 @@ fun CourseManageListScreen() {
                 }
 
                 is CourseManageSideEffect.StartExportIcs -> {
-                    nav.navigate(CourseExportRoute)
+                    nav.navigate(CourseExportIcsRoute)
+                }
+
+                is CourseManageSideEffect.StartExportCalender -> {
+                    nav.navigate(CourseExportCalenderRoute)
+
                 }
             }
         }

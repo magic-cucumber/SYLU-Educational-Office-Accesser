@@ -120,6 +120,17 @@ class CourseManageListModel(
             }
         }
     }
+
+    fun startExportCalender() = intent {
+        when(val s = state) {
+            is CourseManageState.Success -> {
+                postSideEffect(CourseManageSideEffect.StartExportCalender(s.data))
+            }
+            else -> {
+                postSideEffect(CourseManageSideEffect.Toast("此时不允许数据导出，请稍后再试"))
+            }
+        }
+    }
 }
 
 
@@ -142,4 +153,6 @@ sealed interface CourseManageSideEffect {
     data class Toast(val msg: String) : CourseManageSideEffect
     data class NavigateToEditOrAdd(val courseId: Long?) : CourseManageSideEffect
     data class StartExportIcs(val course: List<CourseEntity>): CourseManageSideEffect
+
+    data class StartExportCalender(val course: List<CourseEntity>): CourseManageSideEffect
 }

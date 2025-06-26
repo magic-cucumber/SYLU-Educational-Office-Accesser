@@ -39,8 +39,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.kermit)
-                implementation(libs.okio)
+                api(libs.kermit)
+                api(libs.okio)
             }
         }
 

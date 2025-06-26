@@ -13,8 +13,10 @@ import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictScreen
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailScreen
-import top.kagg886.eoa.pages.main.home.course.export.CourseExportScreen
-import top.kagg886.eoa.pages.main.home.course.export.CourseExportRoute
+import top.kagg886.eoa.pages.main.home.course.export_calender.CourseExportCalenderRoute
+import top.kagg886.eoa.pages.main.home.course.export_calender.CourseExportCalenderScreen
+import top.kagg886.eoa.pages.main.home.course.export_ics.CourseExportIcsScreen
+import top.kagg886.eoa.pages.main.home.course.export_ics.CourseExportIcsRoute
 import top.kagg886.eoa.pages.main.home.course.list.CourseListRoute
 import top.kagg886.eoa.pages.main.home.course.list.CourseListScreen
 import top.kagg886.eoa.pages.main.home.course.manage.CourseManageRoute
@@ -43,5 +45,6 @@ val installCourseGraph: NavGraphBuilder.() -> Unit = {
     )
     dialog<CourseConflictRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { CourseConflictScreen(it.toRoute()) }
 
-    dialog<CourseExportRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {  CourseExportScreen() }
+    dialog<CourseExportIcsRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {  CourseExportIcsScreen() }
+    dialog<CourseExportCalenderRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { CourseExportCalenderScreen() }
 }

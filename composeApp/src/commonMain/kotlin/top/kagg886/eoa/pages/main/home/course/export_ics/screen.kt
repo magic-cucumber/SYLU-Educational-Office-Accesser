@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.home.course.export
+package top.kagg886.eoa.pages.main.home.course.export_ics
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,17 +22,17 @@ import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
-data object CourseExportRoute
+data object CourseExportIcsRoute
 
 @Composable
-fun CourseExportScreen() {
+fun CourseExportIcsScreen() {
     val mainModel = mainViewModel()
-    val model = viewModel { CourseExportModel(mainModel.database) }
+    val model = viewModel { CourseExportIcsModel(mainModel.database) }
     val snack = LocalSnackBarHost.current
     val nav = LocalNavController.current
     model.collectSideEffect {
         when (it) {
-            is CourseExportSideEffect.NavigateBack -> {
+            is CourseIcsExportSideEffect.NavigateBack -> {
                 snack.showSnackBar(title = it.msg, type = it.type)
                 nav.popBackStack()
             }
