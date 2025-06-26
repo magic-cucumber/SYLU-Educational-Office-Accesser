@@ -5,21 +5,21 @@ import androidx.compose.runtime.remember
 import top.kagg886.calender.data.Event
 
 internal class JvmCalenderManager: NativeCalenderManager {
-    override fun getEvents(account:String): List<Event> {
+    override fun getEvents(): List<Event> {
         return listOf()
     }
 
-    override fun clearEvents(account:String) {}
+    override fun clearEvents() {}
 
-    override fun insertEvent(account:String,event: Event) {}
-    override fun deleteEvent(account:String,event: Event) {}
+    override fun insertEvent(event: Event) {}
+    override fun deleteEvent(event: Event) {}
 
-    override fun updateEvent(account:String,event: Event) {}
+    override fun updateEvent(event: Event) {}
 }
 
 @Composable
-internal actual fun rememberNativeCalenderManager(): NativeCalenderManager {
-    return remember {
+internal actual fun rememberNativeCalenderManager(name: String): NativeCalenderManager {
+    return remember(name) {
         JvmCalenderManager()
     }
 }

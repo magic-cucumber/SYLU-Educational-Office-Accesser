@@ -45,6 +45,8 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(compose.runtime)
             implementation(compose.foundation)
+
+            implementation(project(":util"))
         }
 
         androidMain.dependencies {

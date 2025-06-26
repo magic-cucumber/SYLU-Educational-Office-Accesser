@@ -2,9 +2,9 @@ package top.kagg886.calender
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCObjectVar
-import kotlinx.cinterop.StableRef
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
@@ -28,12 +28,13 @@ import platform.Foundation.timeIntervalSince1970
 import top.kagg886.calender.data.Event
 
 @OptIn(ExperimentalForeignApi::class)
-internal class EKCalenderManager : NativeCalenderManager {
+internal class EKCalenderManager(account: String) : NativeCalenderManager {
     val eventStore = EKEventStore()
-    override fun getEvents(account: String): List<Event> {
-        return memScoped {
-            val calendar = getCalendar(account) ?: return emptyList()
 
+    val calendar = getCalendar(account)
+
+    override fun getEvents(): List<Event> {
+        return memScoped {
             val predicate = eventStore.predicateForEventsWithStartDate(
                 startDate = NSDate.distantPast,
                 endDate = NSDate.distantFuture,
@@ -57,9 +58,9 @@ internal class EKCalenderManager : NativeCalenderManager {
         }
     }
 
-    override fun clearEvents(account: String) {
+    override fun clearEvents() {
         memScoped {
-            val events = getEvents(account)
+            val events = getEvents()
             events.forEach { event ->
                 val ekEvent = eventStore.eventWithIdentifier(event.id) ?: return@forEach
                 eventStore.removeEvent(ekEvent, span = EKSpan.EKSpanThisEvent, error = null)
@@ -67,14 +68,13 @@ internal class EKCalenderManager : NativeCalenderManager {
         }
     }
 
-    override fun insertEvent(account: String, event: Event) {
+    @OptIn(BetaInteropApi::class)
+    override fun insertEvent(event: Event) {
         memScoped {
-            val calendar = getCalendar(account) ?: return
-
             val errorVar = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
 
             val ekEvent = EKEvent.eventWithEventStore(eventStore).apply {
-                this.calendar = calendar
+                calendar = this@EKCalenderManager.calendar
                 title = event.title
                 notes = event.description
                 location = event.location
@@ -90,7 +90,8 @@ internal class EKCalenderManager : NativeCalenderManager {
         }
     }
 
-    override fun deleteEvent(account: String, event: Event) {
+    @OptIn(BetaInteropApi::class)
+    override fun deleteEvent(event: Event) {
         memScoped {
             val errorVar = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
 
@@ -103,14 +104,14 @@ internal class EKCalenderManager : NativeCalenderManager {
         }
     }
 
-    override fun updateEvent(account: String, event: Event) {
+    @OptIn(BetaInteropApi::class)
+    override fun updateEvent(event: Event) {
         memScoped {
-            val calendar = getCalendar(account)
             val errorVar = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
 
             val ekEvent = eventStore.eventWithIdentifier(event.id) ?: return
             ekEvent.apply {
-                this.calendar = calendar
+                calendar = this@EKCalenderManager.calendar
                 title = event.title
                 notes = event.description
                 location = event.location
@@ -128,13 +129,13 @@ internal class EKCalenderManager : NativeCalenderManager {
 }
 
 @Composable
-internal actual fun rememberNativeCalenderManager(): NativeCalenderManager {
-    return remember {
-        EKCalenderManager()
+internal actual fun rememberNativeCalenderManager(name: String): NativeCalenderManager {
+    return remember(name) {
+        EKCalenderManager(name)
     }
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private fun EKCalenderManager.getCalendar(accountName: String): EKCalendar {
     // 先尝试找到已有的指定名称的日历
     val calendars =

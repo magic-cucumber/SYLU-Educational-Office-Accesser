@@ -1,8 +1,10 @@
 package top.kagg886.calender
 
+import android.app.Activity
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
+import android.content.ContextWrapper
 import android.database.Cursor
 import android.net.Uri
 import android.provider.CalendarContract
@@ -15,10 +17,11 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import top.kagg886.calender.data.Event
 
-internal class AndroidCalenderManager internal constructor(val ctx: Context) :
+internal class AndroidCalenderManager internal constructor(val ctx: Context, account: String) :
     NativeCalenderManager {
-    override fun getEvents(account: String): List<Event> {
-        val accountId = getCalenderAccount(account)
+    val accountId = getCalenderAccount(account)
+
+    override fun getEvents(): List<Event> {
 
         val events = mutableListOf<Event>()
 
@@ -94,10 +97,10 @@ internal class AndroidCalenderManager internal constructor(val ctx: Context) :
         return events
     }
 
-    override fun clearEvents(account: String) {
+    override fun clearEvents() {
         // 构建用于删除事件的选择条件：指定只删除属于特定日历ID的事件
         val selection = "${CalendarContract.Events.CALENDAR_ID} = ?"
-        val selectionArgs = arrayOf(account)
+        val selectionArgs = arrayOf(accountId.toString())
 
         // 执行删除操作，并返回被删除的事件数量
         ctx.contentResolver.delete(
@@ -107,9 +110,9 @@ internal class AndroidCalenderManager internal constructor(val ctx: Context) :
         )
     }
 
-    override fun insertEvent(account: String, event: Event) {
+    override fun insertEvent(event: Event) {
         val values = ContentValues().apply {
-            put(CalendarContract.Events.CALENDAR_ID, event.id) //账户id
+            put(CalendarContract.Events.CALENDAR_ID, accountId) //账户id
             put(CalendarContract.Events.TITLE, event.title) //标题
             put(CalendarContract.Events.DESCRIPTION, event.description) //描述
             put(CalendarContract.Events.DTSTART, event.startTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()) //开始时间
@@ -122,12 +125,12 @@ internal class AndroidCalenderManager internal constructor(val ctx: Context) :
         ctx.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
     }
 
-    override fun deleteEvent(account: String, event: Event) {
+    override fun deleteEvent(event: Event) {
         val deleteUri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, event.id.toLong())
         ctx.contentResolver.delete(deleteUri, null, null)
     }
 
-    override fun updateEvent(account: String, event: Event) {
+    override fun updateEvent(event: Event) {
         val values = ContentValues().apply {
             put(CalendarContract.Events.TITLE, event.title)
             put(CalendarContract.Events.DESCRIPTION, event.description)
@@ -145,11 +148,17 @@ internal class AndroidCalenderManager internal constructor(val ctx: Context) :
 }
 
 @Composable
-internal actual fun rememberNativeCalenderManager(): NativeCalenderManager {
+internal actual fun rememberNativeCalenderManager(name:String): NativeCalenderManager {
     val ctx = LocalContext.current
-    return remember {
-        AndroidCalenderManager(ctx)
+    return remember(name) {
+        AndroidCalenderManager(ctx.findActivity()!!,name)
     }
+}
+
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 

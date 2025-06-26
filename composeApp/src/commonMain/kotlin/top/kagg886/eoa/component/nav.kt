@@ -9,6 +9,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.main.MainRoute
@@ -19,7 +20,8 @@ import top.kagg886.eoa.pages.main.MainRoute
  */
 @Composable
 fun BackIconButton(
-    nav: NavHostController = LocalNavController.current
+    nav: NavHostController = LocalNavController.current,
+    modifier: Modifier = Modifier
 ) {
     val entryList by nav.currentBackStack.collectAsState()
     val currentEntry by nav.currentBackStackEntryFlow.collectAsState(null)
@@ -34,7 +36,8 @@ fun BackIconButton(
         onClick = {
             nav.popBackStack()
         },
-        enabled = backButtonEnabled
+        enabled = backButtonEnabled,
+        modifier = modifier
     ) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

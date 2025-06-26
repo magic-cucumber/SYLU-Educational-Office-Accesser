@@ -1,9 +1,13 @@
 package top.kagg886.calender.util
 
+import kotlinx.coroutines.sync.Semaphore
+
 sealed class ListChange<T> {
     data class Added<T>(val item: T, val index: Int) : ListChange<T>()
     data class Removed<T>(val item: T, val index: Int) : ListChange<T>()
     data class Updated<T>(val oldItem: T, val newItem: T, val index: Int) : ListChange<T>()
+
+    data class Clear<T>(val size: Int): ListChange<T>()
 }
 
 class ObservableMutableList<T>(
@@ -46,5 +50,11 @@ class ObservableMutableList<T>(
         delegate[index] = element
         notify(ListChange.Updated(old, element, index))
         return old
+    }
+
+    override fun clear() {
+        val size = delegate.size
+        delegate.clear()
+        notify(ListChange.Clear(size))
     }
 }

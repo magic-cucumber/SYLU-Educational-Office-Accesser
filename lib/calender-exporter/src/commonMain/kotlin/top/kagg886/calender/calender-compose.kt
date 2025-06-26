@@ -7,7 +7,11 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import top.kagg886.calender.data.CalenderPermissionGrantType
 import top.kagg886.calender.data.Event
 import top.kagg886.calender.util.ListChange
@@ -16,17 +20,14 @@ import top.kagg886.calender.util.logger
 import top.kagg886.calender.util.rememberCalenderPermissionRequester
 
 internal interface NativeCalenderManager {
-    fun getEvents(account: String): List<Event>
-    fun clearEvents(account: String)
-    fun insertEvent(account: String, event: Event)
-    fun deleteEvent(account: String, event: Event)
-    fun updateEvent(account: String, event: Event)
+    fun getEvents(): List<Event>
+    fun clearEvents()
+    fun insertEvent(event: Event)
+    fun deleteEvent(event: Event)
+    fun updateEvent(event: Event)
 }
 
-class CalenderState internal constructor(
-    private val nativeCalenderManager: NativeCalenderManager,
-    private val name: String
-) {
+class CalenderState internal constructor() {
     var permission by mutableStateOf(CalenderPermissionGrantType.WAIT)
         internal set
 
@@ -41,42 +42,57 @@ class CalenderState internal constructor(
  * 最好的实践是创建一个单例，然后使用[staticCompositionLocalOf]暴露它
  */
 @Composable
-fun rememberCalenderState(name: String = "default", vararg key: Any? = arrayOf()): CalenderState {
-    val nativeCalenderManager = rememberNativeCalenderManager()
-
+fun rememberCalenderState(name: String = "default"): CalenderState {
+    val nativeCalenderManager = rememberNativeCalenderManager(name)
     val permission by rememberCalenderPermissionRequester(nativeCalenderManager)
 
-    val state = remember(*key, nativeCalenderManager) {
-        CalenderState(nativeCalenderManager, name)
+    val state = remember {
+        CalenderState()
     }
 
     LaunchedEffect(permission) {
-        logger.d("Permission changed to $permission")
-        state.permission = permission
-    }
+        val data = permission
+        state.permission = data
 
-    LaunchedEffect(state.permission) {
-        if (state.permission != CalenderPermissionGrantType.ALL_GRANTED) {
+        logger.i("calender permission changed: $data")
+
+        if (data != CalenderPermissionGrantType.ALL_GRANTED) {
             return@LaunchedEffect
         }
-        with(state) {
-            events.addAll(nativeCalenderManager.getEvents(name))
-            logger.i("Loaded ${events.size} events")
-            events.addObserver {
-                when (it) {
-                    is ListChange.Added -> {
-                        logger.d("Event added: ${it.item}")
-                        nativeCalenderManager.insertEvent(name, it.item)
-                    }
 
-                    is ListChange.Removed -> {
-                        logger.d("Event removed: ${it.item}")
-                        nativeCalenderManager.deleteEvent(name, it.item)
-                    }
+        state.events.addAll(
+            nativeCalenderManager.getEvents().apply {
+                logger.i("Loaded $size events")
+            }
+        )
 
-                    is ListChange.Updated -> {
-                        logger.d("Event updated: ${it.oldItem} -> ${it.newItem}")
-                        nativeCalenderManager.updateEvent(name, it.newItem)
+        //控制并发，防止 Slow Binder 压力
+        val lock = Semaphore(5)
+
+        state.events.addObserver {
+            //为了防止其他数据不被提前终止，这里需要设计为阻塞线程。
+            runBlocking {
+                lock.withPermit {
+                    when (it) {
+                        is ListChange.Added -> {
+                            nativeCalenderManager.insertEvent(it.item)
+                            logger.d("Event added: ${it.item}")
+                        }
+
+                        is ListChange.Removed -> {
+                            nativeCalenderManager.deleteEvent(it.item)
+                            logger.d("Event removed: ${it.item}")
+                        }
+
+                        is ListChange.Updated -> {
+                            nativeCalenderManager.updateEvent(it.newItem)
+                            logger.d("Event updated: ${it.oldItem} -> ${it.newItem}")
+                        }
+
+                        is ListChange.Clear -> {
+                            nativeCalenderManager.clearEvents()
+                            logger.d("Event cleared")
+                        }
                     }
                 }
             }
@@ -86,4 +102,4 @@ fun rememberCalenderState(name: String = "default", vararg key: Any? = arrayOf()
 }
 
 @Composable
-internal expect fun rememberNativeCalenderManager(): NativeCalenderManager
+internal expect fun rememberNativeCalenderManager(name: String): NativeCalenderManager

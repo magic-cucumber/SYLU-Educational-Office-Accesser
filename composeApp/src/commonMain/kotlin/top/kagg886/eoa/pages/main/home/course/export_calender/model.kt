@@ -2,8 +2,13 @@ package top.kagg886.eoa.pages.main.home.course.export_calender
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
@@ -64,6 +69,9 @@ class CourseExportCalenderModel(
                 message = "写入日程..."
             )
         }
+
+        val jobs = mutableListOf<Job>()
+
         val count = map.flatten().flatten().size
         var index = 0
         for ((weekIdx, weekCourses) in map.withIndex()) {
@@ -75,30 +83,39 @@ class CourseExportCalenderModel(
                 for (course in dayCourses) {
                     val (startTime, endTime) = getTimeByLessonNumber(course.record.periodOfDay)
 
-                    events.add(
-                        Event(
-                            id = Uuid.random().toHexString(),
-                            title = course.course.name,
-                            startTime = startDate.atTime(startTime),
-                            endTime = startDate.atTime(endTime),
-                            description = """
+                    jobs.add(
+                        viewModelScope.launch(Dispatchers.IO) {
+                            //切换线程，防止卡顿
+                            events.add(
+                                Event(
+                                    id = Uuid.random().toHexString(),
+                                    title = course.course.name,
+                                    startTime = startDate.atTime(startTime),
+                                    endTime = startDate.atTime(endTime),
+                                    description = """
                                 1. 任课教师: ${course.course.teacherName}
                                 2. 课程属性: ${if (course.course.isDegreeRequired) "必修" else "选修"}
                                 3. 学分: ${course.course.credits}
                                 4. 属于系统课程: ${if (course.course.isUserAdded) "是" else "否"}
                             """.trimIndent(),
-                            location = course.course.classroomName,
-                        )
-                    )
+                                    location = course.course.classroomName,
+                                )
+                            )
 
-                    reduce {
-                        CourseExportCalenderState(
-                            message = "写入课程... ${++index} / $count"
-                        )
-                    }
+                            reduce {
+                                CourseExportCalenderState(
+                                    message = "写入课程... ${++index} / $count"
+                                )
+                            }
+                        }
+                    )
                 }
             }
         }
+
+        jobs.joinAll()
+
+        postSideEffect(CourseExportCalenderSideEffect.NavigateBack("导出成功", SnackBarType.Success))
     }
 }
 
