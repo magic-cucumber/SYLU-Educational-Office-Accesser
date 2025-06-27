@@ -1,129 +1,311 @@
+@file:OptIn(BetaInteropApi::class)
+
 package top.kagg886.calender
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.ObjCObjectVar
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.value
-import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
-import platform.EventKit.EKCalendar
-import platform.EventKit.EKEntityType
-import platform.EventKit.EKEvent
-import platform.EventKit.EKEventStore
-import platform.EventKit.EKSpan
-import platform.Foundation.NSDate
-import platform.Foundation.NSError
-import platform.Foundation.dateWithTimeIntervalSince1970
-import platform.Foundation.distantFuture
-import platform.Foundation.distantPast
-import platform.Foundation.timeIntervalSince1970
+import kotlinx.cinterop.*
+import kotlinx.datetime.*
+import platform.EventKit.*
+import platform.Foundation.*
 import top.kagg886.calender.data.Event
+import top.kagg886.util.asTaggedLogger
 
 @OptIn(ExperimentalForeignApi::class)
-internal class EKCalenderManager(account: String) : NativeCalenderManager {
+internal class EKCalenderManager(private val accountName: String) : NativeCalenderManager {
+    private val logger = "EKCalenderManager".asTaggedLogger
     val eventStore = EKEventStore()
+    private var calendar: EKCalendar? = null
 
-    val calendar = getCalendar(account)
+    init {
+        initializeCalendar()
+    }
 
-    override fun getEvents(): List<Event> {
+    private fun initializeCalendar() {
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        val calendarIdKey = "calendar_id_$accountName"
+        val storedCalendarId = userDefaults.stringForKey(calendarIdKey)
+
+        // 如果有存储的日历ID，尝试根据ID查找日历
+        if (storedCalendarId != null) {
+            calendar = eventStore.calendarWithIdentifier(storedCalendarId)
+        }
+
+        // 如果没有找到日历，创建新的日历
+        if (calendar == null) {
+            createNewCalendar()?.let { newCalendar ->
+                calendar = newCalendar
+                // 存储新日历的ID到NSUserDefaults
+                userDefaults.setObject(newCalendar.calendarIdentifier, calendarIdKey)
+                userDefaults.synchronize()
+            } ?: throw IllegalStateException("calender init failed")
+        }
+    }
+
+    private fun createNewCalendar(): EKCalendar? {
+        // 检查权限
+        val authStatus = EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent)
+        if (authStatus != EKAuthorizationStatusAuthorized) {
+            throw IllegalStateException("Calendar permission not authorized when creating calendar. Status: $authStatus")
+        }
+
         return memScoped {
+            try {
+                val error = alloc<ObjCObjectVar<NSError?>>()
+                val newCalendar = EKCalendar.calendarForEntityType(EKEntityType.EKEntityTypeEvent, eventStore)
+                newCalendar.title = accountName
+
+                // 查找合适的数据源（通常使用本地数据源）
+                val sources = eventStore.sources
+                val localSource = sources.firstOrNull { source ->
+                    (source as? EKSource)?.sourceType == EKSourceType.EKSourceTypeLocal
+                } as? EKSource ?: sources.firstOrNull() as? EKSource
+
+                if (localSource != null) {
+                    newCalendar.source = localSource
+
+                    val success = eventStore.saveCalendar(newCalendar, commit = true, error = error.ptr)
+
+                    if (success) {
+                        logger.d("Successfully created calendar: ${newCalendar.calendarIdentifier}")
+                        newCalendar
+                    } else {
+                        logger.e("Failed to create calendar: ${error.value?.localizedDescription}")
+                        null
+                    }
+                } else {
+                    logger.e("No suitable source found for calendar")
+                    null
+                }
+            } catch (e: Exception) {
+                logger.e("Exception creating calendar: ${e.message}")
+                null
+            }
+        }
+    }
+
+    private fun getEventsOrigin(): List<EKEvent> {
+        val currentCalendar = calendar ?: throw IllegalStateException("calender not initialized")
+
+        // 检查权限
+        val authStatus = EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent)
+        when (authStatus) {
+            EKAuthorizationStatusDenied -> {
+                throw IllegalStateException("Calendar permission denied")
+            }
+            EKAuthorizationStatusRestricted -> {
+                throw IllegalStateException("Calendar permission restricted")
+            }
+            EKAuthorizationStatusNotDetermined -> {
+                throw IllegalStateException("Calendar permission not determined")
+            }
+            EKAuthorizationStatusAuthorized -> {
+                logger.d("Calendar permission authorized")
+            }
+            else -> {
+                throw IllegalStateException("Unknown calendar permission status: $authStatus")
+            }
+        }
+
+        return try {
+            logger.d("Getting events from calendar: ${currentCalendar.title} (${currentCalendar.calendarIdentifier})")
+
+            // 使用更合理的时间范围：过去1年到未来1年
+            val now = NSDate()
+            val calendar = platform.Foundation.NSCalendar.currentCalendar
+            val startDate = calendar.dateByAddingUnit(
+                unit = NSCalendarUnitYear,
+                value = -1,
+                toDate = now,
+                options = 0u
+            ) ?: NSDate.distantPast
+
+            val endDate = calendar.dateByAddingUnit(
+                unit = NSCalendarUnitYear,
+                value = 1,
+                toDate = now,
+                options = 0u
+            ) ?: NSDate.distantFuture
+
+            logger.d("Querying events from ${startDate} to ${endDate}")
+
             val predicate = eventStore.predicateForEventsWithStartDate(
-                startDate = NSDate.distantPast,
-                endDate = NSDate.distantFuture,
-                calendars = listOf(calendar)
+                startDate = startDate,
+                endDate = endDate,
+                calendars = listOf(currentCalendar)
             )
 
-            // Fetch events
-            val events = eventStore.eventsMatchingPredicate(predicate) as List<EKEvent>
+            val events = eventStore.eventsMatchingPredicate(predicate)
+            logger.d("Found ${events.size} raw events")
+            events as List<EKEvent>
+        } catch (e: Exception) {
+            logger.e("Error getting events: ${e.message}")
+            emptyList()
+        }
+    }
 
-            // Convert to our domain model
-            events.map { ekEvent ->
-                Event(
-                    id = ekEvent.eventIdentifier!!,
-                    title = ekEvent.title ?: "",
-                    startTime = ekEvent.startDate!!.toLocalDateTime(),
-                    endTime = ekEvent.endDate!!.toLocalDateTime(),
-                    description = ekEvent.notes ?: "",
-                    location = ekEvent.location ?: ""
-                )
-            }
+    override fun getEvents(): List<Event> = getEventsOrigin().mapNotNull { ekEvent ->
+        val event = ekEvent as? EKEvent
+        event?.let {
+            logger.d("Processing event: ${it.title} (${it.eventIdentifier})")
+            Event(
+                id = it.eventIdentifier ?: "",
+                title = it.title ?: "",
+                startTime = it.startDate?.let { date ->
+                    Instant.fromEpochSeconds(date.timeIntervalSince1970.toLong())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                } ?: LocalDateTime(2000, 1, 1, 0, 0),
+                endTime = it.endDate?.let { date ->
+                    Instant.fromEpochSeconds(date.timeIntervalSince1970.toLong())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                } ?: LocalDateTime(2000, 1, 1, 1, 0),
+                description = it.notes ?: "",
+                location = it.location ?: ""
+            )
         }
     }
 
     override fun clearEvents() {
         memScoped {
-            val events = getEvents()
-            events.forEach { event ->
-                val ekEvent = eventStore.eventWithIdentifier(event.id) ?: return@forEach
-                eventStore.removeEvent(ekEvent, span = EKSpan.EKSpanThisEvent, error = null)
+            try {
+               val events = getEventsOrigin()
+
+                // 批量删除事件，不立即提交
+                events.forEach { event ->
+                    val error = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
+                    eventStore.removeEvent(event, span = EKSpan.EKSpanThisEvent, commit = false, error = error.ptr)
+
+                    if (error.value != null) {
+                        throw IllegalStateException("remove failed: ${error.value?.localizedDescription}")
+                    }
+                }
+
+                // 最后一次性提交所有更改
+                val error = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
+                val success = eventStore.commit(error.ptr)
+                if (!success) {
+                    logger.e("Failed to clear events: ${error.value?.localizedDescription}")
+                }
+            } catch (e: Exception) {
+                logger.e("Error clearing events: ${e.message}")
             }
         }
     }
 
-    @OptIn(BetaInteropApi::class)
     override fun insertEvent(event: Event) {
+        val currentCalendar = calendar ?: throw IllegalStateException("calender not initialized")
+
+        // 检查权限
+        val authStatus = EKEventStore.authorizationStatusForEntityType(EKEntityType.EKEntityTypeEvent)
+        if (authStatus != EKAuthorizationStatusAuthorized) {
+            throw IllegalStateException("Calendar permission not authorized when inserting event. Status: $authStatus")
+        }
+
         memScoped {
-            val errorVar = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
+            try {
+                val error = alloc<ObjCObjectVar<NSError?>>()
+                val ekEvent = EKEvent.eventWithEventStore(eventStore)
+                ekEvent.title = event.title
+                ekEvent.notes = event.description
+                ekEvent.location = event.location
+                ekEvent.calendar = currentCalendar
 
-            val ekEvent = EKEvent.eventWithEventStore(eventStore).apply {
-                calendar = this@EKCalenderManager.calendar
-                title = event.title
-                notes = event.description
-                location = event.location
-                startDate = event.startTime.toNSDate()
-                endDate = event.endTime.toNSDate()
-            }
+                // 转换时间
+                val startInstant = event.startTime.toInstant(TimeZone.currentSystemDefault())
+                val endInstant = event.endTime.toInstant(TimeZone.currentSystemDefault())
 
-            eventStore.saveEvent(ekEvent, span = EKSpan.EKSpanThisEvent, error = errorVar.ptr)
+                ekEvent.startDate = NSDate.dateWithTimeIntervalSince1970(startInstant.epochSeconds.toDouble())
+                ekEvent.endDate = NSDate.dateWithTimeIntervalSince1970(endInstant.epochSeconds.toDouble())
 
-            errorVar.value?.let { error ->
-                throw Exception("Failed to insert event: ${error.localizedDescription}")
+                logger.d("Inserting event: ${event.title} from ${event.startTime} to ${event.endTime}")
+
+                val success =
+                    eventStore.saveEvent(ekEvent, span = EKSpan.EKSpanThisEvent, commit = true, error = error.ptr)
+
+                if (success) {
+                    logger.d("Successfully inserted event: ${ekEvent.eventIdentifier}")
+                } else {
+                    logger.e("Failed to insert event: ${error.value?.localizedDescription}")
+                }
+            } catch (e: Exception) {
+                logger.e("Error inserting event: ${e.message}")
             }
         }
     }
 
-    @OptIn(BetaInteropApi::class)
     override fun deleteEvent(event: Event) {
+        val currentCalendar = calendar ?: throw IllegalStateException("calender not initialized")
+
         memScoped {
-            val errorVar = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
+            try {
+                val error = alloc<ObjCObjectVar<NSError?>>()
+                val ekEvent = findEventById(event.id, currentCalendar)
+                ekEvent?.let {
+                    val success =
+                        eventStore.removeEvent(it, span = EKSpan.EKSpanThisEvent, commit = true, error = error.ptr)
 
-            val ekEvent = eventStore.eventWithIdentifier(event.id) ?: return
-            eventStore.removeEvent(ekEvent, EKSpan.EKSpanThisEvent, error = errorVar.ptr)
-
-            errorVar.value?.let { error ->
-                throw Exception("Failed to delete event: ${error.localizedDescription}")
+                    if (!success) {
+                        logger.e("Failed to delete event: ${error.value?.localizedDescription}")
+                    }
+                }
+            } catch (e: Exception) {
+                logger.e("Error deleting event: ${e.message}")
             }
         }
     }
 
-    @OptIn(BetaInteropApi::class)
     override fun updateEvent(event: Event) {
+        val currentCalendar = calendar ?: throw IllegalStateException("calender not initialized")
+
         memScoped {
-            val errorVar = alloc<ObjCObjectVar<NSError?>>().apply { value = null }
+            try {
+                val error = alloc<ObjCObjectVar<NSError?>>()
+                val ekEvent = findEventById(event.id, currentCalendar)
+                ekEvent?.let {
+                    it.title = event.title
+                    it.notes = event.description
+                    it.location = event.location
 
-            val ekEvent = eventStore.eventWithIdentifier(event.id) ?: return
-            ekEvent.apply {
-                calendar = this@EKCalenderManager.calendar
-                title = event.title
-                notes = event.description
-                location = event.location
-                startDate = event.startTime.toNSDate()
-                endDate = event.endTime.toNSDate()
+                    // 转换时间
+                    val startInstant = event.startTime.toInstant(TimeZone.currentSystemDefault())
+                    val endInstant = event.endTime.toInstant(TimeZone.currentSystemDefault())
+
+                    it.startDate = NSDate.dateWithTimeIntervalSince1970(startInstant.epochSeconds.toDouble())
+                    it.endDate = NSDate.dateWithTimeIntervalSince1970(endInstant.epochSeconds.toDouble())
+
+                    val success =
+                        eventStore.saveEvent(it, span = EKSpan.EKSpanThisEvent, commit = true, error = error.ptr)
+
+                    if (!success) {
+                        logger.e("Failed to update event: ${error.value?.localizedDescription}")
+                    }
+                }
+            } catch (e: Exception) {
+                logger.e("Error updating event: ${e.message}")
             }
+        }
+    }
 
-            eventStore.saveEvent(ekEvent, span = EKSpan.EKSpanThisEvent, error = errorVar.ptr)
+    private fun findEventById(eventId: String, calendar: EKCalendar): EKEvent? {
+        return try {
+            val startDate = NSDate.distantPast
+            val endDate = NSDate.distantFuture
 
-            errorVar.value?.let { error ->
-                throw Exception("Failed to update event: ${error.localizedDescription}")
-            }
+            val predicate = eventStore.predicateForEventsWithStartDate(
+                startDate = startDate,
+                endDate = endDate,
+                calendars = listOf(calendar)
+            )
+
+            val events = eventStore.eventsMatchingPredicate(predicate)
+
+            events.firstOrNull { ekEvent ->
+                val event = ekEvent as? EKEvent
+                event?.eventIdentifier == eventId
+            } as? EKEvent
+        } catch (e: Exception) {
+            logger.e("Error finding event by ID: ${e.message}")
+            null
         }
     }
 }
@@ -133,46 +315,4 @@ internal actual fun rememberNativeCalenderManager(name: String): NativeCalenderM
     return remember(name) {
         EKCalenderManager(name)
     }
-}
-
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-private fun EKCalenderManager.getCalendar(accountName: String): EKCalendar {
-    // 先尝试找到已有的指定名称的日历
-    val calendars =
-        eventStore.calendarsForEntityType(EKEntityType.EKEntityTypeEvent) as List<EKCalendar>
-    val existing = calendars.firstOrNull { it.title == accountName }
-    if (existing != null) return existing
-
-    // 没找到则创建新的日历
-    val newCalendar = EKCalendar.calendarWithEventStore(eventStore).apply {
-        title = accountName
-
-        // 这里尽量使用默认账户的source，否则需要自己选择合适source
-        source = (eventStore.defaultCalendarForNewEvents?.source ?: calendars.firstOrNull()?.source)
-            ?: throw Exception("No calendar source found")
-    }
-
-    memScoped {
-        val errorVar = alloc<ObjCObjectVar<NSError?>>().apply {
-            value = null
-        }
-
-        val success = eventStore.saveCalendar(newCalendar, true, errorVar.ptr)
-        if (!success) {
-            throw Exception("创建日历失败: ${errorVar.value?.localizedDescription ?: "未知错误"}")
-        }
-    }
-
-
-    return newCalendar
-}
-
-private fun LocalDateTime.toNSDate(): NSDate {
-    val instant = this.toInstant(TimeZone.currentSystemDefault())
-    return NSDate.dateWithTimeIntervalSince1970(instant.epochSeconds.toDouble())
-}
-
-private fun NSDate.toLocalDateTime(): LocalDateTime {
-    val instant = Instant.fromEpochSeconds(this.timeIntervalSince1970.toLong())
-    return instant.toLocalDateTime(TimeZone.currentSystemDefault())
 }
