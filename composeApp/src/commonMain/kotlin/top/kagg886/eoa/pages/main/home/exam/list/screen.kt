@@ -130,18 +130,14 @@ fun ExamListScreen() = HomeScreen(
 @Composable
 fun ExamListScreenDrawer(
     state: ExamListState.Success?,
-    onFilterChanged: (PassFilter, DegreeFilter, Int, Int) -> Unit = { _, _, _, _ -> },
+    onFilterChanged: (PassFilter, DegreeFilter, Int?, Int?) -> Unit = { _, _, _, _ -> },
 ) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
         }
     }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             text = "筛选",
             style = MaterialTheme.typography.titleMedium,
@@ -271,8 +267,33 @@ fun ExamListScreenDrawer(
                 )
             }
         }
-    }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "重置",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Button(
+            onClick = {
+                if (!visible) {
+                    onFilterChanged(
+                        PassFilter.ALL,
+                        DegreeFilter.ALL,
+                        null,
+                        null,
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !visible
+        ) {
+            Text("重置筛选")
+        }
+    }
 }
 
 @Composable
