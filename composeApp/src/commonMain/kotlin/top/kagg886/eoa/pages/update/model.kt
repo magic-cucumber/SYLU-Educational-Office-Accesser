@@ -1,18 +1,20 @@
 package top.kagg886.eoa.pages.update
 
 import androidx.lifecycle.ViewModel
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.util.asTaggedLogger
 
 class UpdateModel : ViewModel(), ContainerHost<UpdateState, UpdateEvent> {
+    private val logger = "UpdateModel".asTaggedLogger
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(
@@ -32,6 +34,7 @@ class UpdateModel : ViewModel(), ContainerHost<UpdateState, UpdateEvent> {
             client.get("https://gitee.com/api/v5/repos/kagg886/sylu-educational-office-accesser/releases/latest")
                 .body<UpdateInfo>()
         } catch (e: Exception) {
+            logger.w("检查更新失败", e)
             postSideEffect(UpdateEvent.Toast(SnackBarType.Error, "检查更新失败，请检查网络连接。"))
             return@intent
         }
