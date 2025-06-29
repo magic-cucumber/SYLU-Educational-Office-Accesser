@@ -1,22 +1,11 @@
 package top.kagg886.eoa.pages.main.settings.logout_confirm
 
+import StackedSnackbarAnimation
+import StackedSnackbarDuration
 import StackedSnackbarHost
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,16 +16,10 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectSideEffect
 import rememberStackedSnackbarHostState
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.pages.login.LoginRoute
-import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.MainRouteViewEffect
 import top.kagg886.eoa.pages.main.mainViewModel
-import top.kagg886.eoa.util.SnackBarType.Error
-import top.kagg886.eoa.util.SnackBarType.Info
-import top.kagg886.eoa.util.SnackBarType.Success
-import top.kagg886.eoa.util.SnackBarType.Warning
-import top.kagg886.eoa.util.replace
+import top.kagg886.eoa.util.SnackBarType.*
 import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
@@ -64,7 +47,7 @@ fun LogoutConfirmScreen() {
             }
 
             is MainRouteViewEffect.NavigateToLogin -> {
-                nav.replace(LoginRoute) {
+                nav.navigate(LoginRoute) {
                     popUpTo(nav.graph.id) {
                         inclusive = true
                     }

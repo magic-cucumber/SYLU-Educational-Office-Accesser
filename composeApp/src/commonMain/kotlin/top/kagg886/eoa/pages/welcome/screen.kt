@@ -1,12 +1,6 @@
 package top.kagg886.eoa.pages.welcome
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,7 +18,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.login.LoginRoute
-import top.kagg886.eoa.util.replace
+
 
 @Serializable
 data object WelcomeRoute
@@ -39,7 +33,12 @@ fun WelcomeScreen() {
     model.collectSideEffect {
         when(it) {
             WelcomeSideEffect.NavigateToLogin -> {
-                nav.replace(LoginRoute)
+                nav.navigate(LoginRoute) {
+                    popUpTo(nav.graph.id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
             }
             is WelcomeSideEffect.NavigateToURL -> {
                 uri.openUri(it.url)

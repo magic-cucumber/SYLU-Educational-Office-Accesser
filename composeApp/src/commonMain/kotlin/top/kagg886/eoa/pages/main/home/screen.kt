@@ -2,11 +2,7 @@ package top.kagg886.eoa.pages.main.home
 
 import StackedSnackbarDuration
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -18,6 +14,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.adaptive.NavigationSuiteScaffold
 import top.kagg886.eoa.pages.login.LoginRoute
+import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.MainRouteViewEffect
 import top.kagg886.eoa.pages.main.home.course.CourseRoute
 import top.kagg886.eoa.pages.main.home.exam.ExamRoute
@@ -27,7 +24,6 @@ import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.util.SnackBarType.*
 import top.kagg886.eoa.util.currentLayoutType
-import top.kagg886.eoa.util.replace
 import top.kagg886.eoa.util.showSnackBar
 
 @Composable
@@ -97,7 +93,10 @@ fun HomeScreen(
                     selected = navigationRoute == route,
                     onClick = {
                         if (navigationRoute != route) {
-                            nav.replace(navigationRoute.target)
+                            nav.navigate(navigationRoute.target) {
+                                popUpTo(MainRoute)
+                                launchSingleTop = true
+                            }
                         }
                     },
                     icon = {

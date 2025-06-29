@@ -56,7 +56,7 @@ internal class EOAHTMLClient : EOAClient {
             }
 
             install(HttpTimeout) {
-                requestTimeoutMillis = 3000
+                requestTimeoutMillis = 10 * 10000
             }
 
             install(HttpRequestRetry) {
