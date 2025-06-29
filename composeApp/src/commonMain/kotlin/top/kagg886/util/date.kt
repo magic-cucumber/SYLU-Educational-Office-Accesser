@@ -1,7 +1,9 @@
 package top.kagg886.util
 
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.format.char
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 
 fun getTimeByLessonNumber(dt: Int): Pair<LocalTime, LocalTime> {
@@ -46,4 +48,16 @@ fun SchoolCalender.calculateWeekNumber(date: LocalDate): Int {
         throw IllegalStateException("开学之前")
     }
     return (date.toEpochDays() - start.toEpochDays()) / 7 + 1
+}
+
+val ChinaDateFormater = LocalDateTime.Format {
+    year()
+    char('-')
+    monthNumber()
+    char('-')
+    dayOfMonth()
+    char(' ')
+    hour()
+    char(':')
+    minute()
 }

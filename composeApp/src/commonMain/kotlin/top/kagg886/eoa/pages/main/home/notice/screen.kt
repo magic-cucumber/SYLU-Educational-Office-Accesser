@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,7 +24,6 @@ import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
 import kotlinx.datetime.format
-import kotlinx.datetime.format.char
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -34,9 +32,11 @@ import top.kagg886.backend.database.dao.SystemNoticeEntity
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.ExpandableText
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.util.ChinaDateFormater
 
 @Serializable
 data object SystemNoticeRoute
@@ -227,9 +227,9 @@ private fun NoticeItem(
     val showPlaceHolder by remember(notice) {
         derivedStateOf { notice == null }
     }
-
-    var isExpanded by remember { mutableStateOf(false) }
-    var hasOverflow by remember { mutableStateOf(false) }
+//
+//    var isExpanded by remember { mutableStateOf(false) }
+//    var hasOverflow by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -291,52 +291,68 @@ private fun NoticeItem(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Text(
+                    var isExpanded by remember {
+                        mutableStateOf(false)
+                    }
+                    ExpandableText(
+                        modifier = Modifier.placeholder(
+                            visible = showPlaceHolder,
+                            highlight = PlaceholderHighlight.shimmer()
+                        ),
                         text = notice?.content ?: "正在加载通知内容...",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = if (isExpanded) Int.MAX_VALUE else 3,
-                        overflow = TextOverflow.Ellipsis,
-                        onTextLayout = { textLayoutResult: TextLayoutResult ->
-                            if (!showPlaceHolder) {
-                                val currentHasOverflow = textLayoutResult.hasVisualOverflow
-                                // 只有在收起状态下才更新hasOverflow，这样展开后仍然记住原本有溢出
-                                if (!isExpanded) {
-                                    hasOverflow = currentHasOverflow
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .placeholder(
-                                visible = showPlaceHolder,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
-                            .animateContentSize(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMedium
-                                )
-                            )
+                        maxLines = 3,
+                        isExpanded = isExpanded,
+                        onExpandChange = { isExpanded = it }
                     )
 
+//                    Text(
+//                        text = notice?.content ?: "正在加载通知内容...",
+//                        style = MaterialTheme.typography.bodyMedium,
+//                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                        maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+//                        overflow = TextOverflow.Ellipsis,
+//                        onTextLayout = { textLayoutResult: TextLayoutResult ->
+//                            if (!showPlaceHolder) {
+//                                val currentHasOverflow = textLayoutResult.hasVisualOverflow
+//                                // 只有在收起状态下才更新hasOverflow，这样展开后仍然记住原本有溢出
+//                                if (!isExpanded) {
+//                                    hasOverflow = currentHasOverflow
+//                                }
+//                            }
+//                        },
+//                        modifier = Modifier
+//                            .placeholder(
+//                                visible = showPlaceHolder,
+//                                highlight = PlaceholderHighlight.shimmer()
+//                            )
+//                            .animateContentSize(
+//                                animationSpec = spring(
+//                                    dampingRatio = Spring.DampingRatioNoBouncy,
+//                                    stiffness = Spring.StiffnessMedium
+//                                )
+//                            )
+//                    )
+
                     // 展开/收起按钮
-                    if (!showPlaceHolder && notice?.content?.isNotEmpty() == true && hasOverflow) {
-                        TextButton(
-                            onClick = { isExpanded = !isExpanded },
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                contentDescription = if (isExpanded) "收起" else "展开",
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (isExpanded) "收起" else "展开",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
+//                    if (!showPlaceHolder && notice?.content?.isNotEmpty() == true && hasOverflow) {
+//                        TextButton(
+//                            onClick = { isExpanded = !isExpanded },
+//                            modifier = Modifier.padding(top = 4.dp)
+//                        ) {
+//                            Icon(
+//                                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+//                                contentDescription = if (isExpanded) "收起" else "展开",
+//                                modifier = Modifier.size(16.dp)
+//                            )
+//                            Spacer(modifier = Modifier.width(4.dp))
+//                            Text(
+//                                text = if (isExpanded) "收起" else "展开",
+//                                style = MaterialTheme.typography.bodySmall
+//                            )
+//                        }
+//                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -357,22 +373,8 @@ private fun NoticeItem(
 
                         Spacer(modifier = Modifier.width(4.dp))
 
-                        val timeFormat = remember {
-                            kotlinx.datetime.LocalDateTime.Format {
-                                year()
-                                char('-')
-                                monthNumber()
-                                char('-')
-                                dayOfMonth()
-                                char(' ')
-                                hour()
-                                char(':')
-                                minute()
-                            }
-                        }
-
                         Text(
-                            text = notice?.time?.format(timeFormat) ?: "2024-01-01 00:00",
+                            text = notice?.time?.format(ChinaDateFormater) ?: "2024-01-01 00:00",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.placeholder(

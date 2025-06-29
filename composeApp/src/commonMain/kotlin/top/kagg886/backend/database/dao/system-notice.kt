@@ -1,17 +1,11 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.TypeConverters
+import androidx.room.*
 import kotlinx.datetime.LocalDateTime
-import top.kagg886.backend.database.converters.SystemNoticeConverter
+import top.kagg886.backend.database.converters.LocalDateTimeConverter
 
 @Entity(tableName = "system_notices")
-@TypeConverters(SystemNoticeConverter::class)
+@TypeConverters(LocalDateTimeConverter::class)
 data class SystemNoticeEntity(
     @PrimaryKey val id: String,
     val title: String,

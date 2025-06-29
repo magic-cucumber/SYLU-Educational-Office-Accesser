@@ -22,7 +22,6 @@ import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
-import top.kagg886.util.logger as kermit
 
 internal class EOAHTMLClient : EOAClient {
     private var storage by Delegates.notNull<StorageCookieStorage>()
@@ -48,7 +47,7 @@ internal class EOAHTMLClient : EOAClient {
                 logger = object : Logger {
                     override fun log(message: String) = kermit.d(message)
                 }
-                level = LogLevel.HEADERS
+                level = LogLevel.ALL
             }
 
             install(HttpCookies) {

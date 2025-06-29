@@ -6,12 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Severity
-import io.ktor.client.plugins.logging.LogLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -84,7 +85,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
                 tag = tag,
                 level = severity,
                 message = message,
-                time = Clock.System.now().toEpochMilliseconds(),
+                time = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
                 stacktrace = throwable?.stackTraceToString()
             )
         )

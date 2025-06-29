@@ -1,21 +1,20 @@
 package top.kagg886.backend.database.dao
 
 import androidx.paging.PagingSource
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.PrimaryKey
-import androidx.room.Query
+import androidx.room.*
 import co.touchlab.kermit.Severity
+import kotlinx.datetime.LocalDateTime
+import top.kagg886.backend.database.converters.LocalDateTimeConverter
 
 @Entity(tableName = "log")
+@TypeConverters(LocalDateTimeConverter::class)
 data class AppLog(
     @PrimaryKey(autoGenerate = true)
     val id: Long? = null,
     val tag: String,
     val level: Severity,
     val message: String,
-    val time: Long,
+    val time: LocalDateTime,
     val stacktrace: String? = null,
 )
 
@@ -31,5 +30,8 @@ interface AppLogDao {
     suspend fun clear(before:Long)
 
     @Query("SELECT * FROM log WHERE (:level IS NULL OR level = :level) ORDER BY time DESC")
-    fun all(level: Severity? = null): PagingSource<Int, AppLog>
+    fun getLogsByPage(level: Severity? = null): PagingSource<Int, AppLog>
+
+    @Query("SELECT * FROM log WHERE (:level IS NULL OR level = :level) ORDER BY time")
+    suspend fun getLogs(level: Severity? = null): List<AppLog>
 }
