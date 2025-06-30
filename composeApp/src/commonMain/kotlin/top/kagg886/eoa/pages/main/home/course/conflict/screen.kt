@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -70,7 +71,7 @@ private fun CourseConflictScreenContent(
             LazyColumn(modifier) {
                 items(state.course) {
                     ListItem(
-                        modifier = Modifier.clickable { onCourseItemClicked(it) },
+                        modifier = Modifier.clip(CardDefaults.shape).clickable { onCourseItemClicked(it) },
                         headlineContent = {
                             Text(text = it.course.name)
                         },

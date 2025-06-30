@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -467,6 +468,7 @@ private inline fun CourseItem(
                 sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course?.recordId}"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
             )
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = { course?.let { onCourseItemClicked(it) } }),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
