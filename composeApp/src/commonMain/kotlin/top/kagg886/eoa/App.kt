@@ -9,20 +9,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
@@ -36,18 +27,16 @@ import rememberStackedSnackbarHostState
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.pages.RootEffect
 import top.kagg886.eoa.pages.RootRoute
+import top.kagg886.eoa.pages.announcement.AnnouncementRoute
 import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.pages.update.UpdateEvent
-import top.kagg886.eoa.pages.update.UpdateModel
 import top.kagg886.eoa.pages.update.UpdateRoute
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.asTaggedLogger
-import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
@@ -82,6 +71,24 @@ internal fun App() = CompositionLocalProvider(
             is RootEffect.Toast -> {
                 snack.showSnackBar(SnackBarType.Info, it.msg)
             }
+
+            is RootEffect.NavigateToUpdatePage -> {
+                nav.navigate(
+                    UpdateRoute(
+                        it.data.tag_name,
+                        it.data.body.replace("\r", ""),
+                        "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
+                    )
+                )
+            }
+
+            is RootEffect.NavigateToAnnouncePage -> {
+                nav.navigate(
+                    AnnouncementRoute(
+                        it.data.replace("\r", "")
+                    )
+                )
+            }
         }
     }
 
@@ -99,28 +106,6 @@ internal fun App() = CompositionLocalProvider(
                 }
             }
         )
-    }
-
-    //更新检查器
-    val updateState =
-        viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
-
-    updateState.collectSideEffect {
-        when (it) {
-            is UpdateEvent.NavigateToUpdatePage -> {
-                nav.navigate(
-                    UpdateRoute(
-                        it.data.tag_name,
-                        it.data.body.replace("\r", ""),
-                        "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
-                    )
-                )
-            }
-
-            is UpdateEvent.Toast -> {
-                snack.showSnackBar(it.type, it.msg)
-            }
-        }
     }
 
     AppTheme(

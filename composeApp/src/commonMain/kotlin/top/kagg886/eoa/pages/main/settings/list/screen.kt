@@ -21,12 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.kborowy.colorpicker.KolorPicker
-import io.ktor.client.plugins.logging.*
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
-import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
@@ -37,10 +35,8 @@ import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.pages.update.UpdateModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.showSnackBar
-import top.kagg886.mkmb.MMKVOptions
 
 @Serializable
 data object SettingListRoute
@@ -478,8 +474,7 @@ private fun SettingScreenContent(
                 }
 
                 item {
-                    val updateState =
-                        viewModel(viewModelStoreOwner = LocalGlobalViewModelStoreOwner.current) { UpdateModel() }
+                    val rootViewModel = rootViewModel()
                     ListItem(
                         headlineContent = {
                             Text("检查更新")
@@ -491,7 +486,7 @@ private fun SettingScreenContent(
                             )
                         },
                         modifier = Modifier.clickable {
-                            updateState.checkUpdate()
+                            rootViewModel.checkUpdate()
                         }
                     )
                 }

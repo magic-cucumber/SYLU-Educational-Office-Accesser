@@ -7,6 +7,8 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
+import top.kagg886.eoa.pages.announcement.AnnouncementRoute
+import top.kagg886.eoa.pages.announcement.AnnouncementScreen
 import top.kagg886.eoa.pages.login.LoginRoute
 import top.kagg886.eoa.pages.login.LoginScreen
 import top.kagg886.eoa.pages.main.MainRoute
@@ -25,6 +27,11 @@ val installEOAGraph: (NavGraphBuilder.() -> Unit) = {
         composable<WelcomeRoute> { WelcomeScreen() }
         composable<LoginRoute> { LoginScreen() }
         dialog<UpdateRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { UpdateScreen(it.toRoute()) }
+        dialog<AnnouncementRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
+            AnnouncementScreen(
+                it.toRoute()
+            )
+        }
         navigation<MainRoute>(startDestination = HomeRoute, builder = installMainGraph)
     }
 }
