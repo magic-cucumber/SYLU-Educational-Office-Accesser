@@ -110,10 +110,76 @@ fun ExamListScreen() = HomeScreen(
         drawerState = state.drawerState,
         rtlLayout = true,
         drawerContent = {
+            val successState = state as? ExamListState.Success
+
+            //avoid compose
+            var singleKeyword by remember { mutableStateOf(successState?.keyword ?: "") }
+
+            LaunchedEffect(key1 = singleKeyword) {
+                model.filterPassType(
+                    keyword = singleKeyword,
+                    type = successState?.passFilter ?: PassFilter.ALL,
+                    degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                    currentYearIndex = successState?.currentYearIndex ?: 0,
+                    currentTermIndex = successState?.currentTermIndex ?: 0
+                )
+            }
+
             ExamListScreenDrawer(
-                state = state as? ExamListState.Success,
-                onFilterChanged = { pass, degree, yearIndex, termIndex ->
-                    model.filterPassType(pass, degree, yearIndex, termIndex)
+                keyword = singleKeyword,
+                passFilter = successState?.passFilter,
+                degreeFilter = successState?.degreeFilter,
+                currentYearIndex = successState?.currentYearIndex,
+                currentTermIndex = successState?.currentTermIndex,
+                selector = successState?.selector ?: emptyList(),
+                onKeywordChanged = { keyword ->
+                    singleKeyword = keyword
+                },
+                onPassFilterChanged = { filter ->
+                    model.filterPassType(
+                        keyword = singleKeyword,
+                        type = filter,
+                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                        currentYearIndex = successState?.currentYearIndex ?: 0,
+                        currentTermIndex = successState?.currentTermIndex ?: 0
+                    )
+                },
+                onDegreeFilterChanged = { filter ->
+                    model.filterPassType(
+                        keyword = singleKeyword,
+                        type = successState?.passFilter ?: PassFilter.ALL,
+                        degree = filter,
+                        currentYearIndex = successState?.currentYearIndex ?: 0,
+                        currentTermIndex = successState?.currentTermIndex ?: 0
+                    )
+                },
+                onCurrentYearChanged = { yearIndex ->
+                    model.filterPassType(
+                        keyword = singleKeyword,
+                        type = successState?.passFilter ?: PassFilter.ALL,
+                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                        currentYearIndex = yearIndex,
+                        currentTermIndex = 0 // Reset term when year changes
+                    )
+                },
+                onCurrentTermChanged = { termIndex ->
+                    model.filterPassType(
+                        keyword = singleKeyword,
+                        type = successState?.passFilter ?: PassFilter.ALL,
+                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                        currentYearIndex = successState?.currentYearIndex ?: 0,
+                        currentTermIndex = termIndex
+                    )
+                },
+                onResetFilters = {
+                    singleKeyword = ""
+                    model.filterPassType(
+                        keyword = null,
+                        type = PassFilter.ALL,
+                        degree = DegreeFilter.ALL,
+                        currentYearIndex = null,
+                        currentTermIndex = null
+                    )
                 }
             )
         },
@@ -130,15 +196,36 @@ fun ExamListScreen() = HomeScreen(
 
 @Composable
 fun ExamListScreenDrawer(
-    state: ExamListState.Success?,
-    onFilterChanged: (PassFilter, DegreeFilter, Int?, Int?) -> Unit = { _, _, _, _ -> },
+    keyword: String? = null,
+    passFilter: PassFilter?,
+    degreeFilter: DegreeFilter?,
+    currentYearIndex: Int?,
+    currentTermIndex: Int?,
+    selector: List<Pair<YearSelectBean, List<TermSelectBean>>> = emptyList(),
+    onKeywordChanged: (String) -> Unit = {},
+    onPassFilterChanged: (PassFilter) -> Unit = {},
+    onDegreeFilterChanged: (DegreeFilter) -> Unit = {},
+    onCurrentYearChanged: (Int) -> Unit = {},
+    onCurrentTermChanged: (Int) -> Unit = {},
+    onResetFilters: () -> Unit = {},
 ) {
-    val visible by remember(state) {
-        derivedStateOf {
-            state == null
-        }
-    }
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp)
+    ) {
+        Text(
+            text = "搜索",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = keyword ?: "",
+            onValueChange = onKeywordChanged,
+            label = { Text("课程名称或教师姓名") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Text(
             text = "筛选",
             style = MaterialTheme.typography.titleMedium,
@@ -164,18 +251,9 @@ fun ExamListScreenDrawer(
                 )
 
                 PassFilterDropdown(
-                    selectedFilter = state?.passFilter ?: PassFilter.ALL,
-                    enabled = !visible,
-                    onFilterChanged = { filter ->
-                        if (!visible) {
-                            onFilterChanged(
-                                filter,
-                                state?.degreeFilter ?: DegreeFilter.ALL,
-                                state?.currentYearIndex ?: 0,
-                                state?.currentTermIndex ?: 0
-                            )
-                        }
-                    }
+                    selectedFilter = passFilter ?: PassFilter.ALL,
+                    enabled = passFilter != null,
+                    onFilterChanged = onPassFilterChanged
                 )
             }
 
@@ -190,18 +268,9 @@ fun ExamListScreenDrawer(
                 )
 
                 DegreeFilterDropdown(
-                    selectedFilter = state?.degreeFilter ?: DegreeFilter.ALL,
-                    enabled = !visible,
-                    onFilterChanged = { filter ->
-                        if (!visible) {
-                            onFilterChanged(
-                                state?.passFilter ?: PassFilter.ALL,
-                                filter,
-                                state?.currentYearIndex ?: 0,
-                                state?.currentTermIndex ?: 0
-                            )
-                        }
-                    }
+                    selectedFilter = degreeFilter ?: DegreeFilter.ALL,
+                    enabled = degreeFilter != null,
+                    onFilterChanged = onDegreeFilterChanged
                 )
             }
         }
@@ -224,19 +293,10 @@ fun ExamListScreenDrawer(
                 )
 
                 YearFilterDropdown(
-                    selector = state?.selector ?: emptyList(),
-                    currentYearIndex = state?.currentYearIndex ?: 0,
-                    enabled = !visible,
-                    onYearChanged = { yearIndex ->
-                        if (!visible) {
-                            onFilterChanged(
-                                state?.passFilter ?: PassFilter.ALL,
-                                state?.degreeFilter ?: DegreeFilter.ALL,
-                                yearIndex,
-                                0 // Reset term index when year changes
-                            )
-                        }
-                    }
+                    selector = selector,
+                    currentYearIndex = currentYearIndex ?: 0,
+                    enabled = currentYearIndex != null,
+                    onYearChanged = onCurrentYearChanged
                 )
             }
 
@@ -251,20 +311,11 @@ fun ExamListScreenDrawer(
                 )
 
                 TermFilterDropdown(
-                    selector = state?.selector ?: emptyList(),
-                    currentYearIndex = state?.currentYearIndex ?: 0,
-                    currentTermIndex = state?.currentTermIndex ?: 0,
-                    enabled = !visible,
-                    onTermChanged = { termIndex ->
-                        if (!visible) {
-                            onFilterChanged(
-                                state?.passFilter ?: PassFilter.ALL,
-                                state?.degreeFilter ?: DegreeFilter.ALL,
-                                state?.currentYearIndex ?: 0,
-                                termIndex
-                            )
-                        }
-                    }
+                    selector = selector,
+                    currentYearIndex = currentYearIndex ?: 0,
+                    currentTermIndex = currentTermIndex ?: 0,
+                    enabled = currentTermIndex != null,
+                    onTermChanged = onCurrentTermChanged
                 )
             }
         }
@@ -279,18 +330,8 @@ fun ExamListScreenDrawer(
         )
 
         Button(
-            onClick = {
-                if (!visible) {
-                    onFilterChanged(
-                        PassFilter.ALL,
-                        DegreeFilter.ALL,
-                        null,
-                        null,
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !visible
+            onClick = onResetFilters,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("重置筛选")
         }

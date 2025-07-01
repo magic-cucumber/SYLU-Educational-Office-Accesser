@@ -63,6 +63,7 @@ class ExamListViewModel(
         }
 
     fun filterPassType(
+        keyword: String? = null,
         type: PassFilter = PassFilter.ALL,
         degree: DegreeFilter = DegreeFilter.ALL,
         currentYearIndex:Int? = null,
@@ -98,6 +99,7 @@ class ExamListViewModel(
             val selectSemester = selectYear.second[term]
 
             val list = examDao.all(
+                keyword,
                 type.toExamStatus(),
                 degree.toQuery(),
                 selectYear.first.yearCode.ifEmpty { null }, // '全部' 的code为空，转成null让数据库返回正常数据
@@ -107,6 +109,7 @@ class ExamListViewModel(
 
             reduce {
                 ExamListState.Success(
+                    keyword = keyword,
                     passFilter = type,
                     degreeFilter = degree,
                     entity = list,
@@ -125,6 +128,7 @@ sealed interface ExamListState {
     val drawerState: DrawerState
 
     data class Success(
+        val keyword: String?,
         val passFilter: PassFilter,
         val degreeFilter: DegreeFilter,
         val entity: List<ExamEntity>,

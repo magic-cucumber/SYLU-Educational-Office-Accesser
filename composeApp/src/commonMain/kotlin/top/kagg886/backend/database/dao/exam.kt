@@ -1,12 +1,6 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.TypeConverters
+import androidx.room.*
 import top.kagg886.backend.database.converters.ExamConverter
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
@@ -41,6 +35,7 @@ interface ExamDao {
         """
             SELECT * FROM exams
             WHERE 
+                ((:keyword IS NULL OR name LIKE '%' || :keyword || '%') OR (:keyword IS NULL OR teacherName LIKE '%' || :keyword || '%')) AND
                 (:filterPassType IS NULL OR status = :filterPassType) AND
                 (:filterDegree IS NULL OR degree = :filterDegree) AND
                 (:yearCode IS NULL OR year = :yearCode) AND
@@ -48,6 +43,7 @@ interface ExamDao {
         """
     )
     suspend fun all(
+        keyword: String? = null,
         filterPassType: ExamStatus? = null,
         filterDegree: Boolean? = null,
         yearCode:String? = null,
