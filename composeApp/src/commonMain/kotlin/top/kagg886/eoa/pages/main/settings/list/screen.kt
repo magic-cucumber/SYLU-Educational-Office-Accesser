@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -30,12 +31,14 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.collapse.CollapsableTopAppBarScaffold
 import top.kagg886.eoa.pages.main.about.AboutRoute
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.logcat.LogcatRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
@@ -60,6 +63,7 @@ fun SettingListScreen() {
     val rootState by rootModel.collectAsState()
     val color by rootState.color.collectAsState()
     val theme by rootState.theme.collectAsState()
+    val module by rootState.module.collectAsState()
     val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
@@ -72,8 +76,10 @@ fun SettingListScreen() {
 
         color = color,
         theme = theme,
+        module = module,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
+        onModuleChanged = rootModel::postEOAModuleSetting,
         onEggClicked = {
             snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
         }
@@ -88,8 +94,10 @@ private fun SettingScreenContent(
 
     color: Color,
     theme: AppSettingsMMKVType.AppTheme,
+    module: List<EOAHomeModule>,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
+    onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
 
     onEggClicked: () -> Unit,
 ) {
@@ -391,6 +399,66 @@ private fun SettingScreenContent(
                             }
                         },
                         modifier = Modifier.clickable { dialog = true },
+                    )
+                }
+
+                item {
+                    var dialog by remember { mutableStateOf(false) }
+                    if (dialog) {
+                        AlertDialog(
+                            onDismissRequest = { dialog = false },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        dialog = false
+                                    }
+                                ) {
+                                    Text("确定")
+                                }
+                            },
+                            title = { Text("自定义底部栏") },
+                            text = {
+                                LazyColumn {
+                                    items(EOAHomeModule.entries) {
+                                        ListItem(
+                                            headlineContent = {
+                                                Text(it.display)
+                                            },
+                                            leadingContent = {
+                                                Checkbox(
+                                                    checked = module.contains(it),
+                                                    onCheckedChange = null,
+                                                )
+                                            },
+                                            modifier = Modifier.applyIf(it !== EOAHomeModule.SUMMARY) {
+                                                clickable {
+                                                    val newModule = if (module.contains(it)) {
+                                                        module - it
+                                                    } else {
+                                                        module + it
+                                                    }
+                                                    if (newModule.size > 4) {
+                                                        return@clickable
+                                                    }
+                                                    onModuleChanged(newModule)
+                                                }
+                                            },
+                                            colors = ListItemDefaults.colors(
+                                                containerColor = AlertDialogDefaults.containerColor
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    ListItem(
+                        headlineContent = { Text("底部栏定制") },
+                        supportingContent = { Text("自定义底部导航栏的内容。\n最多定制4条，多余的内容会存放进 '更多' 中") },
+                        modifier = Modifier.clickable {
+                            dialog = true
+                        },
                     )
                 }
 
