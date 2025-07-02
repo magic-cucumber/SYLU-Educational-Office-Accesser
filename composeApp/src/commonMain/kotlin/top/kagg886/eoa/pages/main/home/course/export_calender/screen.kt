@@ -1,16 +1,15 @@
 package top.kagg886.eoa.pages.main.home.course.export_calender
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,8 +24,8 @@ import top.kagg886.calender.data.CalenderPermissionGrantType.*
 import top.kagg886.calender.rememberCalenderState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
-import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.showSnackBar
 
@@ -48,42 +47,54 @@ fun CourseExportCalenderScreen() {
         }
     }
     val state by model.collectAsState()
-    Surface(Modifier.fillMaxSize(0.8f)) {
-        Box(Modifier.fillMaxSize(),contentAlignment = Alignment.Center) {
-            BackIconButton(modifier = Modifier.align(Alignment.TopStart).padding(8.dp))
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                val manager = rememberCalenderState(name = "eoa-calender")
+
+    DialogPageScaffold(
+        title = { Text("导出到日历") },
+        icon = { Icon(Icons.Default.ImportExport, "") },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = { nav.popBackStack() },
+            ) {
+                Text("取消")
+            }
+        }
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val manager = rememberCalenderState(name = "eoa-calender")
 
 
-                when(manager.permission) {
-                    WAIT -> Loading("正在准备申请权限...")
-                    PROCESSING -> Loading(msg = "正在申请权限...")
-                    ALL_GRANTED -> {
-                        LaunchedEffect(Unit) {
-                            model.exportCalender(manager.events)
-                        }
-                        Loading(state.message)
+            when (manager.permission) {
+                WAIT -> Loading("正在准备申请权限...")
+                PROCESSING -> Loading(msg = "正在申请权限...")
+                ALL_GRANTED -> {
+                    LaunchedEffect(Unit) {
+                        model.exportCalender(manager.events)
                     }
-                    DENY_PERMANENT,DENY_ONCE -> ErrorPage(
-                        title = {
-                            Text("日历权限未被授予")
-                        },
-                        message = {
-                            Text("请前往系统设置赋予日历权限")
-                        }
-                    )
-                    NOT_SUPPORTED -> ErrorPage(
-                        title = {
-                            Text("错误")
-                        },
-                        message = {
-                            Text("当前平台不支持日历导出功能")
-                        }
-                    )
+                    Loading(state.message)
                 }
+
+                DENY_PERMANENT, DENY_ONCE -> ErrorPage(
+                    title = {
+                        Text("日历权限未被授予")
+                    },
+                    message = {
+                        Text("请前往系统设置赋予日历权限")
+                    }
+                )
+
+                NOT_SUPPORTED -> ErrorPage(
+                    title = {
+                        Text("错误")
+                    },
+                    message = {
+                        Text("当前平台不支持日历导出功能")
+                    }
+                )
             }
         }
     }
+
 }
 
 @Composable

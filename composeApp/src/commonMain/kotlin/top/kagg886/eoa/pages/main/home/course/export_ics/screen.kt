@@ -2,11 +2,14 @@ package top.kagg886.eoa.pages.main.home.course.export_ics
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -18,6 +21,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.showSnackBar
 
@@ -39,13 +43,23 @@ fun CourseExportIcsScreen() {
         }
     }
     val state by model.collectAsState()
-    Surface(Modifier.fillMaxSize(0.8f)) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(Modifier.weight(1f))
+
+    DialogPageScaffold(
+        title = { Text("导出课程表") },
+        icon = { Icon(Icons.Default.ImportExport, "") },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = { nav.popBackStack() },
+            ) {
+                Text("取消")
+            }
+        }
+    ) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator()
             Spacer(Modifier.height(16.dp))
             Text(state.message)
-            Spacer(Modifier.weight(1f))
         }
     }
 }

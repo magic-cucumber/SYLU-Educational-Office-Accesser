@@ -1,46 +1,45 @@
 package top.kagg886.eoa.pages.announcement
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Announcement
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.m3.Markdown
 import kotlinx.serialization.Serializable
-import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.dialog.DialogPageScaffold
 
 @Serializable
 data class AnnouncementRoute(
     val content: String
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnouncementScreen(content: AnnouncementRoute) {
-    Surface(
-        modifier = Modifier.fillMaxSize(0.8f)
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            TopAppBar(
-                title = {
-                    Text(text = "公告")
-                },
-                navigationIcon = {
-                    BackIconButton()
+    val nav = LocalNavController.current
+    DialogPageScaffold(
+        title = { Text("公告") },
+        icon = { Icon(Icons.AutoMirrored.Filled.Announcement, "") },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    nav.popBackStack()
                 }
-            )
-
-            Markdown(
-                content = content.content,
-                modifier = Modifier.padding(horizontal = 16.dp).weight(1f).verticalScroll(rememberScrollState())
-            )
+            ) {
+                Text("确定")
+            }
         }
+    ) {
+        Markdown(
+            content = content.content,
+            modifier = Modifier.padding(horizontal = 16.dp).verticalScroll(rememberScrollState())
+        )
     }
 }
