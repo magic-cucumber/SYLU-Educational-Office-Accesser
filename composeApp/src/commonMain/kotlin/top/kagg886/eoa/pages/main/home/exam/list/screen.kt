@@ -32,8 +32,8 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.drawer.SupportRTLModalNavigationDrawer
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.createMenuButtonAnim
@@ -49,7 +49,7 @@ data object ExamListRoute
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ExamListScreen() = HomeScreen(
-    route = NavigationRoute.EXAM,
+    route = EOAHomeModule.EXAM,
     title = {
         Text("考试列表")
     },

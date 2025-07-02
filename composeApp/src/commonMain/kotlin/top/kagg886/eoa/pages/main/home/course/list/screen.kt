@@ -27,8 +27,8 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.manage.list.CourseManageListRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
@@ -52,7 +52,7 @@ fun CourseListScreen() {
 
     val state by model.collectAsState()
     HomeScreen(
-        route = NavigationRoute.COURSE,
+        route = EOAHomeModule.COURSE,
         title = {
             AnimatedContent(
                 targetState = (state as? CourseListState.Success)?.state?.currentPage ?: -1,

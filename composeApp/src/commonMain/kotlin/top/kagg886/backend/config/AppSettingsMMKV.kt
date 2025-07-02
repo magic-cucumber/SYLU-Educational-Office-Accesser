@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.util.ColorAsArgbSerializer
@@ -20,16 +21,20 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings"), AppSettingsMMK
         }
     })
 
-    override var ktorLogLevel: AppSettingsMMKVType.LogLevel by json(
-        "ktor-log-level",
-        AppSettingsMMKVType.LogLevel.HEADERS
+    override var homeModule: List<EOAHomeModule> by json(
+        "home-module", listOf(
+            EOAHomeModule.SUMMARY,
+            EOAHomeModule.COURSE,
+            EOAHomeModule.EXAM,
+        )
     )
 }
 
 sealed interface AppSettingsMMKVType {
     var color: Color
     var theme: AppTheme
-    var ktorLogLevel: LogLevel
+
+    var homeModule: List<EOAHomeModule>
 
     /**
      * 需要@Serializable支持
@@ -40,17 +45,5 @@ sealed interface AppSettingsMMKVType {
         Light,
         SystemDefault,
         Dark;
-    }
-
-    @Serializable
-    enum class LogLevel {
-        ALL,
-        HEADERS,
-        BODY,
-        INFO,
-        NONE;
-
-        fun toKtorLogLevel(): io.ktor.client.plugins.logging.LogLevel =
-            io.ktor.client.plugins.logging.LogLevel.valueOf(name)
     }
 }

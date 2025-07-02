@@ -60,7 +60,6 @@ fun SettingListScreen() {
     val rootState by rootModel.collectAsState()
     val color by rootState.color.collectAsState()
     val theme by rootState.theme.collectAsState()
-    val ktorLogLevel by rootState.ktorLogLevel.collectAsState()
     val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
@@ -73,12 +72,8 @@ fun SettingListScreen() {
 
         color = color,
         theme = theme,
-        ktorLogLevel = ktorLogLevel,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
-        onKtorLogLevelSettingsClicked = rootModel::postNewKtorLogLevelSetting,
-
-
         onEggClicked = {
             snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
         }
@@ -93,10 +88,8 @@ private fun SettingScreenContent(
 
     color: Color,
     theme: AppSettingsMMKVType.AppTheme,
-    ktorLogLevel: AppSettingsMMKVType.LogLevel,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
-    onKtorLogLevelSettingsClicked: (AppSettingsMMKVType.LogLevel) -> Unit,
 
     onEggClicked: () -> Unit,
 ) {
@@ -409,49 +402,6 @@ private fun SettingScreenContent(
                             .padding(16.dp),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                    )
-                }
-
-                item {
-                    var dialog by remember { mutableStateOf(false) }
-                    ListItem(
-                        headlineContent = {
-                            Text("网络日志级别")
-                        },
-                        trailingContent = {
-                            Text(
-                                when (ktorLogLevel) {
-                                    AppSettingsMMKVType.LogLevel.ALL -> "ALL"
-                                    AppSettingsMMKVType.LogLevel.HEADERS -> "HEAD"
-                                    AppSettingsMMKVType.LogLevel.BODY -> "BODY"
-                                    AppSettingsMMKVType.LogLevel.INFO -> "INFO"
-                                    AppSettingsMMKVType.LogLevel.NONE -> "NONE"
-                                }
-                            )
-                            if (dialog) {
-                                DropdownMenu(
-                                    expanded = true,
-                                    onDismissRequest = {
-                                        dialog = false
-                                    }
-                                ) {
-                                    for (level in AppSettingsMMKVType.LogLevel.entries) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(level.name)
-                                            },
-                                            onClick = {
-                                                onKtorLogLevelSettingsClicked(level)
-                                                dialog = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.clickable {
-                            dialog = true
-                        }
                     )
                 }
 

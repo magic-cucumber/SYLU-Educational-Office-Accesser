@@ -1,29 +1,21 @@
 package top.kagg886.eoa.pages.main.home.exam.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -36,18 +28,14 @@ import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
 @Serializable
@@ -59,7 +47,7 @@ data class ExamDetailRoute(val examId: Long)
 //)
 @Composable
 fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
-    route = NavigationRoute.EXAM,
+    route = EOAHomeModule.EXAM,
     title = { Text("考试详情") },
     menu = null,
     back = { BackIconButton() }
@@ -300,7 +288,7 @@ private fun ExamStatusIndicator(
     }
 
     val shape = RoundedCornerShape(20.dp)
-    
+
     Row(
         modifier = modifier
             .clip(shape)

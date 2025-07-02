@@ -33,8 +33,8 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.home.NavigationRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
@@ -53,7 +53,7 @@ data object SummaryRoute
 fun SummaryScreen() {
     val nav = LocalNavController.current
     HomeScreen(
-        route = NavigationRoute.SUMMARY,
+        route = EOAHomeModule.SUMMARY,
         title = {
             Text("概要")
         },

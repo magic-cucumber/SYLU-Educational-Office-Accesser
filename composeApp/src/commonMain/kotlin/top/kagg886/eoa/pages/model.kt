@@ -31,6 +31,7 @@ import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.config.BuildConfig
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.update.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asTaggedLogger
@@ -76,8 +77,8 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         }
 
         viewModelScope.launch {
-            state.ktorLogLevel.collect {
-                AppSettingsMMKV.ktorLogLevel = it
+            state.module.collect {
+                AppSettingsMMKV.homeModule = it
             }
         }
 
@@ -99,9 +100,8 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         state.theme.value = theme
     }
 
-    fun postNewKtorLogLevelSetting(level: AppSettingsMMKVType.LogLevel) = intent {
-        state.ktorLogLevel.value = level
-        postSideEffect(RootEffect.Toast(SnackBarType.Warning, "重启生效"))
+    fun postEOAModuleSetting(module: List<EOAHomeModule>) = intent {
+        state.module.value = module
     }
 
     fun log(severity: Severity, tag: String, message: String, throwable: Throwable?) = intent {
@@ -154,7 +154,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 data class RootState(
     val color: MutableStateFlow<Color> = MutableStateFlow(AppSettingsMMKV.color),
     val theme: MutableStateFlow<AppSettingsMMKVType.AppTheme> = MutableStateFlow(AppSettingsMMKV.theme),
-    val ktorLogLevel: MutableStateFlow<AppSettingsMMKVType.LogLevel> = MutableStateFlow(AppSettingsMMKV.ktorLogLevel),
+    val module: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(AppSettingsMMKV.homeModule),
 )
 
 sealed interface RootEffect {

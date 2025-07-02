@@ -1,15 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -17,14 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.TaskAlt
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -39,20 +24,17 @@ import com.eygraber.compose.placeholder.material3.shimmer
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.home.NavigationRoute
-import top.kagg886.eoa.pages.main.home.course.list.asNoConflict
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
-import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.toFixed
 
 @Serializable
@@ -61,7 +43,7 @@ data class CourseDetailRoute(val recordId: Long)
 
 @Composable
 fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
-    NavigationRoute.COURSE,
+    EOAHomeModule.COURSE,
     title = { Text("课程详情") },
     back = {
         BackIconButton()
