@@ -1,20 +1,11 @@
 package top.kagg886.eoa.pages.main.settings.profile
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,7 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
 import top.kagg886.eoa.pages.main.settings.list.SettingsModel
@@ -50,20 +41,26 @@ fun SettingsProfileScreen() {
     }
 
     val state by model.collectAsState()
-    Surface(Modifier.fillMaxSize(0.8f)) {
-        Column {
-            TopAppBar(
-                title = { Text(text = "个人信息") },
-                navigationIcon = {
-                    BackIconButton()
+
+    DialogPageScaffold(
+        title = { Text(text = "个人信息") },
+        icon = { Icon(Icons.Default.Person, "") },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    nav.popBackStack()
                 }
-            )
-            Column(Modifier.weight(1f).padding(horizontal = 5.dp).verticalScroll(rememberScrollState())) {
-                when (val s = state) {
-                    is SettingsState.Success -> ProfileSuccess(s)
-                    is SettingsState.Loading -> Text(text = "加载中")
-                    is SettingsState.Failed -> Text(text = "加载失败")
-                }
+            ) {
+                Text(text = "返回")
+            }
+        }
+    ) {
+        Column(Modifier.fillMaxWidth().fillMaxHeight(0.8f).verticalScroll(rememberScrollState())) {
+            when (val s = state) {
+                is SettingsState.Success -> ProfileSuccess(s)
+                is SettingsState.Loading -> Text(text = "加载中")
+                is SettingsState.Failed -> Text(text = "加载失败")
             }
         }
     }

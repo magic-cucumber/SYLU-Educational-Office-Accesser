@@ -1,8 +1,9 @@
 package top.kagg886.eoa.pages.main.home.course.conflict
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -16,6 +17,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 
@@ -44,19 +46,22 @@ fun CourseConflictScreen(route: CourseConflictRoute) {
     }
     val state by model.collectAsState()
 
-    Surface(Modifier.fillMaxSize(0.8f)) {
-        Column {
-            TopAppBar(
-                title = { Text("冲突课程") }
-            )
-            CourseConflictScreenContent(
-                state = state,
-                onCourseItemClicked = {
-                    model.navigateTo(it.record)
-                },
-                modifier = Modifier.weight(1f)
-            )
+    DialogPageScaffold(
+        modifier = Modifier.fillMaxSize(),
+        title = { Text(text = "课程冲突") },
+        confirmButton = {
+            TextButton(onClick = { nav.popBackStack() }) {
+                Text(text = "关闭")
+            }
         }
+    ) {
+        CourseConflictScreenContent(
+            state = state,
+            onCourseItemClicked = {
+                model.navigateTo(it.record)
+            },
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)
+        )
     }
 }
 

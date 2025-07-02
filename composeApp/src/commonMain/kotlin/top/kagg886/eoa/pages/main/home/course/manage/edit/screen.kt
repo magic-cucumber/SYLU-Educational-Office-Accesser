@@ -1,34 +1,16 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
-import StackedSnackbarHost
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import StackedSnackbarAnimation
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -38,7 +20,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -49,9 +30,7 @@ import rememberStackedSnackbarHostState
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.LocalSnackBarHost
-import top.kagg886.eoa.component.BackIconButton
-import top.kagg886.eoa.pages.main.home.course.list.cardHeight
+import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.showSnackBar
 
@@ -76,32 +55,21 @@ fun CourseEditScreen(route: CourseEditRoute) {
             is CourseEditSideEffect.NavigateBack -> nav.popBackStack()
         }
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Surface(Modifier.fillMaxSize(0.8f)) {
-            CompositionLocalProvider(
-                LocalSnackBarHost provides snack,
-            ) {
-                CourseEditScreenContent(
-                    state = state,
-                    onCourseModified = { model.modifyCourse(it) },
-                    onCourseInfoConfirmed = { model.confirmModifyCourse() },
-                    onAddRecord = { weekNumber, dayOfWeek, periodOfDay ->
-                        model.addRecord(
-                            weekNumber,
-                            dayOfWeek,
-                            periodOfDay
-                        )
-                    },
-                    onDeleteRecord = { model.deleteRecord(it) }
-                )
-            }
-        }
 
-        StackedSnackbarHost(
-            hostState = snack,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-    }
+    CourseEditScreenContent(
+        state = state,
+        onCourseModified = { model.modifyCourse(it) },
+        onCourseInfoConfirmed = { model.confirmModifyCourse() },
+        onCourseInfoDismissed = { nav.popBackStack() },
+        onAddRecord = { weekNumber, dayOfWeek, periodOfDay ->
+            model.addRecord(
+                weekNumber,
+                dayOfWeek,
+                periodOfDay
+            )
+        },
+        onDeleteRecord = { model.deleteRecord(it) }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,13 +78,18 @@ private fun CourseEditScreenContent(
     state: CourseEditState,
     onCourseModified: (CourseEntity) -> Unit,
     onCourseInfoConfirmed: () -> Unit,
+    onCourseInfoDismissed: () -> Unit,
     onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
     onDeleteRecord: (CourseRecordEntity) -> Unit
 ) {
     when (state) {
         is CourseEditState.Loading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            DialogPageScaffold(
+                title = { Text("编辑课程") },
+                icon = { Icon(Icons.Default.Edit, "") },
+                confirmButton = {}
+            ) {
+                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.width(16.dp))
                     Text("正在加载中，请稍等。")
@@ -127,57 +100,62 @@ private fun CourseEditScreenContent(
         is CourseEditState.Success -> {
             val pagerState = rememberPagerState(0) { 2 }
             val scope = rememberCoroutineScope()
-            Column {
-                TopAppBar(
-                    title = {
-                        Text("编辑课程")
-                    },
-                    navigationIcon = {
-                        BackIconButton()
-                    }
-                )
-                TabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    tabs = {
-                        Tab(
-                            text = { Text("课程信息") },
-                            selected = pagerState.currentPage == 0,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(0) } }
-                        )
-                        Tab(
-                            text = { Text("时间编辑") },
-                            selected = pagerState.currentPage == 1,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
-                        )
-                    }
-                )
 
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    when (it) {
-                        0 -> CourseEditBasic(
-                            course = state.courseInfo,
-                            onCourseModified = onCourseModified
-                        )
-
-                        1 -> CourseEditTime(
-                            startDate = state.startDate,
-                            allWeekNumber = state.allWeekNumber,
-                            records = state.recordInfo,
-                            onAddRecord = onAddRecord,
-                            onDeleteRecord = onDeleteRecord
-                        )
-                    }
-                }
-                Box(Modifier.fillMaxWidth()) {
+            DialogPageScaffold(
+                title = { Text("编辑课程") },
+                icon = { Icon(Icons.Default.Edit, "") },
+                confirmButton = {
                     TextButton(
                         onClick = onCourseInfoConfirmed,
-                        modifier = Modifier.align(Alignment.CenterEnd).padding(8.dp),
                         enabled = state.enableSaveButton
                     ) {
                         Text("保存")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = onCourseInfoDismissed
+                    ) {
+                        Text("取消")
+                    }
+                }
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)) {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        containerColor = AlertDialogDefaults.containerColor,
+                        tabs = {
+                            Tab(
+                                text = { Text("课程信息") },
+                                selected = pagerState.currentPage == 0,
+                                onClick = { scope.launch { pagerState.animateScrollToPage(0) } }
+                            )
+                            Tab(
+                                text = { Text("时间编辑") },
+                                selected = pagerState.currentPage == 1,
+                                onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
+                            )
+                        }
+                    )
+
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        when (it) {
+                            0 -> CourseEditBasic(
+                                course = state.courseInfo,
+                                onCourseModified = onCourseModified
+                            )
+
+                            1 -> CourseEditTime(
+                                startDate = state.startDate,
+                                allWeekNumber = state.allWeekNumber,
+                                records = state.recordInfo,
+                                onAddRecord = onAddRecord,
+                                onDeleteRecord = onDeleteRecord
+                            )
+                        }
                     }
                 }
             }
