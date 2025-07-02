@@ -437,7 +437,7 @@ private fun SettingScreenContent(
                                                     } else {
                                                         module + it
                                                     }
-                                                    if (newModule.size > 4) {
+                                                    if (newModule.size > 3) {
                                                         return@clickable
                                                     }
                                                     onModuleChanged(newModule)
@@ -455,7 +455,7 @@ private fun SettingScreenContent(
 
                     ListItem(
                         headlineContent = { Text("底部栏定制") },
-                        supportingContent = { Text("自定义底部导航栏的内容。\n最多定制4条，多余的内容会存放进 '更多' 中") },
+                        supportingContent = { Text("自定义底部导航栏的内容。\n最多定制3条，多余的内容会存放进 '更多' 中") },
                         modifier = Modifier.clickable {
                             dialog = true
                         },
