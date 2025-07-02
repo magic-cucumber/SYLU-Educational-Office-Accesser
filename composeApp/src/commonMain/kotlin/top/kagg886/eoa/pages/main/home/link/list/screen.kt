@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.home.link
+package top.kagg886.eoa.pages.main.home.link.list
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -18,10 +18,12 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.ExpandableText
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
+import top.kagg886.eoa.pages.main.home.link.tips.LinkTipsRoute
 
 /**
  * ================================================
@@ -31,36 +33,39 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
  */
 
 @Serializable
-data object LinkRoute
+data object LinkListRoute
 
 @Composable
-fun LinkScreen() = HomeScreen(
-    route = EOAHomeModule.LINK,
-    fabIcon = { Icon(Icons.Default.Edit, "") },
-    fabText = { Text("编辑友链") },
-    fabOnClick = {}
-) {
-    val model = viewModel {
-        LinkModel()
+fun LinkListScreen() {
+    val nav = LocalNavController.current
+    HomeScreen(
+        route = EOAHomeModule.LINK,
+        fabIcon = { Icon(Icons.Default.Edit, "") },
+        fabText = { Text("编辑友链") },
+        fabOnClick = { nav.navigate(LinkTipsRoute) }
+    ) {
+        val model = viewModel {
+            LinkListModel()
+        }
+
+        val state by model.collectAsState()
+
+        LinkScreenContent(
+            state = state,
+        )
     }
-
-    val state by model.collectAsState()
-
-    LinkScreenContent(
-        state = state,
-    )
 }
 
 @Composable
 fun LinkScreenContent(
-    state: LinkState,
+    state: LinkListState,
 ) {
     when (state) {
-        is LinkState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        is LinkListState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
 
-        is LinkState.Error -> ErrorPage(
+        is LinkListState.Error -> ErrorPage(
             title = {
                 Text("友链加载失败")
             },
@@ -69,7 +74,7 @@ fun LinkScreenContent(
             }
         )
 
-        is LinkState.Success -> LazyColumn(Modifier.fillMaxSize()) {
+        is LinkListState.Success -> LazyColumn(Modifier.fillMaxSize()) {
             items(state.link) {
                 val uri = LocalUriHandler.current
                 ListItem(

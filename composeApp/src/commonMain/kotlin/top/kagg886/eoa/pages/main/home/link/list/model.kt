@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.home.link
+package top.kagg886.eoa.pages.main.home.link.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +12,7 @@ import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppInitializeMMKV
+import top.kagg886.eoa.pages.main.home.link.Link
 import top.kagg886.util.asTaggedLogger
 
 /**
@@ -20,14 +21,14 @@ import top.kagg886.util.asTaggedLogger
  * Created on: 2025/7/2 10:04
  * ================================================
  */
-class LinkModel : ViewModel(), ContainerHost<LinkState, LinkEffect> {
+class LinkListModel : ViewModel(), ContainerHost<LinkListState, LinkListEffect> {
     private val logger = "LinkModel".asTaggedLogger
     private val client = HttpClient {
         install(ContentNegotiation) {
             json()
         }
     }
-    override val container: Container<LinkState, LinkEffect> = container(LinkState.Loading) {
+    override val container: Container<LinkListState, LinkListEffect> = container(LinkListState.Loading) {
         val exists = AppInitializeMMKV.link
 
         viewModelScope.launch block@{
@@ -38,7 +39,7 @@ class LinkModel : ViewModel(), ContainerHost<LinkState, LinkEffect> {
                 logger.e("检查友链地址失败", e)
                 if (exists.isEmpty()) {
                     reduce {
-                        LinkState.Error("检查友链地址失败: ${e.message ?: "未知错误"}")
+                        LinkListState.Error("检查友链地址失败: ${e.message ?: "未知错误"}")
                     }
                 }
                 return@block
@@ -47,13 +48,13 @@ class LinkModel : ViewModel(), ContainerHost<LinkState, LinkEffect> {
 
             if (latest != exists) {
                 AppInitializeMMKV.link = latest
-                reduce { LinkState.Success(latest) }
+                reduce { LinkListState.Success(latest) }
             }
         }
 
         if (exists.isNotEmpty()) {
             reduce {
-                LinkState.Success(exists)
+                LinkListState.Success(exists)
             }
         }
     }
@@ -64,10 +65,10 @@ class LinkModel : ViewModel(), ContainerHost<LinkState, LinkEffect> {
 }
 
 
-sealed interface LinkState {
-    data object Loading : LinkState
-    data class Error(val message: String) : LinkState
-    data class Success(val link: List<Link>) : LinkState
+sealed interface LinkListState {
+    data object Loading : LinkListState
+    data class Error(val message: String) : LinkListState
+    data class Success(val link: List<Link>) : LinkListState
 }
 
-sealed interface LinkEffect
+sealed interface LinkListEffect

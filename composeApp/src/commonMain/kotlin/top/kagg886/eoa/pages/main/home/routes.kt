@@ -17,7 +17,8 @@ import top.kagg886.eoa.pages.main.home.exam.list.ExamListRoute
 import top.kagg886.eoa.pages.main.home.gpa.GPARoute
 import top.kagg886.eoa.pages.main.home.gpa.GPAScreen
 import top.kagg886.eoa.pages.main.home.link.LinkRoute
-import top.kagg886.eoa.pages.main.home.link.LinkScreen
+import top.kagg886.eoa.pages.main.home.link.installLinkGraph
+import top.kagg886.eoa.pages.main.home.link.list.LinkListRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeScreen
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
@@ -50,5 +51,5 @@ val installHomeGraph: NavGraphBuilder.() -> Unit = {
         GPAScreen()
     }
 
-    composable<LinkRoute> { LinkScreen() }
+    navigation<LinkRoute>(startDestination = LinkListRoute, builder = installLinkGraph)
 }
