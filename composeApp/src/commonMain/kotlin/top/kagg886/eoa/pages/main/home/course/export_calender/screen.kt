@@ -1,8 +1,8 @@
 package top.kagg886.eoa.pages.main.home.course.export_calender
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ImportExport
@@ -60,7 +60,7 @@ fun CourseExportCalenderScreen() {
             }
         }
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             val manager = rememberCalenderState(name = "eoa-calender")
 
 
@@ -98,10 +98,8 @@ fun CourseExportCalenderScreen() {
 }
 
 @Composable
-private fun ColumnScope.Loading(msg: String) {
-    Spacer(Modifier.weight(1f))
+private fun Loading(msg: String) {
     CircularProgressIndicator()
     Spacer(Modifier.height(16.dp))
     Text(msg)
-    Spacer(Modifier.weight(1f))
 }
