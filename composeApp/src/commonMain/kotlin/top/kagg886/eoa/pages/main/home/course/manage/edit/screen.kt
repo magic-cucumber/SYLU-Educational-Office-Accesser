@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import StackedSnackbarAnimation
+import StackedSnakbarHostState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -10,9 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,16 +47,17 @@ fun CourseEditScreen(route: CourseEditRoute) {
     }
     val nav = LocalNavController.current
     val state by model.collectAsState()
-    val snack = rememberStackedSnackbarHostState(animation = StackedSnackbarAnimation.Slide)
+    val stack = rememberStackedSnackbarHostState(animation = StackedSnackbarAnimation.Slide)
     model.collectSideEffect {
         when (it) {
-            is CourseEditSideEffect.Toast -> snack.showSnackBar(it.type, it.message)
+            is CourseEditSideEffect.Toast -> stack.showSnackBar(it.type, it.message)
             is CourseEditSideEffect.NavigateBack -> nav.popBackStack()
         }
     }
 
     CourseEditScreenContent(
         state = state,
+        snack = stack,
         onCourseModified = { model.modifyCourse(it) },
         onCourseInfoConfirmed = { model.confirmModifyCourse() },
         onCourseInfoDismissed = { nav.popBackStack() },
@@ -76,6 +76,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
 @Composable
 private fun CourseEditScreenContent(
     state: CourseEditState,
+    snack: StackedSnakbarHostState,
     onCourseModified: (CourseEntity) -> Unit,
     onCourseInfoConfirmed: () -> Unit,
     onCourseInfoDismissed: () -> Unit,
@@ -86,6 +87,7 @@ private fun CourseEditScreenContent(
         is CourseEditState.Loading -> {
             DialogPageScaffold(
                 title = { Text("编辑课程") },
+                snack = snack,
                 icon = { Icon(Icons.Default.Edit, "") },
                 confirmButton = {}
             ) {
@@ -103,6 +105,7 @@ private fun CourseEditScreenContent(
 
             DialogPageScaffold(
                 title = { Text("编辑课程") },
+                snack = snack,
                 icon = { Icon(Icons.Default.Edit, "") },
                 confirmButton = {
                     TextButton(
@@ -172,38 +175,67 @@ private fun CourseEditBasic(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        var name by remember {
+            mutableStateOf(course.name)
+        }
+        LaunchedEffect(name) {
+            onCourseModified(course.copy(name = name))
+        }
         OutlinedTextField(
-            value = course.name,
+            value = name,
             onValueChange = {
-                onCourseModified(course.copy(name = it))
+                name = it
             },
             label = { Text("课程名称") },
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         )
 
+        var teacherName by remember {
+            mutableStateOf(course.teacherName)
+        }
+
+        LaunchedEffect(teacherName) {
+            onCourseModified(course.copy(teacherName = teacherName))
+        }
+
         OutlinedTextField(
-            value = course.teacherName,
+            value = teacherName,
             onValueChange = {
-                onCourseModified(course.copy(teacherName = it))
+                teacherName = it
             },
             label = { Text("教师姓名") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
+
+        var classroomName by remember {
+            mutableStateOf(course.classroomName)
+        }
+        LaunchedEffect(classroomName) {
+            onCourseModified(course.copy(classroomName = classroomName))
+        }
         OutlinedTextField(
-            value = course.classroomName,
+            value = classroomName,
             onValueChange = {
-                onCourseModified(course.copy(classroomName = it))
+                classroomName = it
             },
             label = { Text("教室名称") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
+        var credits by remember {
+            mutableStateOf(course.credits.toString())
+        }
+
+        LaunchedEffect(credits) {
+            val parsedCredits = credits.toFloatOrNull() ?: course.credits
+            onCourseModified(course.copy(credits = parsedCredits))
+        }
+
         OutlinedTextField(
-            value = course.credits.toString(),
+            value = credits,
             onValueChange = {
-                val parsedCredits = it.toFloatOrNull() ?: course.credits
-                onCourseModified(course.copy(credits = parsedCredits))
+                credits = it
             },
             label = { Text("学分") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

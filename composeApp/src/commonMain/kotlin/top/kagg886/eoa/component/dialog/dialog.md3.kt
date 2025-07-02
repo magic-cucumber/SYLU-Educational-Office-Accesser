@@ -3,6 +3,7 @@
 package top.kagg886.eoa.component.dialog
 
 import StackedSnackbarHost
+import StackedSnakbarHostState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -42,16 +43,18 @@ fun DialogPageScaffold(
     confirmButton: @Composable () -> Unit,
     dismissButton: @Composable (() -> Unit)? = null,
 
+    snack: StackedSnakbarHostState = rememberStackedSnackbarHostState(),
+
     title: @Composable (() -> Unit)? = null,
     icon: @Composable (() -> Unit)? = null,
     text: @Composable (() -> Unit)? = null,
+
 ) = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
-    val host = rememberStackedSnackbarHostState()
     val dialogPaneDescription = getString(Strings.Dialog)
 
     CompositionLocalProvider(
-        LocalSnackBarHost provides host
+        LocalSnackBarHost provides snack
     ) {
         Box(
             modifier =
@@ -92,7 +95,7 @@ fun DialogPageScaffold(
     }
 
     StackedSnackbarHost(
-        hostState = host,
+        hostState = snack,
         modifier = Modifier.align(Alignment.BottomCenter).padding(vertical = 16.dp),
     )
 }

@@ -2,8 +2,6 @@ package top.kagg886.eoa.pages.main.home.course.conflict
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -47,7 +45,6 @@ fun CourseConflictScreen(route: CourseConflictRoute) {
     val state by model.collectAsState()
 
     DialogPageScaffold(
-        modifier = Modifier.fillMaxSize(),
         title = { Text(text = "课程冲突") },
         confirmButton = {
             TextButton(onClick = { nav.popBackStack() }) {
@@ -60,7 +57,7 @@ fun CourseConflictScreen(route: CourseConflictRoute) {
             onCourseItemClicked = {
                 model.navigateTo(it.record)
             },
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)
+            modifier = Modifier.fillMaxHeight(0.8f)
         )
     }
 }
@@ -77,6 +74,9 @@ private fun CourseConflictScreenContent(
                 items(state.course) {
                     ListItem(
                         modifier = Modifier.clip(CardDefaults.shape).clickable { onCourseItemClicked(it) },
+                        colors = ListItemDefaults.colors(
+                            containerColor = AlertDialogDefaults.containerColor
+                        ),
                         headlineContent = {
                             Text(text = it.course.name)
                         },
