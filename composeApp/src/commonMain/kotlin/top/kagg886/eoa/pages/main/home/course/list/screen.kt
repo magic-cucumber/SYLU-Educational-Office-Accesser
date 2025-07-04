@@ -105,7 +105,10 @@ fun CourseListScreen() {
                                 modifier = Modifier.clickable {
                                     model.selectToWeek(it)
                                     jumpModal = false
-                                }
+                                },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = BottomSheetDefaults.ContainerColor
+                                )
                             )
                         }
                     }
