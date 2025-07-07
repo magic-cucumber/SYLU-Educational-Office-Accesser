@@ -128,6 +128,8 @@ internal class EOAHTMLClient : EOAClient {
                     throw RetryLimitException()
                 }
             }
+
+            install(RequestMergePlugin)
         }
     }
 
