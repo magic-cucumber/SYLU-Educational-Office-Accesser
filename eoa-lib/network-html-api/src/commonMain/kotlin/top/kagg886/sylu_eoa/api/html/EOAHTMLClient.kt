@@ -125,7 +125,7 @@ internal class EOAHTMLClient : EOAClient {
                         }
                         return@modifyRequest
                     }
-                    throw RetryLimitException()
+                    throw RetryLimitException(this.cause)
                 }
             }
 

@@ -42,7 +42,8 @@ class NeedCaptchaException(): InvalidCredentialsException("需要验证码")
  *
  * 此时会抛出这个错误。
  */
-class RetryLimitException(): EOAClientException("登录次数过多，请稍后再试。")
+class RetryLimitException(override val cause: Throwable?) :
+    EOAClientException("登录次数过多，请稍后再试。", cause = cause)
 
 /**
  * 未知错误

@@ -43,7 +43,14 @@ internal val RequestMergePlugin = createClientPlugin(
                     logger.d("start to proceed request: $fingerprint (${it.url.build()})")
 
                     //this response should be read more times, so we must wrap it.
-                    proceed(it).save()
+                    val data = proceed(it).save()
+
+                    lock.withLock {
+                        logger.d("execute complete, now let's remove deferred from cache")
+                        cache.remove(fingerprint)
+                    }
+
+                    data
                 }
             }
         }
@@ -65,7 +72,7 @@ private fun HttpRequestData.fingerprint(): String {
         data = """
             ${this.url}
             ${this.method.value}
-            ${this.headers.entries().joinToString { "${it.key} --> ${it.value}" }}
+            ${this.headers.entries().toList().sortedBy { it.key }.joinToString { "${it.key} --> ${it.value}" }}
             ${this.body}
         """.trimIndent().toByteArray()
     )

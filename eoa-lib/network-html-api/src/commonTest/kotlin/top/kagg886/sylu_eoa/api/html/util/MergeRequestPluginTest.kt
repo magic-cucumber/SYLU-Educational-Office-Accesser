@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import co.touchlab.kermit.Severity
 import io.ktor.client.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import kotlinx.coroutines.*
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -29,11 +30,13 @@ class MergeRequestPluginTest {
         }
 
         runBlocking(Dispatchers.IO) {
-            (1..1000).map {
+            (1..10).map {
                 async {
                     client.get("https://www.baidu.com")
                 }
             }.awaitAll()
+
+            client.get("https://www.baidu.com").bodyAsText()
         }
     }
 

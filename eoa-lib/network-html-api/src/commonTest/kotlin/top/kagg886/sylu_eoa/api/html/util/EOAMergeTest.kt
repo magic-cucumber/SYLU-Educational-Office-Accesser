@@ -24,9 +24,6 @@ class EOAMergeTest {
     fun testEOAMergeLogin() {
         val data = EOAHTMLClient()
         data.init(MemoryStorage())
-        data.username = "2203050528"
-        data.password = "123456"
-
 
         runBlocking(Dispatchers.IO) {
             val jobA = launch {
