@@ -1,38 +1,39 @@
 package top.kagg886.eoa.pages.main.about
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.painterResource
 import sylu_eoa.composeapp.generated.resources.Res
 import sylu_eoa.composeapp.generated.resources.good
 import sylu_eoa.composeapp.generated.resources.icon
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.filled.Coffee
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.withLink
-import kotlinx.coroutines.launch
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.config.BuildConfig
+import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
 data object AboutRoute
@@ -148,7 +149,7 @@ fun AboutScreen() {
                                             }
                                         )
                                         scope.launch {
-                                            snack.showSuccessSnackbar("已复制QQ群号")
+                                            snack.showSnackBar(SnackBarType.Success, "已复制QQ群号")
                                         }
                                     },
                                     block = {

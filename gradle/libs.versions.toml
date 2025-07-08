@@ -2,7 +2,6 @@
 adaptive-suite = "1.8.1"
 adaptive = "1.1.1"
 composePlaceholderMaterial3 = "1.0.11"
-composeStackedSnackbar = "1.0.4"
 filekitCore = "0.10.0-beta04"
 kolorPicker = "0.1.2"
 ksoup = "0.2.3"
@@ -34,6 +33,7 @@ buildConfig = "5.6.5"
 materialKolor = "2.1.1"
 sqliteBundled = "2.5.1"
 sweet = "0.1.2"
+sonner = "0.3.8"
 
 [libraries]
 adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
@@ -44,7 +44,7 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 androidx-uitest-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
 androidx-uitest-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-uiTest" }
 compose-placeholder-material3 = { module = "com.eygraber:compose-placeholder-material3", version.ref = "composePlaceholderMaterial3" }
-compose-stacked-snackbar = { module = "io.github.rizmaulana:compose-stacked-snackbar", version.ref = "composeStackedSnackbar" }
+sonner = { module = "io.github.dokar3:sonner", version.ref = "sonner" }
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
 kolor-picker = { module = "com.kborowy:kolor-picker", version.ref = "kolorPicker" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }

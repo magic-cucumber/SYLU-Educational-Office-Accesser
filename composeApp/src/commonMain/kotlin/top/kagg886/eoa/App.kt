@@ -1,8 +1,5 @@
 package top.kagg886.eoa
 
-import StackedSnackbarAnimation
-import StackedSnackbarHost
-import StackedSnakbarHostState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -21,10 +18,12 @@ import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
+import com.dokar.sonner.ToasterState
+import com.dokar.sonner.rememberToasterState
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import rememberStackedSnackbarHostState
 import top.kagg886.backend.config.AppSettingsMMKVType
+import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.RootEffect
 import top.kagg886.eoa.pages.RootRoute
 import top.kagg886.eoa.pages.announcement.AnnouncementRoute
@@ -43,7 +42,7 @@ val LocalNavController = staticCompositionLocalOf<NavHostController> {
     error("not provided")
 }
 
-val LocalSnackBarHost = staticCompositionLocalOf<StackedSnakbarHostState> {
+val LocalSnackBarHost = staticCompositionLocalOf<ToasterState> {
     error("not provided")
 }
 
@@ -56,10 +55,7 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
 internal fun App() = CompositionLocalProvider(
     LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
     LocalNavController provides rememberNavController(),
-    LocalSnackBarHost provides rememberStackedSnackbarHostState(
-        maxStack = 3,
-        animation = StackedSnackbarAnimation.Slide
-    ),
+    LocalSnackBarHost provides rememberToasterState(),
 ) {
     val nav = LocalNavController.current
     val snack = LocalSnackBarHost.current
@@ -108,9 +104,11 @@ internal fun App() = CompositionLocalProvider(
         )
     }
 
+    val dark =
+        (theme == AppSettingsMMKVType.AppTheme.Dark) || (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
     AppTheme(
         color = color,
-        nightTheme = (theme == AppSettingsMMKVType.AppTheme.Dark) || (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
+        nightTheme = dark
     ) {
         Box(Modifier.fillMaxSize()) {
             //业务
@@ -140,11 +138,11 @@ internal fun App() = CompositionLocalProvider(
             }
 
             //toaster
-            Box(Modifier.align(Alignment.BottomCenter)) {
-                StackedSnackbarHost(
-                    hostState = LocalSnackBarHost.current,
-                )
-            }
+            EOAToaster(
+                state = LocalSnackBarHost.current,
+                dark = dark,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

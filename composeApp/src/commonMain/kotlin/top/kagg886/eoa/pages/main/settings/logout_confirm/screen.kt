@@ -1,7 +1,5 @@
 package top.kagg886.eoa.pages.main.settings.logout_confirm
 
-import StackedSnackbarAnimation
-import StackedSnackbarDuration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
@@ -10,9 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.style.TextAlign
+import com.dokar.sonner.rememberToasterState
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectSideEffect
-import rememberStackedSnackbarHostState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.login.LoginRoute
@@ -28,7 +26,7 @@ data object LogoutConfirmRoute
 fun LogoutConfirmScreen() {
     val model = mainViewModel()
     val nav = LocalNavController.current
-    val snack = rememberStackedSnackbarHostState(animation = StackedSnackbarAnimation.Slide)
+    val snack = rememberToasterState()
     model.collectSideEffect { effect ->
         when (effect) {
             is MainRouteViewEffect.Toast -> {
@@ -41,7 +39,6 @@ fun LogoutConfirmScreen() {
                         Info -> "信息"
                     },
                     description = effect.message,
-                    duration = StackedSnackbarDuration.Short
                 )
             }
 

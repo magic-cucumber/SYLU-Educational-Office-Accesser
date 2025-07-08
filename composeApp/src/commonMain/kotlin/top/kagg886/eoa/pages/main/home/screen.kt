@@ -1,6 +1,5 @@
 package top.kagg886.eoa.pages.main.home
 
-import StackedSnackbarDuration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -68,7 +67,6 @@ fun HomeScreen(
                         Info -> "信息"
                     },
                     description = effect.message,
-                    duration = StackedSnackbarDuration.Short
                 )
             }
             is MainRouteViewEffect.NavigateToLogin -> {

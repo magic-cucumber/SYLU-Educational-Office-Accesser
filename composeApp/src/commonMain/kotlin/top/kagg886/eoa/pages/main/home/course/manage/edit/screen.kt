@@ -1,7 +1,5 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
-import StackedSnackbarAnimation
-import StackedSnakbarHostState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -18,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.dokar.sonner.ToasterState
+import com.dokar.sonner.rememberToasterState
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -25,7 +25,6 @@ import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import rememberStackedSnackbarHostState
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.LocalNavController
@@ -47,7 +46,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
     }
     val nav = LocalNavController.current
     val state by model.collectAsState()
-    val stack = rememberStackedSnackbarHostState(animation = StackedSnackbarAnimation.Slide)
+    val stack = rememberToasterState()
     model.collectSideEffect {
         when (it) {
             is CourseEditSideEffect.Toast -> stack.showSnackBar(it.type, it.message)
@@ -76,7 +75,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
 @Composable
 private fun CourseEditScreenContent(
     state: CourseEditState,
-    snack: StackedSnakbarHostState,
+    snack: ToasterState,
     onCourseModified: (CourseEntity) -> Unit,
     onCourseInfoConfirmed: () -> Unit,
     onCourseInfoDismissed: () -> Unit,

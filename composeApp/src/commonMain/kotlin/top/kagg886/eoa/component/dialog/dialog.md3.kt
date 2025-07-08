@@ -2,11 +2,9 @@
 
 package top.kagg886.eoa.component.dialog
 
-import StackedSnackbarHost
-import StackedSnakbarHostState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.AlertDialogContent
 import androidx.compose.material3.AlertDialogDefaults
@@ -22,13 +20,20 @@ import androidx.compose.material3.tokens.DialogTokens
 import androidx.compose.material3.value
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import rememberStackedSnackbarHostState
+import com.dokar.sonner.ToasterState
+import com.dokar.sonner.rememberToasterState
+import org.orbitmvi.orbit.compose.collectAsState
+import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.component.snack.EOAToaster
+import top.kagg886.eoa.pages.rootViewModel
 
 /**
  * ================================================
@@ -43,11 +48,11 @@ fun DialogPageScaffold(
     confirmButton: @Composable () -> Unit,
     dismissButton: @Composable (() -> Unit)? = null,
 
-    snack: StackedSnakbarHostState = rememberStackedSnackbarHostState(),
+    snack: ToasterState = rememberToasterState(),
 
     title: @Composable (() -> Unit)? = null,
     icon: @Composable (() -> Unit)? = null,
-    text: @Composable (() -> Unit)? = null,
+    text: @Composable (() -> Unit)? = null
 
 ) = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
@@ -94,9 +99,18 @@ fun DialogPageScaffold(
         }
     }
 
-    StackedSnackbarHost(
-        hostState = snack,
-        modifier = Modifier.align(Alignment.BottomCenter).padding(vertical = 16.dp),
+    val model = rootViewModel()
+    val rootState by model.collectAsState()
+
+    val theme by rootState.theme.collectAsState()
+
+    val dark =
+        (theme == AppSettingsMMKVType.AppTheme.Dark) || (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
+
+    EOAToaster(
+        state = snack,
+        dark = dark,
+        modifier = Modifier.align(Alignment.BottomCenter)
     )
 }
 

@@ -87,10 +87,10 @@ kotlin {
             implementation(libs.orbit.compose)
 
             implementation(libs.mkmb.core)
-            implementation(libs.compose.stacked.snackbar)
+            implementation(libs.sonner)
             implementation(libs.compose.placeholder.material3)
             implementation(libs.filekit.dialog)
-            implementation(libs.reveal.core)
+//            implementation(libs.reveal.core)
 
             implementation(project(":util"))
             //方便切换到闭源后端
