@@ -3,7 +3,7 @@ rootProject.name = "SYLU-EOA"
 pluginManagement {
     repositories {
         google {
-            content { 
+            content {
               	includeGroupByRegex("com\\.android.*")
               	includeGroupByRegex("com\\.google.*")
               	includeGroupByRegex("androidx.*")
@@ -18,7 +18,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         google {
-            content { 
+            content {
               	includeGroupByRegex("com\\.android.*")
               	includeGroupByRegex("com\\.google.*")
               	includeGroupByRegex("androidx.*")
@@ -42,3 +42,4 @@ include(":util")
 
 include(":lib:ics-generator")
 include(":lib:calender-exporter")
+include(":lib:kolor-picker")

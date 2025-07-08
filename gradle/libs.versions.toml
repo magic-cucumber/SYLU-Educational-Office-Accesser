@@ -3,7 +3,6 @@ adaptive-suite = "1.8.1"
 adaptive = "1.1.1"
 composePlaceholderMaterial3 = "1.0.11"
 filekitCore = "0.10.0-beta04"
-kolorPicker = "0.1.2"
 ksoup = "0.2.3"
 materialIconsExtended = "1.7.3"
 mkmb-core = "1.1.0"
@@ -46,7 +45,6 @@ androidx-uitest-junit4 = { module = "androidx.compose.ui:ui-test-junit4", versio
 compose-placeholder-material3 = { module = "com.eygraber:compose-placeholder-material3", version.ref = "composePlaceholderMaterial3" }
 sonner = { module = "io.github.dokar3:sonner", version.ref = "sonner" }
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
-kolor-picker = { module = "com.kborowy:kolor-picker", version.ref = "kolorPicker" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 mkmb-core = { module = "top.kagg886.mkmb:core", version.ref = "mkmb-core" }

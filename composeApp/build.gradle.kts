@@ -79,7 +79,6 @@ kotlin {
             implementation(libs.room.runtime)
             implementation(libs.room.paging)
             implementation(libs.materialKolor)
-            implementation(libs.kolor.picker)
 
 
             implementation(libs.orbit.core)
@@ -100,6 +99,7 @@ kotlin {
 
             implementation(project(":lib:ics-generator"))
             implementation(project(":lib:calender-exporter"))
+            implementation(project(":lib:kolor-picker"))
 
 
         }
