@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.lifecycle.ViewModel
+import kotlinx.datetime.Instant
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -14,6 +15,7 @@ class SettingsModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
 ) : ViewModel(), ContainerHost<SettingsState, SettingsEffect> {
+    private val syncDao = database.syncRecordDao()
     override val container: Container<SettingsState, SettingsEffect> =
         container(SettingsState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
@@ -52,10 +54,12 @@ class SettingsModel(
 
     private fun setDataUnsafe() = intent {
         val profile = AppSyncMMKV.profile!!
+        val last = syncDao.getLastSyncTime()!!.let { Instant.fromEpochMilliseconds(it) }
         reduce {
             SettingsState.Success(
                 stuId = AppLoginPropertiesMMKV.username,
                 profile = profile,
+                lastUpdateTime = last
             )
         }
     }
@@ -67,6 +71,7 @@ sealed interface SettingsState {
     data class Success(
         val stuId: String,
         val profile: UserProfile,
+        val lastUpdateTime: Instant,
     ) : SettingsState
 }
 

@@ -35,6 +35,7 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.update.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asTaggedLogger
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 @Composable
@@ -88,6 +89,12 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
             }
         }
 
+        viewModelScope.launch {
+            state.syncDuration.collect {
+                AppSettingsMMKV.syncDuration = it
+            }
+        }
+
         checkUpdate()
         checkAnnouncement()
     }
@@ -102,6 +109,10 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 
     fun postEOAModuleSetting(module: List<EOAHomeModule>) = intent {
         state.module.value = module
+    }
+
+    fun postSyncTimeSetting(time: Duration) = intent {
+        state.syncDuration.value = time
     }
 
     fun log(severity: Severity, tag: String, message: String, throwable: Throwable?) = intent {
@@ -155,6 +166,7 @@ data class RootState(
     val color: MutableStateFlow<Color> = MutableStateFlow(AppSettingsMMKV.color),
     val theme: MutableStateFlow<AppSettingsMMKVType.AppTheme> = MutableStateFlow(AppSettingsMMKV.theme),
     val module: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(AppSettingsMMKV.homeModule),
+    val syncDuration: MutableStateFlow<Duration> = MutableStateFlow(AppSettingsMMKV.syncDuration)
 )
 
 sealed interface RootEffect {

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.compose.animation.AnimatedContent
@@ -22,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.kborowy.colorpicker.KolorPicker
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -40,6 +44,10 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.showSnackBar
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 @Serializable
 data object SettingListRoute
@@ -64,6 +72,7 @@ fun SettingListScreen() {
     val color by rootState.color.collectAsState()
     val theme by rootState.theme.collectAsState()
     val module by rootState.module.collectAsState()
+    val syncDuration by rootState.syncDuration.collectAsState()
     val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
@@ -77,9 +86,11 @@ fun SettingListScreen() {
         color = color,
         theme = theme,
         module = module,
+        syncDuration = syncDuration,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
         onModuleChanged = rootModel::postEOAModuleSetting,
+        onSyncDurationChanged = rootModel::postSyncTimeSetting,
         onEggClicked = {
             snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
         }
@@ -95,10 +106,11 @@ private fun SettingScreenContent(
     color: Color,
     theme: AppSettingsMMKVType.AppTheme,
     module: List<EOAHomeModule>,
+    syncDuration: Duration,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
     onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
-
+    onSyncDurationChanged: (Duration) -> Job,
     onEggClicked: () -> Unit,
 ) {
     CollapsableTopAppBarScaffold(
@@ -459,6 +471,99 @@ private fun SettingScreenContent(
                         modifier = Modifier.clickable {
                             dialog = true
                         },
+                    )
+                }
+
+                item {
+                    Text(
+                        text = "同步设置",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                item {
+                    var dialog by remember {
+                        mutableStateOf(false)
+                    }
+                    val snack = LocalSnackBarHost.current
+                    if (dialog) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                dialog = false
+                                snack.showSnackBar(SnackBarType.Warning, "同步设置将会在重启后生效")
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        dialog = false
+                                        snack.showSnackBar(SnackBarType.Warning, "同步设置将会在重启后生效")
+                                    }
+                                ) {
+                                    Text("确定")
+                                }
+                            },
+                            title = {
+                                Text("时间选择: ${syncDuration.inWholeDays}天")
+                            },
+                            text = {
+                                Slider(
+                                    value = syncDuration.inWholeDays.toFloat(),
+                                    valueRange = 1f..30f,
+                                    onValueChange = {
+                                        println(it)
+                                        onSyncDurationChanged(it.toInt().days)
+                                    },
+                                    steps = 28
+                                )
+                            }
+                        )
+                    }
+
+                    ListItem(
+                        headlineContent = {
+                            Text("同步时长")
+                        },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.ViewTimeline,
+                                contentDescription = "同步时长",
+                            )
+                        },
+                        supportingContent = {
+                            when (state) {
+                                is SettingsState.Failed -> {
+                                    Text("同步成功后，下一次同步会延长多少天")
+                                }
+
+                                SettingsState.Loading -> {
+                                    Text("正在同步中，请稍等")
+                                }
+
+                                is SettingsState.Success -> {
+                                    val time by produceState<Duration?>(null) {
+                                        while (true) {
+                                            delay(1.seconds)
+                                            value =
+                                                (state.lastUpdateTime + syncDuration) - kotlinx.datetime.Clock.System.now()
+                                        }
+                                    }
+                                    time?.let {
+                                        if (it.isNegative()) {
+                                            Text("程序将会在下次启动时同步")
+                                            return@ListItem
+                                        }
+                                        Text("距离下次同步还有${it.toComponents { days, hours, _, _, _ -> "${days}天${hours}时" }}")
+                                    }
+                                }
+                            }
+                        },
+                        modifier = Modifier.clickable {
+                            dialog = true
+                        }
                     )
                 }
 

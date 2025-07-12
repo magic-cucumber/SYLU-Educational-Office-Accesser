@@ -18,15 +18,11 @@ interface SyncRecordDao {
         """
     SELECT updatedStamp 
     FROM sync_records 
-    WHERE updatedStamp >= (:now - :duration)
     ORDER BY updatedStamp DESC 
     LIMIT 1
 """
     )
-    suspend fun getLastSyncTime(
-        duration: Long,
-        now: Long = Clock.System.now().toEpochMilliseconds()
-    ): Long?
+    suspend fun getLastSyncTime(): Long?
 
     @Query("DELETE FROM sync_records")
     suspend fun clear()

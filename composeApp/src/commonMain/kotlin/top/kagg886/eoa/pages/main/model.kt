@@ -7,13 +7,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
+import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
@@ -25,7 +23,6 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.util.asTaggedLogger
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
@@ -41,15 +38,17 @@ fun mainViewModel(): MainRouteViewModel {
 }
 
 
-class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost<MainRouteViewState, MainRouteViewEffect> {
+class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
+    ContainerHost<MainRouteViewState, MainRouteViewEffect> {
     private val syncDao = database.syncRecordDao()
     private val logger = "MainRouteViewModel".asTaggedLogger
 
     override val container: Container<MainRouteViewState, MainRouteViewEffect> =
         container(MainRouteViewState.Empty) {
             val time = try {
-                syncDao.getLastSyncTime(7.days.inWholeMilliseconds)
+                syncDao.getLastSyncTime()
             } catch (e: Exception) {
+                logger.w("获取同步时间出错：", e)
                 reduce {
                     MainRouteViewState.SyncFailed(false, "数据库损坏，请删除数据库后重试")
                 }
@@ -63,26 +62,22 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
         if (state is MainRouteViewState.SyncProcess) {
             return@intent
         }
-        val lastSyncTime = syncDao.getLastSyncTime(7.days.inWholeMilliseconds) ?: 0
-        if (Clock.System.now() - Instant.fromEpochMilliseconds(lastSyncTime) > 3.days) {
+        val lastSyncTime = Instant.fromEpochMilliseconds(syncDao.getLastSyncTime() ?: 0)
+        if (Clock.System.now() - lastSyncTime > AppSettingsMMKV.syncDuration) {
             startSyncForce()
             return@intent
         }
         reduce {
-            MainRouteViewState.SyncSuccess
+            MainRouteViewState.SyncSuccess(lastSyncTime)
         }
     }
 
     fun startSyncForce() = intent {
-        val lastSyncTime = syncDao.getLastSyncTime(7.days.inWholeMilliseconds)
+        val lastSyncTime = syncDao.getLastSyncTime()
         val haveDirtyData = lastSyncTime != null
         reduce {
             MainRouteViewState.SyncProcess(
                 haveDirtyData = haveDirtyData,
-                lastUpdateTime = lastSyncTime?.let {
-                    Instant.fromEpochMilliseconds(it)
-                        .toLocalDateTime(TimeZone.currentSystemDefault())
-                }
             )
         }
         logger.i("开始同步")
@@ -118,7 +113,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
                 }
                 logger.i("成功同步GPA信息")
 
-                database.noticeDao().let { dao->
+                database.noticeDao().let { dao ->
                     dao.clear()
                     getNotice(true).forEach {
                         dao.insert(
@@ -195,7 +190,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
             logger.i("同步完毕！")
             syncDao.markSync()
             reduce {
-                MainRouteViewState.SyncSuccess
+                MainRouteViewState.SyncSuccess(Clock.System.now())
             }
             return@intent
         }
@@ -209,7 +204,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
                 )
             )
             clear()
-            delay(3. seconds)
+            delay(3.seconds)
             postSideEffect(
                 MainRouteViewEffect.NavigateToLogin
             )
@@ -250,7 +245,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(), ContainerHost
                 message = "登出成功！"
             )
         )
-        delay(3. seconds)
+        delay(3.seconds)
         postSideEffect(
             MainRouteViewEffect.NavigateToLogin
         )
@@ -272,13 +267,13 @@ sealed interface MainRouteViewState {
      * 正在同步
      * @param haveDirtyData 是否在之前同步过
      */
-    data class SyncProcess(val haveDirtyData: Boolean = false, val lastUpdateTime: LocalDateTime?) :
+    data class SyncProcess(val haveDirtyData: Boolean = false) :
         MainRouteViewState
 
     /**
      * 同步成功
      */
-    data object SyncSuccess : MainRouteViewState
+    data class SyncSuccess(val lastUpdateTime: Instant) : MainRouteViewState
 
     /**
      * 同步失败
@@ -290,7 +285,7 @@ sealed interface MainRouteViewState {
 }
 
 sealed interface MainRouteViewEffect {
-    data object NavigateToLogin:  MainRouteViewEffect
+    data object NavigateToLogin : MainRouteViewEffect
     data class Toast(
         val type: SnackBarType,
         val message: String
