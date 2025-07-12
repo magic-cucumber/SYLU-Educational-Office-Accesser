@@ -133,7 +133,7 @@ private fun SettingScreenContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(top = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -299,6 +299,12 @@ private fun SettingScreenContent(
                     var dialog by remember { mutableStateOf(false) }
                     ListItem(
                         headlineContent = { Text("系统主题") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.Contrast,
+                                "主题色"
+                            )
+                        },
                         trailingContent = {
                             Text(
                                 when (theme) {
@@ -341,6 +347,12 @@ private fun SettingScreenContent(
                     var dialog by remember { mutableStateOf(false) }
                     ListItem(
                         headlineContent = { Text("主题色") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.Colorize,
+                                "主题色"
+                            )
+                        },
                         trailingContent = {
                             Text(
                                 BUILTIN_COLORS.entries.find { (_, value) -> value == color }?.key
@@ -470,6 +482,12 @@ private fun SettingScreenContent(
                         supportingContent = { Text("自定义底部导航栏的内容。\n最多定制3条，多余的内容会存放进 '更多' 中") },
                         modifier = Modifier.clickable {
                             dialog = true
+                        },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.CallToAction,
+                                "主题色"
+                            )
                         },
                     )
                 }

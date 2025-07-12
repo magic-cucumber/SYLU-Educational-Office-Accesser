@@ -431,6 +431,9 @@ private fun ExamDetailTable(
                     modifier = Modifier.placeholder(
                         visible = visible,
                         highlight = PlaceholderHighlight.shimmer()
+                    ),
+                    colors = ListItemDefaults.colors(
+                        containerColor = CardDefaults.cardColors().containerColor
                     )
                 )
             }
