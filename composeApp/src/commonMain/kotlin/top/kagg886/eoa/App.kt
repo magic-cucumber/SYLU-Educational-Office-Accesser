@@ -30,7 +30,7 @@ import top.kagg886.eoa.pages.announcement.AnnouncementRoute
 import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.pages.update.UpdateRoute
+import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
@@ -70,7 +70,7 @@ internal fun App() = CompositionLocalProvider(
 
             is RootEffect.NavigateToUpdatePage -> {
                 nav.navigate(
-                    UpdateRoute(
+                    UpdateDetailRoute(
                         it.data.tag_name,
                         it.data.body.replace("\r", ""),
                         "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"

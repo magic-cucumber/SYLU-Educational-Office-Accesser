@@ -32,7 +32,7 @@ import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
-import top.kagg886.eoa.pages.update.UpdateInfo
+import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asTaggedLogger
 import kotlin.time.Duration
@@ -57,6 +57,8 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
             )
         }
     }
+
+    override fun onCleared() = client.close()
 
     val database: AppDatabase = databaseBuilder().apply {
         fallbackToDestructiveMigrationOnDowngrade(true)

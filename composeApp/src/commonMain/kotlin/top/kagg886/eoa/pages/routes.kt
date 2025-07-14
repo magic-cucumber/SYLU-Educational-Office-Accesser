@@ -15,7 +15,8 @@ import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.home.HomeRoute
 import top.kagg886.eoa.pages.main.installMainGraph
 import top.kagg886.eoa.pages.update.UpdateRoute
-import top.kagg886.eoa.pages.update.UpdateScreen
+import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
+import top.kagg886.eoa.pages.update.installUpdateGraph
 import top.kagg886.eoa.pages.welcome.WelcomeRoute
 import top.kagg886.eoa.pages.welcome.WelcomeScreen
 
@@ -26,7 +27,7 @@ val installEOAGraph: (NavGraphBuilder.() -> Unit) = {
     navigation<RootRoute>(startDestination = WelcomeRoute) {
         composable<WelcomeRoute> { WelcomeScreen() }
         composable<LoginRoute> { LoginScreen() }
-        dialog<UpdateRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { UpdateScreen(it.toRoute()) }
+        navigation<UpdateRoute>(startDestination = UpdateDetailRoute, builder = installUpdateGraph)
         dialog<AnnouncementRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
             AnnouncementScreen(
                 it.toRoute()

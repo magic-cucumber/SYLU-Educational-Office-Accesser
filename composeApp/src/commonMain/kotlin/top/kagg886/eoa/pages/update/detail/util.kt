@@ -1,6 +1,6 @@
-package top.kagg886.eoa.pages.update
+package top.kagg886.eoa.pages.update.detail
 
-import kotlinx.serialization.*
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class UpdateInfo(
