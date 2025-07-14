@@ -54,17 +54,27 @@ fun CourseListScreen() {
     HomeScreen(
         route = EOAHomeModule.COURSE,
         title = {
-            AnimatedContent(
-                targetState = (state as? CourseListState.Success)?.state?.currentPage ?: -1,
-                transitionSpec = createMenuButtonAnim { initialState > targetState }
-            ) {
-                Text(
-                    text = "第 ${it + 1} 周",
-                    modifier = Modifier.placeholder(
-                        visible = it == -1,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
-                )
+            when (val it = state) {
+                is CourseListState.Success -> {
+                    val it = it.state.currentPage
+
+                    AnimatedContent(
+                        targetState = it,
+                        transitionSpec = createMenuButtonAnim { initialState > targetState }
+                    ) {
+                        Text(
+                            text = "第 ${it + 1} 周",
+                            modifier = Modifier.placeholder(
+                                visible = it == -1,
+                                highlight = PlaceholderHighlight.shimmer()
+                            )
+                        )
+                    }
+                }
+
+                else -> {
+                    Text("课程表")
+                }
             }
         },
         menu = {

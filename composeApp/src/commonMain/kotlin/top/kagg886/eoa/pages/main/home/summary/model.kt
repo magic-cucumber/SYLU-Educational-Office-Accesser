@@ -1,13 +1,7 @@
 package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.lifecycle.ViewModel
-import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.until
+import kotlinx.datetime.*
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -17,8 +11,6 @@ import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 class SummaryModel(
     private val syncState: MainRouteViewState,
@@ -65,12 +57,17 @@ class SummaryModel(
     fun setDataUnsafe() = intent {
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
-        val currentWeek = AppSyncMMKV.calender!!.currentWeek()
-        if (currentWeek <= 0) {
-            reduce {
-                SummaryState.FailedButSuccess(
-                    msg = "当前学期未开始或已结束"
-                )
+        val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
+
+        if (currentWeek == -1) {
+            when {
+                isInHoliday -> reduce {
+                    SummaryState.FailedButSuccess("享受假期吧！")
+                }
+
+                isBeforeInTerm -> reduce {
+                    SummaryState.FailedButSuccess("准备开学吧！")
+                }
             }
             return@intent
         }

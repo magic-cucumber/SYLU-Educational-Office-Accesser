@@ -2,13 +2,7 @@ package top.kagg886.eoa.pages.main.home.course.export_calender
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
@@ -19,6 +13,7 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.calender.data.Event
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getTimeByLessonNumber
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -46,8 +41,13 @@ class CourseExportCalenderModel(
 
         val calendar = AppSyncMMKV.calender!!
 
-        if (calendar.currentWeek() == -1) {
-            postSideEffect(CourseExportCalenderSideEffect.NavigateBack("当前未处于学期内，请等待开学后再进行导出"))
+        val (isInHoliday, isBeforeInTerm, weekNumber) = calendar.calculateWeekNumber()
+
+        if (weekNumber == -1) {
+            when {
+                isInHoliday -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
+                isBeforeInTerm -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("请等待开学后再进行导出"))
+            }
             return@intent
         }
 

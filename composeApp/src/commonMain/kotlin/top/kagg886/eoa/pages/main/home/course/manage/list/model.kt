@@ -1,9 +1,6 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.lifecycle.ViewModel
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -12,7 +9,6 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
-import top.kagg886.eoa.pages.main.home.course.list.CourseListState
 import top.kagg886.util.calculateWeekNumber
 
 class CourseManageListModel(
@@ -57,12 +53,17 @@ class CourseManageListModel(
         }
 
     fun setDataUnsafe(onlyShowUserCourse:Boolean = false) = intent {
-        val currentWeek = AppSyncMMKV.calender!!.currentWeek()
-        if (currentWeek <= 0) {
-            reduce {
-                CourseManageState.FailedButSuccess(
-                    msg = "当前学期未开始或已结束"
-                )
+        val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
+
+        if (currentWeek == -1) {
+            when {
+                isInHoliday -> reduce {
+                    CourseManageState.FailedButSuccess("享受假期吧！")
+                }
+
+                isBeforeInTerm -> reduce {
+                    CourseManageState.FailedButSuccess("准备开学吧！")
+                }
             }
             return@intent
         }

@@ -1,8 +1,6 @@
 package top.kagg886.util
 
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.LocalTime
+import kotlinx.datetime.*
 import kotlinx.datetime.format.char
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 
@@ -40,14 +38,22 @@ fun LocalTime.getPeriodNumber(): Int? = when (this) {
     else -> null
 }
 
-fun SchoolCalender.calculateWeekNumber(date: LocalDate): Int {
+/**
+ * 计算当前周数，返回元组。
+ *
+ * first：是否在放假
+ * second：是否开学前
+ * third：当前周数
+ */
+fun SchoolCalender.calculateWeekNumber(date: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())): Triple<Boolean, Boolean, Int> {
     if (date > end) {
-        throw IllegalStateException("放假中")
+        return Triple(true, false, -1)
     }
     if (date < start) {
-        throw IllegalStateException("开学之前")
+        return Triple(false, true, -1)
     }
-    return (date.toEpochDays() - start.toEpochDays()) / 7 + 1
+
+    return Triple(false, false, (date.toEpochDays() - start.toEpochDays()) / 7 + 1)
 }
 
 val ChinaDateFormater = LocalDateTime.Format {

@@ -1,12 +1,6 @@
 package top.kagg886.sylu_eoa.api.v2.bean
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.until
+import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -18,8 +12,12 @@ data class SchoolCalender(
     fun currentWeek(
         now: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     ): Int {
-        if (now < start || now > end) {
+        if (now < start) {
             return -1
+        }
+
+        if (now > end) {
+            return -2
         }
 
         var start = start

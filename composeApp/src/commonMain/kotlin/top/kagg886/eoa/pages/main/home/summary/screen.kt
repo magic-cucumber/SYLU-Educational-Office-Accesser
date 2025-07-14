@@ -378,9 +378,7 @@ private inline fun SummaryCard(
                     showPlaceHolder = showPlaceHolder,
                     details = when (state) {
                         is SummaryState.Success -> "第 ${state.weekNumber} 周"
-                        is SummaryState.Failed -> "获取失败"
-                        is SummaryState.Loading -> "加载中"
-                        is SummaryState.FailedButSuccess -> state.msg
+                        else -> "-"
                     },
                     title = "当前周数",
                 )
@@ -388,9 +386,7 @@ private inline fun SummaryCard(
                     showPlaceHolder = showPlaceHolder,
                     details = when (state) {
                         is SummaryState.Success -> "共 ${state.plan.size} 节课"
-                        is SummaryState.Failed -> "获取失败"
-                        is SummaryState.Loading -> "加载中"
-                        is SummaryState.FailedButSuccess -> state.msg
+                        else -> "-"
                     },
                     title = "今日课程数",
                 )
@@ -399,9 +395,7 @@ private inline fun SummaryCard(
                     showPlaceHolder = showPlaceHolder,
                     details = when (state) {
                         is SummaryState.Success -> "${(state.progress * 100).toFixed(2)}%"
-                        is SummaryState.Failed -> "获取失败"
-                        is SummaryState.Loading -> "加载中"
-                        is SummaryState.FailedButSuccess -> state.msg
+                        else -> "-"
                     },
                     title = "学期进度"
                 )

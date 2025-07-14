@@ -22,6 +22,7 @@ import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
+import kotlin.time.Duration.Companion.seconds
 
 internal class EOAHTMLClient : EOAClient {
     private var storage by Delegates.notNull<StorageCookieStorage>()
@@ -55,7 +56,7 @@ internal class EOAHTMLClient : EOAClient {
             }
 
             install(HttpTimeout) {
-                requestTimeoutMillis = 10 * 10000
+                requestTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
 
             install(HttpRequestRetry) {

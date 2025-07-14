@@ -19,6 +19,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.ics.data.AlarmAction
 import top.kagg886.ics.ics
+import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getTimeByLessonNumber
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.minutes
@@ -39,8 +40,13 @@ class CourseExportIcsModel(
         }
         val calendar = AppSyncMMKV.calender!!
 
-        if (calendar.currentWeek() == -1) {
-            postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前未处于学期内，请等待开学后再进行导出"))
+        val (isInHoliday, isBeforeInTerm, weekNumber) = calendar.calculateWeekNumber()
+
+        if (weekNumber == -1) {
+            when {
+                isInHoliday -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
+                isBeforeInTerm -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("请等待开学后再进行导出"))
+            }
             return@intent
         }
 

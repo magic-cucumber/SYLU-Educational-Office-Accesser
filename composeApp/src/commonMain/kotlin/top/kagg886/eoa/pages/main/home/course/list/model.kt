@@ -1,22 +1,12 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.runtime.withFrameNanos
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
-import top.kagg886.util.logger
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
@@ -28,12 +18,17 @@ class CourseListViewModel(
         }
 
     fun setDataUnsafe() = intent {
-        val currentWeek = AppSyncMMKV.calender!!.currentWeek()
-        if (currentWeek <= 0) {
-            reduce {
-                CourseListState.FailedButSuccess(
-                    msg = "当前学期未开始或已结束"
-                )
+        val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
+
+        if (currentWeek == -1) {
+            when {
+                isInHoliday -> reduce {
+                    CourseListState.FailedButSuccess("享受假期吧！")
+                }
+
+                isBeforeInTerm -> reduce {
+                    CourseListState.FailedButSuccess("准备开学吧！")
+                }
             }
             return@intent
         }
