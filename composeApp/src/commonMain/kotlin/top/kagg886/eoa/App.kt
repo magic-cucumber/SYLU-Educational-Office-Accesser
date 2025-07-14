@@ -31,6 +31,7 @@ import top.kagg886.eoa.pages.installEOAGraph
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
+import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
@@ -73,7 +74,7 @@ internal fun App() = CompositionLocalProvider(
                     UpdateDetailRoute(
                         it.data.tag_name,
                         it.data.body.replace("\r", ""),
-                        "https://gitee.com/kagg886/sylu-educational-office-accesser/releases/latest"
+                        downloadResourceUrl(it.data)
                     )
                 )
             }
@@ -158,3 +159,5 @@ fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this.logger(
         ) = logger.log(Severity.valueOf(level.name), "Coil - $tag", throwable, message ?: "")
     }
 )
+
+expect fun downloadResourceUrl(info: UpdateInfo): String

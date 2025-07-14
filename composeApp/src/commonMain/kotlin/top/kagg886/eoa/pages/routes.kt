@@ -27,7 +27,7 @@ val installEOAGraph: (NavGraphBuilder.() -> Unit) = {
     navigation<RootRoute>(startDestination = WelcomeRoute) {
         composable<WelcomeRoute> { WelcomeScreen() }
         composable<LoginRoute> { LoginScreen() }
-        navigation<UpdateRoute>(startDestination = UpdateDetailRoute, builder = installUpdateGraph)
+        navigation<UpdateRoute>(startDestination = UpdateDetailRoute("", "", ""), builder = installUpdateGraph)
         dialog<AnnouncementRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
             AnnouncementScreen(
                 it.toRoute()
