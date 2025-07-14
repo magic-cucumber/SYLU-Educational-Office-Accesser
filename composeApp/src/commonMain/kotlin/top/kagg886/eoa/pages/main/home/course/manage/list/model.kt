@@ -55,22 +55,14 @@ class CourseManageListModel(
     fun setDataUnsafe(onlyShowUserCourse:Boolean = false) = intent {
         val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
 
-        if (currentWeek == -1) {
-            when {
-                isInHoliday -> reduce {
-                    CourseManageState.FailedButSuccess("享受假期吧！")
-                }
+        var w = currentWeek
+        if (isBeforeInTerm) w = 0
+        if (isInHoliday) w = AppSyncMMKV.calender!!.count()
 
-                isBeforeInTerm -> reduce {
-                    CourseManageState.FailedButSuccess("准备开学吧！")
-                }
-            }
-            return@intent
-        }
         val entity = courseDao.all()
         reduce {
             CourseManageState.Success(
-                currentWeek = currentWeek,
+                currentWeek = w,
                 data = entity,
                 onlyShowUserCourse = onlyShowUserCourse,
             )
@@ -143,10 +135,6 @@ sealed interface CourseManageState {
         val currentWeek: Int,
         val onlyShowUserCourse: Boolean,
         val data: List<CourseEntity>
-    ) : CourseManageState
-
-    data class FailedButSuccess(
-        val msg: String,
     ) : CourseManageState
 }
 
