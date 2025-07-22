@@ -1,3 +1,7 @@
+- **2025-07-22**
+
+  EOA使用情况小调查：[https://www.wjx.cn/vm/QIWfwfI.aspx](https://www.wjx.cn/vm/QIWfwfI.aspx)
+
 - **2025-07-01**
 
   求求你理了，装个空调吧，热死了😭
