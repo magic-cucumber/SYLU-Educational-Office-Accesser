@@ -35,6 +35,13 @@ class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost
         }
     }
 
+    fun clean() = intent {
+        withContext(Dispatchers.IO) {
+            appLogDao.clear()
+        }
+        postSideEffect(LogcatSideEffect.ShowToast(SnackBarType.Success, "日志已清空"))
+    }
+
     fun export() = intent {
         val data = withContext(Dispatchers.IO) {
             appLogDao.getLogs()

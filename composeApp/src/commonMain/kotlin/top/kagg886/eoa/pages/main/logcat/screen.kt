@@ -55,7 +55,8 @@ fun LogcatScreen() {
         LogcatScreenContent(
             modifier = Modifier.fillMaxSize(),
             state = state,
-            onExportButtonClicked = model::export
+            onExportButtonClicked = model::export,
+            onClearButtonClicked = model::clean
         )
 
         var expand by remember {
@@ -78,6 +79,7 @@ private fun LogcatScreenContent(
     modifier: Modifier = Modifier,
     state: LogcatState,
     onExportButtonClicked: () -> Unit = {},
+    onClearButtonClicked: () -> Unit = {},
 ) = when (state) {
     LogcatState.Loading -> {}
     is LogcatState.LoadingSuccess -> {
@@ -127,7 +129,8 @@ private fun LogcatScreenContent(
                             LogcatScreenActions(
                                 show = show,
                                 onDismiss = { show = false },
-                                onExportButtonClicked = onExportButtonClicked
+                                onExportButtonClicked = onExportButtonClicked,
+                                onClearButtonClicked = onClearButtonClicked
                             )
                         }
                     )
@@ -266,10 +269,12 @@ private fun LogcatScreenActions(
     show: Boolean,
     onDismiss: () -> Unit,
     onExportButtonClicked: () -> Unit,
+    onClearButtonClicked: () -> Unit
 ) {
     DropdownMenu(
         expanded = show,
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
+        modifier = modifier
     ) {
         DropdownMenuItem(
             text = {
@@ -280,6 +285,19 @@ private fun LogcatScreenActions(
             },
             onClick = {
                 onExportButtonClicked()
+                onDismiss()
+            }
+        )
+
+        DropdownMenuItem(
+            text = {
+                Text("清空日志")
+            },
+            leadingIcon = {
+                Icon(Icons.Default.Close, "close")
+            },
+            onClick = {
+                onClearButtonClicked()
                 onDismiss()
             }
         )

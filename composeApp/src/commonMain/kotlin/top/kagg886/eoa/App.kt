@@ -11,10 +11,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavHostController
+import androidx.navigation.NavUri
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
@@ -34,6 +35,7 @@ import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.asTaggedLogger
@@ -53,7 +55,7 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-internal fun App() = CompositionLocalProvider(
+internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
     LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
     LocalNavController provides rememberNavController(),
     LocalSnackBarHost provides rememberToasterState(),
@@ -94,15 +96,16 @@ internal fun App() = CompositionLocalProvider(
     val theme by rootState.theme.collectAsState()
 
     LaunchedEffect(Unit) {
-        co.touchlab.kermit.Logger.addLogWriter(
-            object : LogWriter() {
-                override fun log(
-                    severity: Severity, message: String, tag: String, throwable: Throwable?
-                ) {
-                    rootModel.log(severity, tag, message, throwable)
-                }
-            }
-        )
+        registerKermitLoggerIfExists(rootModel.appLogDao)
+    }
+
+    // 处理深层链接
+    LaunchedEffect(deepLinkUri) {
+        if (deepLinkUri != null) {
+            nav.handleDeepLink(
+                NavDeepLinkRequest.Builder.fromUri(NavUri(deepLinkUri)).build()
+            )
+        }
     }
 
     val dark =

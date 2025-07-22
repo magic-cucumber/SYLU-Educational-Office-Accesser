@@ -117,6 +117,11 @@ kotlin {
             implementation(libs.androidx.activityCompose)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.ktor.client.okhttp)
+
+            // Jetpack Glance for widgets
+            implementation("androidx.glance:glance-appwidget:1.1.0")
+            implementation("androidx.glance:glance-material3:1.1.0")
+            implementation("androidx.work:work-runtime-ktx:2.9.0")
         }
 
         jvmMain.dependencies {
