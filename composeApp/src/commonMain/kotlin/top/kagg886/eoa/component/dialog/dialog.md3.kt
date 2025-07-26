@@ -24,9 +24,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
 import org.orbitmvi.orbit.compose.collectAsState
@@ -58,15 +61,15 @@ fun DialogPageScaffold(
 
     val dialogPaneDescription = getString(Strings.Dialog)
 
-    CompositionLocalProvider(
-        LocalSnackBarHost provides snack
-    ) {
+    CompositionLocalProvider(LocalSnackBarHost provides snack) {
         Box(
             modifier =
                 modifier
                     .sizeIn(
                         minWidth = DialogMinWidth,
-                        maxWidth = DialogMaxWidth,
+                        maxWidth = with(LocalDensity.current) {
+                            min(DialogMaxWidth, LocalWindowInfo.current.containerSize.width.toDp() * 0.9f)
+                        },
                     )
                     .then(Modifier.semantics { paneTitle = dialogPaneDescription }),
             propagateMinConstraints = true

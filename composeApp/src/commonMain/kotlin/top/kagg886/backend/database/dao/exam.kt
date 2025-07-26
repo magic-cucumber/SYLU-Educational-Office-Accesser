@@ -1,16 +1,19 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.*
+import kotlinx.datetime.LocalDateTime
 import top.kagg886.backend.database.converters.ExamConverter
+import top.kagg886.backend.database.converters.LocalDateTimeConverter
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
 @Entity(tableName = "exams")
-@TypeConverters(ExamConverter::class)
+@TypeConverters(ExamConverter::class, LocalDateTimeConverter::class)
 data class ExamEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val year: String, //学年代号
     val semester: String, //学期代号
+    val courseID: String, //课程id
     val detailsID: String,//详情id
     val name: String, //课程名
     val teacherName: String, //教师名
@@ -23,6 +26,7 @@ data class ExamEntity(
     val degree: Boolean, //是否学位,
 
     val detail: List<List<String>>, //详细表单
+    val submitTime: LocalDateTime, //提交时间,
 )
 
 
@@ -55,11 +59,15 @@ interface ExamDao {
 
     @Query("SELECT * FROM exams WHERE id = :id")
     suspend fun getById(id: Long): ExamEntity?
+
+    @Query("SELECT * FROM exams WHERE courseID = :courseID ORDER BY submitTime ASC")
+    suspend fun getTimeLineByCourseId(courseID: String): List<ExamEntity>?
 }
 
 fun ExamItem.toEntity(detail: List<List<String>>) = ExamEntity(
     year = year,
     semester = semester,
+    courseID = courseID,
     detailsID = detailsID,
     name = name,
     teacherName = teacher,
@@ -69,12 +77,14 @@ fun ExamItem.toEntity(detail: List<List<String>>) = ExamEntity(
     relateScore = relateScore,
     status = examStatus,
     degree = degreeProgram,
-    detail = detail
+    detail = detail,
+    submitTime = submitTime,
 )
 
 fun ExamEntity.toItem() = ExamItem(
     year = year,
     semester = semester,
+    courseID = courseID,
     detailsID = detailsID,
     name = name,
     teacher = teacherName,
@@ -85,4 +95,5 @@ fun ExamEntity.toItem() = ExamItem(
     relateScore = relateScore,
     completionCode = "",
     _degreeProgram = "",
+    submitTime = submitTime
 )

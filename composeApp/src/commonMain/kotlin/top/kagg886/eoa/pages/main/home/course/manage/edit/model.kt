@@ -6,6 +6,7 @@ import kotlinx.datetime.LocalDate
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
+import top.kagg886.backend.config.AppAiMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
@@ -15,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class CourseEditModel(
     database: AppDatabase,
-    val courseId: Long?
+    courseId: Long?
 ) : ViewModel(), ContainerHost<CourseEditState, CourseEditSideEffect> {
 
     private val courseDao = database.courseDao()
@@ -38,11 +39,15 @@ class CourseEditModel(
 
             reduce {
                 CourseEditState.Success(
+                    courseId = courseId,
                     courseInfo = courseInfo,
                     recordInfo = records,
                     startDate = AppSyncMMKV.calender!!.start,
                     allWeekNumber = AppSyncMMKV.calender!!.count(),
-                    enableSaveButton = true
+                    enableSaveButton = true,
+                    aiKey = AppAiMMKV.apiKey,
+                    aiEndpoint = AppAiMMKV.endpoint,
+                    aiModel = AppAiMMKV.model
                 )
             }
         }
@@ -75,8 +80,8 @@ class CourseEditModel(
                 return@runOn
             }
             reduce { state.copy(enableSaveButton = false) } //防止重复点击
-            val id = courseId?.apply { courseDao.update(state.courseInfo) } ?: courseDao.insert(state.courseInfo)
-            if (courseId == null) {
+            val id = state.courseId?.apply { courseDao.update(state.courseInfo) } ?: courseDao.insert(state.courseInfo)
+            if (state.courseId == null) {
                 courseRecordDao.insertAll(state.recordInfo.map { it.copy(courseId = id) })
             }
             postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Success, "修改成功"))
@@ -95,14 +100,14 @@ class CourseEditModel(
         runOn<CourseEditState.Success> {
             val record = CourseRecordEntity(
                 id = null,
-                courseId = courseId,
+                courseId = state.courseId,
                 weekNumber = weekNumber,
                 dayOfWeek = dayOfWeek,
                 periodOfDay = periodOfDay,
                 isUserAdded = true
             )
             //是修改模式则编辑数据库
-            if (courseId != null) {
+            if (state.courseId != null) {
                 courseRecordDao.insert(record)
             }
             reduce {
@@ -127,17 +132,62 @@ class CourseEditModel(
             }
         }
     }
+
+    @OptIn(OrbitExperimental::class)
+    fun setAiEndpoint(it: String) = intent {
+        runOn<CourseEditState.Success> {
+            AppAiMMKV.endpoint = it
+            reduce {
+                state.copy(
+                    aiEndpoint = it
+                )
+            }
+        }
+    }
+
+    @OptIn(OrbitExperimental::class)
+    fun setAiKey(it: String) = intent {
+        runOn<CourseEditState.Success> {
+            AppAiMMKV.apiKey = it
+            reduce {
+                state.copy(
+                    aiKey = it
+                )
+            }
+        }
+    }
+
+    @OptIn(OrbitExperimental::class)
+    fun setAiModel(it: String) = intent {
+        runOn<CourseEditState.Success> {
+            AppAiMMKV.model = it
+            reduce {
+                state.copy(
+                    aiModel = it
+                )
+            }
+        }
+    }
+
+    fun generateCourseByAI(it: String) = intent {
+        postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Info, "敬请期待"))
+    }
 }
 
 
 sealed interface CourseEditState {
     data object Loading : CourseEditState
     data class Success(
+        val courseId: Long?,
         val enableSaveButton: Boolean,
         val courseInfo: CourseEntity,
         val recordInfo: List<CourseRecordEntity>,
         val allWeekNumber: Int,
         val startDate: LocalDate,
+
+        val aiKey: String,
+        val aiEndpoint: String,
+        val aiModel: String
     ) : CourseEditState
 }
 

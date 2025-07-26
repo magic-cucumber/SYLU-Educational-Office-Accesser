@@ -1,10 +1,6 @@
 package top.kagg886.calender.util
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import platform.EventKit.EKEntityType
 import top.kagg886.calender.EKCalenderManager
 import top.kagg886.calender.NativeCalenderManager
@@ -17,9 +13,14 @@ internal actual fun rememberCalenderPermissionRequester(manager: NativeCalenderM
     }
 
     LaunchedEffect(Unit) {
-        (manager as EKCalenderManager).eventStore.requestAccessToEntityType(EKEntityType.EKEntityTypeEvent) { granted, _ ->
+        val manager = manager as EKCalenderManager
+        manager.eventStore.requestAccessToEntityType(EKEntityType.EKEntityTypeEvent) { granted, _ ->
+
             state.value = when {
-                granted -> CalenderPermissionGrantType.ALL_GRANTED
+                granted -> {
+                    manager.initializeCalendar()
+                    CalenderPermissionGrantType.ALL_GRANTED
+                }
                 else -> CalenderPermissionGrantType.DENY_PERMANENT
             }
         }

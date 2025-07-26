@@ -5,7 +5,16 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 data class YearSelectBean(
     val yearDisplay: String,
     val yearCode: String
-)
+) {
+    override fun equals(other: Any?): Boolean =
+        if (other !is YearSelectBean) false else yearDisplay == other.yearDisplay && yearCode == other.yearCode
+
+    override fun hashCode(): Int {
+        var result = yearDisplay.hashCode()
+        result = 31 * result + yearCode.hashCode()
+        return result
+    }
+}
 
 data class TermSelectBean(
     val semesterDisplay: String,

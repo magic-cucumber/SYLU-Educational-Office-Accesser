@@ -56,15 +56,18 @@ class ExamDetailViewModel(
     fun setDataUnsafe() = intent {
         val exam = examDao.getById(recordId)!!
 
-        val term =
-            AppSyncMMKV.picker!!.list.first { it.asTerm().xnm == exam.year && it.asTerm().xqm == exam.semester }
+        val terms = AppSyncMMKV.picker!!.list
+        val timeline = examDao.getTimeLineByCourseId(exam.courseID)!!.map { timeLine ->
+            timeLine.copy(
+                year = terms.first { it.asTerm().xnm == timeLine.year }.asDisplay().xnm,
+                semester = terms.first { it.asTerm().xqm == timeLine.semester }.asDisplay().xqm,
+            )
+        }
 
         reduce {
             ExamDetailState.Success(
-                exam.copy(
-                    year = term.asDisplay().xnm,
-                    semester = term.asDisplay().xqm,
-                )
+                records = timeline.first { it.id == recordId },
+                timeline = timeline
             )
         }
     }
@@ -75,6 +78,7 @@ class ExamDetailViewModel(
 sealed interface ExamDetailState {
     data class Success(
         val records: ExamEntity,
+        val timeline: List<ExamEntity>
     ) : ExamDetailState
 
     data class Failed(val msg: String) : ExamDetailState

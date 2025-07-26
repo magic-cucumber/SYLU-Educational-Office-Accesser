@@ -8,25 +8,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
-import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.adaptive.NavigationSuiteScaffold
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
-import top.kagg886.eoa.pages.login.LoginRoute
 import top.kagg886.eoa.pages.main.MainRoute
-import top.kagg886.eoa.pages.main.MainRouteViewEffect
+import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.home.course.CourseRoute
 import top.kagg886.eoa.pages.main.home.exam.ExamRoute
 import top.kagg886.eoa.pages.main.home.gpa.GPARoute
 import top.kagg886.eoa.pages.main.home.link.list.LinkListRoute
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
-import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.util.SnackBarType.*
 import top.kagg886.eoa.util.currentLayoutType
-import top.kagg886.eoa.util.showSnackBar
 
 @Composable
 fun HomeScreen(
@@ -50,36 +44,8 @@ fun HomeScreen(
     fabModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
-) {
+) = MainScreen {
     val nav = LocalNavController.current
-    val model = mainViewModel()
-
-    val snack = LocalSnackBarHost.current
-    model.collectSideEffect { effect ->
-        when (effect) {
-            is MainRouteViewEffect.Toast -> {
-                snack.showSnackBar(
-                    type = effect.type,
-                    title = when (effect.type) {
-                        Success -> "成功"
-                        Warning -> "警告"
-                        Error -> "错误"
-                        Info -> "信息"
-                    },
-                    description = effect.message,
-                )
-            }
-            is MainRouteViewEffect.NavigateToLogin -> {
-                nav.navigate(LoginRoute) {
-                    popUpTo(nav.graph.id) {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
-                }
-            }
-        }
-    }
-
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
     val homeModule by rootState.module.collectAsState()

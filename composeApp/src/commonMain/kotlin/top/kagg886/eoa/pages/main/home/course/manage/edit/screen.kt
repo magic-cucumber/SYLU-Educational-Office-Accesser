@@ -67,7 +67,11 @@ fun CourseEditScreen(route: CourseEditRoute) {
                 periodOfDay
             )
         },
-        onDeleteRecord = { model.deleteRecord(it) }
+        onDeleteRecord = { model.deleteRecord(it) },
+        onAiEndpointChanged = { model.setAiEndpoint(it) },
+        onAiKeyChanged = { model.setAiKey(it) },
+        onAiModelChanged = { model.setAiModel(it) },
+        onGenerateButtonClicked = { model.generateCourseByAI(it) }
     )
 }
 
@@ -80,7 +84,12 @@ private fun CourseEditScreenContent(
     onCourseInfoConfirmed: () -> Unit,
     onCourseInfoDismissed: () -> Unit,
     onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
-    onDeleteRecord: (CourseRecordEntity) -> Unit
+    onDeleteRecord: (CourseRecordEntity) -> Unit,
+
+    onAiEndpointChanged: (String) -> Unit,
+    onAiKeyChanged: (String) -> Unit,
+    onAiModelChanged: (String) -> Unit,
+    onGenerateButtonClicked: (String) -> Unit
 ) {
     when (state) {
         is CourseEditState.Loading -> {
@@ -99,11 +108,11 @@ private fun CourseEditScreenContent(
         }
 
         is CourseEditState.Success -> {
-            val pagerState = rememberPagerState(0) { 2 }
+            val pagerState = rememberPagerState(0) { 3 }
             val scope = rememberCoroutineScope()
 
             DialogPageScaffold(
-                title = { Text("编辑课程") },
+                title = { Text("${if (state.courseId !== null) "编辑" else "新建"}课程") },
                 snack = snack,
                 icon = { Icon(Icons.Default.Edit, "") },
                 confirmButton = {
@@ -137,6 +146,11 @@ private fun CourseEditScreenContent(
                                 selected = pagerState.currentPage == 1,
                                 onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
                             )
+                            Tab(
+                                text = { Text("AI生成") },
+                                selected = pagerState.currentPage == 2,
+                                onClick = { scope.launch { pagerState.animateScrollToPage(2) } }
+                            )
                         }
                     )
 
@@ -156,6 +170,16 @@ private fun CourseEditScreenContent(
                                 records = state.recordInfo,
                                 onAddRecord = onAddRecord,
                                 onDeleteRecord = onDeleteRecord
+                            )
+
+                            2 -> CourseEditAI(
+                                aiEndpoint = state.aiEndpoint,
+                                aiKey = state.aiKey,
+                                aiModel = state.aiModel,
+                                onAiEndpointChanged = onAiEndpointChanged,
+                                onAiKeyChanged = onAiKeyChanged,
+                                onAiModelChanged = onAiModelChanged,
+                                onGenerateButtonClicked = onGenerateButtonClicked,
                             )
                         }
                     }
@@ -417,6 +441,86 @@ private fun CourseEditTime(
             }
         }
     }
+}
+
+@Composable
+private fun CourseEditAI(
+    aiEndpoint: String,
+    aiKey: String,
+    aiModel: String,
+    onAiEndpointChanged: (String) -> Unit,
+    onAiKeyChanged: (String) -> Unit,
+    onAiModelChanged: (String) -> Unit,
+    onGenerateButtonClicked: (String) -> Unit
+) {
+    var aiEndpoint by remember {
+        mutableStateOf(aiEndpoint)
+    }
+    var aiKey by remember {
+        mutableStateOf(aiKey)
+    }
+
+    var aiModel by remember {
+        mutableStateOf(aiModel)
+    }
+
+    var inputMessage by remember {
+        mutableStateOf("")
+    }
+
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+        OutlinedTextField(
+            value = aiEndpoint,
+            onValueChange = {
+                aiEndpoint = it
+                onAiEndpointChanged(it)
+            },
+
+            singleLine = true,
+            label = { Text("AI Endpoint") },
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        )
+
+        OutlinedTextField(
+            value = aiKey,
+            onValueChange = {
+                aiKey = it
+                onAiKeyChanged(it)
+            },
+            singleLine = true,
+            label = { Text("AI Key") },
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        )
+
+        OutlinedTextField(
+            value = aiModel,
+            onValueChange = {
+                aiModel = it
+                onAiModelChanged(it)
+            },
+            singleLine = true,
+            label = { Text("AI Model") },
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        )
+
+        OutlinedTextField(
+            value = inputMessage,
+            onValueChange = {
+                inputMessage = it
+            },
+            label = { Text("输入课程的自然信息") },
+            minLines = 3,
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        )
+
+        Button(
+            onClick = { onGenerateButtonClicked(inputMessage) },
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Text("生成")
+        }
+    }
+
 }
 
 // Helper function to convert numeric day of week to Chinese text
