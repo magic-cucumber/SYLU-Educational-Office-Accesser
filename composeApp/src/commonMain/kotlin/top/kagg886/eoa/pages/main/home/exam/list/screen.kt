@@ -216,8 +216,9 @@ fun ExamListScreenDrawer(
             text = "搜索",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
         )
+
+        Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = keyword ?: "",
@@ -226,18 +227,21 @@ fun ExamListScreenDrawer(
             modifier = Modifier.fillMaxWidth()
         )
 
+
+        Spacer(Modifier.height(8.dp))
+
         Text(
             text = "筛选",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
         )
+
+        Spacer(Modifier.height(8.dp))
 
         // Combined Filters Row
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Left column - Pass Status Filter
@@ -275,11 +279,12 @@ fun ExamListScreenDrawer(
             }
         }
 
+        Spacer(Modifier.height(8.dp))
+
         // Year and Term Filters Row
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Left column - Year Filter
@@ -326,8 +331,9 @@ fun ExamListScreenDrawer(
             text = "重置",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
         )
+
+        Spacer(Modifier.height(8.dp))
 
         Button(
             onClick = onResetFilters,
