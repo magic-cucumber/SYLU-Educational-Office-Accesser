@@ -15,7 +15,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class CourseEditModel(
     database: AppDatabase,
-    val courseId: Long?
+    courseId: Long?
 ) : ViewModel(), ContainerHost<CourseEditState, CourseEditSideEffect> {
 
     private val courseDao = database.courseDao()
@@ -38,6 +38,7 @@ class CourseEditModel(
 
             reduce {
                 CourseEditState.Success(
+                    courseId = courseId,
                     courseInfo = courseInfo,
                     recordInfo = records,
                     startDate = AppSyncMMKV.calender!!.start,
@@ -75,8 +76,8 @@ class CourseEditModel(
                 return@runOn
             }
             reduce { state.copy(enableSaveButton = false) } //防止重复点击
-            val id = courseId?.apply { courseDao.update(state.courseInfo) } ?: courseDao.insert(state.courseInfo)
-            if (courseId == null) {
+            val id = state.courseId?.apply { courseDao.update(state.courseInfo) } ?: courseDao.insert(state.courseInfo)
+            if (state.courseId == null) {
                 courseRecordDao.insertAll(state.recordInfo.map { it.copy(courseId = id) })
             }
             postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Success, "修改成功"))
@@ -95,14 +96,14 @@ class CourseEditModel(
         runOn<CourseEditState.Success> {
             val record = CourseRecordEntity(
                 id = null,
-                courseId = courseId,
+                courseId = state.courseId,
                 weekNumber = weekNumber,
                 dayOfWeek = dayOfWeek,
                 periodOfDay = periodOfDay,
                 isUserAdded = true
             )
             //是修改模式则编辑数据库
-            if (courseId != null) {
+            if (state.courseId != null) {
                 courseRecordDao.insert(record)
             }
             reduce {
@@ -133,6 +134,7 @@ class CourseEditModel(
 sealed interface CourseEditState {
     data object Loading : CourseEditState
     data class Success(
+        val courseId: Long?,
         val enableSaveButton: Boolean,
         val courseInfo: CourseEntity,
         val recordInfo: List<CourseRecordEntity>,

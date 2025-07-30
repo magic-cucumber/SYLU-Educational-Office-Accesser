@@ -103,7 +103,7 @@ private fun CourseEditScreenContent(
             val scope = rememberCoroutineScope()
 
             DialogPageScaffold(
-                title = { Text("编辑课程") },
+                title = { Text("${if (state.courseId !== null) "编辑" else "新建"}课程") },
                 snack = snack,
                 icon = { Icon(Icons.Default.Edit, "") },
                 confirmButton = {
