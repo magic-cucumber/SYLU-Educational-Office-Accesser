@@ -66,9 +66,10 @@ class ExamListViewModel(
         keyword: String? = null,
         type: PassFilter = PassFilter.ALL,
         degree: DegreeFilter = DegreeFilter.ALL,
-        currentYearIndex:Int? = null,
-        currentTermIndex:Int? = null,
+        currentYearIndex: Int? = null,
+        currentTermIndex: Int? = null,
     ) = intent {
+        val originTerms = (state as? ExamListState.Success)?.selector
 
         reduce {
             ExamListState.Loading(state.drawerState)
@@ -77,8 +78,12 @@ class ExamListViewModel(
         withContext(Dispatchers.IO) {
             // Map<学年，该学年的所有学期>
             // 复用之前的对象，防止重复计算
-            val terms = (state as? ExamListState.Success)?.selector ?: mutableListOf(TERM_ALL_PICKER)
-                .plus(AppSyncMMKV.picker!!.list)
+            val terms = originTerms ?: AppSyncMMKV.picker!!.list
+                .plus(
+                    AppSyncMMKV.picker!!.list.map { i ->
+                        TERM_ALL_PICKER.copy(yearName = i.asDisplay().xnm to i.asTerm().xnm)
+                    }
+                )
                 .map {
                     YearSelectBean(
                         it.asDisplay().xnm,
@@ -89,11 +94,13 @@ class ExamListViewModel(
                     )
                 }
                 .groupBy { it.first }
-                .map { it.key to it.value.map { it.second } }
+                .map { it.key to it.value.toSet().map { it.second } }
 
             //默认值为当前学年学期的代号
-            val year = currentYearIndex ?: terms.indexOfFirst { AppSyncMMKV.picker!!.default.asTerm().xnm == it.first.yearCode }
-            val term = currentTermIndex ?: terms[year].second.indexOfFirst { AppSyncMMKV.picker!!.default.asTerm().xqm == it.semesterCode }
+            val year = currentYearIndex
+                ?: terms.indexOfFirst { AppSyncMMKV.picker!!.default.asTerm().xnm == it.first.yearCode }
+            val term = currentTermIndex
+                ?: terms[year].second.indexOfFirst { AppSyncMMKV.picker!!.default.asTerm().xqm == it.semesterCode }
 
             val selectYear = terms[year]
             val selectSemester = selectYear.second[term]
