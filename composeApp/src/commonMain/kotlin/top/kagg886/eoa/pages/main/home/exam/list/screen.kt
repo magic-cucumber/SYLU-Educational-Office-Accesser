@@ -42,6 +42,7 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
+import top.kagg886.util.toFixed
 
 @Serializable
 data object ExamListRoute
@@ -731,7 +732,15 @@ private fun ExamItem(
             supportingContent = {
                 Column {
                     Text(
-                        text = "学分 × 绩点: ${exam?.let { "${it.credit} × ${it.gradePoint} = ${it.credit * it.gradePoint}" } ?: "0.0 × 0.0 = 0.0"}",
+                        text = "学分 × 绩点: ${
+                            exam?.let {
+                                "${it.credit} × ${it.gradePoint} = ${
+                                    (it.credit * it.gradePoint).toFixed(
+                                        2
+                                    )
+                                }"
+                            } ?: "0.0 × 0.0 = 0.0"
+                        }",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.placeholder(
                             visible = showPlaceHolder,

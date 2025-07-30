@@ -1,12 +1,11 @@
 package top.kagg886.eoa.pages.main.home.exam.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -25,6 +24,7 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.ExamEntity
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
@@ -37,6 +37,7 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
+import top.kagg886.util.toFixed
 
 @Serializable
 data class ExamDetailRoute(val examId: Long)
@@ -62,7 +63,7 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     model.collectSideEffect {
         when (it) {
             is ExamDetailSideEffect.ShowToast -> {
-                mainViewModel.toast(type = SnackBarType.Info,it.message)
+                mainViewModel.toast(type = SnackBarType.Info, it.message)
             }
         }
     }
@@ -115,12 +116,6 @@ private fun ExamDetailScreenSuccess(
 private fun ExamDetailPanelPhone(
     state: ExamDetailState.Success?
 ) {
-    val visible by remember(state) {
-        derivedStateOf {
-            state == null
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -136,6 +131,8 @@ private fun ExamDetailPanelPhone(
 
         // 考试详细表格
         ExamDetailTable(state?.records?.detail)
+
+        ExamDetailTimeLine(state?.timeline)
     }
 }
 
@@ -170,6 +167,8 @@ private fun ExamDetailPanelTablet(
 
         // 考试详细表格
         ExamDetailTable(state?.records?.detail)
+
+        ExamDetailTimeLine(state?.timeline)
     }
 }
 
@@ -248,7 +247,7 @@ private fun ExamStatusIndicator(
     data class Pair(
         val background: Color,
         val borderColor: Color,
-        val text:String,
+        val text: String,
         val textColor: Color,
     )
 
@@ -261,6 +260,7 @@ private fun ExamStatusIndicator(
                 Color(0xFF2E7D32)
             )
         }
+
         ExamStatus.FAILED -> {
             Pair(
                 Color(0xFFFFEBEE).copy(alpha = 0.7f),
@@ -269,6 +269,7 @@ private fun ExamStatusIndicator(
                 Color(0xFFD32F2F)
             )
         }
+
         ExamStatus.RE_SUCCESS -> {
             Pair(
                 Color(0xFFFFF8E1).copy(alpha = 0.7f),
@@ -277,6 +278,7 @@ private fun ExamStatusIndicator(
                 Color(0xFFEF6C00)
             )
         }
+
         else -> {
             Pair(
                 Color(0xFFE0E0E0),
@@ -416,7 +418,7 @@ private fun ExamDetailTable(
                 )
             )
 
-            for (it in entity ?: List(3) {null}) {
+            for (it in entity ?: List(3) { null }) {
                 ListItem(
                     headlineContent = {
                         Text(
@@ -438,5 +440,190 @@ private fun ExamDetailTable(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ExamDetailTimeLine(
+    entity: List<ExamEntity>?,
+    modifier: Modifier = Modifier
+) {
+    val visible by remember(entity) {
+        derivedStateOf {
+            entity == null
+        }
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .placeholder(
+                visible = visible,
+                highlight = PlaceholderHighlight.shimmer()
+            ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Text(
+                text = "考试历程",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.placeholder(
+                    visible = visible,
+                    highlight = PlaceholderHighlight.shimmer()
+                )
+            )
+
+            if (entity.isNullOrEmpty()) {
+                // 加载状态或无数据
+                repeat(3) {
+                    TimeLineItem(
+                        exam = null,
+                        isFirst = it == 0,
+                        isLast = it == 2,
+                        visible = visible
+                    )
+                }
+            } else {
+                // 显示实际数据
+                entity.forEachIndexed { index, exam ->
+                    TimeLineItem(
+                        exam = exam,
+                        isFirst = index == 0,
+                        isLast = index == entity.size - 1,
+                        visible = false
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeLineItem(
+    exam: ExamEntity?,
+    isFirst: Boolean,
+    isLast: Boolean,
+    visible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val nav = LocalNavController.current
+
+    Row(
+        modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 时间线指示器
+        Box(modifier = Modifier.width(24.dp).fillMaxHeight()) {
+            // 上半部分连接线
+            if (!isFirst) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .fillMaxHeight(0.5f)
+                        .align(Alignment.TopCenter)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                )
+            }
+
+            // 下半部分连接线
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .fillMaxHeight(0.5f)
+                        .align(Alignment.BottomCenter)
+                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                )
+            }
+
+            // 圆点指示器（居中显示）
+            val (dotColor, dotSize) = when (exam?.status) {
+                ExamStatus.SUCCESS -> MaterialTheme.colorScheme.primary to 16.dp
+                ExamStatus.FAILED -> MaterialTheme.colorScheme.error to 16.dp
+                ExamStatus.RE_SUCCESS -> MaterialTheme.colorScheme.tertiary to 16.dp
+                else -> MaterialTheme.colorScheme.outline to 12.dp
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(dotSize)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(dotColor)
+                    .align(Alignment.Center)
+                    .placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+            )
+        }
+
+        // 考试信息ListItem
+        ListItem(
+            overlineContent = {
+                Text(
+                    text = exam?.let { exam ->
+                        "${exam.credit}x${exam.gradePoint}=${
+                            (exam.credit * exam.gradePoint).toFixed(
+                                2
+                            )
+                        }"
+                    } ?: "加载中",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                )
+            },
+            headlineContent = {
+                Text(
+                    text = exam?.absoluteScore ?: "加载中",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                )
+            },
+            supportingContent = {
+                Text(
+                    text = exam?.submitTime?.toString()?.substring(0, 16) ?: "加载中",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                )
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "查看详情",
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                )
+            },
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(enabled = !visible && exam != null) {
+                    exam?.id?.let { examId ->
+                        nav.navigate(ExamDetailRoute(examId))
+                    }
+                }
+                .placeholder(
+                    visible = visible,
+                    highlight = PlaceholderHighlight.shimmer()
+                ),
+            colors = ListItemDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            )
+        )
     }
 }

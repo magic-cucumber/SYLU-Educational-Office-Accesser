@@ -1,7 +1,16 @@
 package top.kagg886.sylu_eoa.api.v2.bean
 
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class ExamItem(
@@ -9,6 +18,9 @@ data class ExamItem(
     val year: String,
     @SerialName("xqm")
     val semester: String,
+
+    @SerialName("kch_id")
+    val courseID: String,
 
     @SerialName("jxb_id")
     val detailsID: String,
@@ -39,7 +51,11 @@ data class ExamItem(
     val completionCode: String, //挂科标识
 
     @SerialName("sfxwkc")
-    private val _degreeProgram: String //是否是学位课
+    private val _degreeProgram: String, //是否是学位课
+
+    @SerialName("tjsj")
+    @Serializable(with = SubmitTimeSerializer::class)
+    val submitTime: LocalDateTime, //成绩被提交的时间
 ) {
     val degreeProgram = _degreeProgram == "是"
 
@@ -56,6 +72,19 @@ data class ExamItem(
     }
 
 
+    private object SubmitTimeSerializer : KSerializer<LocalDateTime> {
+
+        override val descriptor: SerialDescriptor =
+            PrimitiveSerialDescriptor(LocalDateTime::class.qualifiedName!!, PrimitiveKind.STRING)
+
+        override fun deserialize(decoder: Decoder): LocalDateTime =
+            LocalDateTime.parse(decoder.decodeString(), ChinaDateFormater)
+
+        override fun serialize(encoder: Encoder, value: LocalDateTime) {
+            encoder.encodeString(value.format(ChinaDateFormater))
+        }
+
+    }
 }
 
 enum class ExamStatus {
@@ -83,3 +112,18 @@ fun List<ExamItem>.findListByTerm(picker: TermPicker): List<ExamItem> {
 
     }
 }
+
+private val ChinaDateFormater = LocalDateTime.Format {
+    year()
+    char('-')
+    monthNumber()
+    char('-')
+    dayOfMonth()
+    char(' ')
+    hour()
+    char(':')
+    minute()
+    char(':')
+    second()
+}
+
