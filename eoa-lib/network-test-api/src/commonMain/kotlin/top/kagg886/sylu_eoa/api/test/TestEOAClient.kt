@@ -1,32 +1,19 @@
 package top.kagg886.sylu_eoa.api.test
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
-import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.*
 import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
 import top.kagg886.sylu_eoa.api.v2.EOAClient
-import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.sylu_eoa.api.v2.Storage
-import top.kagg886.sylu_eoa.api.v2.bean.ClassUnit
-import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
-import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
-import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
-import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
-import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
-import top.kagg886.sylu_eoa.api.v2.bean.Term
-import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
-import top.kagg886.sylu_eoa.api.v2.bean.TermResult
-import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
+import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 internal class TestEOAClient : EOAClient {
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val todayWeekMonday = today.minus(today.dayOfWeek.ordinal, DateTimeUnit.DAY)
+
+
+
     @OptIn(ExperimentalEncodingApi::class)
     override suspend fun getUserProfile(): UserProfile {
         val avatar = Base64.decode(
@@ -46,8 +33,6 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getSchoolCalender(): SchoolCalender {
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-        val todayWeekMonday = today.minus(today.dayOfWeek.ordinal, DateTimeUnit.DAY)
         return SchoolCalender(
             start = todayWeekMonday.minus(7, DateTimeUnit.WEEK),
             end = todayWeekMonday.plus(7, DateTimeUnit.WEEK),
@@ -55,8 +40,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getAllAvailableTerms(): TermResult {
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.year
-        val pickers = (today downTo (today - 20) step 2).map {
+        val pickers = (today.year downTo (today.year - 20)).map {
             TermPicker(
                 yearName = "$it-${it + 1}" to "$it",
                 yearCode = "1" to "1"
@@ -69,53 +53,312 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getExamList(picker: TermPicker): List<ExamItem> {
-        return listOf()
+        return listOf(
+            ExamItem(
+                year = "2024",
+                semester = "1",
+                courseID = "CS001",
+                detailsID = "CS001_001",
+                name = "高等数学",
+                teacher = "张教授",
+                credit = "4.0",
+                gradePoint = "3.8",
+                crTimesGp = "15.2",
+                absoluteScore = "85",
+                relateScore = "良好",
+                completionCode = "1",
+                _degreeProgram = "是",
+                submitTime = today.minus(DatePeriod(days = 30)).atTime(0, 0)
+            ),
+            ExamItem(
+                year = "2024",
+                semester = "1",
+                courseID = "CS002",
+                detailsID = "CS002_001",
+                name = "线性代数",
+                teacher = "李教授",
+                credit = "3.0",
+                gradePoint = "4.0",
+                crTimesGp = "12.0",
+                absoluteScore = "92",
+                relateScore = "优秀",
+                completionCode = "1",
+                _degreeProgram = "是",
+                submitTime = today.minus(DatePeriod(days = 25)).atTime(0, 0)
+            ),
+            ExamItem(
+                year = "2024",
+                semester = "1",
+                courseID = "CS003",
+                detailsID = "CS003_001",
+                name = "程序设计基础",
+                teacher = "王教授",
+                credit = "3.5",
+                gradePoint = "3.5",
+                crTimesGp = "12.25",
+                absoluteScore = "78",
+                relateScore = "中等",
+                completionCode = "1",
+                _degreeProgram = "是",
+                submitTime = today.minus(DatePeriod(days = 20)).atTime(0, 0)
+            ),
+            ExamItem(
+                year = "2024",
+                semester = "1",
+                courseID = "CS004",
+                detailsID = "CS004_001",
+                name = "大学英语",
+                teacher = "刘教授",
+                credit = "2.0",
+                gradePoint = "2.5",
+                crTimesGp = "5.0",
+                absoluteScore = "55",
+                relateScore = "不及格",
+                completionCode = "1",
+                _degreeProgram = "否",
+                submitTime = today.minus(DatePeriod(days = 15)).atTime(0, 0)
+            ),
+            ExamItem(
+                year = "2023",
+                semester = "2",
+                courseID = "CS005",
+                detailsID = "CS005_001",
+                name = "数据结构",
+                teacher = "陈教授",
+                credit = "4.0",
+                gradePoint = "3.2",
+                crTimesGp = "12.8",
+                absoluteScore = "72",
+                relateScore = "中等",
+                completionCode = "16",
+                _degreeProgram = "是",
+                submitTime = today.minus(DatePeriod(days = 10)).atTime(0, 0)
+            )
+        )
     }
 
     override suspend fun getExamInfo(examItem: ExamItem): List<List<String>> {
-        return listOf()
+        return listOf(
+            listOf("无")
+        )
     }
 
     override suspend fun getClassTable(picker: TermPicker): List<ClassUnit> {
-        return listOf()
+        return listOf(
+            ClassUnit(
+                name = "高等数学",
+                teacher = "张教授",
+                room = "教学楼A101",
+                weekEachLesson = "1-16周",
+                lesson = "1-2",
+                dayInWeek = "1",
+                score = "4.0",
+                classType = "考试",
+                _degreeProgram = "是"
+            ),
+            ClassUnit(
+                name = "线性代数",
+                teacher = "李教授",
+                room = "教学楼A102",
+                weekEachLesson = "1-16周",
+                lesson = "3-4",
+                dayInWeek = "1",
+                score = "3.0",
+                classType = "考试",
+                _degreeProgram = "是"
+            ),
+            ClassUnit(
+                name = "程序设计基础",
+                teacher = "王教授",
+                room = "计算机楼B201",
+                weekEachLesson = "1-16周",
+                lesson = "5-6",
+                dayInWeek = "2",
+                score = "3.5",
+                classType = "考试",
+                _degreeProgram = "是"
+            ),
+            ClassUnit(
+                name = "大学英语",
+                teacher = "刘教授",
+                room = "外语楼C301",
+                weekEachLesson = "1-16周",
+                lesson = "1-2",
+                dayInWeek = "3",
+                score = "2.0",
+                classType = "考查",
+                _degreeProgram = "否"
+            ),
+            ClassUnit(
+                name = "体育",
+                teacher = "赵教练",
+                room = "体育馆",
+                weekEachLesson = "1-16周",
+                lesson = "7-8",
+                dayInWeek = "4",
+                score = "1.0",
+                classType = "考查",
+                _degreeProgram = "否"
+            ),
+            ClassUnit(
+                name = "数据结构",
+                teacher = "陈教授",
+                room = "计算机楼B202",
+                weekEachLesson = "1-16周",
+                lesson = "3-4",
+                dayInWeek = "5",
+                score = "4.0",
+                classType = "考试",
+                _degreeProgram = "是"
+            )
+        )
     }
 
     override suspend fun getGPAScores(): List<GPAScoreSummary> {
-        return listOf()
+        return listOf(
+            GPAScoreSummary(
+                name = "2024学年第一学期",
+                score = 3.45
+            ),
+            GPAScoreSummary(
+                name = "2023学年第二学期",
+                score = 3.12
+            ),
+            GPAScoreSummary(
+                name = "2023学年第一学期",
+                score = 3.78
+            ),
+            GPAScoreSummary(
+                name = "总体GPA",
+                score = 3.42
+            )
+        )
     }
 
     override suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore> {
-        return listOf()
+        return when (summary.name) {
+            "2024学年第一学期" -> listOf(
+                GPAScore(name = "高等数学", score = "85"),
+                GPAScore(name = "线性代数", score = "92"),
+                GPAScore(name = "程序设计基础", score = "78"),
+                GPAScore(name = "大学英语", score = "55"),
+                GPAScore(name = "体育", score = "88")
+            )
+
+            "2023学年第二学期" -> listOf(
+                GPAScore(name = "数据结构", score = "72"),
+                GPAScore(name = "计算机组成原理", score = "80"),
+                GPAScore(name = "概率论与数理统计", score = "75"),
+                GPAScore(name = "大学物理", score = "68"),
+                GPAScore(name = "马克思主义基本原理", score = "82")
+            )
+
+            "2023学年第一学期" -> listOf(
+                GPAScore(name = "C语言程序设计", score = "90"),
+                GPAScore(name = "高等数学(上)", score = "88"),
+                GPAScore(name = "大学英语(1)", score = "85"),
+                GPAScore(name = "思想道德与法治", score = "92"),
+                GPAScore(name = "军事理论", score = "95")
+            )
+
+            "总体GPA" -> listOf(
+                GPAScore(name = "专业课平均分", score = "82.5"),
+                GPAScore(name = "公共课平均分", score = "78.3"),
+                GPAScore(name = "选修课平均分", score = "85.7"),
+                GPAScore(name = "实践课平均分", score = "90.2")
+            )
+
+            else -> listOf()
+        }
     }
 
     override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
         return if (hasRead) {
             listOf(
                 SystemNotice(
-                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    title = "羽丘第一学期测评公告",
-                    content = "无",
+                    createTime = today.minus(DatePeriod(days = 7)).atTime(0, 0),
+                    title = "2024学年第一学期期末考试安排通知",
+                    content = """
+                        各位同学：
+
+                        2024学年第一学期期末考试将于2024年1月15日-1月25日举行，具体安排如下：
+
+                        1. 考试时间：2024年1月15日-1月25日
+                        2. 考试地点：详见各科目考试安排
+                        3. 注意事项：
+                           - 请携带学生证和身份证参加考试
+                           - 考试开始15分钟后不得入场
+                           - 严禁携带手机等电子设备进入考场
+
+                        祝各位同学考试顺利！
+
+                        教务处
+                        2024年1月8日
+                    """.trimIndent(),
                     id = "1",
                 ),
                 SystemNotice(
-                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    title = "关于MyGO!!!乐团的演唱延时通知",
-                    content = "无",
+                    createTime = today.minus(DatePeriod(days = 5)).atTime(0, 0),
+                    title = "关于寒假放假时间安排的通知",
+                    content = """
+                        各位同学：
+
+                        根据学校安排，现将寒假放假时间通知如下：
+
+                        1. 放假时间：2024年1月26日-2024年2月25日
+                        2. 开学时间：2024年2月26日
+                        3. 注意事项：
+                           - 离校前请做好宿舍安全检查
+                           - 假期注意人身安全
+                           - 按时返校报到
+
+                        学生处
+                        2024年1月1日
+                    """.trimIndent(),
                     id = "4",
                 )
             )
         } else {
             listOf(
                 SystemNotice(
-                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    title = "羽丘第二学期测评公告",
-                    content = "无",
+                    createTime = today.minus(DatePeriod(days = 3)).atTime(0, 0),
+                    title = "关于2024学年第二学期选课的通知",
+                    content = """
+                        各位同学：
+
+                        2024学年第二学期选课工作即将开始，请注意以下事项：
+
+                        1. 选课时间：2024年2月20日-2024年2月28日
+                        2. 选课方式：登录教务系统进行在线选课
+                        3. 注意事项：
+                           - 请根据培养方案合理选择课程
+                           - 注意课程时间冲突
+                           - 选课结束后不得随意退课
+
+                        教务处
+                        2024年2月19日
+                    """.trimIndent(),
                     id = "2",
                 ),
                 SystemNotice(
-                    createTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
-                    title = "羽丘第三学期测评公告",
-                    content = "无",
+                    createTime = today.minus(DatePeriod(days = 1)).atTime(0, 0),
+                    title = "关于开展2024年春季学期体检的通知",
+                    content = """
+                        各位同学：
+
+                        为保障学生身体健康，学校将组织开展春季学期体检，具体安排如下：
+
+                        1. 体检时间：2024年3月1日-3月15日
+                        2. 体检地点：校医院
+                        3. 体检项目：常规体检项目
+                        4. 注意事项：
+                           - 体检前一天晚上10点后禁食
+                           - 体检当天早上空腹
+                           - 请携带学生证
+
+                        校医院
+                        2024年2月17日
+                    """.trimIndent(),
                     id = "3",
                 )
             )

@@ -78,7 +78,8 @@ class ExamListViewModel(
         withContext(Dispatchers.IO) {
             // Map<学年，该学年的所有学期>
             // 复用之前的对象，防止重复计算
-            val terms = originTerms ?: AppSyncMMKV.picker!!.list
+            val terms = originTerms ?: listOf(TERM_ALL_PICKER)
+                .plus(AppSyncMMKV.picker!!.list)
                 .plus(
                     AppSyncMMKV.picker!!.list.map { i ->
                         TERM_ALL_PICKER.copy(yearName = i.asDisplay().xnm to i.asTerm().xnm)
