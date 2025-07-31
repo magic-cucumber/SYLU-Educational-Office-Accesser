@@ -37,7 +37,6 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
-import top.kagg886.util.toFixed
 
 @Serializable
 data class ExamDetailRoute(val examId: Long)
@@ -260,7 +259,6 @@ private fun ExamStatusIndicator(
                 Color(0xFF2E7D32)
             )
         }
-
         ExamStatus.FAILED -> {
             Pair(
                 Color(0xFFFFEBEE).copy(alpha = 0.7f),
@@ -269,7 +267,6 @@ private fun ExamStatusIndicator(
                 Color(0xFFD32F2F)
             )
         }
-
         ExamStatus.RE_SUCCESS -> {
             Pair(
                 Color(0xFFFFF8E1).copy(alpha = 0.7f),
@@ -278,7 +275,6 @@ private fun ExamStatusIndicator(
                 Color(0xFFEF6C00)
             )
         }
-
         else -> {
             Pair(
                 Color(0xFFE0E0E0),
@@ -563,25 +559,13 @@ private fun TimeLineItem(
 
         // 考试信息ListItem
         ListItem(
-            overlineContent = {
-                Text(
-                    text = exam?.let { exam ->
-                        "${exam.credit}x${exam.gradePoint}=${
-                            (exam.credit * exam.gradePoint).toFixed(
-                                2
-                            )
-                        }"
-                    } ?: "加载中",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.placeholder(
-                        visible = visible,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
-                )
-            },
             headlineContent = {
                 Text(
-                    text = exam?.absoluteScore ?: "加载中",
+                    text = if (exam != null) {
+                        "${exam.absoluteScore} ( ${exam.credit}x${exam.gradePoint}=${exam.credit * exam.gradePoint} )"
+                    } else {
+                        "加载中"
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.placeholder(
                         visible = visible,
@@ -593,6 +577,15 @@ private fun TimeLineItem(
                 Text(
                     text = exam?.submitTime?.toString()?.substring(0, 16) ?: "加载中",
                     style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                )
+            },
+            leadingContent = {
+                ExamStatusIndicator(
+                    status = exam?.status,
                     modifier = Modifier.placeholder(
                         visible = visible,
                         highlight = PlaceholderHighlight.shimmer()
