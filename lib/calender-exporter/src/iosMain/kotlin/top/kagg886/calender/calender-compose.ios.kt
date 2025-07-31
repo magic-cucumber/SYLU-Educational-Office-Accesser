@@ -17,11 +17,7 @@ internal class EKCalenderManager(private val accountName: String) : NativeCalend
     val eventStore = EKEventStore()
     private var calendar: EKCalendar? = null
 
-    init {
-        initializeCalendar()
-    }
-
-    private fun initializeCalendar() {
+    internal fun initializeCalendar() {
         val userDefaults = NSUserDefaults.standardUserDefaults
         val calendarIdKey = "calendar_id_$accountName"
         val storedCalendarId = userDefaults.stringForKey(calendarIdKey)
