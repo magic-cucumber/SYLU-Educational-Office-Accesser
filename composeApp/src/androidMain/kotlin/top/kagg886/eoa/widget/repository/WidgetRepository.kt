@@ -44,11 +44,11 @@ class WidgetRepository(private val context: Context) {
 
         if (currentWeek == -1) {
             return@withContext when {
-                isInHoliday -> Result.failure<List<TodayClass>>(
+                isInHoliday -> Result.failure(
                     IllegalStateException("享受假期吧!")
                 )
 
-                isBeforeInTerm -> Result.failure<List<TodayClass>>(
+                isBeforeInTerm -> Result.failure(
                     IllegalStateException("准备开学吧!")
                 )
 
@@ -62,6 +62,11 @@ class WidgetRepository(private val context: Context) {
             dayOfWeek = today.dayOfWeek.isoDayNumber,
         )
 
+        if (plan.isEmpty()) {
+            return@withContext Result.failure(
+                IllegalStateException("今日无课程!")
+            )
+        }
         //将课表计划和课表信息合并
         val period = today.time.getPeriodNumber()
         val progress = period?.let {
