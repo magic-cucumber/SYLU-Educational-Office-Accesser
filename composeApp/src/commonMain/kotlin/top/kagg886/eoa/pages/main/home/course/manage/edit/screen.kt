@@ -173,6 +173,7 @@ private fun CourseEditScreenContent(
                             )
 
                             2 -> CourseEditAI(
+                                aiGenerating = state.aiGenerating,
                                 aiEndpoint = state.aiEndpoint,
                                 aiKey = state.aiKey,
                                 aiModel = state.aiModel,
@@ -448,6 +449,7 @@ private fun CourseEditAI(
     aiEndpoint: String,
     aiKey: String,
     aiModel: String,
+    aiGenerating: String?,
     onAiEndpointChanged: (String) -> Unit,
     onAiKeyChanged: (String) -> Unit,
     onAiModelChanged: (String) -> Unit,
@@ -515,9 +517,10 @@ private fun CourseEditAI(
 
         Button(
             onClick = { onGenerateButtonClicked(inputMessage) },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            enabled = aiGenerating == null
         ) {
-            Text("生成")
+            Text(text = aiGenerating ?: "生成")
         }
     }
 
