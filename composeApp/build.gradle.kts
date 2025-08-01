@@ -103,7 +103,7 @@ kotlin {
 
 
             //FIXME: koog不兼容iOS，等待兼容版本发布后，删除此sub-module
-            implementation("ai.koog:koog-agents:0.3.0")
+            implementation(libs.koog.agents)
         }
 
         commonTest.dependencies {
@@ -121,9 +121,9 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
 
             // Jetpack Glance for widgets
-            implementation("androidx.glance:glance-appwidget:1.1.0")
-            implementation("androidx.glance:glance-material3:1.1.0")
-            implementation("androidx.work:work-runtime-ktx:2.9.0")
+            implementation("androidx.glance:glance-appwidget:1.1.1")
+            implementation("androidx.glance:glance-material3:1.1.1")
+            implementation("androidx.work:work-runtime-ktx:2.10.3")
         }
 
         jvmMain.dependencies {
@@ -163,6 +163,12 @@ android {
             getDefaultProguardFile("proguard-android-optimize.txt"),
             "proguard-rules.pro"
         )
+    }
+
+    packaging {
+        resources {
+            excludes += "META-INF/INDEX.LIST"
+        }
     }
 
     signingConfigs {

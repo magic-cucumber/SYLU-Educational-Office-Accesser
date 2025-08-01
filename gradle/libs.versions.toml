@@ -3,6 +3,7 @@ adaptive-suite = "1.8.1"
 adaptive = "1.1.1"
 composePlaceholderMaterial3 = "1.0.11"
 filekitCore = "0.10.0-beta04"
+koogAgents = "0.3.0"
 ksoup = "0.2.3"
 materialIconsExtended = "1.7.3"
 mkmb-core = "1.1.0"
@@ -43,6 +44,7 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 androidx-uitest-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
 androidx-uitest-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "androidx-uiTest" }
 compose-placeholder-material3 = { module = "com.eygraber:compose-placeholder-material3", version.ref = "composePlaceholderMaterial3" }
+koog-agents = { module = "ai.koog:koog-agents", version.ref = "koogAgents" }
 sonner = { module = "io.github.dokar3:sonner", version.ref = "sonner" }
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
