@@ -102,8 +102,8 @@ kotlin {
             implementation(project(":lib:kolor-picker"))
 
 
-            //FIXME: koog不兼容iOS，等待兼容版本发布后，删除此sub-module
-            implementation(libs.koog.agents)
+//            FIXME: koog不兼容iOS，等待兼容版本发布后，删除此sub-module
+//            implementation(libs.koog.agents)
         }
 
         commonTest.dependencies {

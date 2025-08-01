@@ -29,3 +29,12 @@
 # 保留 InternalServiceModule 接口和所有实现类
 -keep interface dev.whyoleg.sweetspi.internal.InternalServiceModule { *; }
 -keep class * implements dev.whyoleg.sweetspi.internal.InternalServiceModule { *; }
+
+# 忽略 ServiceLoader 缺失类
+-dontwarn io.micrometer.context.**
+-dontwarn javax.enterprise.**
+-dontwarn reactor.blockhound.**
+-dontwarn io.netty.util.internal.logging.**
+-dontwarn okhttp3.internal.Util
+# 告诉 R8 不检查 META-INF/services 缺失实现
+-ignorewarnings

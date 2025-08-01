@@ -1,4 +1,0 @@
-[submodule "external/koog"]
-	path = external/koog
-	url = https://github.com/kagg886/koog
-	branch = adding-more-multiplatform

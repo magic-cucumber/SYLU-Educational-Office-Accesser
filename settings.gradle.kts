@@ -44,9 +44,9 @@ include(":lib:ics-generator")
 include(":lib:calender-exporter")
 include(":lib:kolor-picker")
 
-includeBuild("external/koog") {
-    dependencySubstitution {
-        // 只映射 koog-core，其他 module 不会自动替换
-        substitute(module("ai.koog:koog-agents")).using(project(":koog-agents"))
-    }
-}
+//includeBuild("external/koog") {
+//    dependencySubstitution {
+//        // 只映射 koog-core，其他 module 不会自动替换
+//        substitute(module("ai.koog:koog-agents")).using(project(":koog-agents"))
+//    }
+//}

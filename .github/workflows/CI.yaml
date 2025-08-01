@@ -19,6 +19,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Fetch submodules
+        run: git submodule update --init --recursive
+        shell: bash
+
       - name: Install Rust Toolchain
         run: rustup default 1.86.0 && rustup target add aarch64-linux-android x86_64-linux-android && rustup component add rustfmt clippy
 
@@ -54,6 +58,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Fetch submodules
+        run: git submodule update --init --recursive
+        shell: bash
 
       - name: Install Rust Toolchain
         run: rustup default 1.86.0 && rustup target add aarch64-apple-ios && rustup component add rustfmt clippy
