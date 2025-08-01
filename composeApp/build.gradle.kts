@@ -165,12 +165,6 @@ android {
         )
     }
 
-    packaging {
-        resources {
-            excludes += "META-INF/INDEX.LIST"
-        }
-    }
-
     signingConfigs {
         create("test") {
             storeFile = file("key.jks")
@@ -382,4 +376,9 @@ abstract class BuildIpaTask : DefaultTask() {
             }
         }
     }
+}
+
+//FIXME: from Koog sample app
+configurations.all {
+    exclude(group = "io.netty", module = "*")
 }
