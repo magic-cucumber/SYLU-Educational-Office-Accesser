@@ -275,6 +275,13 @@ class CourseEditModel(
                                     - 输出严格符合CourseAddReturn结构，不能添加任何解释或多余字符
                                 """.trimIndent()
                             )
+
+                            user(
+                                content = """
+                                    请解析以下课程描述并输出符合 CourseAddReturn 的 JSON：
+                                    $it    
+                                """.trimIndent()
+                            )
                         },
                         mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
                         fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
