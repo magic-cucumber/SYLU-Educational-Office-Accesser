@@ -6,19 +6,25 @@ import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
+import ai.koog.prompt.structure.StructuredResponse
 import ai.koog.prompt.structure.executeStructured
 import ai.koog.prompt.structure.json.JsonSchemaGenerator
 import ai.koog.prompt.structure.json.JsonStructuredData
 import androidx.lifecycle.ViewModel
-import io.github.oshai.kotlinlogging.KotlinLogging
+import androidx.lifecycle.viewModelScope
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okio.IOException
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
@@ -215,7 +221,7 @@ class CourseEditModel(
                     ),
                     baseClient = HttpClient {
                         install(Logging) {
-                            logger  = object : Logger {
+                            logger = object : Logger {
                                 override fun log(message: String) = kermit.d(message)
                             }
                             level = LogLevel.ALL
@@ -224,202 +230,96 @@ class CourseEditModel(
                 )
             )
 
-            val response = agent.executeStructured(
-                prompt = prompt("structured-data") {
-                    system(
-                        """
-                        你是一个专业的课程信息提取Agent，负责从自然语言描述中提取课程相关信息并转换为结构化的JSON数据。
+            val response = run {
+                val defer = CompletableDeferred<Result<StructuredResponse<CourseAddReturn>>>()
 
-                        ## 核心原则
-                        1. **准确性优先**：只提取明确存在于输入文本中的信息，绝对不允许编造或推测任何数据
-                        2. **宁缺毋滥**：如果某个字段的信息在输入中不明确或不存在，必须返回null，而不是猜测或编造
-                        3. **严格匹配**：只有当输入文本中明确提到相关信息时，才填充对应字段
+                val app = AppSyncMMKV.calender!!
+                (viewModelScope + CoroutineExceptionHandler { _, throwable -> defer.complete(Result.failure(throwable)) }).launch {
+                    val resp = agent.executeStructured(
+                        prompt = prompt("structured-data") {
+                            system(
+                                content = """
+                                    你是课程信息提取Agent，将自然语言描述转为符合CourseAddReturn JSON Schema的结构化数据。
 
-                        ## 提取规则
+                                    ## 原则
+                                    1. 仅提取输入中明确提到的信息，不推测、不补全。
+                                    2. 缺失信息填null，不能虚构。
+                                    3. 每个record仅对应一个weekNumber。
 
-                        ### 课程基本信息 (course)
-                        - **name**: 课程名称，必须是输入中明确提到的完整课程名
-                        - **teacherName**: 教师姓名，只有明确提到教师姓名时才填充
-                        - **classroomName**: 教室位置，只有明确提到教室信息时才填充
-                        - **credits**: 课程学分，只有明确提到学分数值时才填充
-                        - **isDegreeRequired**: 是否学位课，只有明确说明是否为学位课时才填充
+                                    ## 字段定义
+                                    course:
+                                    - name: 课程名（必须完整）
+                                    - teacherName: 教师姓名
+                                    - classroomName: 教室位置
+                                    - credits: 学分
+                                    - isDegreeRequired: 是否为学位课
 
-                        ### 时间安排信息 (record)
-                        **重要**：对于时间范围（如"第3周至第16周"），需要为每一周都创建一个record记录！
+                                    record:
+                                    - weekNumber: 周次（展开所有范围），如果输入出现具体日期，需要根据学期起止日期计算周数：
+                                      - 学期开始时间：${app.start}
+                                      - 学期结束时间：${app.end}
+                                    - dayOfWeek: 星期几（1=周一,...,7=周日）
+                                    - periodOfDay: 二维数组，每行对应一个dayOfWeek的节次，如 [[3,4]]
 
-                        - **weekNumber**: 学期周数(1-20)，需要理解时间范围表达：
-                          * "第3周至第16周" → 需要创建14个record（第3,4,5...16周各一个）
-                          * "第1-10周" → 需要创建10个record（第1,2,3...10周各一个）
-                          * "第5周开始" → 从第5周开始到学期结束
-                          * "单周" → 只在奇数周（1,3,5,7...）
-                          * "双周" → 只在偶数周（2,4,6,8...）
-                          * "每周" → 每一周都有
-                          * **复合表达**：
-                            - "3-5周（单）" → 在3,4,5周范围内选择单数周 → 第3,5周
-                            - "7-14周（双）" → 在7,8,9,10,11,12,13,14周范围内选择双数周 → 第8,10,12,14周
-                            - "1-8周（单），10-16周（双）" → 第1,3,5,7周 + 第10,12,14,16周
+                                    ## 时间解析规则
+                                    - "第3-16周" → 3~16
+                                    - "3-5周(单)" → 3,5
+                                    - "7-14周(双)" → 8,10,12,14
+                                    - "第5周开始" → 5到学期结束（默认到第${app.count()}周）
+                                    - "单周"/"双周" → 1,3... 或 2,4...
+                                    - 当输入包含具体日期（如“2025年9月10日”），根据 ${app.start} 计算该日期属于第几周。
 
-                        - **dayOfWeek**: 星期几(1=周一, 2=周二, ..., 7=周日)，只有明确提到星期时才填充
-                        - **periodOfDay**: 第几节课(1-12)，只有明确提到节次时才填充
-
-                        **处理逻辑示例**：
-                        输入："第3周至第16周开课，每周三下午3-4节"
-                        输出：应该创建14个record，每个record为：
-                        - weekNumber: 3 (第一个record)
-                        - weekNumber: 4 (第二个record)
-                        - ...
-                        - weekNumber: 16 (最后一个record)
-                        每个record的dayOfWeek都是[3]，periodOfDay都是[[3,4]]
-
-                        ## 常见时间表达映射
-                        - 周一/星期一 → 1, 周二/星期二 → 2, ..., 周日/星期日 → 7
-                        - 第一节/1节 → 1, 第二节/2节 → 2, 以此类推
-                        - 上午1-2节 → [1,2], 下午3-4节 → [3,4], 晚上9-10节 → [9,10]
-                        - 时间范围关键词：
-                          * "至"、"到"、"—"、"-" → 表示从开始到结束的连续范围
-                          * "每周" → 表示所有周都有
-                          * "单周"、"奇数周" → 只在1,3,5,7...周
-                          * "双周"、"偶数周" → 只在2,4,6,8...周
-
-                        ## 时间范围处理示例
-                        - "第3周至第16周" → 创建14个record，weekNumber分别为3,4,5,6,7,8,9,10,11,12,13,14,15,16
-                        - "第1-5周，每周三下午3-4节" → 创建5个record，每个record的weekNumber为1,2,3,4,5，dayOfWeek=[3]，periodOfDay=[[3,4]]
-                        - "第2周开始，单周，周一上午1-2节" → 创建record，weekNumber为3,5,7,9,11,13,15...（从第3周开始的奇数周）
-                        - "3-5周（单）" → 在3,4,5周中筛选单数周，创建2个record，weekNumber为3,5
-                        - "7-14周（双）" → 在7,8,9,10,11,12,13,14周中筛选双数周，创建4个record，weekNumber为8,10,12,14
-                        - "3-5周（单），7-14周（双）" → 创建6个record，weekNumber为3,5,8,10,12,14
-
-                        ## 输出要求
-                        - 如果输入文本中没有任何课程相关信息，返回course为null
-                        - 如果没有明确的时间安排信息，record返回空数组[]
-                        - **对于时间范围，必须为范围内的每一周都创建一个独立的record**
-                        - **每个record只能包含一个weekNumber，不能用数组**
-                        - 所有不确定的字段必须设置为null
-                        - 确保输出的JSON格式严格符合定义的数据结构
-                    """.trimIndent()
-                    )
-
-                    user("""
-                        请仔细分析以下课程描述，特别注意时间范围的表达：
-
-                        $it
-
-                        处理步骤：
-                        1. 首先识别课程基本信息（名称、教师、教室等）
-                        2. 然后识别时间安排，特别注意：
-                           - 如果提到"第X周至第Y周"，需要为X到Y之间的每一周都创建一个record
-                           - 如果提到"每周"，表示所有涉及的周都有课
-                           - 如果提到具体的星期和节次，要准确映射到数字
-                           - **复合时间表达**：如"3-5周（单）"，需要先确定范围（3,4,5周），再筛选单数周（3,5周）
-                           - **多段时间表达**：如"3-5周（单），7-14周（双）"，需要分别处理每个时间段
-                        3. 确保每个record只包含一个weekNumber值
-                        4. 对于不确定的信息，设置为null
-                    """.trimIndent())
-                },
-                mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
-                fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
-                structure = JsonStructuredData.createJsonStructure<CourseAddReturn>(
-                    schemaFormat = JsonSchemaGenerator.SchemaFormat.JsonSchema,
-                    examples = listOf(
-                        // 示例1：时间范围处理
-                        CourseAddReturn(
-                            course = LLMCourseReturn(
-                                name = "艺术鉴赏",
-                                teacherName = null,
-                                classroomName = "A栋302",
-                                credits = null,
-                                isDegreeRequired = null
-                            ),
-                            record = listOf(
-                                // 第3周至第16周，每周三下午3-4节
-                                LLMRecordReturn(
-                                    weekNumber = 3,
-                                    dayOfWeek = listOf(3),
-                                    periodOfDay = listOf(listOf(3, 4))
-                                ),
-                                LLMRecordReturn(
-                                    weekNumber = 4,
-                                    dayOfWeek = listOf(3),
-                                    periodOfDay = listOf(listOf(3, 4))
-                                ),
-                                LLMRecordReturn(
-                                    weekNumber = 5,
-                                    dayOfWeek = listOf(3),
-                                    periodOfDay = listOf(listOf(3, 4))
-                                )
-                                // ... 应该继续到第16周，这里只展示前几个
+                                    ## 输出要求
+                                    - 无课程信息 → course = null
+                                    - 无时间安排 → record = []
+                                    - 输出严格符合CourseAddReturn结构，不能添加任何解释或多余字符
+                                """.trimIndent()
                             )
-                        ),
-                        // 示例2：复合时间概念（单双周）
-                        CourseAddReturn(
-                            course = LLMCourseReturn(
-                                name = "高等数学",
-                                teacherName = "王教授",
-                                classroomName = "B201",
-                                credits = 4.0f,
-                                isDegreeRequired = true
-                            ),
-                            record = listOf(
-                                // 3-5周（单）：第3,5周
-                                LLMRecordReturn(
-                                    weekNumber = 3,
-                                    dayOfWeek = listOf(2),
-                                    periodOfDay = listOf(listOf(1, 2))
-                                ),
-                                LLMRecordReturn(
-                                    weekNumber = 5,
-                                    dayOfWeek = listOf(2),
-                                    periodOfDay = listOf(listOf(1, 2))
-                                ),
-                                // 7-14周（双）：第8,10,12,14周
-                                LLMRecordReturn(
-                                    weekNumber = 8,
-                                    dayOfWeek = listOf(2),
-                                    periodOfDay = listOf(listOf(1, 2))
-                                ),
-                                LLMRecordReturn(
-                                    weekNumber = 10,
-                                    dayOfWeek = listOf(2),
-                                    periodOfDay = listOf(listOf(1, 2))
-                                ),
-                                LLMRecordReturn(
-                                    weekNumber = 12,
-                                    dayOfWeek = listOf(2),
-                                    periodOfDay = listOf(listOf(1, 2))
-                                ),
-                                LLMRecordReturn(
-                                    weekNumber = 14,
-                                    dayOfWeek = listOf(2),
-                                    periodOfDay = listOf(listOf(1, 2))
-                                )
-                            )
-                        ),
-                        // 示例3：简单时间安排
-                        CourseAddReturn(
-                            course = LLMCourseReturn(
-                                name = "大学英语",
-                                teacherName = "李芳",
-                                classroomName = "A314",
-                                credits = 3.5f,
-                                isDegreeRequired = true
-                            ),
-                            record = listOf(
-                                // 第1周，周一第2-3节，周三第2节
-                                LLMRecordReturn(
-                                    weekNumber = 1,
-                                    dayOfWeek = listOf(1, 3),
-                                    periodOfDay = listOf(
-                                        listOf(2, 3),
-                                        listOf(2)
+                        },
+                        mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                        fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                        structure = JsonStructuredData.createJsonStructure<CourseAddReturn>(
+                            schemaFormat = JsonSchemaGenerator.SchemaFormat.JsonSchema,
+                            examples = listOf(
+                                // 示例1：时间范围处理
+                                CourseAddReturn(
+                                    course = LLMCourseReturn(
+                                        name = "艺术鉴赏",
+                                        teacherName = null,
+                                        classroomName = "A栋302",
+                                        credits = null,
+                                        isDegreeRequired = null
+                                    ),
+                                    record = listOf(
+                                        // 第3周至第16周，每周三下午3-4节
+                                        LLMRecordReturn(
+                                            weekNumber = 3,
+                                            dayOfWeek = listOf(3),
+                                            periodOfDay = listOf(listOf(3, 4))
+                                        ),
+                                        LLMRecordReturn(
+                                            weekNumber = 4,
+                                            dayOfWeek = listOf(3),
+                                            periodOfDay = listOf(listOf(3, 4))
+                                        ),
+                                        LLMRecordReturn(
+                                            weekNumber = 5,
+                                            dayOfWeek = listOf(3),
+                                            periodOfDay = listOf(listOf(3, 4))
+                                        )
+                                        // ... 应该继续到第16周，这里只展示前几个
                                     )
                                 )
-                            )
-                        )
-                    ),
-                    schemaType = JsonStructuredData.JsonSchemaType.SIMPLE
-                ),
-            )
+                            ),
+                            schemaType = JsonStructuredData.JsonSchemaType.SIMPLE
+                        ),
+                    )
 
+                    defer.complete(resp)
+                }
+
+                defer.await()
+            }
             reduce {
                 state.copy(
                     enableSaveButton = true,
@@ -428,8 +328,9 @@ class CourseEditModel(
             }
 
             if (response.isFailure) {
-                logger.w("无法生成课表数据", response.exceptionOrNull())
-                postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, "生成课表数据时发生错误，请查看日志"))
+                val ex = response.exceptionOrNull()
+                logger.w("无法生成课表数据", ex)
+                postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, ex?.message ?: "生成课表数据时发生错误，请查看日志"))
                 return@runOn
             }
 
@@ -440,7 +341,7 @@ class CourseEditModel(
             postSideEffect(
                 CourseEditSideEffect.Toast(
                     SnackBarType.Success,
-                    "共生成了 ${write.record.size} 个数据，请查阅后点击确定。"
+                    "共生成了 ${write.record.flatMap { it.toEntity() }} 个课程，请查阅后点击确定。"
                 )
             )
 
@@ -504,8 +405,8 @@ private data class LLMRecordReturn(
     @property:LLMDescription("一个二维矩阵，纵坐标为dayOfWeek属性的index，横坐标为在第几节会有这门课。")
     val periodOfDay: List<List<Int>>, // 第几节课
 ) {
-    fun toEntity(): List<CourseRecordEntity> = periodOfDay.withIndex().flatMap { (index,periods)->
-        periods.map { it->
+    fun toEntity(): List<CourseRecordEntity> = periodOfDay.withIndex().flatMap { (index, periods) ->
+        periods.map { it ->
             CourseRecordEntity(
                 weekNumber = weekNumber,
                 dayOfWeek = dayOfWeek[index],
