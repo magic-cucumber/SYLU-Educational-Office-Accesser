@@ -71,7 +71,8 @@ fun CourseEditScreen(route: CourseEditRoute) {
         onAiEndpointChanged = { model.setAiEndpoint(it) },
         onAiKeyChanged = { model.setAiKey(it) },
         onAiModelChanged = { model.setAiModel(it) },
-        onGenerateButtonClicked = { model.generateCourseByAI(it) }
+        onGenerateButtonClicked = { model.generateCourseByAI(it) },
+        onImageCaptchaClicked = { model.generateCourseByImage() }
     )
 }
 
@@ -89,7 +90,8 @@ private fun CourseEditScreenContent(
     onAiEndpointChanged: (String) -> Unit,
     onAiKeyChanged: (String) -> Unit,
     onAiModelChanged: (String) -> Unit,
-    onGenerateButtonClicked: (String) -> Unit
+    onGenerateButtonClicked: (String) -> Unit,
+    onImageCaptchaClicked: () -> Unit,
 ) {
     when (state) {
         is CourseEditState.Loading -> {
@@ -181,6 +183,7 @@ private fun CourseEditScreenContent(
                                 onAiKeyChanged = onAiKeyChanged,
                                 onAiModelChanged = onAiModelChanged,
                                 onGenerateButtonClicked = onGenerateButtonClicked,
+                                onImageCaptchaClicked = onImageCaptchaClicked
                             )
                         }
                     }
@@ -453,7 +456,8 @@ private fun CourseEditAI(
     onAiEndpointChanged: (String) -> Unit,
     onAiKeyChanged: (String) -> Unit,
     onAiModelChanged: (String) -> Unit,
-    onGenerateButtonClicked: (String) -> Unit
+    onGenerateButtonClicked: (String) -> Unit,
+    onImageCaptchaClicked: () -> Unit
 ) {
     var aiEndpoint by remember {
         mutableStateOf(aiEndpoint)
@@ -515,12 +519,26 @@ private fun CourseEditAI(
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         )
 
-        Button(
-            onClick = { onGenerateButtonClicked(inputMessage) },
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            enabled = aiGenerating == null
-        ) {
-            Text(text = aiGenerating ?: "生成")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(
+                onClick = { onGenerateButtonClicked(inputMessage) },
+                modifier = Modifier.weight(1f).padding(16.dp),
+                enabled = aiGenerating == null
+            ) {
+                Text(text = aiGenerating ?: "生成")
+            }
+
+            Spacer(Modifier.width(8.dp))
+            Text("或")
+            Spacer(Modifier.width(8.dp))
+
+            OutlinedButton(
+                onClick = onImageCaptchaClicked,
+                modifier = Modifier.weight(1f).padding(16.dp),
+                enabled = aiGenerating == null
+            ) {
+                Text(text = aiGenerating ?: "选择图片")
+            }
         }
     }
 

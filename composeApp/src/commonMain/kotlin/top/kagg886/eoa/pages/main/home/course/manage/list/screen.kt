@@ -32,6 +32,7 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.export_calender.CourseExportCalenderRoute
 import top.kagg886.eoa.pages.main.home.course.export_ics.CourseExportIcsRoute
 import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
+import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditState
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType

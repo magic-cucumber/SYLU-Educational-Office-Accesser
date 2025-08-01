@@ -1,17 +1,25 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import ai.koog.agents.core.tools.annotations.LLMDescription
+import ai.koog.prompt.dsl.MessageContentBuilder
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
+import ai.koog.prompt.llm.LLMCapability
+import ai.koog.prompt.message.Attachment
+import ai.koog.prompt.message.AttachmentContent
 import ai.koog.prompt.structure.StructuredResponse
 import ai.koog.prompt.structure.executeStructured
 import ai.koog.prompt.structure.json.JsonSchemaGenerator
 import ai.koog.prompt.structure.json.JsonStructuredData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.readBytes
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -25,6 +33,8 @@ import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import okio.IOException
+import okio.Source
+import okio.buffer
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
@@ -195,8 +205,57 @@ class CourseEditModel(
         }
     }
 
-    @OptIn(OrbitExperimental::class)
     fun generateCourseByAI(it: String) = intent {
+        postSideEffect(
+            CourseEditSideEffect.Toast(
+                SnackBarType.Info,
+                "正在生成，请稍等.."
+            )
+        )
+
+        val sub = generateCourseByAIInternal {
+            + "请解析以下课程描述并输出符合 CourseAddReturn 的 JSON:"
+            + it
+        }
+
+        sub.join()
+    }
+
+    fun generateCourseByImage() = intent {
+        val picker = FileKit.openFilePicker(type = FileKitType.Image, title = "选择AI要读取的图片")
+
+        if (picker == null) {
+            postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Warning,"请选择图片！"))
+            return@intent
+        }
+
+        postSideEffect(
+            CourseEditSideEffect.Toast(
+                SnackBarType.Info,
+                "正在生成，请稍等...\n请确保您的模型支持图片输入。"
+            )
+        )
+
+        val byt = picker.readBytes()
+
+        val sub = generateCourseByAIInternal {
+            + "请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:"
+
+            attachments {
+                Attachment.Image(
+                    content = AttachmentContent.Binary.Bytes(byt),
+                    format = "png",
+                    mimeType = "image/png",
+                    fileName = "capture.png"
+                )
+            }
+        }
+
+        sub.join()
+    }
+
+    @OptIn(OrbitExperimental::class)
+    private fun generateCourseByAIInternal(build: MessageContentBuilder.()-> Unit) = intent {
         runOn<CourseEditState.Success> {
             reduce {
                 state.copy(
@@ -204,13 +263,6 @@ class CourseEditModel(
                     aiGenerating = ""
                 )
             }
-
-            postSideEffect(
-                CourseEditSideEffect.Toast(
-                    SnackBarType.Info,
-                    "正在生成，请稍等.."
-                )
-            )
 
             // 构造Koog的agent对象
             val agent = SingleLLMPromptExecutor(
@@ -276,12 +328,7 @@ class CourseEditModel(
                                 """.trimIndent()
                             )
 
-                            user(
-                                content = """
-                                    请解析以下课程描述并输出符合 CourseAddReturn 的 JSON：
-                                    $it    
-                                """.trimIndent()
-                            )
+                            user(build)
                         },
                         mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
                         fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
@@ -341,23 +388,43 @@ class CourseEditModel(
                 return@runOn
             }
 
-            val write = response.getOrThrow().structure
+            val (course,record) = response.getOrThrow().structure
 
-            logger.i("生成数据：${write}")
+            if (course == null) {
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Success,
+                        "未检索到有效的课程数据。"
+                    )
+                )
+                return@runOn
+            }
+
+            if (record.isNullOrEmpty()) {
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Success,
+                        "未检索到有效的课表数据。"
+                    )
+                )
+                return@runOn
+            }
+
+            logger.i("生成数据：${course},${record}")
 
             postSideEffect(
                 CourseEditSideEffect.Toast(
                     SnackBarType.Success,
-                    "共生成了 ${write.record.flatMap { it.toEntity() }} 个课程，请查阅后点击确定。"
+                    "共生成了 ${record.flatMap { it.toEntity() }} 个课程，请查阅后点击确定。"
                 )
             )
 
             reduce {
                 state.copy(
                     courseInfo = with(AppSyncMMKV.picker!!.default.asTerm()) {
-                        write.course.toEntity(xnm, xqm)
+                        course.toEntity(xnm, xqm)
                     },
-                    recordInfo = write.record.flatMap { it.toEntity() }
+                    recordInfo = record.flatMap { it.toEntity() }
                 )
             }
         }
@@ -369,9 +436,9 @@ class CourseEditModel(
 @LLMDescription("课程添加返回结果，包含课程基本信息和时间安排")
 private data class CourseAddReturn(
     @property:LLMDescription("课程基本信息")
-    val course: LLMCourseReturn,
+    val course: LLMCourseReturn?,
     @property:LLMDescription("课程时间安排列表")
-    val record: List<LLMRecordReturn>
+    val record: List<LLMRecordReturn>?
 )
 
 @Serializable

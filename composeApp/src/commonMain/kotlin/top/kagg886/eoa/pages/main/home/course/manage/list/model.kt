@@ -1,6 +1,9 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.lifecycle.ViewModel
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -52,7 +55,7 @@ class CourseManageListModel(
             }
         }
 
-    fun setDataUnsafe(onlyShowUserCourse:Boolean = false) = intent {
+    fun setDataUnsafe(onlyShowUserCourse: Boolean = false) = intent {
         val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
 
         var w = currentWeek
@@ -83,6 +86,11 @@ class CourseManageListModel(
     }
 
     fun openAddOrEditCourse(data: CourseEntity?) = intent {
+        if (Clock.System.todayIn(TimeZone.currentSystemDefault()) !in with(AppSyncMMKV.calender!!) { start..end }) {
+            postSideEffect(CourseManageSideEffect.Toast("当前未处于学期中，不可编辑/新建课程"))
+            return@intent
+        }
+
         if (data?.isUserAdded == false) {
             postSideEffect(CourseManageSideEffect.Toast("系统课程不可修改"))
             return@intent
@@ -104,10 +112,11 @@ class CourseManageListModel(
     }
 
     fun startExportICS() = intent {
-        when(val s = state) {
+        when (val s = state) {
             is CourseManageState.Success -> {
                 postSideEffect(CourseManageSideEffect.StartExportIcs(s.data))
             }
+
             else -> {
                 postSideEffect(CourseManageSideEffect.Toast("此时不允许数据导出，请稍后再试"))
             }
@@ -115,10 +124,11 @@ class CourseManageListModel(
     }
 
     fun startExportCalender() = intent {
-        when(val s = state) {
+        when (val s = state) {
             is CourseManageState.Success -> {
                 postSideEffect(CourseManageSideEffect.StartExportCalender(s.data))
             }
+
             else -> {
                 postSideEffect(CourseManageSideEffect.Toast("此时不允许数据导出，请稍后再试"))
             }
@@ -141,7 +151,7 @@ sealed interface CourseManageState {
 sealed interface CourseManageSideEffect {
     data class Toast(val msg: String) : CourseManageSideEffect
     data class NavigateToEditOrAdd(val courseId: Long?) : CourseManageSideEffect
-    data class StartExportIcs(val course: List<CourseEntity>): CourseManageSideEffect
+    data class StartExportIcs(val course: List<CourseEntity>) : CourseManageSideEffect
 
-    data class StartExportCalender(val course: List<CourseEntity>): CourseManageSideEffect
+    data class StartExportCalender(val course: List<CourseEntity>) : CourseManageSideEffect
 }
