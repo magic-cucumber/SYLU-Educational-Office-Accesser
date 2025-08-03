@@ -38,6 +38,7 @@ fun TodayCourseContent(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .cornerRadius(28.dp)
             .background(MaterialTheme.colorScheme.background)
             .clickable(WidgetUtils.createOpenAppAction(context))
             .padding(8.dp)

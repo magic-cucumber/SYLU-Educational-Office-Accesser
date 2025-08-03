@@ -33,7 +33,7 @@
 
         <!-- 今日课程小组件 -->
         <receiver
-                android:name="top.kagg886.eoa.widget.TodayCourseWidgetReceiver"
+                android:name=".widget.TodayCourseWidgetReceiver"
                 android:exported="true"
                 android:label="@string/today_course_widget_label">
             <intent-filter>
