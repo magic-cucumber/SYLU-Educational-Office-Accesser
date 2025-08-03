@@ -246,7 +246,7 @@ class CourseEditModel(
         val byt = picker.readBytes()
 
         val sub = generateCourseByAIInternal {
-            + "请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:"
+            +"请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:"
 
             attachments {
                 image(
@@ -333,7 +333,20 @@ class CourseEditModel(
 
                 val app = AppSyncMMKV.calender!!
                 (viewModelScope + CoroutineExceptionHandler { _, throwable -> defer.complete(Result.failure(throwable)) }).launch {
-                    val flow = agent.executeStreaming(
+                    val displayJob = launch {
+                        var cnt = 1
+                        while (true) {
+                            cnt = (cnt + 1) % 4
+                            delay(1.seconds)
+                            reduce {
+                                state.copy(
+                                    aiGenerating = (1..cnt).joinToString("") { "." }
+                                )
+                            }
+                        }
+                    }
+
+                    val data = agent.executeStructured(
                         prompt = prompt("structured-data") {
                             system(
                                 content = """
@@ -375,27 +388,17 @@ class CourseEditModel(
                             )
 
                             user(build)
-
-                            user {
-                                markdown {
-                                    StructuredOutputPrompts.output(
-                                        builder = this,
-                                        structure = structure,
-                                    )
-                                }
-                            }
                         },
-                        model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                        mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                        fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                        structure = structure
                     )
 
-                    val data = structure.parse(
-                        text = flow.withIndex()
-                            .onEach { reduce { state.copy(aiGenerating = "已生成 ${it.index + 1} 个字符") } }
-                            .map { it.value }
-                            .toList().joinToString("")
+                    defer.complete(
+                        if (data.isSuccess) Result.success(data.getOrThrow().structure) else Result.failure(data.exceptionOrNull()!!)
                     )
 
-                    defer.complete(Result.success(data))
+                    displayJob.cancel()
                 }
 
                 defer.await()
