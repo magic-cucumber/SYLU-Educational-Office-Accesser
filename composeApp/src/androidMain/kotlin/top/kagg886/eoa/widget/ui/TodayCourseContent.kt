@@ -21,6 +21,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import top.kagg886.eoa.AppActivity
+import top.kagg886.eoa.widget.LocalInnerRadius
 import top.kagg886.eoa.widget.component.RefreshButton
 import top.kagg886.eoa.widget.repository.TodayClass
 import top.kagg886.eoa.widget.util.WidgetUtils
@@ -74,7 +75,11 @@ fun TodayCourseContent(
             when {
                 courses == null -> EmptyCoursesView("Loading...")
                 courses.isFailure -> EmptyCoursesView(courses.exceptionOrNull()!!.message!!)
-                else -> CoursesList(courses.getOrThrow())
+                else -> CoursesList(
+                    courses = courses.getOrThrow(),
+                    modifier = GlanceModifier
+                        .cornerRadius(LocalInnerRadius.current)
+                )
             }
         }
     }
@@ -98,8 +103,8 @@ private fun EmptyCoursesView(message: String) {
 }
 
 @Composable
-private fun CoursesList(courses: List<TodayClass>) {
-    LazyColumn {
+private fun CoursesList(courses: List<TodayClass>,modifier: GlanceModifier = GlanceModifier) {
+    LazyColumn(modifier = modifier) {
         itemsIndexed(courses) { index, course ->
             Column {
                 if (index != 0) {

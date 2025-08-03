@@ -4,29 +4,17 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.appWidgetBackground
-import androidx.glance.appwidget.cornerRadius
-import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.*
 import androidx.glance.background
 import androidx.glance.color.isNightMode
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import com.materialkolor.DynamicMaterialTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.time.delay
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.EOAApplication
@@ -38,7 +26,11 @@ import top.kagg886.eoa.widget.util.dpFrom
 import top.kagg886.mkmb.MMKV
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
-import kotlin.time.Duration.Companion.seconds
+
+
+val LocalInnerRadius = staticCompositionLocalOf<Dp> {
+    error("not provided")
+}
 
 /**
  * 今日课程小组件
@@ -75,15 +67,20 @@ class TodayCourseWidget : GlanceAppWidget() {
                         else -> 28.dp
                     }
                 }
-                TodayCourseWidgetContent(
-                    repository = repository,
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .cornerRadius(corner)
-                        .padding(padding / 2)
-                        .appWidgetBackground()
-                )
+
+                CompositionLocalProvider(
+                    LocalInnerRadius provides padding
+                ) {
+                    TodayCourseWidgetContent(
+                        repository = repository,
+                        modifier = GlanceModifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
+                            .cornerRadius(corner)
+                            .padding(padding / 2)
+                            .appWidgetBackground()
+                    )
+                }
             }
         }
     }
