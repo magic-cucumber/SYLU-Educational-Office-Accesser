@@ -7,8 +7,10 @@ import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
+import ai.koog.prompt.markdown.markdown
 import ai.koog.prompt.message.Attachment
 import ai.koog.prompt.message.AttachmentContent
+import ai.koog.prompt.structure.StructuredOutputPrompts
 import ai.koog.prompt.structure.StructuredResponse
 import ai.koog.prompt.structure.executeStructured
 import ai.koog.prompt.structure.json.JsonSchemaGenerator
@@ -26,6 +28,12 @@ import io.ktor.client.plugins.logging.Logging
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.datetime.LocalDate
@@ -213,8 +221,8 @@ class CourseEditModel(
         )
 
         val sub = generateCourseByAIInternal {
-            + "请解析以下课程描述并输出符合 CourseAddReturn 的 JSON:"
-            + it
+            +"请解析以下课程描述并输出符合 CourseAddReturn 的 JSON:"
+            +it
         }
 
         sub.join()
@@ -224,7 +232,7 @@ class CourseEditModel(
         val picker = FileKit.openFilePicker(type = FileKitType.Image, title = "选择AI要读取的图片")
 
         if (picker == null) {
-            postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Warning,"请选择图片！"))
+            postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Warning, "请选择图片！"))
             return@intent
         }
 
@@ -241,20 +249,59 @@ class CourseEditModel(
             + "请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:"
 
             attachments {
-                Attachment.Image(
-                    content = AttachmentContent.Binary.Bytes(byt),
-                    format = "png",
-                    mimeType = "image/png",
-                    fileName = "capture.png"
+                image(
+                    Attachment.Image(
+                        content = AttachmentContent.Binary.Bytes(byt),
+                        format = "png",
+                        mimeType = "image/png",
+                        fileName = "capture.png"
+                    )
                 )
+
             }
         }
 
         sub.join()
     }
 
+    private val structure = JsonStructuredData.createJsonStructure<CourseAddReturn>(
+        schemaFormat = JsonSchemaGenerator.SchemaFormat.JsonSchema,
+        examples = listOf(
+            // 示例1：时间范围处理
+            CourseAddReturn(
+                course = LLMCourseReturn(
+                    name = "艺术鉴赏",
+                    teacherName = null,
+                    classroomName = "A栋302",
+                    credits = null,
+                    isDegreeRequired = null
+                ),
+                record = listOf(
+                    // 第3周至第16周，每周三下午3-4节
+                    LLMRecordReturn(
+                        weekNumber = 3,
+                        dayOfWeek = listOf(3),
+                        periodOfDay = listOf(listOf(3, 4))
+                    ),
+                    LLMRecordReturn(
+                        weekNumber = 4,
+                        dayOfWeek = listOf(3),
+                        periodOfDay = listOf(listOf(3, 4))
+                    ),
+                    LLMRecordReturn(
+                        weekNumber = 5,
+                        dayOfWeek = listOf(3),
+                        periodOfDay = listOf(listOf(3, 4))
+                    )
+                    // ... 应该继续到第16周，这里只展示前几个
+                )
+            )
+        ),
+        schemaType = JsonStructuredData.JsonSchemaType.SIMPLE
+    )
+
     @OptIn(OrbitExperimental::class)
-    private fun generateCourseByAIInternal(build: MessageContentBuilder.()-> Unit) = intent {
+    private fun generateCourseByAIInternal(build: MessageContentBuilder.() -> Unit) = intent {
         runOn<CourseEditState.Success> {
             reduce {
                 state.copy(
@@ -282,11 +329,11 @@ class CourseEditModel(
             )
 
             val response = run {
-                val defer = CompletableDeferred<Result<StructuredResponse<CourseAddReturn>>>()
+                val defer = CompletableDeferred<Result<CourseAddReturn>>()
 
                 val app = AppSyncMMKV.calender!!
                 (viewModelScope + CoroutineExceptionHandler { _, throwable -> defer.complete(Result.failure(throwable)) }).launch {
-                    val resp = agent.executeStructured(
+                    val flow = agent.executeStreaming(
                         prompt = prompt("structured-data") {
                             system(
                                 content = """
@@ -328,51 +375,32 @@ class CourseEditModel(
                             )
 
                             user(build)
-                        },
-                        mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
-                        fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
-                        structure = JsonStructuredData.createJsonStructure<CourseAddReturn>(
-                            schemaFormat = JsonSchemaGenerator.SchemaFormat.JsonSchema,
-                            examples = listOf(
-                                // 示例1：时间范围处理
-                                CourseAddReturn(
-                                    course = LLMCourseReturn(
-                                        name = "艺术鉴赏",
-                                        teacherName = null,
-                                        classroomName = "A栋302",
-                                        credits = null,
-                                        isDegreeRequired = null
-                                    ),
-                                    record = listOf(
-                                        // 第3周至第16周，每周三下午3-4节
-                                        LLMRecordReturn(
-                                            weekNumber = 3,
-                                            dayOfWeek = listOf(3),
-                                            periodOfDay = listOf(listOf(3, 4))
-                                        ),
-                                        LLMRecordReturn(
-                                            weekNumber = 4,
-                                            dayOfWeek = listOf(3),
-                                            periodOfDay = listOf(listOf(3, 4))
-                                        ),
-                                        LLMRecordReturn(
-                                            weekNumber = 5,
-                                            dayOfWeek = listOf(3),
-                                            periodOfDay = listOf(listOf(3, 4))
-                                        )
-                                        // ... 应该继续到第16周，这里只展示前几个
+
+                            user {
+                                markdown {
+                                    StructuredOutputPrompts.output(
+                                        builder = this,
+                                        structure = structure,
                                     )
-                                )
-                            ),
-                            schemaType = JsonStructuredData.JsonSchemaType.SIMPLE
-                        ),
+                                }
+                            }
+                        },
+                        model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
                     )
 
-                    defer.complete(resp)
+                    val data = structure.parse(
+                        text = flow.withIndex()
+                            .onEach { reduce { state.copy(aiGenerating = "已生成 ${it.index + 1} 个字符") } }
+                            .map { it.value }
+                            .toList().joinToString("")
+                    )
+
+                    defer.complete(Result.success(data))
                 }
 
                 defer.await()
             }
+
             reduce {
                 state.copy(
                     enableSaveButton = true,
@@ -383,11 +411,16 @@ class CourseEditModel(
             if (response.isFailure) {
                 val ex = response.exceptionOrNull()
                 logger.w("无法生成课表数据", ex)
-                postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, ex?.message ?: "生成课表数据时发生错误，请查看日志"))
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Error,
+                        ex?.message ?: "生成课表数据时发生错误，请查看日志"
+                    )
+                )
                 return@runOn
             }
 
-            val (course,record) = response.getOrThrow().structure
+            val (course, record) = response.getOrThrow()
 
             if (course == null) {
                 postSideEffect(
@@ -414,7 +447,7 @@ class CourseEditModel(
             postSideEffect(
                 CourseEditSideEffect.Toast(
                     SnackBarType.Success,
-                    "共生成了 ${record.flatMap { it.toEntity() }} 个课程，请查阅后点击确定。"
+                    "共生成了 ${record.flatMap { it.toEntity() }.size} 个课程，请查阅后点击确定。"
                 )
             )
 
