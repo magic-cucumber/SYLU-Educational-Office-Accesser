@@ -56,15 +56,17 @@ class TodayCourseWidget : GlanceAppWidget() {
             ) {
                 val corner = with(context) {
                     when {
-                        Build.VERSION.SDK_INT >= 31 -> dpFrom(resources.getDimensionPixelSize(android.R.dimen.system_app_widget_background_radius))
+                        AppSettingsMMKV.systemWidgetRadius && Build.VERSION.SDK_INT >= 31 ->
+                            dpFrom(resources.getDimensionPixelSize(android.R.dimen.system_app_widget_background_radius))
                         else -> 28.dp
                     }
                 }
 
                 val padding = with(context) {
                     when {
-                        Build.VERSION.SDK_INT >= 31 -> dpFrom(resources.getDimensionPixelSize(android.R.dimen.system_app_widget_inner_radius))
-                        else -> 28.dp
+                        AppSettingsMMKV.systemWidgetRadius && Build.VERSION.SDK_INT >= 31 ->
+                            dpFrom(resources.getDimensionPixelSize(android.R.dimen.system_app_widget_inner_radius))
+                        else -> 20.dp
                     }
                 }
 

@@ -73,6 +73,7 @@ fun SettingListScreen() {
     val theme by rootState.theme.collectAsState()
     val module by rootState.module.collectAsState()
     val syncDuration by rootState.syncDuration.collectAsState()
+    val systemWidgetRadius by rootState.systemWidgetRadius.collectAsState()
     val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
@@ -87,10 +88,12 @@ fun SettingListScreen() {
         theme = theme,
         module = module,
         syncDuration = syncDuration,
+        systemWidgetRadius = systemWidgetRadius,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
         onModuleChanged = rootModel::postEOAModuleSetting,
         onSyncDurationChanged = rootModel::postSyncTimeSetting,
+        onSystemWidgetRadiusChanged = rootModel::postSystemWidgetRadiusSetting,
         onEggClicked = {
             snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
         }
@@ -107,10 +110,12 @@ private fun SettingScreenContent(
     theme: AppSettingsMMKVType.AppTheme,
     module: List<EOAHomeModule>,
     syncDuration: Duration,
+    systemWidgetRadius: Boolean,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
     onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
     onSyncDurationChanged: (Duration) -> Job,
+    onSystemWidgetRadiusChanged: (Boolean) -> Unit,
     onEggClicked: () -> Unit,
 ) {
     CollapsableTopAppBarScaffold(
@@ -489,6 +494,25 @@ private fun SettingScreenContent(
                                 "主题色"
                             )
                         },
+                    )
+                }
+
+                item {
+                    ListItem(
+                        headlineContent = { Text("小组件圆角跟随系统") },
+                        supportingContent = { Text("部分OS上可能无法获取正确的圆角，此时请关闭此设置。\n小组件刷新时间不固定，手动刷新后至少冷却半小时以上才会继续响应刷新，部分系统刷新时间可能会超过1天") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.Widgets,
+                                "小组件圆角"
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = systemWidgetRadius,
+                                onCheckedChange = onSystemWidgetRadiusChanged
+                            )
+                        }
                     )
                 }
 

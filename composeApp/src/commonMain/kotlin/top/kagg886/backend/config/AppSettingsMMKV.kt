@@ -9,6 +9,7 @@ import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.util.ColorAsArgbSerializer
 import top.kagg886.util.DurationAsMillsSerializer
+import top.kagg886.util.boolean
 import top.kagg886.util.json
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -23,6 +24,8 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings"), AppSettingsMMK
             contextual(Color::class, ColorAsArgbSerializer)
         }
     })
+
+    override var systemWidgetRadius: Boolean by boolean("system-widget-radius",true)
 
     override var syncDuration: Duration by json("duration", 7.days, Json {
         serializersModule = SerializersModule {
@@ -42,6 +45,8 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings"), AppSettingsMMK
 sealed interface AppSettingsMMKVType {
     var color: Color
     var theme: AppTheme
+
+    var systemWidgetRadius: Boolean
 
     var homeModule: List<EOAHomeModule>
 
