@@ -5,6 +5,12 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -18,17 +24,21 @@ import androidx.glance.color.isNightMode
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import com.materialkolor.DynamicMaterialTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.time.delay
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.EOAApplication
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
+import top.kagg886.eoa.widget.repository.TodayClass
 import top.kagg886.eoa.widget.repository.WidgetRepository
 import top.kagg886.eoa.widget.ui.TodayCourseContent
 import top.kagg886.eoa.widget.util.dpFrom
 import top.kagg886.mkmb.MMKV
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 今日课程小组件
@@ -85,7 +95,13 @@ private fun TodayCourseWidgetContent(
     repository: WidgetRepository
 ) {
     // 直接加载数据，但添加loading状态的视觉效果
-    val courses = runBlocking { repository.getTodayCourses() }
+    var courses by remember {
+        mutableStateOf<Result<List<TodayClass>>?>(null)
+    }
+
+    LaunchedEffect(Unit) {
+        courses = repository.getTodayCourses()
+    }
 
     TodayCourseContent(
         courses = courses,

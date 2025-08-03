@@ -33,7 +33,7 @@ import kotlin.random.Random
 @SuppressLint("RestrictedApi")
 @Composable
 fun TodayCourseContent(
-    courses: Result<List<TodayClass>>,
+    courses: Result<List<TodayClass>>?,
     modifier: GlanceModifier = GlanceModifier
 ) {
     Box(
@@ -70,11 +70,11 @@ fun TodayCourseContent(
 
             Spacer(modifier = GlanceModifier.height(8.dp))
 
-            // 课程列表
-            if (courses.isFailure) {
-                EmptyCoursesView(courses.exceptionOrNull()!!.message!!)
-            } else {
-                CoursesList(courses.getOrThrow())
+
+            when {
+                courses == null -> EmptyCoursesView("Loading...")
+                courses.isFailure -> EmptyCoursesView(courses.exceptionOrNull()!!.message!!)
+                else -> CoursesList(courses.getOrThrow())
             }
         }
     }
