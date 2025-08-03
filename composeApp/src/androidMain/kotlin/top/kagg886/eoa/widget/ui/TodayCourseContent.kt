@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -19,6 +20,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import top.kagg886.eoa.AppActivity
 import top.kagg886.eoa.widget.component.RefreshButton
 import top.kagg886.eoa.widget.repository.TodayClass
 import top.kagg886.eoa.widget.util.WidgetUtils
@@ -31,17 +33,12 @@ import kotlin.random.Random
 @SuppressLint("RestrictedApi")
 @Composable
 fun TodayCourseContent(
-    context: Context,
     courses: Result<List<TodayClass>>,
     modifier: GlanceModifier = GlanceModifier
 ) {
     Box(
         modifier = modifier
-            .fillMaxSize()
-            .cornerRadius(28.dp)
-            .background(MaterialTheme.colorScheme.background)
-            .clickable(WidgetUtils.createOpenAppAction(context))
-            .padding(8.dp)
+            .clickable(actionStartActivity<AppActivity>())
     ) {
         Column(
             modifier = GlanceModifier.fillMaxSize()

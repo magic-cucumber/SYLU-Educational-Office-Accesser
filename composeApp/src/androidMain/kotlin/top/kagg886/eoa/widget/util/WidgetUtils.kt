@@ -64,11 +64,6 @@ object WidgetUtils {
 
 
     /**
-     * 创建打开主应用的Action
-     */
-    fun createOpenAppAction(context: Context) = actionStartActivity<AppActivity>()
-
-    /**
      * 创建刷新小组件的Action
      */
     fun createRefreshWidgetAction() = actionRunCallback<RefreshWidgetCallback>()
