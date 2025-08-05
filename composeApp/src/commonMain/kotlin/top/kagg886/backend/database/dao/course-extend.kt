@@ -36,8 +36,11 @@ interface CourseExtendDao {
     @Query("DELETE FROM courses")
     suspend fun clearAll()
 
-    @Query("SELECT * FROM courses_extend")
-    suspend fun all(): List<CourseExtendEntity>
+    @Query("SELECT * FROM courses_extend WHERE (:weekNumber IS NULL OR weekNumber = :weekNumber)")
+    suspend fun all(weekNumber: Int? = null): List<CourseExtendEntity>
+
+    @Query("SELECT COUNT(*) FROM courses_extend WHERE (:weekNumber IS NULL OR weekNumber = :weekNumber)")
+    suspend fun count(weekNumber: Int? = null): Int
 
     @Insert
     suspend fun insert(item: CourseExtendEntity): Long

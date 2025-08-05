@@ -44,7 +44,7 @@ class TodayCourseWidget : GlanceAppWidget() {
         if (!MMKV.initialized) {
             initializeMMKV()
         }
-        val repository = WidgetRepository(EOAApplication.getApp())
+        val repository = WidgetRepository()
         registerKermitLoggerIfExists(repository.logDao)
         logger.i("小组件: $id 准备绘制")
         provideContent {

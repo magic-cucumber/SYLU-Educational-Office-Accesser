@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "6c2b4a655b2a01ed9d6cd5f06b79dff9",
+    "identityHash": "8f2e50605de41b807d3415bd4d0d8cf7",
     "entities": [
       {
         "tableName": "exams",
@@ -248,6 +248,53 @@
         }
       },
       {
+        "tableName": "courses_extend",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `weekNumber` INTEGER NOT NULL, `yearCode` TEXT NOT NULL, `semesterCode` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "teacherName",
+            "columnName": "teacherName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weekNumber",
+            "columnName": "weekNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yearCode",
+            "columnName": "yearCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterCode",
+            "columnName": "semesterCode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
         "tableName": "course_records",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `courseId` INTEGER, `weekNumber` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `periodOfDay` INTEGER NOT NULL, `isUserAdded` INTEGER NOT NULL, FOREIGN KEY(`courseId`) REFERENCES `courses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
@@ -420,7 +467,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6c2b4a655b2a01ed9d6cd5f06b79dff9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8f2e50605de41b807d3415bd4d0d8cf7')"
     ]
   }
 }
