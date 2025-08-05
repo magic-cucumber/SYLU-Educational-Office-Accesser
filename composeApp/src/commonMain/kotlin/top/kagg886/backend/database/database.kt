@@ -23,7 +23,6 @@ import top.kagg886.backend.database.dao.SyncRecordEntity
 import top.kagg886.backend.database.dao.SyncRecordDao
 import top.kagg886.backend.database.dao.SystemNoticeDao
 import top.kagg886.backend.database.dao.SystemNoticeEntity
-import top.kagg886.backend.database.migrations.MIGRATION_4_5
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
