@@ -538,9 +538,9 @@ private fun TimeLineItem(
 
             // 圆点指示器（居中显示）
             val (dotColor, dotSize) = when (exam?.status) {
-                ExamStatus.SUCCESS -> MaterialTheme.colorScheme.primary to 16.dp
-                ExamStatus.FAILED -> MaterialTheme.colorScheme.error to 16.dp
-                ExamStatus.RE_SUCCESS -> MaterialTheme.colorScheme.tertiary to 16.dp
+                ExamStatus.SUCCESS -> Color(0xFF4CAF50) to 16.dp
+                ExamStatus.FAILED -> Color(0xFFE57373) to 16.dp
+                ExamStatus.RE_SUCCESS -> Color(0xFFFFA726) to 16.dp
                 else -> MaterialTheme.colorScheme.outline to 12.dp
             }
 
@@ -577,15 +577,6 @@ private fun TimeLineItem(
                 Text(
                     text = exam?.submitTime?.toString()?.substring(0, 16) ?: "加载中",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.placeholder(
-                        visible = visible,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
-                )
-            },
-            leadingContent = {
-                ExamStatusIndicator(
-                    status = exam?.status,
                     modifier = Modifier.placeholder(
                         visible = visible,
                         highlight = PlaceholderHighlight.shimmer()
