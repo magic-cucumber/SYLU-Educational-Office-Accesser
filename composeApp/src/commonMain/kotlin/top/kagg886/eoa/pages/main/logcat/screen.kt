@@ -55,6 +55,7 @@ fun LogcatScreen() {
         LogcatScreenContent(
             modifier = Modifier.fillMaxSize(),
             state = state,
+            onTestButtonClicked = model::test,
             onExportButtonClicked = model::export,
             onClearButtonClicked = model::clean
         )
@@ -78,6 +79,7 @@ fun LogcatScreen() {
 private fun LogcatScreenContent(
     modifier: Modifier = Modifier,
     state: LogcatState,
+    onTestButtonClicked: ()->Unit = {},
     onExportButtonClicked: () -> Unit = {},
     onClearButtonClicked: () -> Unit = {},
 ) = when (state) {
@@ -128,6 +130,7 @@ private fun LogcatScreenContent(
                             }
                             LogcatScreenActions(
                                 show = show,
+                                onTestButtonClicked = onTestButtonClicked,
                                 onDismiss = { show = false },
                                 onExportButtonClicked = onExportButtonClicked,
                                 onClearButtonClicked = onClearButtonClicked
@@ -267,6 +270,7 @@ private fun LogItem(log: AppLog) {
 private fun LogcatScreenActions(
     modifier: Modifier = Modifier,
     show: Boolean,
+    onTestButtonClicked: ()-> Unit,
     onDismiss: () -> Unit,
     onExportButtonClicked: () -> Unit,
     onClearButtonClicked: () -> Unit
@@ -276,6 +280,18 @@ private fun LogcatScreenActions(
         onDismissRequest = onDismiss,
         modifier = modifier
     ) {
+        DropdownMenuItem(
+            text = {
+                Text("测试日志")
+            },
+            leadingIcon = {
+                Icon(Icons.Default.Kitesurfing, "test")
+            },
+            onClick = {
+                onTestButtonClicked()
+                onDismiss()
+            }
+        )
         DropdownMenuItem(
             text = {
                 Text("导出日志")

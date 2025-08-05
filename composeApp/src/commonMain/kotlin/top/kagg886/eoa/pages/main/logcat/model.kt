@@ -23,12 +23,13 @@ import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.AppLogDao
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.util.logger
 
 class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost<LogcatState, LogcatSideEffect> {
     override val container: Container<LogcatState, LogcatSideEffect> = container(LogcatState.Loading) { all().join() }
 
     fun all(level: Severity? = Severity.Info) = intent {
-        val data = Pager(config = PagingConfig(10)) { appLogDao.getLogsByPage(level) }.flow.cachedIn(viewModelScope)
+        val data = Pager(config = PagingConfig(10)) { appLogDao.getLogsByPage(level?.ordinal) }.flow.cachedIn(viewModelScope)
 
         reduce {
             LogcatState.LoadingSuccess(level, data)
@@ -40,6 +41,10 @@ class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost
             appLogDao.clear()
         }
         postSideEffect(LogcatSideEffect.ShowToast(SnackBarType.Success, "日志已清空"))
+    }
+
+    fun test() = intent {
+        logger.i("这是一条测试log")
     }
 
     fun export() = intent {

@@ -1,15 +1,13 @@
 package top.kagg886.eoa.widget.repository
 
-import android.content.Context
-import androidx.room.Room
 import co.touchlab.kermit.Severity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import top.kagg886.backend.config.AppSyncMMKV
-import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
-import top.kagg886.backend.database.databasePath
+import top.kagg886.backend.database.commonDatabaseBuilder
+import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
@@ -17,18 +15,10 @@ import top.kagg886.util.getTimeByLessonNumber
 /**
  * 小组件数据仓库，封装数据库访问逻辑
  */
-class WidgetRepository(private val context: Context) {
+class WidgetRepository() {
 
     private val database by lazy {
-        Room.databaseBuilder<AppDatabase>(
-            name = databasePath,
-            context = context
-        ).apply {
-            fallbackToDestructiveMigrationOnDowngrade(true)
-            fallbackToDestructiveMigration(true)
-            fallbackToDestructiveMigrationFrom(true, 1)
-            setQueryCoroutineContext(Dispatchers.IO)
-        }.build()
+        databaseBuilder().build()
     }
     private val courseRecordDao by lazy { database.courseRecordDao() }
 

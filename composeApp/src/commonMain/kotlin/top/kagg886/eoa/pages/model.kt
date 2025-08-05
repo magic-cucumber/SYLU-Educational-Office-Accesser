@@ -12,8 +12,6 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -60,12 +58,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 
     override fun onCleared() = client.close()
 
-    val database: AppDatabase = databaseBuilder().apply {
-        fallbackToDestructiveMigrationOnDowngrade(true)
-        fallbackToDestructiveMigration(true)
-        fallbackToDestructiveMigrationFrom(true, 1)
-        setQueryCoroutineContext(Dispatchers.IO)
-    }.build()
+    val database: AppDatabase = databaseBuilder().build()
 
     val appLogDao = database.appLogDao()
 

@@ -1,9 +1,12 @@
 package top.kagg886.backend.database
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.AppLogDao
 import top.kagg886.backend.database.dao.CourseDao
@@ -20,8 +23,8 @@ import top.kagg886.backend.database.dao.SyncRecordEntity
 import top.kagg886.backend.database.dao.SyncRecordDao
 import top.kagg886.backend.database.dao.SystemNoticeDao
 import top.kagg886.backend.database.dao.SystemNoticeEntity
+import top.kagg886.backend.database.migrations.MIGRATION_4_5
 import top.kagg886.eoa.config.BuildConfig
-import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
 
@@ -61,4 +64,10 @@ val databasePath: String by lazy {
     dataPath.resolve("app.db").absolutePath().toString()
 }
 
-expect fun databaseBuilder(): RoomDatabase.Builder<AppDatabase>
+expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
+
+fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
+    .fallbackToDestructiveMigrationOnDowngrade(true)
+    .fallbackToDestructiveMigration(true)
+    .fallbackToDestructiveMigrationFrom(true, 1)
+    .setQueryCoroutineContext(Dispatchers.IO)
