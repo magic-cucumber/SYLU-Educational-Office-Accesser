@@ -11,6 +11,8 @@ import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.AppLogDao
 import top.kagg886.backend.database.dao.CourseDao
 import top.kagg886.backend.database.dao.CourseEntity
+import top.kagg886.backend.database.dao.CourseExtendDao
+import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.backend.database.dao.CourseRecordDao
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.ExamDao
@@ -33,6 +35,7 @@ import top.kagg886.util.dataPath
         GPASummaryEntity::class,
         GPAEntity::class,
         CourseEntity::class,
+        CourseExtendEntity::class,
         CourseRecordEntity::class,
         SyncRecordEntity::class,
         AppLog::class,
@@ -46,6 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun gpaSummaryDao(): GPASummaryDao
     abstract fun gpaDao(): GPADao
     abstract fun courseDao(): CourseDao
+    abstract fun courseExtendDao(): CourseExtendDao
     abstract fun courseRecordDao(): CourseRecordDao
     abstract fun noticeDao(): SystemNoticeDao
 

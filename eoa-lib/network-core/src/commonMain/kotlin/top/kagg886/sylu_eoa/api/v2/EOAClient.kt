@@ -1,6 +1,7 @@
 package top.kagg886.sylu_eoa.api.v2
 
-import top.kagg886.sylu_eoa.api.v2.bean.ClassUnit
+import top.kagg886.sylu_eoa.api.v2.bean.ClassReturn
+import top.kagg886.sylu_eoa.api.v2.bean.ClassTable
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
@@ -59,7 +60,7 @@ interface EOAClient {
      * @param picker 要获取课程表的学期
      * @return 课程表中的课程单元列表
      */
-    suspend fun getClassTable(picker: TermPicker): List<ClassUnit>
+    suspend fun getClassTable(picker: TermPicker): ClassReturn
 
     /**
      * 获取GPA成绩类别

@@ -328,10 +328,11 @@ internal class EOAHTMLClient : EOAClient {
         return rtn
     }
 
-    override suspend fun getClassTable(picker: TermPicker): List<ClassUnit> {
+    override suspend fun getClassTable(picker: TermPicker): ClassReturn {
         @Serializable
         data class ClassUnitReturn(
-            val kbList: List<ClassUnit>
+            val kbList: List<ClassTable>,
+            val sjkList: List<ClassExtend>,
         )
 
         val doc = client.submitForm(
@@ -344,7 +345,10 @@ internal class EOAHTMLClient : EOAClient {
             }
         ).body<ClassUnitReturn>()
 
-        return doc.kbList
+        return ClassReturn(
+            extend = doc.sjkList,
+            tables = doc.kbList
+        )
     }
 
     override suspend fun getGPAScores(): List<GPAScoreSummary> {

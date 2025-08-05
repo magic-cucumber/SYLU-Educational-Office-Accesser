@@ -15,6 +15,7 @@ import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
+import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.SystemNoticeEntity
 import top.kagg886.backend.database.dao.toEntity
@@ -143,12 +144,31 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
 
                 val courseDao = database.courseDao()
                 val recordDao = database.courseRecordDao()
+                val courseExtendDao = database.courseExtendDao()
 
                 with(AppSyncMMKV.picker!!.default.asTerm()) {
                     courseDao.clear(xnm, xqm)
                 }
 
-                for (i in getClassTable(AppSyncMMKV.picker!!.default)) {
+                val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)
+
+                courseExtendDao.insertAll(
+                    science.flatMap {
+                        it.rangeAllTerm.map { weekNumber->
+                            with(AppSyncMMKV.picker!!.default.asTerm()) {
+                                CourseExtendEntity(
+                                    name = it.name,
+                                    teacherName = it.teacher,
+                                    weekNumber = weekNumber,
+                                    yearCode = xnm,
+                                    semesterCode = xqm,
+                                )
+                            }
+                        }
+                    }
+                )
+
+                for (i in tables) {
                     val bindId = courseDao.insert(
                         item = with(AppSyncMMKV.picker!!.default.asTerm()) {
                             CourseEntity(

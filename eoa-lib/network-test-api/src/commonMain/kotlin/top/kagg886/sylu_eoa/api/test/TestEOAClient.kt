@@ -143,74 +143,78 @@ internal class TestEOAClient : EOAClient {
         )
     }
 
-    override suspend fun getClassTable(picker: TermPicker): List<ClassUnit> {
-        return listOf(
-            ClassUnit(
-                name = "高等数学",
-                teacher = "张教授",
-                room = "教学楼A101",
-                weekEachLesson = "1-16周",
-                lesson = "1-2",
-                dayInWeek = "1",
-                score = "4.0",
-                classType = "考试",
-                _degreeProgram = "是"
-            ),
-            ClassUnit(
-                name = "线性代数",
-                teacher = "李教授",
-                room = "教学楼A102",
-                weekEachLesson = "1-16周",
-                lesson = "3-4",
-                dayInWeek = "1",
-                score = "3.0",
-                classType = "考试",
-                _degreeProgram = "是"
-            ),
-            ClassUnit(
-                name = "程序设计基础",
-                teacher = "王教授",
-                room = "计算机楼B201",
-                weekEachLesson = "1-16周",
-                lesson = "5-6",
-                dayInWeek = "2",
-                score = "3.5",
-                classType = "考试",
-                _degreeProgram = "是"
-            ),
-            ClassUnit(
-                name = "大学英语",
-                teacher = "刘教授",
-                room = "外语楼C301",
-                weekEachLesson = "1-16周",
-                lesson = "1-2",
-                dayInWeek = "3",
-                score = "2.0",
-                classType = "考查",
-                _degreeProgram = "否"
-            ),
-            ClassUnit(
-                name = "体育",
-                teacher = "赵教练",
-                room = "体育馆",
-                weekEachLesson = "1-16周",
-                lesson = "7-8",
-                dayInWeek = "4",
-                score = "1.0",
-                classType = "考查",
-                _degreeProgram = "否"
-            ),
-            ClassUnit(
-                name = "数据结构",
-                teacher = "陈教授",
-                room = "计算机楼B202",
-                weekEachLesson = "1-16周",
-                lesson = "3-4",
-                dayInWeek = "5",
-                score = "4.0",
-                classType = "考试",
-                _degreeProgram = "是"
+    override suspend fun getClassTable(picker: TermPicker): ClassReturn {
+        return ClassReturn(
+            extend = listOf(),
+            tables = listOf(
+                ClassTable(
+                    name = "高等数学",
+                    teacher = "张教授",
+                    room = "教学楼A101",
+                    weekEachLesson = "1-16周",
+                    lesson = "1-2",
+                    dayInWeek = "1",
+                    score = "4.0",
+                    classType = "考试",
+                    _degreeProgram = "是"
+                ),
+                ClassTable(
+                    name = "线性代数",
+                    teacher = "李教授",
+                    room = "教学楼A102",
+                    weekEachLesson = "1-16周",
+                    lesson = "3-4",
+                    dayInWeek = "1",
+                    score = "3.0",
+                    classType = "考试",
+                    _degreeProgram = "是"
+                ),
+                ClassTable(
+                    name = "程序设计基础",
+                    teacher = "王教授",
+                    room = "计算机楼B201",
+                    weekEachLesson = "1-16周",
+                    lesson = "5-6",
+                    dayInWeek = "2",
+                    score = "3.5",
+                    classType = "考试",
+                    _degreeProgram = "是"
+                ),
+                ClassTable(
+                    name = "大学英语",
+                    teacher = "刘教授",
+                    room = "外语楼C301",
+                    weekEachLesson = "1-16周",
+                    lesson = "1-2",
+                    dayInWeek = "3",
+                    score = "2.0",
+                    classType = "考查",
+                    _degreeProgram = "否"
+                ),
+                ClassTable(
+                    name = "体育",
+                    teacher = "赵教练",
+                    room = "体育馆",
+                    weekEachLesson = "1-16周",
+                    lesson = "7-8",
+                    dayInWeek = "4",
+                    score = "1.0",
+                    classType = "考查",
+                    _degreeProgram = "否"
+                ),
+                ClassTable(
+                    name = "数据结构",
+                    teacher = "陈教授",
+                    room = "计算机楼B202",
+                    weekEachLesson = "1-16周",
+                    lesson = "3-4",
+                    dayInWeek = "5",
+                    score = "4.0",
+                    classType = "考试",
+                    _degreeProgram = "是"
+                )
             )
+
         )
     }
 

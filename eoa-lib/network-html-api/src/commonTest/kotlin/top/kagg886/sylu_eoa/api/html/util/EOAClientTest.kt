@@ -40,10 +40,12 @@ class EOAClientTest {
     fun testEOAReLogin() {
         val user = EOAHTMLClient()
         user.init(MemoryStorage())
+        user.username = "2203050528"
+        user.password = "PandoraBox15@"
         runBlocking {
             user.login()
             val picker = user.getAllAvailableTerms().default
-            user.logout()
+//            user.logout()
             println(user.getClassTable(picker).toString())
         }
     }
