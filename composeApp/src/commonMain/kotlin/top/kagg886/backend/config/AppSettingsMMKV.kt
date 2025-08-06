@@ -27,6 +27,8 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings"), AppSettingsMMK
 
     override var systemWidgetRadius: Boolean by boolean("system-widget-radius",true)
 
+    override var showExperimentClass: Boolean by boolean("show-experiment-class", true)
+
     override var syncDuration: Duration by json("duration", 7.days, Json {
         serializersModule = SerializersModule {
             contextual(Duration::class, DurationAsMillsSerializer)
@@ -47,6 +49,8 @@ sealed interface AppSettingsMMKVType {
     var theme: AppTheme
 
     var systemWidgetRadius: Boolean
+
+    var showExperimentClass: Boolean
 
     var homeModule: List<EOAHomeModule>
 

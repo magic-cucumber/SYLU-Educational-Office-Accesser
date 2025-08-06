@@ -7,6 +7,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +39,7 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -45,6 +47,7 @@ import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
+import top.kagg886.backend.database.dao.CourseExtendEntity
 
 @Serializable
 data object SummaryRoute
@@ -69,6 +72,9 @@ fun SummaryScreen() {
     ) {
         val mainViewModel = mainViewModel()
         val syncState by mainViewModel.collectAsState()
+        val rootModel = rootViewModel()
+        val rootState by rootModel.collectAsState()
+        val showExperimentClass by rootState.showExperimentClass.collectAsState()
         val model = viewModel<SummaryModel>(key = syncState.toString()) {
             SummaryModel(syncState, mainViewModel.database)
         }
@@ -84,6 +90,7 @@ fun SummaryScreen() {
         SummaryContentV2(
             state = state,
             syncState = syncState,
+            showExperimentClass = showExperimentClass,
             onCourseItemClicked = { model.redirectToCourse(it) },
             onSyncActionStarted = { mainViewModel.startSyncForce() }
         )
@@ -94,6 +101,7 @@ fun SummaryScreen() {
 private inline fun SummaryContentV2(
     state: SummaryState,
     syncState: MainRouteViewState,
+    showExperimentClass: Boolean,
     noinline onCourseItemClicked: (TodayClass) -> Unit = {},
     noinline onSyncActionStarted: () -> Unit = {}
 ) {
@@ -162,10 +170,26 @@ private inline fun SummaryContentV2(
                 }
 
                 is SummaryState.Loading -> items(3) { _ ->
-                    CourseItem(null, onCourseItemClicked)
+                    CourseItem(null, onCourseItemClicked = onCourseItemClicked)
                 }
 
                 is SummaryState.Success -> {
+                    if (showExperimentClass && state.extendClass.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "本周实验课",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                            )
+                        }
+                        item {
+                            ExperimentClassList(
+                                extendClasses = state.extendClass,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                     if (state.plan.isEmpty()) {
                         item {
                             ErrorPage(
@@ -198,8 +222,16 @@ private inline fun SummaryContentV2(
                         }
                         return@LazyColumn
                     }
+                    item {
+                        Text(
+                            text = "本日课程",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                        )
+                    }
                     items(state.plan) { course ->
-                        CourseItem(course, onCourseItemClicked)
+                        CourseItem(course, modifier = Modifier.padding(start = 8.dp), onCourseItemClicked = onCourseItemClicked)
                     }
                 }
             }
@@ -448,7 +480,8 @@ private inline fun SummaryContentPlaceHolderHeader(
 @Composable
 private inline fun CourseItem(
     course: TodayClass?,
-    noinline onCourseItemClicked: (TodayClass) -> Unit
+    modifier: Modifier = Modifier,
+    noinline onCourseItemClicked: (TodayClass) -> Unit,
 ) {
     val showPlaceHolder by remember(course) {
         derivedStateOf {
@@ -456,7 +489,7 @@ private inline fun CourseItem(
         }
     }
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .shareElementComposed(
                 sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course?.recordId}"),
@@ -640,5 +673,80 @@ private inline fun SummaryItem(
                 highlight = PlaceholderHighlight.shimmer()
             )
         )
+    }
+}
+
+@Composable
+private fun ExperimentClassList(
+    extendClasses: List<CourseExtendEntity>,
+    modifier: Modifier = Modifier
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        modifier = modifier
+    ) {
+        items(extendClasses) { extendClass ->
+            ExperimentClassItem(
+                extendClass = extendClass,
+                modifier = Modifier.width(160.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExperimentClassItem(
+    extendClass: CourseExtendEntity,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = extendClass.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+
+            Text(
+                text = extendClass.teacherName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Science,
+                    contentDescription = "实验课",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "实验课",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }

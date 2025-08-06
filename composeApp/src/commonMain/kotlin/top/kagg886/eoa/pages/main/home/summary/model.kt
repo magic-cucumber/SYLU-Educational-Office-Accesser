@@ -7,6 +7,7 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
+import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
@@ -17,6 +18,7 @@ class SummaryModel(
     database: AppDatabase
 ) : ViewModel(), ContainerHost<SummaryState, SummarySideEffect> {
     private val courseRecordDao = database.courseRecordDao()
+    private val courseExtendDao = database.courseExtendDao()
 
     override val container: Container<SummaryState, SummarySideEffect> =
         container(SummaryState.Loading) {
@@ -86,6 +88,8 @@ class SummaryModel(
             val current = today.time.toSecondOfDay() - start.toSecondOfDay()
             current.toFloat() / all.toFloat()
         }
+
+        val extendClass = courseExtendDao.all(currentWeek)
         reduce {
             SummaryState.Success(
                 weekNumber = currentWeek,
@@ -105,7 +109,8 @@ class SummaryModel(
                             progress = if (period == record.record.periodOfDay) progress else null
                         )
                     }
-                }
+                },
+                extendClass = extendClass
             )
         }
     }
@@ -128,6 +133,7 @@ sealed interface SummaryState {
         val weekNumber: Int,
         val dayPeriod:Int?,
         val progress: Float,
+        val extendClass: List<CourseExtendEntity>,
         val plan: List<TodayClass>,
     ) : SummaryState
 

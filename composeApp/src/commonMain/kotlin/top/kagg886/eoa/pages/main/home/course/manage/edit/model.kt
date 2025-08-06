@@ -7,11 +7,8 @@ import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
-import ai.koog.prompt.markdown.markdown
 import ai.koog.prompt.message.Attachment
 import ai.koog.prompt.message.AttachmentContent
-import ai.koog.prompt.structure.StructuredOutputPrompts
-import ai.koog.prompt.structure.StructuredResponse
 import ai.koog.prompt.structure.executeStructured
 import ai.koog.prompt.structure.json.JsonSchemaGenerator
 import ai.koog.prompt.structure.json.JsonStructuredData
@@ -21,27 +18,12 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.withIndex
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
+import io.ktor.client.*
+import io.ktor.client.plugins.logging.*
+import kotlinx.coroutines.*
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import okio.IOException
-import okio.Source
-import okio.buffer
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
@@ -51,9 +33,9 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.util.SnackBarType
-import top.kagg886.util.logger as kermit
 import top.kagg886.util.asTaggedLogger
 import kotlin.time.Duration.Companion.seconds
+import top.kagg886.util.logger as kermit
 
 class CourseEditModel(
     database: AppDatabase,

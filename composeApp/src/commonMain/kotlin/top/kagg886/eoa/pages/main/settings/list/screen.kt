@@ -74,6 +74,7 @@ fun SettingListScreen() {
     val module by rootState.module.collectAsState()
     val syncDuration by rootState.syncDuration.collectAsState()
     val systemWidgetRadius by rootState.systemWidgetRadius.collectAsState()
+    val showExperimentClass by rootState.showExperimentClass.collectAsState()
     val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
@@ -89,11 +90,13 @@ fun SettingListScreen() {
         module = module,
         syncDuration = syncDuration,
         systemWidgetRadius = systemWidgetRadius,
+        showExperimentClass = showExperimentClass,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
         onModuleChanged = rootModel::postEOAModuleSetting,
         onSyncDurationChanged = rootModel::postSyncTimeSetting,
         onSystemWidgetRadiusChanged = rootModel::postSystemWidgetRadiusSetting,
+        onShowExperimentClassChanged = rootModel::postShowExperimentClassSetting,
         onEggClicked = {
             snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
         }
@@ -111,11 +114,13 @@ private fun SettingScreenContent(
     module: List<EOAHomeModule>,
     syncDuration: Duration,
     systemWidgetRadius: Boolean,
+    showExperimentClass: Boolean,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
     onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
     onSyncDurationChanged: (Duration) -> Job,
     onSystemWidgetRadiusChanged: (Boolean) -> Unit,
+    onShowExperimentClassChanged: (Boolean) -> Unit,
     onEggClicked: () -> Unit,
 ) {
     CollapsableTopAppBarScaffold(
@@ -511,6 +516,25 @@ private fun SettingScreenContent(
                             Switch(
                                 checked = systemWidgetRadius,
                                 onCheckedChange = onSystemWidgetRadiusChanged
+                            )
+                        }
+                    )
+                }
+
+                item {
+                    ListItem(
+                        headlineContent = { Text("显示实验课提示") },
+                        supportingContent = { Text("在概要页面显示本周的实验课列表，暂不支持查看本学期所有的实验课") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.Science,
+                                "实验课"
+                            )
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = showExperimentClass,
+                                onCheckedChange = onShowExperimentClassChanged
                             )
                         }
                     )

@@ -91,6 +91,12 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         }
 
         viewModelScope.launch {
+            state.showExperimentClass.collect {
+                AppSettingsMMKV.showExperimentClass = it
+            }
+        }
+
+        viewModelScope.launch {
             state.syncDuration.collect {
                 AppSettingsMMKV.syncDuration = it
             }
@@ -118,6 +124,10 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 
     fun postSystemWidgetRadiusSetting(enabled: Boolean) = intent {
         state.systemWidgetRadius.value = enabled
+    }
+
+    fun postShowExperimentClassSetting(enabled: Boolean) = intent {
+        state.showExperimentClass.value = enabled
     }
 
     fun log(severity: Severity, tag: String, message: String, throwable: Throwable?) = intent {
@@ -172,7 +182,8 @@ data class RootState(
     val theme: MutableStateFlow<AppSettingsMMKVType.AppTheme> = MutableStateFlow(AppSettingsMMKV.theme),
     val module: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(AppSettingsMMKV.homeModule),
     val syncDuration: MutableStateFlow<Duration> = MutableStateFlow(AppSettingsMMKV.syncDuration),
-    val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius)
+    val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius),
+    val showExperimentClass: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showExperimentClass)
 )
 
 sealed interface RootEffect {
