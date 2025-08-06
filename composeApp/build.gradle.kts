@@ -9,6 +9,8 @@ import java.util.zip.ZipOutputStream
 val appVersion = project.findProperty("app.version") as String
 val appVersionCode = (project.findProperty("app.code") as String).toInt()
 
+val databaseVersion = (project.findProperty("database.version") as String).toInt()
+
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.compose.compiler)
@@ -231,7 +233,7 @@ buildConfig {
     // BuildConfig configuration here.
     // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
     packageName("top.kagg886.eoa.config")
-    buildConfigField("DATABASE_VERSION", 5)
+    buildConfigField("DATABASE_VERSION", databaseVersion)
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
     buildConfigField("GIT_COMMIT_SHA", "123456")
