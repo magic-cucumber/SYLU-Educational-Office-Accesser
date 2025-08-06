@@ -1,20 +1,17 @@
 package top.kagg886.eoa.pages.welcome
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Coffee
-import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -186,8 +183,8 @@ private fun WelcomeScreenContent(
             Text(
                 text = buildAnnotatedString {
                     withLink(
-                        link = LinkAnnotation.Clickable(
-                            tag = "qq_group",
+                        link = LinkAnnotation.Url(
+                            url = "https://qm.qq.com/q/heTEDas3Mk",
                             styles = TextLinkStyles(
                                 style = SpanStyle(
                                     color = theme.primary,
@@ -198,9 +195,7 @@ private fun WelcomeScreenContent(
                                     textDecoration = TextDecoration.Underline
                                 )
                             )
-                        ) {
-                            uriHandler.openUri("https://qm.qq.com/q/heTEDas3Mk")
-                        }
+                        )
                     ) {
                         append("加入QQ群")
                     }
