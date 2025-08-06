@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.Navigator
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
@@ -35,6 +37,7 @@ import top.kagg886.eoa.component.drawer.SupportRTLModalNavigationDrawer
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
+import top.kagg886.eoa.pages.main.home.exam.statistic.ExamStatisticRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
@@ -49,49 +52,7 @@ data object ExamListRoute
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun ExamListScreen() = HomeScreen(
-    route = EOAHomeModule.EXAM,
-    title = {
-        Text("考试列表")
-    },
-    menu = {
-        val mainViewModel = mainViewModel()
-        val syncState by mainViewModel.collectAsState()
-        val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
-            ExamListViewModel(mainViewModel.database, syncState)
-        }
-        val state by model.collectAsState()
-        val scope = rememberCoroutineScope()
-        IconButton(
-            onClick = {
-                scope.launch {
-                    if (state.drawerState.isOpen) {
-                        state.drawerState.close()
-                    } else {
-                        state.drawerState.open()
-                    }
-                }
-            }
-        ) {
-            AnimatedContent(
-                targetState = state.drawerState.currentValue,
-                transitionSpec = createMenuButtonAnim { initialState == DrawerValue.Open }
-            ) {
-                when (it) {
-                    DrawerValue.Closed -> Icon(
-                        Icons.Default.FilterList,
-                        contentDescription = "筛选"
-                    )
-
-                    DrawerValue.Open -> Icon(
-                        Icons.Default.Close,
-                        contentDescription = "关闭"
-                    )
-                }
-            }
-        }
-    }
-) {
+fun ExamListScreen() {
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
@@ -103,98 +64,156 @@ fun ExamListScreen() = HomeScreen(
             is ExamListSideEffect.NavigateToDetail -> {
                 nav.navigate(ExamDetailRoute(it.examId))
             }
+
+            is ExamListSideEffect.NavigateToStatistic -> {
+                nav.navigate(ExamStatisticRoute(it.year,it.term))
+            }
         }
     }
     val state by model.collectAsState()
 
-    SupportRTLModalNavigationDrawer(
-        drawerState = state.drawerState,
-        rtlLayout = true,
-        drawerContent = {
-            val successState = state as? ExamListState.Success
-
-            //avoid compose
-            var singleKeyword by remember { mutableStateOf(successState?.keyword ?: "") }
-
-            LaunchedEffect(key1 = singleKeyword) {
-                model.filterPassType(
-                    keyword = singleKeyword,
-                    type = successState?.passFilter ?: PassFilter.ALL,
-                    degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                    currentYearIndex = successState?.currentYearIndex ?: 0,
-                    currentTermIndex = successState?.currentTermIndex ?: 0
-                )
+    HomeScreen(
+        route = EOAHomeModule.EXAM,
+        title = {
+            Text("考试列表")
+        },
+        menu = {
+            val mainViewModel = mainViewModel()
+            val syncState by mainViewModel.collectAsState()
+            val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
+                ExamListViewModel(mainViewModel.database, syncState)
             }
-
-            ExamListScreenDrawer(
-                keyword = singleKeyword,
-                passFilter = successState?.passFilter,
-                degreeFilter = successState?.degreeFilter,
-                currentYearIndex = successState?.currentYearIndex,
-                currentTermIndex = successState?.currentTermIndex,
-                selector = successState?.selector ?: emptyList(),
-                onKeywordChanged = { keyword ->
-                    singleKeyword = keyword
-                },
-                onPassFilterChanged = { filter ->
-                    model.filterPassType(
-                        keyword = singleKeyword,
-                        type = filter,
-                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                        currentYearIndex = successState?.currentYearIndex ?: 0,
-                        currentTermIndex = successState?.currentTermIndex ?: 0
-                    )
-                },
-                onDegreeFilterChanged = { filter ->
-                    model.filterPassType(
-                        keyword = singleKeyword,
-                        type = successState?.passFilter ?: PassFilter.ALL,
-                        degree = filter,
-                        currentYearIndex = successState?.currentYearIndex ?: 0,
-                        currentTermIndex = successState?.currentTermIndex ?: 0
-                    )
-                },
-                onCurrentYearChanged = { yearIndex ->
-                    model.filterPassType(
-                        keyword = singleKeyword,
-                        type = successState?.passFilter ?: PassFilter.ALL,
-                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                        currentYearIndex = yearIndex,
-                        currentTermIndex = 0 // Reset term when year changes
-                    )
-                },
-                onCurrentTermChanged = { termIndex ->
-                    model.filterPassType(
-                        keyword = singleKeyword,
-                        type = successState?.passFilter ?: PassFilter.ALL,
-                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                        currentYearIndex = successState?.currentYearIndex ?: 0,
-                        currentTermIndex = termIndex
-                    )
-                },
-                onResetFilters = {
-                    singleKeyword = ""
-                    model.filterPassType(
-                        keyword = null,
-                        type = PassFilter.ALL,
-                        degree = DegreeFilter.ALL,
-                        currentYearIndex = null,
-                        currentTermIndex = null
-                    )
+            val state by model.collectAsState()
+            val scope = rememberCoroutineScope()
+            IconButton(
+                onClick = {
+                    scope.launch {
+                        if (state.drawerState.isOpen) {
+                            state.drawerState.close()
+                        } else {
+                            state.drawerState.open()
+                        }
+                    }
                 }
+            ) {
+                AnimatedContent(
+                    targetState = state.drawerState.currentValue,
+                    transitionSpec = createMenuButtonAnim { initialState == DrawerValue.Open }
+                ) {
+                    when (it) {
+                        DrawerValue.Closed -> Icon(
+                            Icons.Default.FilterList,
+                            contentDescription = "筛选"
+                        )
+
+                        DrawerValue.Open -> Icon(
+                            Icons.Default.Close,
+                            contentDescription = "关闭"
+                        )
+                    }
+                }
+            }
+        },
+        fabIcon = {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null
             )
         },
-        content = {
-            ExamListScreenContent(
-                state,
-                onExamItemClicked = {
-                    model.navigateToDetail(it)
-                },
-            )
-        }
-    )
-}
+        fabText = {
+            Text("绩点统计")
+        },
+        fabOnClick = model::navigateToStatistic
+    ) {
+        SupportRTLModalNavigationDrawer(
+            drawerState = state.drawerState,
+            rtlLayout = true,
+            drawerContent = {
+                val successState = state as? ExamListState.Success
 
+                //avoid compose
+                var singleKeyword by remember { mutableStateOf(successState?.keyword ?: "") }
+
+                LaunchedEffect(key1 = singleKeyword) {
+                    model.filterPassType(
+                        keyword = singleKeyword,
+                        type = successState?.passFilter ?: PassFilter.ALL,
+                        degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                        currentYearIndex = successState?.currentYearIndex ?: 0,
+                        currentTermIndex = successState?.currentTermIndex ?: 0
+                    )
+                }
+
+                ExamListScreenDrawer(
+                    keyword = singleKeyword,
+                    passFilter = successState?.passFilter,
+                    degreeFilter = successState?.degreeFilter,
+                    currentYearIndex = successState?.currentYearIndex,
+                    currentTermIndex = successState?.currentTermIndex,
+                    selector = successState?.selector ?: emptyList(),
+                    onKeywordChanged = { keyword ->
+                        singleKeyword = keyword
+                    },
+                    onPassFilterChanged = { filter ->
+                        model.filterPassType(
+                            keyword = singleKeyword,
+                            type = filter,
+                            degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                            currentYearIndex = successState?.currentYearIndex ?: 0,
+                            currentTermIndex = successState?.currentTermIndex ?: 0
+                        )
+                    },
+                    onDegreeFilterChanged = { filter ->
+                        model.filterPassType(
+                            keyword = singleKeyword,
+                            type = successState?.passFilter ?: PassFilter.ALL,
+                            degree = filter,
+                            currentYearIndex = successState?.currentYearIndex ?: 0,
+                            currentTermIndex = successState?.currentTermIndex ?: 0
+                        )
+                    },
+                    onCurrentYearChanged = { yearIndex ->
+                        model.filterPassType(
+                            keyword = singleKeyword,
+                            type = successState?.passFilter ?: PassFilter.ALL,
+                            degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                            currentYearIndex = yearIndex,
+                            currentTermIndex = 0 // Reset term when year changes
+                        )
+                    },
+                    onCurrentTermChanged = { termIndex ->
+                        model.filterPassType(
+                            keyword = singleKeyword,
+                            type = successState?.passFilter ?: PassFilter.ALL,
+                            degree = successState?.degreeFilter ?: DegreeFilter.ALL,
+                            currentYearIndex = successState?.currentYearIndex ?: 0,
+                            currentTermIndex = termIndex
+                        )
+                    },
+                    onResetFilters = {
+                        singleKeyword = ""
+                        model.filterPassType(
+                            keyword = null,
+                            type = PassFilter.ALL,
+                            degree = DegreeFilter.ALL,
+                            currentYearIndex = null,
+                            currentTermIndex = null
+                        )
+                    }
+                )
+            },
+            content = {
+                ExamListScreenContent(
+                    state,
+                    onExamItemClicked = {
+                        model.navigateToDetail(it)
+                    },
+                )
+            }
+        )
+    }
+
+}
 @Composable
 fun ExamListScreenDrawer(
     keyword: String? = null,

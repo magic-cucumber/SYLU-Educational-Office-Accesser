@@ -8,6 +8,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -24,6 +25,18 @@ class ExamListViewModel(
 
     fun navigateToDetail(it: ExamEntity) = intent {
         postSideEffect(ExamListSideEffect.NavigateToDetail(it.id!!))
+    }
+
+    @OptIn(OrbitExperimental::class)
+    fun navigateToStatistic() = intent {
+        runOn<ExamListState.Success> {
+            val (year,terms) = state.selector[state.currentYearIndex]
+            val term = terms[state.currentTermIndex]
+
+            postSideEffect(
+                ExamListSideEffect.NavigateToStatistic(year.yearCode,term.semesterCode)
+            )
+        }
     }
 
     override val container: Container<ExamListState, ExamListSideEffect> =
@@ -160,4 +173,5 @@ sealed interface ExamListState {
 
 sealed interface ExamListSideEffect {
     data class NavigateToDetail(val examId: Long) : ExamListSideEffect
+    data class NavigateToStatistic(val year: String,val term: String) : ExamListSideEffect
 }
