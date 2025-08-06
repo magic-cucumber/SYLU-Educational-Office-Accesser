@@ -139,8 +139,8 @@ fun ExamListScreen() {
                         keyword = singleKeyword,
                         type = successState?.passFilter ?: PassFilter.ALL,
                         degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                        currentYearIndex = successState?.currentYearIndex ?: 0,
-                        currentTermIndex = successState?.currentTermIndex ?: 0
+                        currentYearIndex = successState?.currentYearIndex,
+                        currentTermIndex = successState?.currentTermIndex
                     )
                 }
 
@@ -159,8 +159,8 @@ fun ExamListScreen() {
                             keyword = singleKeyword,
                             type = filter,
                             degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                            currentYearIndex = successState?.currentYearIndex ?: 0,
-                            currentTermIndex = successState?.currentTermIndex ?: 0
+                            currentYearIndex = successState?.currentYearIndex,
+                            currentTermIndex = successState?.currentTermIndex
                         )
                     },
                     onDegreeFilterChanged = { filter ->
@@ -168,8 +168,8 @@ fun ExamListScreen() {
                             keyword = singleKeyword,
                             type = successState?.passFilter ?: PassFilter.ALL,
                             degree = filter,
-                            currentYearIndex = successState?.currentYearIndex ?: 0,
-                            currentTermIndex = successState?.currentTermIndex ?: 0
+                            currentYearIndex = successState?.currentYearIndex,
+                            currentTermIndex = successState?.currentTermIndex
                         )
                     },
                     onCurrentYearChanged = { yearIndex ->
@@ -186,7 +186,7 @@ fun ExamListScreen() {
                             keyword = singleKeyword,
                             type = successState?.passFilter ?: PassFilter.ALL,
                             degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                            currentYearIndex = successState?.currentYearIndex ?: 0,
+                            currentYearIndex = successState?.currentYearIndex,
                             currentTermIndex = termIndex
                         )
                     },

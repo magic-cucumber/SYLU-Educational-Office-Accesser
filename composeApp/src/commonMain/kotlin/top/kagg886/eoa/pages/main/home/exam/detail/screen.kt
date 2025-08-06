@@ -473,6 +473,8 @@ private fun ExamDetailTimeLine(
                 )
             )
 
+            Spacer(Modifier.height(16.dp))
+
             if (entity.isNullOrEmpty()) {
                 // 加载状态或无数据
                 repeat(3) {
