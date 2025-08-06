@@ -46,6 +46,7 @@ import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.showSnackBar
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -612,9 +613,9 @@ private fun SettingScreenContent(
                                 is SettingsState.Success -> {
                                     val time by produceState<Duration?>(null) {
                                         while (true) {
-                                            delay(1.seconds)
                                             value =
                                                 (state.lastUpdateTime + syncDuration) - kotlinx.datetime.Clock.System.now()
+                                            delay(1.hours)
                                         }
                                     }
                                     time?.let {
