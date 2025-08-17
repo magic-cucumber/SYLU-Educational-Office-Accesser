@@ -26,6 +26,7 @@ import coil3.compose.AsyncImage
 import com.kborowy.colorpicker.KolorPicker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -47,7 +48,6 @@ import top.kagg886.eoa.util.showSnackBar
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 @Serializable
@@ -614,7 +614,7 @@ private fun SettingScreenContent(
                                     val time by produceState<Duration?>(null) {
                                         while (true) {
                                             value =
-                                                (state.lastUpdateTime + syncDuration) - kotlinx.datetime.Clock.System.now()
+                                                (state.lastUpdateTime + syncDuration) - Clock.System.now()
                                             delay(1.hours)
                                         }
                                     }

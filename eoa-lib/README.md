@@ -64,8 +64,8 @@ cd eoa-lib/network-xxx-api
 
 ```kotlin
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.multiplatform)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
 }
 

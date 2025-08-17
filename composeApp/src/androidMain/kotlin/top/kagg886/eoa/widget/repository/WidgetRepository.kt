@@ -6,7 +6,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.dao.AppLog
-import top.kagg886.backend.database.commonDatabaseBuilder
 import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber

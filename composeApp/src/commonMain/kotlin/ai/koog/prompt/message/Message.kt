@@ -256,7 +256,7 @@ public data class RequestMetaInfo(
          * @param clock The clock to use for generating the timestamp.
          * @return A new RequestMetadata instance with the timestamp from the provided clock.
          */
-        public fun create(clock: Clock): RequestMetaInfo = RequestMetaInfo(clock.now())
+        public fun create(clock: Clock): RequestMetaInfo = RequestMetaInfo(Clock.System.now())
 
         /**
          * An empty instance of [RequestMetaInfo] with the timestamp set to a distant past.
@@ -313,7 +313,7 @@ public data class ResponseMetaInfo(
             outputTokensCount: Int? = null,
             additionalInfo: Map<String, String> = emptyMap()
         ): ResponseMetaInfo =
-            ResponseMetaInfo(clock.now(), totalTokensCount, inputTokensCount, outputTokensCount, additionalInfo)
+            ResponseMetaInfo(Clock.System.now(), totalTokensCount, inputTokensCount, outputTokensCount, additionalInfo)
 
         /**
          * An empty instance of the [ResponseMetaInfo] with the timestamp set to a distant past.

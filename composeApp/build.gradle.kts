@@ -12,10 +12,10 @@ val appVersionCode = (project.findProperty("app.code") as String).toInt()
 val databaseVersion = (project.findProperty("database.version") as String).toInt()
 
 plugins {
-    alias(libs.plugins.multiplatform)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.compose)
-    alias(libs.plugins.android.application)
+    id("org.jetbrains.kotlin.multiplatform")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.compose")
+    id("com.android.application")
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.room)
     alias(libs.plugins.ksp)
@@ -23,25 +23,20 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
-        //https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html
-        @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
-        instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
-    }
-
-    jvm()
-    jvmToolchain(22)
-
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "ComposeApp"
-            isStatic = true
-            linkerOpts += "-lsqlite3"
+    library(
+        android = {
+            //https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html
+            @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+            instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
+        },
+        ios = {
+            binaries.framework {
+                baseName = "ComposeApp"
+                isStatic = true
+                linkerOpts += "-lsqlite3"
+            }
         }
-    }
+    )
 
     sourceSets {
         commonMain.dependencies {
@@ -123,9 +118,9 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
 
             // Jetpack Glance for widgets
-            implementation("androidx.glance:glance-appwidget:1.1.1")
-            implementation("androidx.glance:glance-material3:1.1.1")
-            implementation("androidx.work:work-runtime-ktx:2.10.3")
+            implementation(libs.androidx.glance.appwidget)
+            implementation(libs.androidx.glance.material3)
+            implementation(libs.androidx.work.runtime.ktx)
         }
 
         jvmMain.dependencies {
@@ -142,7 +137,6 @@ kotlin {
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
-
     }
 }
 

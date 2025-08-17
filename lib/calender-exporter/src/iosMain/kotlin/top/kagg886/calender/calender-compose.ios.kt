@@ -140,6 +140,7 @@ internal class EKCalenderManager(private val accountName: String) : NativeCalend
         }
     }
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     override fun getEvents(): List<Event> = getEventsOrigin().mapNotNull { ekEvent ->
         val event = ekEvent as? EKEvent
         event?.let {
@@ -188,6 +189,7 @@ internal class EKCalenderManager(private val accountName: String) : NativeCalend
         }
     }
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     override fun insertEvent(event: Event) {
         val currentCalendar = calendar ?: throw IllegalStateException("calender not initialized")
 
@@ -250,6 +252,7 @@ internal class EKCalenderManager(private val accountName: String) : NativeCalend
         }
     }
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     override fun updateEvent(event: Event) {
         val currentCalendar = calendar ?: throw IllegalStateException("calender not initialized")
 

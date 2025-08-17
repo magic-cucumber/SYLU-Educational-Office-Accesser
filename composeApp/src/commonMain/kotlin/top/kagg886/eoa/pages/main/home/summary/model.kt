@@ -12,6 +12,7 @@ import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
+import kotlin.time.ExperimentalTime
 
 class SummaryModel(
     private val syncState: MainRouteViewState,
@@ -56,6 +57,7 @@ class SummaryModel(
             }
         }
 
+    @OptIn(ExperimentalTime::class)
     fun setDataUnsafe() = intent {
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 

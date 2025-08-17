@@ -1,7 +1,7 @@
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.multiplatform)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
 
     alias(libs.plugins.ksp)
@@ -10,34 +10,14 @@ plugins {
 group = "top.kagg886.eoa.network.core"
 version = "1.0"
 
-android {
-    namespace = "top.kagg886.eoa.network.core"
-
-    compileSdk = 35
-    defaultConfig {
-        minSdk = 28
-        targetSdk = 35
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-        }
-    }
-}
+android("eoa.network.core")
 
 kotlin {
-    jvmToolchain(22)
-
-    jvm()
-    iosArm64()
-    iosSimulatorArm64()
-
-    androidTarget {
-        publishLibraryVariants("release")
-    }
+    library(
+        android = {
+            publishLibraryVariants("release")
+        }
+    )
 
     sourceSets {
         commonMain {

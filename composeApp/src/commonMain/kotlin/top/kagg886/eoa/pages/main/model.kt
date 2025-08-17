@@ -14,11 +14,7 @@ import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
-import top.kagg886.backend.database.dao.CourseEntity
-import top.kagg886.backend.database.dao.CourseExtendEntity
-import top.kagg886.backend.database.dao.CourseRecordEntity
-import top.kagg886.backend.database.dao.SystemNoticeEntity
-import top.kagg886.backend.database.dao.toEntity
+import top.kagg886.backend.database.dao.*
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType

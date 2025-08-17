@@ -17,7 +17,6 @@ import androidx.glance.layout.padding
 import com.materialkolor.DynamicMaterialTheme
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
-import top.kagg886.eoa.EOAApplication
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.widget.repository.TodayClass
 import top.kagg886.eoa.widget.repository.WidgetRepository

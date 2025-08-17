@@ -137,6 +137,7 @@ internal class EOAHTMLClient : EOAClient {
     override suspend fun login(captchaHandler: (suspend (ByteArray) -> String)?) =
         internalLogin(null, captchaHandler)
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     private suspend fun internalLogin(
         captcha: String? = null,
         captchaHandler: (suspend (ByteArray) -> String)? = null
@@ -282,6 +283,7 @@ internal class EOAHTMLClient : EOAClient {
         )
     }
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     override suspend fun getExamList(picker: TermPicker): List<ExamItem> {
 
         @Serializable
@@ -351,6 +353,7 @@ internal class EOAHTMLClient : EOAClient {
         )
     }
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     override suspend fun getGPAScores(): List<GPAScoreSummary> {
         @Serializable
         data class GPAScoreSummaryReturn(
@@ -386,6 +389,7 @@ internal class EOAHTMLClient : EOAClient {
         return doc.items
     }
 
+    @OptIn(kotlin.time.ExperimentalTime::class)
     override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
         @Serializable
         data class SystemNoticeReturn(

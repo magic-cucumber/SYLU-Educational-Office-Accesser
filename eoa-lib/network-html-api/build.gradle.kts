@@ -2,10 +2,9 @@ import java.security.MessageDigest
 
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.multiplatform)
+    id("com.android.library")
+    id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
-
 
     alias(libs.plugins.ksp)
 }
@@ -13,15 +12,10 @@ plugins {
 group = "top.kagg886.sylu_eoa.api.v3"
 version = "1.0"
 
-android {
+android("sylu_eoa.api.v3") {
     ndkVersion = "28.1.13356709"
-    namespace = "top.kagg886.sylu_eoa.api.html"
-
-    compileSdk = 35
 
     defaultConfig {
-        minSdk = 28
-        targetSdk = 35
         externalNativeBuild {
             cmake {
                 targets += "cargo-build_eoa_security"
@@ -30,16 +24,6 @@ android {
         ndk {
             // 只支持arm64和x64
             abiFilters += listOf("arm64-v8a", "x86_64")
-        }
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
         }
     }
 
@@ -56,11 +40,12 @@ val kotlinArchToRustArch = mapOf(
 )
 
 kotlin {
-    jvmToolchain(22)
-    jvm()
 
-    listOf(iosArm64(), iosSimulatorArm64()).forEach { t ->
-        t.apply {
+    library(
+        android = {
+            publishLibraryVariants("release")
+        },
+        ios = {
             compilations.all {
                 cinterops {
                     val eoa by creating {
@@ -71,11 +56,7 @@ kotlin {
                 }
             }
         }
-    }
-
-    androidTarget {
-        publishLibraryVariants("release")
-    }
+    )
 
     sourceSets {
         commonMain.dependencies {

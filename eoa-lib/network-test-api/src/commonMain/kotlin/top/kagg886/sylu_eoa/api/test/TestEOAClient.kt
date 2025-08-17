@@ -7,8 +7,10 @@ import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.ExperimentalTime
 
 internal class TestEOAClient : EOAClient {
+    @OptIn(ExperimentalTime::class)
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val todayWeekMonday = today.minus(today.dayOfWeek.ordinal, DateTimeUnit.DAY)
 

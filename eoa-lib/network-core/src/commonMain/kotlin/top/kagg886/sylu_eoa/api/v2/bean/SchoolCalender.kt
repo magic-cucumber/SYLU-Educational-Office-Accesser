@@ -2,6 +2,7 @@ package top.kagg886.sylu_eoa.api.v2.bean
 
 import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
+import kotlin.time.ExperimentalTime
 
 @Serializable
 data class SchoolCalender(
@@ -9,6 +10,7 @@ data class SchoolCalender(
     val end: LocalDate
 ) {
 
+    @OptIn(ExperimentalTime::class)
     fun currentWeek(
         now: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     ): Int {
@@ -29,5 +31,5 @@ data class SchoolCalender(
         return i
     }
 
-    fun count(): Int = start.until(end, DateTimeUnit.WEEK) + 1
+    fun count(): Int = (start.until(end, DateTimeUnit.WEEK) + 1).toInt()
 }
