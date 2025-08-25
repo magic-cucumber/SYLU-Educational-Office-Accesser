@@ -144,6 +144,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
 
                 with(AppSyncMMKV.picker!!.default.asTerm()) {
                     courseDao.cleanAndKeep(xnm, xqm)
+                    courseExtendDao.cleanAndKeep(xnm,xqm)
                 }
 
                 val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)

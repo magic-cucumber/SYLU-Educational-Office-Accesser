@@ -1,13 +1,6 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
 
 /**
  * ================================================
@@ -30,8 +23,8 @@ data class CourseExtendEntity(
 
 @Dao
 interface CourseExtendDao {
-    @Query("DELETE FROM courses_extend WHERE yearCode = :xnm AND semesterCode = :xqm")
-    suspend fun clear(xnm: String, xqm: String)
+    @Query("DELETE FROM courses_extend WHERE yearCode != :xnm AND semesterCode != :xqm")
+    suspend fun cleanAndKeep(xnm: String, xqm: String)
 
     @Query("DELETE FROM courses")
     suspend fun clearAll()
