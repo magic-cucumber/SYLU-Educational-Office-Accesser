@@ -83,8 +83,6 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             with(AppLoginPropertiesMMKV.client) {
                 AppSyncMMKV.profile = getUserProfile()
                 logger.i("成功同步用户信息")
-                AppSyncMMKV.picker = getAllAvailableTerms()
-                logger.i("成功同步学期信息")
                 AppSyncMMKV.calender = getSchoolCalender()
                 logger.i("成功同步校历信息")
 
@@ -138,13 +136,17 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                 }
                 logger.i("成功同步系统通知")
 
+                val oldPicker = AppSyncMMKV.picker
+                AppSyncMMKV.picker = getAllAvailableTerms()
+                logger.i("成功同步学期信息")
+
                 val courseDao = database.courseDao()
                 val recordDao = database.courseRecordDao()
                 val courseExtendDao = database.courseExtendDao()
 
-                with(AppSyncMMKV.picker!!.default.asTerm()) {
-                    courseDao.cleanAndKeep(xnm, xqm)
-                    courseExtendDao.cleanAndKeep(xnm,xqm)
+                oldPicker?.default?.asTerm()?.run {
+                    courseDao.clear(xnm, xqm)
+                    courseExtendDao.clear(xnm,xqm)
                 }
 
                 val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)

@@ -19,8 +19,8 @@ data class CourseEntity(
 
 @Dao
 interface CourseDao {
-    @Query("DELETE FROM courses WHERE (yearCode != :xnm OR semesterCode != :xqm)")
-    suspend fun cleanAndKeep(xnm: String, xqm: String)
+    @Query("DELETE FROM courses WHERE yearCode = :xnm AND semesterCode = :xqm")
+    suspend fun clear(xnm: String, xqm: String)
 
     @Query("DELETE FROM courses")
     suspend fun clearAll()
