@@ -1,3 +1,11 @@
+- **2025-08-25**
+
+  EOA 4.2.0在新学期到来时由于bug无法清除旧学期课表。
+
+  请更新到 4.2.1 之上的版本以解决问题。
+
+  若您不想更新，退出重进即可。
+
 - **2025-07-22**
 
   EOA使用情况小调查：[https://www.wjx.cn/vm/QIWfwfI.aspx](https://www.wjx.cn/vm/QIWfwfI.aspx)
