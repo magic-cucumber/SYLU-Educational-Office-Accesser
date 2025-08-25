@@ -5,7 +5,9 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +23,7 @@ import coil3.ImageLoader
 import coil3.util.Logger
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -164,3 +167,11 @@ fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this.logger(
 )
 
 expect fun downloadResourceUrl(info: UpdateInfo): String
+
+@Preview
+@Composable
+fun A() {
+    Button(onClick = {} ) {
+        Text("download")
+    }
+}
