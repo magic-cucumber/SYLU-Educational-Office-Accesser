@@ -1,13 +1,6 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Entity
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.PrimaryKey
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -26,8 +19,8 @@ data class CourseEntity(
 
 @Dao
 interface CourseDao {
-    @Query("DELETE FROM courses WHERE isUserAdded = false AND yearCode = :xnm AND semesterCode = :xqm")
-    suspend fun clear(xnm: String, xqm: String)
+    @Query("DELETE FROM courses WHERE (yearCode != :xnm OR semesterCode != :xqm)")
+    suspend fun cleanAndKeep(xnm: String, xqm: String)
 
     @Query("DELETE FROM courses")
     suspend fun clearAll()

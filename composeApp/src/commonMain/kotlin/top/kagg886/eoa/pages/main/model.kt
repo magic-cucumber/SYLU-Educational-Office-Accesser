@@ -143,7 +143,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                 val courseExtendDao = database.courseExtendDao()
 
                 with(AppSyncMMKV.picker!!.default.asTerm()) {
-                    courseDao.clear(xnm, xqm)
+                    courseDao.cleanAndKeep(xnm, xqm)
                 }
 
                 val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)
