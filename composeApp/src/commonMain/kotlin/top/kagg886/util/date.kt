@@ -3,6 +3,7 @@ package top.kagg886.util
 import kotlinx.datetime.*
 import kotlinx.datetime.format.char
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 fun getTimeByLessonNumber(dt: Int): Pair<LocalTime, LocalTime> {

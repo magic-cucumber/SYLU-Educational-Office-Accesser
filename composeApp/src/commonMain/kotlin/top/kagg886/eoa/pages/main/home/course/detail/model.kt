@@ -10,6 +10,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.getTimeByLessonNumber
+import kotlin.time.Clock
 
 class CourseDetailViewModel(
     private val recordId: Long,

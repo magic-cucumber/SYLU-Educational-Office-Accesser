@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.Container
@@ -24,6 +23,7 @@ import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.AppLogDao
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.logger
+import kotlin.time.Clock
 
 class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost<LogcatState, LogcatSideEffect> {
     override val container: Container<LogcatState, LogcatSideEffect> = container(LogcatState.Loading) { all().join() }

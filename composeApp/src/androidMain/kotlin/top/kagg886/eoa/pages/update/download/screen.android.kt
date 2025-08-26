@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.datetime.Clock
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
@@ -30,6 +29,7 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.absolutePath
+import kotlin.time.Clock
 
 @Composable
 actual fun UpdateDownloadScreen(route: UpdateDownloadRoute) {
