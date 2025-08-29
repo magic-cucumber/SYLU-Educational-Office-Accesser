@@ -19,7 +19,7 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.util.asTaggedLogger
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
 
 @Composable

@@ -2,7 +2,7 @@ package top.kagg886.eoa.util
 
 import com.dokar.sonner.TextToastAction
 import com.dokar.sonner.ToasterState
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

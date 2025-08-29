@@ -13,7 +13,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.AppLogDao
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 /**
  * ================================================

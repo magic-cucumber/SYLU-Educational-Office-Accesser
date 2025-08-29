@@ -26,7 +26,7 @@ import coil3.compose.AsyncImage
 import com.kborowy.colorpicker.KolorPicker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect

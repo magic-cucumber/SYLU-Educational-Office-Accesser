@@ -29,7 +29,7 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.absolutePath
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 @Composable
 actual fun UpdateDownloadScreen(route: UpdateDownloadRoute) {

@@ -32,7 +32,7 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asTaggedLogger
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 

@@ -10,8 +10,6 @@ import ai.koog.prompt.executor.llms.SingleLLMPromptExecutor
 import ai.koog.prompt.message.Attachment
 import ai.koog.prompt.message.AttachmentContent
 import ai.koog.prompt.structure.executeStructured
-import ai.koog.prompt.structure.json.JsonSchemaGenerator
-import ai.koog.prompt.structure.json.JsonStructuredData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.vinceglb.filekit.FileKit
@@ -246,40 +244,35 @@ class CourseEditModel(
         sub.join()
     }
 
-    private val structure = JsonStructuredData.createJsonStructure<CourseAddReturn>(
-        schemaFormat = JsonSchemaGenerator.SchemaFormat.JsonSchema,
-        examples = listOf(
-            // 示例1：时间范围处理
-            CourseAddReturn(
-                course = LLMCourseReturn(
-                    name = "艺术鉴赏",
-                    teacherName = null,
-                    classroomName = "A栋302",
-                    credits = null,
-                    isDegreeRequired = null
+    private val example = listOf(
+        // 示例1：时间范围处理
+        CourseAddReturn(
+            course = LLMCourseReturn(
+                name = "艺术鉴赏",
+                teacherName = null,
+                classroomName = "A栋302",
+                credits = null,
+                isDegreeRequired = null
+            ),
+            record = listOf(
+                // 第3周至第16周，每周三下午3-4节
+                LLMRecordReturn(
+                    weekNumber = 3,
+                    dayOfWeek = listOf(3),
+                    periodOfDay = listOf(listOf(3, 4))
                 ),
-                record = listOf(
-                    // 第3周至第16周，每周三下午3-4节
-                    LLMRecordReturn(
-                        weekNumber = 3,
-                        dayOfWeek = listOf(3),
-                        periodOfDay = listOf(listOf(3, 4))
-                    ),
-                    LLMRecordReturn(
-                        weekNumber = 4,
-                        dayOfWeek = listOf(3),
-                        periodOfDay = listOf(listOf(3, 4))
-                    ),
-                    LLMRecordReturn(
-                        weekNumber = 5,
-                        dayOfWeek = listOf(3),
-                        periodOfDay = listOf(listOf(3, 4))
-                    )
-                    // ... 应该继续到第16周，这里只展示前几个
+                LLMRecordReturn(
+                    weekNumber = 4,
+                    dayOfWeek = listOf(3),
+                    periodOfDay = listOf(listOf(3, 4))
+                ),
+                LLMRecordReturn(
+                    weekNumber = 5,
+                    dayOfWeek = listOf(3),
+                    periodOfDay = listOf(listOf(3, 4))
                 )
             )
-        ),
-        schemaType = JsonStructuredData.JsonSchemaType.SIMPLE
+        )
     )
 
     @OptIn(OrbitExperimental::class)
@@ -328,7 +321,7 @@ class CourseEditModel(
                         }
                     }
 
-                    val data = agent.executeStructured(
+                    val data = agent.executeStructured<CourseAddReturn>(
                         prompt = prompt("structured-data") {
                             system(
                                 content = """
@@ -371,9 +364,8 @@ class CourseEditModel(
 
                             user(build)
                         },
-                        mainModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
-                        fixingModel = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
-                        structure = structure
+                        model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                        examples = example
                     )
 
                     defer.complete(

@@ -21,7 +21,7 @@ import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
 
 internal class EOAHTMLClient : EOAClient {
