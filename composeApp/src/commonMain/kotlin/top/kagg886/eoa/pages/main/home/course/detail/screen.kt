@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -236,37 +237,31 @@ private fun CourseCard(
                     highlight = PlaceholderHighlight.shimmer()
                 )
             ) {
-                // 学位课badge
-                if (state?.entity?.isDegreeRequired == true) {
-                    AssistChip(
-                        enabled = false,
-                        onClick = {},
-                        shape = RoundedCornerShape(8.dp),
-                        label = { Text("学位课") },
-                        colors = AssistChipDefaults.assistChipColors(
-                            disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            disabledLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            disabledLeadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            disabledTrailingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
+                AssistChip(
+                    enabled = state?.entity?.isDegreeRequired == true,
+                    onClick = {},
+                    shape = RoundedCornerShape(8.dp),
+                    label = { Text("学位课") },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        leadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        trailingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
-                }
+                )
 
-                // 考试课badge (假设有isExamRequired字段，如果没有可以移除这部分)
-                if (state?.entity?.isExaminable == true) {
-                    AssistChip(
-                        enabled = false,
-                        onClick = {},
-                        shape = RoundedCornerShape(8.dp),
-                        label = { Text("考试课") },
-                        colors = AssistChipDefaults.assistChipColors(
-                            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            disabledLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            disabledLeadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            disabledTrailingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
+                AssistChip(
+                    enabled = state?.entity?.isExaminable == true,
+                    onClick = {},
+                    shape = RoundedCornerShape(8.dp),
+                    label = { Text("考试课") },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        trailingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
-                }
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
