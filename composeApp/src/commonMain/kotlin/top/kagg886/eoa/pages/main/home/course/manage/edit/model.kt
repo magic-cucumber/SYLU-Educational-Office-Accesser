@@ -348,6 +348,7 @@ class CourseEditModel(
                                     - classroomName: 教室位置
                                     - credits: 学分
                                     - isDegreeRequired: 是否为学位课
+                                    - isExaminable: 是否为考试课
 
                                     record:
                                     - weekNumber: 周次（展开所有范围），如果输入出现具体日期，需要根据学期起止日期计算周数：

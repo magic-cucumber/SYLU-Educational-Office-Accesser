@@ -70,6 +70,7 @@ internal class TestEOAClient : EOAClient {
                 relateScore = "良好",
                 completionCode = "1",
                 _degreeProgram = "是",
+                recommender = "丰川定治",
                 submitTime = today.minus(DatePeriod(days = 30)).atTime(0, 0)
             ),
             ExamItem(
@@ -86,6 +87,7 @@ internal class TestEOAClient : EOAClient {
                 relateScore = "优秀",
                 completionCode = "1",
                 _degreeProgram = "是",
+                recommender = "丰川定治",
                 submitTime = today.minus(DatePeriod(days = 25)).atTime(0, 0)
             ),
             ExamItem(
@@ -102,6 +104,7 @@ internal class TestEOAClient : EOAClient {
                 relateScore = "中等",
                 completionCode = "1",
                 _degreeProgram = "是",
+                recommender = "丰川定治",
                 submitTime = today.minus(DatePeriod(days = 20)).atTime(0, 0)
             ),
             ExamItem(
@@ -118,6 +121,7 @@ internal class TestEOAClient : EOAClient {
                 relateScore = "不及格",
                 completionCode = "1",
                 _degreeProgram = "否",
+                recommender = "丰川定治",
                 submitTime = today.minus(DatePeriod(days = 15)).atTime(0, 0)
             ),
             ExamItem(
@@ -134,6 +138,7 @@ internal class TestEOAClient : EOAClient {
                 relateScore = "中等",
                 completionCode = "16",
                 _degreeProgram = "是",
+                recommender = "丰川定治",
                 submitTime = today.minus(DatePeriod(days = 10)).atTime(0, 0)
             )
         )

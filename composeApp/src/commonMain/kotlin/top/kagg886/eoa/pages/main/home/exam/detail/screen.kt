@@ -1,5 +1,6 @@
 package top.kagg886.eoa.pages.main.home.exam.detail
 
+import ai.koog.prompt.text.text
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -10,11 +11,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -37,6 +46,7 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
+import top.kagg886.util.toFixed
 
 @Serializable
 data class ExamDetailRoute(val examId: Long)
@@ -210,21 +220,25 @@ private fun ScoreCard(
                 )
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "分数: ${entity?.absoluteScore ?: ""}",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.placeholder(
-                        visible = visible,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
+            Text(
+                text = "${entity?.year}学年 ${entity?.semester}学期",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.placeholder(
+                    visible = visible,
+                    highlight = PlaceholderHighlight.shimmer()
                 )
-            }
+            )
+
+            Text(
+                text = "分数: ${entity?.absoluteScore ?: ""}",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.placeholder(
+                    visible = visible,
+                    highlight = PlaceholderHighlight.shimmer()
+                )
+            )
 
             ExamStatusIndicator(
                 status = entity?.status,
@@ -259,6 +273,7 @@ private fun ExamStatusIndicator(
                 Color(0xFF2E7D32)
             )
         }
+
         ExamStatus.FAILED -> {
             Pair(
                 Color(0xFFFFEBEE).copy(alpha = 0.7f),
@@ -267,6 +282,7 @@ private fun ExamStatusIndicator(
                 Color(0xFFD32F2F)
             )
         }
+
         ExamStatus.RE_SUCCESS -> {
             Pair(
                 Color(0xFFFFF8E1).copy(alpha = 0.7f),
@@ -275,6 +291,7 @@ private fun ExamStatusIndicator(
                 Color(0xFFEF6C00)
             )
         }
+
         else -> {
             Pair(
                 Color(0xFFE0E0E0),
@@ -329,26 +346,82 @@ private fun ExamDetails(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = "考试详情",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.placeholder(
-                    visible = visible,
-                    highlight = PlaceholderHighlight.shimmer()
+            Row {
+                Text(
+                    text = "考试详情",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
                 )
-            )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                val theme = MaterialTheme.colorScheme
+                var expanded by remember {
+                    mutableStateOf(false)
+                }
+                Text(
+                    text = buildAnnotatedString {
+                        withLink(
+                            link = LinkAnnotation.Clickable(
+                                tag = "detail",
+                                styles = TextLinkStyles(
+                                    style = SpanStyle(
+                                        color = theme.primary,
+                                        textDecoration = TextDecoration.Underline
+                                    ),
+                                    pressedStyle = SpanStyle(
+                                        color = theme.primary.copy(alpha = 0.8f),
+                                        textDecoration = TextDecoration.Underline
+                                    )
+                                ),
+                                linkInteractionListener = { expanded = true }
+                            )
+                        ) {
+                            append("更多")
+                        }
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                )
+
+                if (expanded) {
+                    AlertDialog(
+                        onDismissRequest = { expanded = false },
+                        title = { Text("考试详情") },
+                        confirmButton = { Button(onClick = { expanded = false }) { Text("确定") } },
+                        text = {
+                            Column {
+                                DetailItem(label = "学年代号",  value = state?.year ?: "未知",false)
+                                DetailItem(label = "学期代号",  value = state?.semester ?: "未知",false)
+                                DetailItem(label = "课程名",  value = state?.name ?: "未知",false)
+                                DetailItem(label = "教师名",  value = state?.teacherName ?: "未知",false)
+                                DetailItem(label = "学分",  value = state?.credit?.toString() ?: "",false)
+                                DetailItem(label = "绩点",  value = state?.gradePoint?.toString() ?: "",false)
+                                DetailItem(label = "评分",  value = state?.absoluteScore ?: "",false)
+                                DetailItem(label = "评价",  value = state?.relateScore ?: "",false)
+                                DetailItem(label = "状态",  value = state?.status?.name ?: "",false)
+                                DetailItem(label = "是否学位课",  value = state?.degree?.toString() ?: "",false)
+                                DetailItem(label = "提交时间",  value = state?.submitTime?.toString() ?: "",false)
+                            }
+                        },
+                    )
+                }
+            }
 
             DetailItem("教师", state?.teacherName ?: "", visible)
-            DetailItem("学分", state?.credit?.toString() ?: "", visible)
-            DetailItem("绩点", state?.gradePoint?.toString() ?: "", visible)
+            DetailItem("学分 x 绩点", if (state !== null) (state.credit * state.gradePoint).toFixed(2) else "", visible)
             DetailItem("评价", state?.relateScore ?: "", visible)
             DetailItem(
                 "是否为学位课",
                 if (state?.degree == true) "是" else "否",
                 visible
             )
-            DetailItem("学年", state?.year ?: "", visible)
-            DetailItem("学期", state?.semester ?: "", visible)
         }
     }
 }

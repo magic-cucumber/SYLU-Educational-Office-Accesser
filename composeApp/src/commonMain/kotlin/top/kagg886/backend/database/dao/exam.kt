@@ -26,6 +26,7 @@ data class ExamEntity(
     val degree: Boolean, //是否学位,
 
     val detail: List<List<String>>, //详细表单
+    val submitTeacherName:  String, //提交教师名
     val submitTime: LocalDateTime, //提交时间,
 )
 
@@ -78,6 +79,7 @@ fun ExamItem.toEntity(detail: List<List<String>>) = ExamEntity(
     status = examStatus,
     degree = degreeProgram,
     detail = detail,
+    submitTeacherName = recommender,
     submitTime = submitTime,
 )
 
@@ -95,5 +97,6 @@ fun ExamEntity.toItem() = ExamItem(
     relateScore = relateScore,
     completionCode = "",
     _degreeProgram = "",
-    submitTime = submitTime
+    submitTime = submitTime,
+    recommender = submitTeacherName,
 )
