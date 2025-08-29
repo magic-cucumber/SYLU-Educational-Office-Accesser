@@ -407,6 +407,7 @@ private fun ExamDetails(
                                 DetailItem(label = "评价",  value = state?.relateScore ?: "",false)
                                 DetailItem(label = "状态",  value = state?.status?.name ?: "",false)
                                 DetailItem(label = "是否学位课",  value = state?.degree?.toString() ?: "",false)
+                                DetailItem(label = "成绩提交人",  value = state?.submitTeacherName ?: "",false)
                                 DetailItem(label = "提交时间",  value = state?.submitTime?.toString() ?: "",false)
                             }
                         },
