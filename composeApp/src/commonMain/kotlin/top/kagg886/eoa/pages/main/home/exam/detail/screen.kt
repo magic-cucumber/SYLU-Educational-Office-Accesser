@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -208,27 +209,32 @@ private fun ScoreCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = entity?.name ?: "",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.placeholder(
-                    visible = visible,
-                    highlight = PlaceholderHighlight.shimmer()
-                ).shareElementComposed(
-                    sharedContentState = rememberSharedContentState(key = "exam-to-detail-${entity?.id}"),
-                    animatedVisibilityScope = LocalAnimatedContentScope.current
-                )
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (entity?.degree == true) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "学位课程",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.placeholder(
+                            visible = visible,
+                            highlight = PlaceholderHighlight.shimmer()
+                        )
+                    )
+                }
 
-            Text(
-                text = "${entity?.year}学年 ${entity?.semester}学期",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.placeholder(
-                    visible = visible,
-                    highlight = PlaceholderHighlight.shimmer()
+                Text(
+                    text = entity?.name ?: "",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.placeholder(
+                        visible = visible,
+                        highlight = PlaceholderHighlight.shimmer()
+                    ).shareElementComposed(
+                        sharedContentState = rememberSharedContentState(key = "exam-to-detail-${entity?.id}"),
+                        animatedVisibilityScope = LocalAnimatedContentScope.current
+                    )
                 )
-            )
+
+            }
 
             Text(
                 text = "分数: ${entity?.absoluteScore ?: ""}",
@@ -393,7 +399,7 @@ private fun ExamDetails(
                 if (expanded) {
                     AlertDialog(
                         onDismissRequest = { expanded = false },
-                        title = { Text("考试详情") },
+                        title = { Text("详细信息") },
                         confirmButton = { Button(onClick = { expanded = false }) { Text("确定") } },
                         text = {
                             Column {
@@ -415,14 +421,10 @@ private fun ExamDetails(
                 }
             }
 
+            DetailItem("考试学制","${state?.year}学年 ${state?.semester}学期",visible)
             DetailItem("教师", state?.teacherName ?: "", visible)
-            DetailItem("学分 x 绩点", if (state !== null) (state.credit * state.gradePoint).toFixed(2) else "", visible)
+            DetailItem("学分 x 绩点", if (state !== null) "${state.credit.toFixed(2)} x ${state.gradePoint.toFixed(2)} = ${(state.credit * state.gradePoint).toFixed(2)}" else "", visible)
             DetailItem("评价", state?.relateScore ?: "", visible)
-            DetailItem(
-                "是否为学位课",
-                if (state?.degree == true) "是" else "否",
-                visible
-            )
         }
     }
 }
