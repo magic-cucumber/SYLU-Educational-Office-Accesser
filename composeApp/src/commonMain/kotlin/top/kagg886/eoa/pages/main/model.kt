@@ -176,6 +176,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                                 classroomName = i.room,
                                 credits = i.score.toFloat(),
                                 isDegreeRequired = i.isDegreeProgram,
+                                isExaminable = i.classType == "考试",
                                 yearCode = xnm,
                                 semesterCode = xqm,
                             )

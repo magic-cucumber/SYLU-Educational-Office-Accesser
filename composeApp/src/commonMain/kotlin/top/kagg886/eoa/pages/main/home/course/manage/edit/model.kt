@@ -54,6 +54,7 @@ class CourseEditModel(
                 classroomName = "",
                 credits = 0f,
                 isDegreeRequired = false,
+                isExaminable = false,
                 yearCode = xnm,
                 semesterCode = xqm,
                 isUserAdded = true
@@ -256,7 +257,8 @@ class CourseEditModel(
                     teacherName = null,
                     classroomName = "A栋302",
                     credits = null,
-                    isDegreeRequired = null
+                    isDegreeRequired = null,
+                    isExaminable = null,
                 ),
                 record = listOf(
                     // 第3周至第16周，每周三下午3-4节
@@ -472,6 +474,8 @@ private data class LLMCourseReturn(
     val credits: Float?,
     @property:LLMDescription("是否为学位课，true表示学位课")
     val isDegreeRequired: Boolean?,
+    @property:LLMDescription("是否为考试课，true标识考试课")
+    val isExaminable: Boolean?,
 ) {
     fun toEntity(year: String, sem: String): CourseEntity = CourseEntity(
         name = name ?: "",
@@ -479,6 +483,7 @@ private data class LLMCourseReturn(
         classroomName = classroomName ?: "",
         credits = credits ?: 0.0f,
         isDegreeRequired = isDegreeRequired ?: false,
+        isExaminable = isExaminable ?: false,
         isUserAdded = true,
         yearCode = year,
         semesterCode = sem

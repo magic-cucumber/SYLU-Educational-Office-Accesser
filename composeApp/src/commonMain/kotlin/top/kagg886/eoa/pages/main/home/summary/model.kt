@@ -108,7 +108,9 @@ class SummaryModel(
                             date = getTimeByLessonNumber(record.record.periodOfDay),
                             recordId = record.record.id!!,
                             courseId = course.id!!,
-                            progress = if (period == record.record.periodOfDay) progress else null
+                            progress = if (period == record.record.periodOfDay) progress else null,
+                            isDegreeProgram = course.isDegreeRequired,
+                            isExamine = course.isExaminable,
                         )
                     }
                 },

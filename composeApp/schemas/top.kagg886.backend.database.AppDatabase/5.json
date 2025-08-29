@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "8f2e50605de41b807d3415bd4d0d8cf7",
+    "identityHash": "73e2a4c129be749b7544abd9cdb0a81f",
     "entities": [
       {
         "tableName": "exams",
@@ -184,7 +184,7 @@
       },
       {
         "tableName": "courses",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `classroomName` TEXT NOT NULL, `credits` REAL NOT NULL, `isDegreeRequired` INTEGER NOT NULL, `yearCode` TEXT NOT NULL, `semesterCode` TEXT NOT NULL, `isUserAdded` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `classroomName` TEXT NOT NULL, `credits` REAL NOT NULL, `isDegreeRequired` INTEGER NOT NULL, `isExaminable` INTEGER NOT NULL, `yearCode` TEXT NOT NULL, `semesterCode` TEXT NOT NULL, `isUserAdded` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -218,6 +218,12 @@
           {
             "fieldPath": "isDegreeRequired",
             "columnName": "isDegreeRequired",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isExaminable",
+            "columnName": "isExaminable",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -467,7 +473,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8f2e50605de41b807d3415bd4d0d8cf7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '73e2a4c129be749b7544abd9cdb0a81f')"
     ]
   }
 }

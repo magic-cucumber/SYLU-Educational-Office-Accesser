@@ -10,7 +10,7 @@ data class CourseEntity(
     val classroomName: String,
     val credits: Float,
     val isDegreeRequired: Boolean,
-
+    val isExaminable: Boolean,
     val yearCode: String,
     val semesterCode: String,
 

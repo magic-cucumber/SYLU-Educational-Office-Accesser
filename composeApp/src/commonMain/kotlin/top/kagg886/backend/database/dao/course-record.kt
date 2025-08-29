@@ -60,6 +60,7 @@ interface CourseRecordDao {
         c.classroomName AS classroomName,
         c.credits AS credits,
         c.isDegreeRequired AS isDegreeRequired,
+        c.isExaminable AS isExaminable,
         c.isUserAdded AS isUserAdded,
         c.yearCode AS yearCode,
         c.semesterCode AS semesterCode,

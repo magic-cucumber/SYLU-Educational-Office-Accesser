@@ -22,12 +22,17 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import com.materialkolor.ktx.of
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
@@ -231,7 +236,11 @@ private inline fun SummaryContentV2(
                         )
                     }
                     items(state.plan) { course ->
-                        CourseItem(course, modifier = Modifier.padding(start = 8.dp), onCourseItemClicked = onCourseItemClicked)
+                        CourseItem(
+                            course,
+                            modifier = Modifier.padding(start = 8.dp),
+                            onCourseItemClicked = onCourseItemClicked
+                        )
                     }
                 }
             }
@@ -526,17 +535,52 @@ private inline fun CourseItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = course?.name ?: "",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .weight(1f)
-                            .placeholder(
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        // 学位课标识
+                        course?.isDegreeProgram?.let { isDegree ->
+                            if (isDegree) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.secondary,
+                                    contentColor = MaterialTheme.colorScheme.onSecondary
+                                ) {
+                                    Text(
+                                        text = "学位",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                        }
+                        
+                        // 考试课标识
+                        course?.isExamine?.let { isExamine ->
+                            if (isExamine) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.tertiary,
+                                    contentColor = MaterialTheme.colorScheme.onTertiary
+                                ) {
+                                    Text(
+                                        text = "考试",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                        }
+                        
+                        Text(
+                            text = course?.name ?: "",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.placeholder(
                                 visible = showPlaceHolder,
                                 highlight = PlaceholderHighlight.shimmer()
                             )
-                    )
+                        )
+                    }
 
                     // Show an indicator for ongoing classes
                     course?.progress?.let {
@@ -720,7 +764,7 @@ private fun ExperimentClassItem(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis
             )
 
             Text(
@@ -728,7 +772,7 @@ private fun ExperimentClassItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis
             )
 
             Row(

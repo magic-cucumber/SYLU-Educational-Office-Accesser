@@ -228,6 +228,49 @@ private fun CourseCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // 课程类型badge
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.placeholder(
+                    visible = visible,
+                    highlight = PlaceholderHighlight.shimmer()
+                )
+            ) {
+                // 学位课badge
+                if (state?.entity?.isDegreeRequired == true) {
+                    AssistChip(
+                        enabled = false,
+                        onClick = {},
+                        shape = RoundedCornerShape(8.dp),
+                        label = { Text("学位课") },
+                        colors = AssistChipDefaults.assistChipColors(
+                            disabledContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            disabledLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            disabledLeadingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            disabledTrailingIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    )
+                }
+
+                // 考试课badge (假设有isExamRequired字段，如果没有可以移除这部分)
+                if (state?.entity?.isExaminable == true) {
+                    AssistChip(
+                        enabled = false,
+                        onClick = {},
+                        shape = RoundedCornerShape(8.dp),
+                        label = { Text("考试课") },
+                        colors = AssistChipDefaults.assistChipColors(
+                            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            disabledLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            disabledLeadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            disabledTrailingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
 
             AssistChip(
                 enabled = false,
@@ -283,11 +326,7 @@ private fun CourseDetails(
 
             DetailItem("教师", state?.entity?.teacherName ?: "", visible)
             DetailItem("学分", state?.entity?.credits?.toString() ?: "", visible)
-            DetailItem(
-                "是否为学位课",
-                if (state?.entity?.isDegreeRequired == true) "是" else "否",
-                visible
-            )
+            DetailItem("自定义课程",  if (state?.entity?.isUserAdded == true) "是" else "否", visible)
 
         }
     }

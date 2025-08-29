@@ -10,5 +10,8 @@ data class TodayClass(
     val location: String,
     val date: Pair<LocalTime, LocalTime>,
 
+    val isDegreeProgram: Boolean,
+    val isExamine: Boolean,
+
     val progress: Float? = null
 )
