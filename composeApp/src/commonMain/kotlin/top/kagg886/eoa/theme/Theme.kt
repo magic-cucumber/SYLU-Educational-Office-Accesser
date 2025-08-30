@@ -16,7 +16,7 @@ internal fun AppTheme(
     SystemAppearance(systemIsDark)
     DynamicMaterialTheme(
         seedColor = color,
-        useDarkTheme = nightTheme,
+        isDark = nightTheme,
         content = content,
     )
 

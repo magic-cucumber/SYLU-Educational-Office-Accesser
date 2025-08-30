@@ -22,8 +22,14 @@ fun KotlinMultiplatformExtension.library(
     jvmToolchain(22)
 
     jvm(jvm)
-    iosArm64(ios)
-    iosSimulatorArm64(ios)
+    iosArm64 {
+        compilerOptions { freeCompilerArgs.add("-Xpartial-linkage=disable") }
+        ios()
+    }
+    iosSimulatorArm64 {
+        compilerOptions { freeCompilerArgs.add("-Xpartial-linkage=disable") }
+        ios()
+    }
 
     androidTarget(android)
 

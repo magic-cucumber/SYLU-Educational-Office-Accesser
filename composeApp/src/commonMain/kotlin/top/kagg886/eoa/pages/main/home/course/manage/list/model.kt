@@ -1,7 +1,6 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.lifecycle.ViewModel
-import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.Container
@@ -13,6 +12,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
+import kotlinx.datetime.Clock
 
 class CourseManageListModel(
     private val syncState: MainRouteViewState,

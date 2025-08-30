@@ -12,6 +12,7 @@ import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
+import kotlinx.datetime.Clock
 import kotlin.time.ExperimentalTime
 
 class SummaryModel(

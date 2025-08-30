@@ -49,7 +49,7 @@ class TodayCourseWidget : GlanceAppWidget() {
         provideContent {
             DynamicMaterialTheme(
                 seedColor = AppSettingsMMKV.color,
-                useDarkTheme = with(AppSettingsMMKV.theme) {
+                isDark = with(AppSettingsMMKV.theme) {
                     (this == AppSettingsMMKVType.AppTheme.Dark) || (this == AppSettingsMMKVType.AppTheme.SystemDefault && context.isNightMode)
                 }
             ) {

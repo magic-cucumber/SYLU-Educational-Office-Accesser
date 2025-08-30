@@ -14,7 +14,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -22,6 +21,7 @@ import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
+import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
 
 internal class EOAHTMLClient : EOAClient {

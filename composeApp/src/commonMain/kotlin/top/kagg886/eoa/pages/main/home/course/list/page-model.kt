@@ -11,6 +11,7 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import kotlinx.datetime.Clock
 
 class CoursePageViewModel(
     private val syncState: MainRouteViewState,
