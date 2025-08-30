@@ -140,12 +140,3 @@ fun <T : Any> Flow<PagingData<T>>.collectAsLazyPagingItems(
 
     return lazyPagingItems
 }
-
-suspend fun <T : Any> LazyPagingItems<T>.awaitNextState() {
-    delay(200)
-    snapshotFlow { loadState }.awaitNotLoading()
-}
-
-inline fun <T, R> Flow<T>.flatMapLatestScoped(crossinline transform: suspend (scope: CoroutineScope, value: T) -> Flow<R>) = transformLatest {
-    coroutineScope { emitAll(transform(this, it)) }
-}

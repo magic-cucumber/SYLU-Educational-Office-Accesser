@@ -168,6 +168,7 @@ private fun LoginScreenContent(
 
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -260,7 +261,7 @@ private fun LoginScreenContent(
                                 },
                                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                 modifier = Modifier
-                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                     .fillMaxWidth(),
                                 label = { Text("后端选择") }
                             )

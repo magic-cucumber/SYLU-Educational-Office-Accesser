@@ -34,6 +34,7 @@ fun KotlinMultiplatformExtension.library(
     androidTarget(android)
 
     compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
         optIn.addAll("kotlin.time.ExperimentalTime")
     }
 }

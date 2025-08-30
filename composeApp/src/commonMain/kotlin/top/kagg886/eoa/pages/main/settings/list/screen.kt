@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -268,7 +269,7 @@ private fun SettingScreenContent(
                                     )
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Logout,
+                                        imageVector = Icons.AutoMirrored.Filled.Logout,
                                         contentDescription = "登出",
                                         modifier = Modifier.size(18.dp)
                                     )

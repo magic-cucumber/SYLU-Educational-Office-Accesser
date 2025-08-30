@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
@@ -34,6 +34,7 @@ import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.util.setText
 
 @Serializable
 data object AboutRoute
@@ -42,7 +43,7 @@ data object AboutRoute
 @Composable
 fun AboutScreen() {
     var showDonationDialog by remember { mutableStateOf(false) }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
     val uriHandler = LocalUriHandler.current
 
     Column(Modifier.fillMaxSize()) {
@@ -143,12 +144,8 @@ fun AboutScreen() {
                                             )
                                         )
                                     ) {
-                                        clipboardManager.setText(
-                                            buildAnnotatedString {
-                                                append("798201505")
-                                            }
-                                        )
                                         scope.launch {
+                                            clipboardManager.setText("798201505")
                                             snack.showSnackBar(SnackBarType.Success, "已复制QQ群号")
                                         }
                                     },

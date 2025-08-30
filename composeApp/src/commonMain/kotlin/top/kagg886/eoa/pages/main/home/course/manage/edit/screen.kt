@@ -134,7 +134,7 @@ private fun CourseEditScreenContent(
                 }
             ) {
                 Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)) {
-                    TabRow(
+                    SecondaryTabRow(
                         selectedTabIndex = pagerState.currentPage,
                         containerColor = AlertDialogDefaults.containerColor,
                         tabs = {
