@@ -465,7 +465,7 @@ private fun PassFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled)
                 .fillMaxWidth(),
             readOnly = true,
             value = when (selectedFilter) {
@@ -528,7 +528,7 @@ private fun DegreeFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled)
                 .fillMaxWidth(),
             readOnly = true,
             value = when (selectedFilter) {
@@ -593,7 +593,7 @@ private fun YearFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
             readOnly = true,
             value = currentYear?.yearDisplay ?: "选择学年",
             onValueChange = {},
@@ -665,7 +665,7 @@ private fun TermFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
             readOnly = true,
             value = currentTerm?.semesterDisplay ?: "选择学期",
             onValueChange = {},
