@@ -34,7 +34,7 @@ class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSide
         if (state is LoginViewModelState.WaitLogin.Waiting) {
             val oldState = state as LoginViewModelState.WaitLogin.Waiting
             reduce {
-                LoginViewModelState.WaitLogin.Processing("登录中...")
+                LoginViewModelState.WaitLogin.Processing("登录中...",  oldState.provider, oldState.selected)
             }
             log.i("开始登录")
             try {
@@ -44,7 +44,7 @@ class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSide
                     log.w("发现验证码")
                     val defer = CompletableDeferred<String>(viewModelScope.coroutineContext[Job])
                     reduce {
-                        LoginViewModelState.WaitLogin.VerifyCode(it, defer)
+                        LoginViewModelState.WaitLogin.VerifyCode(it, defer,  oldState.provider, oldState.selected)
                     }
                     defer.await()
                 }
@@ -77,11 +77,17 @@ class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSide
         runOn<LoginViewModelState.WaitLogin.VerifyCode> {
             if (code == null) {
                 postSideEffect(LoginSideEffect.Toast(SnackBarType.Error, "验证码为空,取消登录"))
+                reduce {
+                    LoginViewModelState.WaitLogin.Waiting(
+                        state.provider,
+                        state.selected
+                    )
+                }
                 return@runOn
             }
             state.defer.complete(code)
             reduce {
-                LoginViewModelState.WaitLogin.Processing("发送验证码...")
+                LoginViewModelState.WaitLogin.Processing("发送验证码...",state.provider,  state.selected)
             }
         }
     }
@@ -91,14 +97,17 @@ sealed interface LoginViewModelState {
     data object Empty : LoginViewModelState
 
     sealed interface WaitLogin : LoginViewModelState {
-        data class Waiting(val provider: List<EOAClientProvider>, val selected: EOAClientProvider) :
+        val provider: List<EOAClientProvider>
+        val selected: EOAClientProvider
+        data class Waiting(override val provider: List<EOAClientProvider>,override val selected: EOAClientProvider) :
             WaitLogin
 
-        data class Processing(val toast: String) : WaitLogin
+        data class Processing(val toast: String,override val provider: List<EOAClientProvider>,override val selected: EOAClientProvider) : WaitLogin
 
         data class VerifyCode(
             val data: ByteArray,
-            val defer: CompletableDeferred<String>
+            val defer: CompletableDeferred<String>,
+            override val provider: List<EOAClientProvider>,override val selected: EOAClientProvider
         ) : WaitLogin {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true

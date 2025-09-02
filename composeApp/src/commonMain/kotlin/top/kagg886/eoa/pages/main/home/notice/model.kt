@@ -111,7 +111,7 @@ class SystemNoticeModel(
                             message = "登录已失效，请重新登录"
                         )
                     )
-                    delay(3.seconds)
+//                    delay(3.seconds)
                     postSideEffect(SystemNoticeSideEffect.NavigateToLogin)
                     return@runOn
                 }

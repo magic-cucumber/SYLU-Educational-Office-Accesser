@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.navigation
 import kotlinx.serialization.Serializable
+import top.kagg886.eoa.component.nav.transition
 import top.kagg886.eoa.pages.main.home.course.CourseRoute
 import top.kagg886.eoa.pages.main.home.course.installCourseGraph
 import top.kagg886.eoa.pages.main.home.course.list.CourseListRoute
@@ -23,22 +24,12 @@ import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeScreen
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
 import top.kagg886.eoa.pages.main.home.summary.SummaryScreen
-import top.kagg886.eoa.util.shared.AutoInject
 
 @Serializable
 data object HomeRoute
 
 val installHomeGraph: NavGraphBuilder.() -> Unit = {
-    composable<SummaryRoute>(
-        enterTransition = { fadeIn() },
-        exitTransition = { fadeOut() },
-        popEnterTransition = { fadeIn() },
-        popExitTransition = { fadeOut() }
-    ) {
-        AutoInject {
-            SummaryScreen()
-        }
-    }
+    transition<SummaryRoute>{ SummaryScreen() }
     dialog<SystemNoticeRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SystemNoticeScreen() }
     navigation<CourseRoute>(startDestination = CourseListRoute, builder = installCourseGraph)
     navigation<ExamRoute>(startDestination = ExamListRoute, builder = installExamGraph)

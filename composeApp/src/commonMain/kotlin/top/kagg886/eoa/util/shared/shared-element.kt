@@ -33,14 +33,6 @@ val LocalAnimatedContentScope = compositionLocalOf<AnimatedContentScope> {
     error("LAC not provided")
 }
 
-@Composable
-fun AnimatedContentScope.AutoInject(content: @Composable () -> Unit) {
-    CompositionLocalProvider(
-        LocalAnimatedContentScope provides this,
-        content = content
-    )
-}
-
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun rememberSharedContentState(key: Any): SharedContentState {

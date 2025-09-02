@@ -230,79 +230,74 @@ private fun LoginScreenContent(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            //TODO 实现登录后端选择。
-            AnimatedVisibility(
-                visible = state is LoginViewModelState.WaitLogin.Waiting
+
+            var expanded by remember { mutableStateOf(false) }
+
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                if (state is LoginViewModelState.WaitLogin.Waiting) {
-                    var expanded by remember { mutableStateOf(false) }
+                Text(
+                    text = "选择登录后端",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = state.selected.name,
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = expanded
+                            )
+                        },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth(),
+                        label = { Text("后端选择") }
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        Text(
-                            text = "选择登录后端",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = !expanded },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedTextField(
-                                value = state.selected.name,
-                                onValueChange = {},
-                                readOnly = true,
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(
-                                        expanded = expanded
+                        state.provider.forEach { provider ->
+                            DropdownMenuItem(
+                                text = {
+                                    ListItem(
+                                        headlineContent = { Text(provider.name) },
+                                        supportingContent = {
+                                            Column {
+                                                Text(provider.description)
+                                                Text(
+                                                    text = "版本: ${provider.version}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        colors = ListItemDefaults.colors(
+                                            containerColor = MenuDefaults.containerColor
+                                        )
                                     )
                                 },
-                                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                modifier = Modifier
-                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                                    .fillMaxWidth(),
-                                label = { Text("后端选择") }
-                            )
-
-                            ExposedDropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                state.provider.forEach { provider ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            ListItem(
-                                                headlineContent = { Text(provider.name) },
-                                                supportingContent = {
-                                                    Column {
-                                                        Text(provider.description)
-                                                        Text(
-                                                            text = "版本: ${provider.version}",
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                },
-                                                colors = ListItemDefaults.colors(
-                                                    containerColor = MenuDefaults.containerColor
-                                                )
-                                            )
-                                        },
-                                        onClick = {
-                                            onLoginBackendChanged(provider)
-                                            expanded = false
-                                        }
-                                    )
+                                onClick = {
+                                    onLoginBackendChanged(provider)
+                                    expanded = false
                                 }
-                            }
+                            )
                         }
                     }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -333,7 +328,7 @@ private fun LoginScreenContent(
                             )
                         }
                     ) {
-                        when (val loginState = it) {
+                        when (it) {
                             is LoginViewModelState.WaitLogin.Processing -> {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -346,7 +341,7 @@ private fun LoginScreenContent(
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(Modifier.width(16.dp))
-                                    Text(loginState.toast)
+                                    Text(it.toast)
                                 }
                             }
 

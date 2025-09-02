@@ -1,32 +1,35 @@
 package top.kagg886.eoa
 
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavHostController
 import androidx.navigation.NavUri
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.util.Logger
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
+import top.kagg886.eoa.component.dialog.DialogHost
+import top.kagg886.eoa.component.nav.NavHost
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.RootEffect
 import top.kagg886.eoa.pages.RootRoute
@@ -37,6 +40,7 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.theme.AppTheme
+import top.kagg886.eoa.util.BackHandler
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
@@ -56,7 +60,7 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
     error("not provided")
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
 @Composable
 internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
     LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
@@ -118,6 +122,11 @@ internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
         nightTheme = dark
     ) {
         Box(Modifier.fillMaxSize()) {
+            data class DialogState(
+                val enabled: Boolean,
+                val properties: DialogProperties,
+                val disposed: () -> Unit,
+            )
             //业务
             Surface(Modifier.fillMaxSize()) {
                 SharedTransitionLayout {
@@ -126,6 +135,9 @@ internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
                             modifier = Modifier.fillMaxSize(),
                             navController = nav,
                             startDestination = RootRoute,
+                            dialogHost = { nav ->
+                                DialogHost(dialogNavigator = nav)
+                            },
                             builder = installEOAGraph,
                         )
                     }
@@ -167,11 +179,3 @@ fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this.logger(
 )
 
 expect fun downloadResourceUrl(info: UpdateInfo): String
-
-@Preview
-@Composable
-fun A() {
-    Button(onClick = {} ) {
-        Text("download")
-    }
-}

@@ -1,14 +1,10 @@
-@file:OptIn(ExperimentalTime::class)
-
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -18,45 +14,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
-import com.kborowy.colorpicker.KolorPicker
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
-import top.kagg886.eoa.component.collapse.CollapsableTopAppBarScaffold
 import top.kagg886.eoa.pages.main.about.AboutRoute
-import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.logcat.LogcatRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
+import top.kagg886.eoa.pages.main.settings.sync.SyncSettingsRoute
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.util.SnackBarType
-import top.kagg886.eoa.util.shared.applyIf
-import top.kagg886.eoa.util.showSnackBar
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.ExperimentalTime
 
 @Serializable
 data object SettingListRoute
 
 @Composable
 fun SettingListScreen() {
-    val rootModel = rootViewModel()
     val nav = LocalNavController.current
     val mainRouteViewModel = mainViewModel()
     val mainState by mainRouteViewModel.collectAsState()
@@ -70,14 +51,6 @@ fun SettingListScreen() {
 
     }
 
-    val rootState by rootModel.collectAsState()
-    val color by rootState.color.collectAsState()
-    val theme by rootState.theme.collectAsState()
-    val module by rootState.module.collectAsState()
-    val syncDuration by rootState.syncDuration.collectAsState()
-    val systemWidgetRadius by rootState.systemWidgetRadius.collectAsState()
-    val showExperimentClass by rootState.showExperimentClass.collectAsState()
-    val snack = LocalSnackBarHost.current
     SettingScreenContent(
         state,
         onLogoutButtonClicked = {
@@ -86,51 +59,49 @@ fun SettingListScreen() {
         onDetailButtonClicked = {
             nav.navigate(SettingsProfile)
         },
-
-        color = color,
-        theme = theme,
-        module = module,
-        syncDuration = syncDuration,
-        systemWidgetRadius = systemWidgetRadius,
-        showExperimentClass = showExperimentClass,
-        onColorSettingsClicked = rootModel::postNewColorSetting,
-        onThemeSettingsClicked = rootModel::postNewThemeSetting,
-        onModuleChanged = rootModel::postEOAModuleSetting,
-        onSyncDurationChanged = rootModel::postSyncTimeSetting,
-        onSystemWidgetRadiusChanged = rootModel::postSystemWidgetRadiusSetting,
-        onShowExperimentClassChanged = rootModel::postShowExperimentClassSetting,
-        onEggClicked = {
-            snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
+        onAppearanceSettingsClicked = {
+            nav.navigate(AppearanceSettingsRoute)
+        },
+        onSyncSettingsClicked = {
+            nav.navigate(SyncSettingsRoute)
+        },
+        onAboutClicked = {
+            nav.navigate(AboutRoute)
+        },
+        onLogcatClicked = {
+            nav.navigate(LogcatRoute)
         }
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingScreenContent(
     state: SettingsState,
     onDetailButtonClicked: () -> Unit,
     onLogoutButtonClicked: () -> Unit,
-
-    color: Color,
-    theme: AppSettingsMMKVType.AppTheme,
-    module: List<EOAHomeModule>,
-    syncDuration: Duration,
-    systemWidgetRadius: Boolean,
-    showExperimentClass: Boolean,
-    onColorSettingsClicked: (Color) -> Unit,
-    onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
-    onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
-    onSyncDurationChanged: (Duration) -> Job,
-    onSystemWidgetRadiusChanged: (Boolean) -> Unit,
-    onShowExperimentClassChanged: (Boolean) -> Unit,
-    onEggClicked: () -> Unit,
+    onAppearanceSettingsClicked: () -> Unit,
+    onSyncSettingsClicked: () -> Unit,
+    onAboutClicked: () -> Unit,
+    onLogcatClicked: () -> Unit,
 ) {
-    CollapsableTopAppBarScaffold(
-        modifier = Modifier.fillMaxSize(),
-        background = {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("设置") },
+                navigationIcon = { BackIconButton() }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+        ) {
             AnimatedContent(
                 targetState = state,
-                modifier = it.systemBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 when (it) {
                     is SettingsState.Failed -> {
@@ -281,428 +252,90 @@ private fun SettingScreenContent(
                     }
                 }
             }
-        },
-        title = {
-            Text(
-                text = "设置",
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ListItem(
+                headlineContent = { Text("外观") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Palette,
+                        contentDescription = "外观设置",
+                    )
+                },
+                trailingContent = {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "进入",
+                    )
+                },
+                modifier = Modifier.clickable {
+                    onAppearanceSettingsClicked()
+                }
             )
-        },
-        navigationIcon = {
-            BackIconButton()
-        },
-        content = { modifier ->
-            val columnState = rememberLazyListState()
-            LazyColumn(
-                modifier.fixComposeListScrollToTopBug(columnState).fillMaxWidth(),
-                state = columnState
-            ) {
-                item {
-                    Text(
-                        text = "外观设置",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+
+            ListItem(
+                headlineContent = { Text("同步") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Sync,
+                        contentDescription = "同步设置",
                     )
-                }
-
-                item {
-                    var dialog by remember { mutableStateOf(false) }
-                    ListItem(
-                        headlineContent = { Text("系统主题") },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Contrast,
-                                "主题色"
-                            )
-                        },
-                        trailingContent = {
-                            Text(
-                                when (theme) {
-                                    AppSettingsMMKVType.AppTheme.Light -> "浅色"
-                                    AppSettingsMMKVType.AppTheme.Dark -> "深色"
-                                    AppSettingsMMKVType.AppTheme.SystemDefault -> "跟随系统"
-                                }
-                            )
-                            if (dialog) {
-                                DropdownMenu(
-                                    modifier = Modifier.width(150.dp),
-                                    expanded = true,
-                                    onDismissRequest = { dialog = false }
-                                ) {
-                                    for (i in AppSettingsMMKVType.AppTheme.entries) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    when (i) {
-                                                        AppSettingsMMKVType.AppTheme.Light -> "浅色"
-                                                        AppSettingsMMKVType.AppTheme.Dark -> "深色"
-                                                        AppSettingsMMKVType.AppTheme.SystemDefault -> "跟随系统"
-                                                    }
-                                                )
-                                            },
-                                            onClick = {
-                                                onThemeSettingsClicked(i)
-                                                dialog = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.clickable { dialog = true },
+                },
+                trailingContent = {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "进入",
                     )
+                },
+                modifier = Modifier.clickable {
+                    onSyncSettingsClicked()
                 }
+            )
 
-                item {
-                    var dialog by remember { mutableStateOf(false) }
-                    ListItem(
-                        headlineContent = { Text("主题色") },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Colorize,
-                                "主题色"
-                            )
-                        },
-                        trailingContent = {
-                            Text(
-                                BUILTIN_COLORS.entries.find { (_, value) -> value == color }?.key
-                                    ?: "自定义",
-                                color = color
-                            )
-                            if (dialog) {
-                                DropdownMenu(
-                                    modifier = Modifier.width(150.dp),
-                                    expanded = true,
-                                    onDismissRequest = { dialog = false }
-                                ) {
-                                    for ((key, builtInColor) in BUILTIN_COLORS) {
-                                        var count by remember {
-                                            mutableStateOf(0)
-                                        }
-                                        DropdownMenuItem(
-                                            text = { Text(key) },
-                                            leadingIcon = {
-                                                Box(
-                                                    Modifier.size(16.dp).background(color = builtInColor)
-                                                )
-                                            },
-                                            onClick = {
-                                                onColorSettingsClicked(builtInColor)
-                                                if (key == "贝斯黄") {
-                                                    count++
-                                                }
-                                                if (count == 5) {
-                                                    onEggClicked()
-                                                }
-                                            }
-                                        )
-                                    }
-
-                                    var pickerDialog by remember { mutableStateOf(false) }
-
-                                    if (pickerDialog) {
-                                        AlertDialog(
-                                            onDismissRequest = {
-                                                pickerDialog = false
-                                            },
-                                            confirmButton = {
-                                                TextButton(
-                                                    onClick = {
-                                                        pickerDialog = false
-                                                    }
-                                                ) {
-                                                    Text("确定")
-                                                }
-                                            },
-                                            title = { Text("自定义取色") },
-                                            text = {
-                                                KolorPicker(
-                                                    initialColor = color,
-                                                    onColorSelected = onColorSettingsClicked,
-                                                    modifier = Modifier.width(250.dp).height(200.dp),
-                                                )
-                                            }
-                                        )
-                                    }
-
-                                    DropdownMenuItem(
-                                        text = { Text("自定义") },
-                                        onClick = { pickerDialog = true }
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier.clickable { dialog = true },
+            ListItem(
+                headlineContent = {
+                    Text("系统日志")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.DeveloperMode,
+                        contentDescription = "系统设置",
                     )
-                }
+                },
+                modifier = Modifier.clickable(onClick = onLogcatClicked)
+            )
 
-                item {
-                    var dialog by remember { mutableStateOf(false) }
-                    if (dialog) {
-                        AlertDialog(
-                            onDismissRequest = { dialog = false },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        dialog = false
-                                    }
-                                ) {
-                                    Text("确定")
-                                }
-                            },
-                            title = { Text("自定义底部栏") },
-                            text = {
-                                LazyColumn {
-                                    items(EOAHomeModule.entries) {
-                                        ListItem(
-                                            headlineContent = {
-                                                Text(it.display)
-                                            },
-                                            leadingContent = {
-                                                Checkbox(
-                                                    checked = module.contains(it),
-                                                    onCheckedChange = null,
-                                                )
-                                            },
-                                            modifier = Modifier.applyIf(it !== EOAHomeModule.SUMMARY) {
-                                                clickable {
-                                                    val newModule = if (module.contains(it)) {
-                                                        module - it
-                                                    } else {
-                                                        module + it
-                                                    }
-                                                    if (newModule.size > 3) {
-                                                        return@clickable
-                                                    }
-                                                    onModuleChanged(newModule)
-                                                }
-                                            },
-                                            colors = ListItemDefaults.colors(
-                                                containerColor = AlertDialogDefaults.containerColor
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    ListItem(
-                        headlineContent = { Text("底部栏定制") },
-                        supportingContent = { Text("自定义底部导航栏的内容。\n最多定制3条，多余的内容会存放进 '更多' 中") },
-                        modifier = Modifier.clickable {
-                            dialog = true
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.CallToAction,
-                                "主题色"
-                            )
-                        },
+            val rootViewModel = rootViewModel()
+            ListItem(
+                headlineContent = {
+                    Text("检查更新")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Update,
+                        contentDescription = "设置",
                     )
+                },
+                modifier = Modifier.clickable {
+                    rootViewModel.checkUpdate()
                 }
+            )
 
-                item {
-                    ListItem(
-                        headlineContent = { Text("小组件圆角跟随系统") },
-                        supportingContent = { Text("部分OS上可能无法获取正确的圆角，此时请关闭此设置。\n小组件刷新时间不固定，手动刷新后至少冷却半小时以上才会继续响应刷新，部分系统刷新时间可能会超过1天") },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Widgets,
-                                "小组件圆角"
-                            )
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = systemWidgetRadius,
-                                onCheckedChange = onSystemWidgetRadiusChanged
-                            )
-                        }
+            ListItem(
+                headlineContent = {
+                    Text("关于系统")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "关于系统",
                     )
-                }
-
-                item {
-                    ListItem(
-                        headlineContent = { Text("显示实验课提示") },
-                        supportingContent = { Text("在概要页面显示本周的实验课列表，暂不支持查看本学期所有的实验课") },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Science,
-                                "实验课"
-                            )
-                        },
-                        trailingContent = {
-                            Switch(
-                                checked = showExperimentClass,
-                                onCheckedChange = onShowExperimentClassChanged
-                            )
-                        }
-                    )
-                }
-
-                item {
-                    Text(
-                        text = "同步设置",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-
-                item {
-                    var dialog by remember {
-                        mutableStateOf(false)
-                    }
-                    val snack = LocalSnackBarHost.current
-                    if (dialog) {
-                        AlertDialog(
-                            onDismissRequest = {
-                                dialog = false
-                                snack.showSnackBar(SnackBarType.Warning, "同步设置将会在重启后生效")
-                            },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        dialog = false
-                                        snack.showSnackBar(SnackBarType.Warning, "同步设置将会在重启后生效")
-                                    }
-                                ) {
-                                    Text("确定")
-                                }
-                            },
-                            title = {
-                                Text("时间选择: ${syncDuration.inWholeDays}天")
-                            },
-                            text = {
-                                Slider(
-                                    value = syncDuration.inWholeDays.toFloat(),
-                                    valueRange = 1f..30f,
-                                    onValueChange = {
-                                        println(it)
-                                        onSyncDurationChanged(it.toInt().days)
-                                    },
-                                    steps = 28
-                                )
-                            }
-                        )
-                    }
-
-                    ListItem(
-                        headlineContent = {
-                            Text("同步时长")
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.ViewTimeline,
-                                contentDescription = "同步时长",
-                            )
-                        },
-                        supportingContent = {
-                            when (state) {
-                                is SettingsState.Failed -> {
-                                    Text("同步成功后，下一次同步会延长多少天")
-                                }
-
-                                SettingsState.Loading -> {
-                                    Text("正在同步中，请稍等")
-                                }
-
-                                is SettingsState.Success -> {
-                                    val time by produceState<Duration?>(null) {
-                                        while (true) {
-                                            value =
-                                                (state.lastUpdateTime + syncDuration) - Clock.System.now()
-                                            delay(1.hours)
-                                        }
-                                    }
-                                    time?.let {
-                                        if (it.isNegative()) {
-                                            Text("程序将会在下次启动时同步")
-                                            return@ListItem
-                                        }
-                                        Text("距离下次同步还有${it.toComponents { days, hours, _, _, _ -> "${days}天${hours}时" }}")
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.clickable {
-                            dialog = true
-                        }
-                    )
-                }
-
-                item {
-                    Text(
-                        text = "高级设置",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-
-                item {
-                    val nav = LocalNavController.current
-                    ListItem(
-                        headlineContent = {
-                            Text("系统日志")
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.DeveloperMode,
-                                contentDescription = "系统设置",
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            nav.navigate(LogcatRoute)
-                        }
-                    )
-                }
-
-                item {
-                    val rootViewModel = rootViewModel()
-                    ListItem(
-                        headlineContent = {
-                            Text("检查更新")
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Update,
-                                contentDescription = "设置",
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            rootViewModel.checkUpdate()
-                        }
-                    )
-                }
-
-                item {
-                    val nav = LocalNavController.current
-                    ListItem(
-                        headlineContent = {
-                            Text("关于系统")
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = "关于系统",
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            nav.navigate(AboutRoute)
-                        }
-                    )
-                }
-            }
-
+                },
+                modifier = Modifier.clickable(onClick = onAboutClicked)
+            )
         }
-    )
+    }
 }
 
 @Composable
@@ -760,11 +393,3 @@ private fun ProfileCard(
         }
     }
 }
-
-private val BUILTIN_COLORS = mapOf(
-    "姨妈红" to Color(188, 1, 4),
-    "闪耀橙" to Color(255, 85, 34),
-    "贝斯黄" to Color(255, 221, 136),
-    "风祝绿" to Color(26, 240, 79),
-    "拉格蓝" to Color(118, 145, 217)
-)
