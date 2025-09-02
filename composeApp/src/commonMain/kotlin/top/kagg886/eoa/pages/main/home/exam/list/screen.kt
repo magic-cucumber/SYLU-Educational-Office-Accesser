@@ -1,5 +1,6 @@
 package top.kagg886.eoa.pages.main.home.exam.list
 
+import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuBox
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -34,6 +35,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.drawer.SupportRTLModalNavigationDrawer
+import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuAnchorType
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
@@ -465,7 +467,7 @@ private fun PassFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
                 .fillMaxWidth(),
             readOnly = true,
             value = when (selectedFilter) {
@@ -528,7 +530,7 @@ private fun DegreeFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
                 .fillMaxWidth(),
             readOnly = true,
             value = when (selectedFilter) {
@@ -593,7 +595,7 @@ private fun YearFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
             readOnly = true,
             value = currentYear?.yearDisplay ?: "选择学年",
             onValueChange = {},
@@ -665,7 +667,7 @@ private fun TermFilterDropdown(
     ) {
         OutlinedTextField(
             modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled),
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
             readOnly = true,
             value = currentTerm?.semesterDisplay ?: "选择学期",
             onValueChange = {},
