@@ -261,7 +261,8 @@ private fun LoginScreenContent(
                         modifier = Modifier
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth(),
-                        label = { Text("后端选择") }
+                        label = { Text("后端选择") },
+                        enabled = state !is LoginViewModelState.WaitLogin.Processing
                     )
 
                     ExposedDropdownMenu(
