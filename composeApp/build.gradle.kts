@@ -141,6 +141,10 @@ kotlin {
     }
 }
 
+configurations.configureEach {
+    exclude(group = "io.ktor", module = "ktor-client-cio")
+}
+
 android {
     namespace = "top.kagg886.eoa"
     compileSdk = 35

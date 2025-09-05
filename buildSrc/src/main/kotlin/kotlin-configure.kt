@@ -33,6 +33,10 @@ fun KotlinMultiplatformExtension.library(
 
     androidTarget(android)
 
+//    wasmJs {
+//        browser()
+//    }
+
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
         optIn.addAll("kotlin.time.ExperimentalTime")

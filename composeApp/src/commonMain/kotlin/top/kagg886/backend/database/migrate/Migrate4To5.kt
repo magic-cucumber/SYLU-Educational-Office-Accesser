@@ -61,27 +61,9 @@ object Migrate4To5 : Migration(4, 5) {
         connection.execSQL("DROP TABLE courses")
         connection.execSQL("ALTER TABLE `_new_courses` RENAME TO courses")
 
-        connection.execSQL("CREATE TABLE IF NOT EXISTS `_new_log` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `tag` TEXT NOT NULL, `level` INTEGER NOT NULL, `message` TEXT NOT NULL, `time` TEXT NOT NULL, `stacktrace` TEXT)")
-
-        with(connection.query("SELECT id, tag, level, message, time, stacktrace FROM log")) {
-            while (step()) {
-                connection.execute(
-                    "INSERT INTO `_new_log` (id, tag, level, message, time, stacktrace) VALUES (?, ?, ?, ?, ?, ?)",
-                    getLongByName("id"),
-                    getTextByName("tag"),
-                    getIntByName("level"),
-                    Severity.valueOf(getTextByName("message")).ordinal,
-                    getTextByName("time"),
-                    getTextByName("stacktrace")
-                )
-            }
-        }
-
-
 
         connection.execSQL("DROP TABLE log")
-        connection.execSQL("ALTER TABLE `_new_log` RENAME TO log")
-
+        connection.execSQL("CREATE TABLE IF NOT EXISTS `log` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `tag` TEXT NOT NULL, `level` INTEGER NOT NULL, `message` TEXT NOT NULL, `time` TEXT NOT NULL, `stacktrace` TEXT)")
         connection.execSQL("CREATE TABLE IF NOT EXISTS `course_extend` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `weekNumber` INTEGER NOT NULL, `yearCode` TEXT NOT NULL, `semesterCode` TEXT NOT NULL)")
     }
 }

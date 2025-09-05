@@ -3,14 +3,6 @@ package top.kagg886.backend.database.migrate
 import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
-import top.kagg886.eoa.util.query
-import top.kagg886.eoa.util.execute
-import top.kagg886.eoa.util.getIntByName
-import top.kagg886.eoa.util.getLongByName
-import top.kagg886.eoa.util.getTextByName
 
 /**
  * ================================================
@@ -20,9 +12,11 @@ import top.kagg886.eoa.util.getTextByName
  */
 object Migrate6To7 : Migration(6, 7) {
     override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("DROP TABLE log")
+
         connection.execSQL(
             """
-            CREATE TABLE IF NOT EXISTS `_new_log` (
+            CREATE TABLE IF NOT EXISTS `log` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT,
                 `tag` TEXT NOT NULL,
                 `level` INTEGER NOT NULL,
@@ -31,23 +25,23 @@ object Migrate6To7 : Migration(6, 7) {
                 `stacktrace` TEXT
             )
         """.trimIndent())
-
-
-        val cursor = connection.query("SELECT id, tag, level, message, time, stacktrace FROM log")
-
-        while (cursor.step()) {
-            connection.execute(
-                "INSERT INTO `_new_log` (id, tag, level, message, time, stacktrace) VALUES (?, ?, ?, ?, ?, ?)",
-                cursor.getLongByName("id"),
-                cursor.getTextByName("tag"),
-                cursor.getIntByName("level"),
-                cursor.getTextByName("message"),
-                LocalDateTime.parse(cursor.getTextByName("time")).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
-                cursor.getTextByName("stacktrace")
-            )
-        }
-
-        connection.execSQL("DROP TABLE log")
-        connection.execSQL("ALTER TABLE `_new_log` RENAME TO log")
+//
+//
+//        val cursor = connection.query("SELECT id, tag, level, message, time, stacktrace FROM log")
+//
+//        while (cursor.step()) {
+//            connection.execute(
+//                "INSERT INTO `_new_log` (id, tag, level, message, time, stacktrace) VALUES (?, ?, ?, ?, ?, ?)",
+//                cursor.getLongByName("id"),
+//                cursor.getTextByName("tag"),
+//                cursor.getIntByName("level"),
+//                cursor.getTextByName("message"),
+//                LocalDateTime.parse(cursor.getTextByName("time")).toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+//                cursor.getTextByName("stacktrace")
+//            )
+//        }
+//
+//        connection.execSQL("DROP TABLE log")
+//        connection.execSQL("ALTER TABLE `_new_log` RENAME TO log")
     }
 }
