@@ -136,7 +136,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
                 tag = tag,
                 level = severity,
                 message = message,
-                time = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                time = Clock.System.now(),
                 stacktrace = throwable?.stackTraceToString()
             )
         )

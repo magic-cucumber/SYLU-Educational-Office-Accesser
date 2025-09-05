@@ -30,6 +30,7 @@ import top.kagg886.eoa.util.collectAsLazyPagingItems
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.ChinaDateFormater
+import top.kagg886.util.ChinaTimeFormater
 
 @Serializable
 data object LogcatRoute
@@ -233,7 +234,7 @@ private fun LogItem(log: AppLog) {
                 Spacer(modifier = Modifier.width(8.dp))
                 // 时间戳
                 Text(
-                    text = log.time.format(ChinaDateFormater),
+                    text = log.time.format(ChinaTimeFormater),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

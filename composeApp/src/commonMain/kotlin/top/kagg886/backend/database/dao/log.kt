@@ -4,12 +4,13 @@ import androidx.paging.PagingSource
 import androidx.room.*
 import androidx.room.ColumnInfo.Companion.INTEGER
 import co.touchlab.kermit.Severity
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
-import top.kagg886.backend.database.converters.LocalDateTimeConverter
+import top.kagg886.backend.database.converters.TimeConverter
 import top.kagg886.backend.database.converters.SeverityConverter
 
 @Entity(tableName = "log")
-@TypeConverters(LocalDateTimeConverter::class, SeverityConverter::class)
+@TypeConverters(TimeConverter::class, SeverityConverter::class)
 data class AppLog(
     @PrimaryKey(autoGenerate = true)
     val id: Long? = null,
@@ -17,7 +18,7 @@ data class AppLog(
     @ColumnInfo(typeAffinity = INTEGER)
     val level: Severity,
     val message: String,
-    val time: LocalDateTime,
+    val time: Instant,
     val stacktrace: String? = null,
 )
 

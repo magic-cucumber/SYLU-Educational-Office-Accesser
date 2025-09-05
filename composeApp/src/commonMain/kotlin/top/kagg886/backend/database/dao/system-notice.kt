@@ -2,10 +2,10 @@ package top.kagg886.backend.database.dao
 
 import androidx.room.*
 import kotlinx.datetime.LocalDateTime
-import top.kagg886.backend.database.converters.LocalDateTimeConverter
+import top.kagg886.backend.database.converters.TimeConverter
 
 @Entity(tableName = "system_notices")
-@TypeConverters(LocalDateTimeConverter::class)
+@TypeConverters(TimeConverter::class)
 data class SystemNoticeEntity(
     @PrimaryKey val id: String,
     val title: String,

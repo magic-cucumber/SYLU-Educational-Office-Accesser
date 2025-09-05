@@ -46,7 +46,9 @@ import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.DialogNavigator.Destination
 import androidx.navigation.compose.LocalOwnersProvider
 import androidx.navigation.compose.NavHost
+import io.ktor.util.logging.debug
 import top.kagg886.eoa.util.BackHandler
+import top.kagg886.util.asTaggedLogger
 
 
 /**
@@ -54,6 +56,8 @@ import top.kagg886.eoa.util.BackHandler
  *
  * Note that [NavHost] will call this for you; you do not need to call it manually.
  */
+
+private val logger = "DialogHost".asTaggedLogger
 @Composable
 public fun DialogHost(
     dialogNavigator: DialogNavigator
@@ -79,13 +83,16 @@ public fun DialogHost(
                 entryTransitionStates[entry] = MutableTransitionState(false).apply {
                     targetState = true
                 }
+                logger.d("Adding $entry to visible list")
             } else {
                 entryTransitionStates[entry]?.targetState = true
+                logger.d("Showing $entry")
             }
         }
         // Mark entries not currently visible to start exit animation
         renderingEntries.filter { it !in visibleBackStack }.forEach { entry ->
             entryTransitionStates[entry]?.targetState = false
+            logger.d("Hiding $entry")
         }
     }
 
@@ -107,6 +114,7 @@ public fun DialogHost(
         LaunchedEffect(transitionState) {
             snapshotFlow { transitionState.isIdle to transitionState.currentState }.collect { (idle, current) ->
                 if (idle && !current) {
+                    logger.d("Removing $backStackEntry from visible list")
                     renderingEntries.remove(backStackEntry)
                     entryTransitionStates.remove(backStackEntry)
                 }

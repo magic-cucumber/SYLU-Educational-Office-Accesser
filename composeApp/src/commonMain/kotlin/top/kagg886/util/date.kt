@@ -4,6 +4,7 @@ import kotlinx.datetime.*
 import kotlinx.datetime.format.char
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 import kotlinx.datetime.Clock
+import kotlinx.datetime.format.DateTimeComponents
 import kotlin.time.ExperimentalTime
 
 fun getTimeByLessonNumber(dt: Int): Pair<LocalTime, LocalTime> {
@@ -69,4 +70,21 @@ val ChinaDateFormater = LocalDateTime.Format {
     hour()
     char(':')
     minute()
+}
+
+
+val ChinaTimeFormater = DateTimeComponents.Format {
+    year()
+    char('-')
+    monthNumber()
+    char('-')
+    dayOfMonth()
+    char(' ')
+    hour()
+    char(':')
+    minute()
+    char(':')
+    second()
+    char('.')
+    secondFraction(3)
 }

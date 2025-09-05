@@ -42,6 +42,9 @@ import top.kagg886.util.dataPath
         SystemNoticeEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
+    autoMigrations = [
+        AutoMigration(from = 6, to = 7)
+    ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -70,7 +73,7 @@ val databasePath: String by lazy {
 expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
 
 fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
-    .fallbackToDestructiveMigrationOnDowngrade(true)
-    .fallbackToDestructiveMigration(true)
-    .fallbackToDestructiveMigrationFrom(true, 1)
+//    .fallbackToDestructiveMigrationOnDowngrade(true)
+//    .fallbackToDestructiveMigration(true)
+//    .fallbackToDestructiveMigrationFrom(true, 1)
     .setQueryCoroutineContext(Dispatchers.IO)

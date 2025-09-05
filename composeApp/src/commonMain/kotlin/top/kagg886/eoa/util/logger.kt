@@ -45,7 +45,7 @@ private class DatabaseLogger(private val appLogDao: AppLogDao) : LogWriter() {
                     tag = tag,
                     level = severity,
                     message = message,
-                    time = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
+                    time = Clock.System.now(),
                     stacktrace = throwable?.stackTraceToString()
                 )
             )

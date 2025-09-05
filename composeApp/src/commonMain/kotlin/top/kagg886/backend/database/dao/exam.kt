@@ -3,12 +3,12 @@ package top.kagg886.backend.database.dao
 import androidx.room.*
 import kotlinx.datetime.LocalDateTime
 import top.kagg886.backend.database.converters.ExamConverter
-import top.kagg886.backend.database.converters.LocalDateTimeConverter
+import top.kagg886.backend.database.converters.TimeConverter
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
 @Entity(tableName = "exams")
-@TypeConverters(ExamConverter::class, LocalDateTimeConverter::class)
+@TypeConverters(ExamConverter::class, TimeConverter::class)
 data class ExamEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val year: String, //学年代号
