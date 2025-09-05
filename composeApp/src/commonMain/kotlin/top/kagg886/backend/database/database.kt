@@ -25,6 +25,9 @@ import top.kagg886.backend.database.dao.SyncRecordEntity
 import top.kagg886.backend.database.dao.SyncRecordDao
 import top.kagg886.backend.database.dao.SystemNoticeDao
 import top.kagg886.backend.database.dao.SystemNoticeEntity
+import top.kagg886.backend.database.migrate.Migrate4To5
+import top.kagg886.backend.database.migrate.Migrate5To6
+import top.kagg886.backend.database.migrate.Migrate6To7
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
@@ -42,9 +45,6 @@ import top.kagg886.util.dataPath
         SystemNoticeEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
-    autoMigrations = [
-        AutoMigration(from = 6, to = 7)
-    ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -73,6 +73,9 @@ val databasePath: String by lazy {
 expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
 
 fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
+    .addMigrations(Migrate6To7)
+    .addMigrations(Migrate5To6)
+    .addMigrations(Migrate4To5)
 //    .fallbackToDestructiveMigrationOnDowngrade(true)
 //    .fallbackToDestructiveMigration(true)
 //    .fallbackToDestructiveMigrationFrom(true, 1)
