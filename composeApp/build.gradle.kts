@@ -149,9 +149,12 @@ android {
     namespace = "top.kagg886.eoa"
     compileSdk = 35
 
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+    }
+
     defaultConfig {
-        minSdk = 28
-        targetSdk = 35
+        minSdk = 23
 
         applicationId = "top.kagg886.eoa.androidApp"
         versionCode = appVersionCode
@@ -203,6 +206,8 @@ android {
 dependencies {
     androidTestImplementation(libs.androidx.uitest.junit4)
     debugImplementation(libs.androidx.uitest.testManifest)
+
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
 
 compose.desktop {

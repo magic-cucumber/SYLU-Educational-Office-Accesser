@@ -50,7 +50,7 @@ fun Project.android(module: String, configure: LibraryExtension.() -> Unit = {})
 
         compileSdk = 35
         defaultConfig {
-            minSdk = 28
+            minSdk = 23
         }
 
         buildTypes {
