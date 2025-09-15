@@ -122,11 +122,6 @@ internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
         nightTheme = dark
     ) {
         Box(Modifier.fillMaxSize()) {
-            data class DialogState(
-                val enabled: Boolean,
-                val properties: DialogProperties,
-                val disposed: () -> Unit,
-            )
             //业务
             Surface(Modifier.fillMaxSize()) {
                 SharedTransitionLayout {

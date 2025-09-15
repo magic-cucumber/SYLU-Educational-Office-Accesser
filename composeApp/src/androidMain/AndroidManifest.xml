@@ -44,6 +44,10 @@
                     android:name="android.appwidget.provider"
                     android:resource="@xml/today_course_widget_info"/>
         </receiver>
+
+        <meta-data
+                android:name="android.max_aspect"
+                android:value="2.4" />
     </application>
 
 </manifest>
