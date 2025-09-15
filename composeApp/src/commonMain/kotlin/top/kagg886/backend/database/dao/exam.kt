@@ -79,7 +79,7 @@ fun ExamItem.toEntity(detail: List<List<String>>) = ExamEntity(
     status = examStatus,
     degree = degreeProgram,
     detail = detail,
-    submitTeacherName = recommender,
+    submitTeacherName = recommender ?: "未知",
     submitTime = submitTime,
 )
 

@@ -55,7 +55,7 @@ data class ExamItem(
     private val _degreeProgram: String, //是否是学位课
 
     @SerialName("tjrxm")
-    val recommender: String, //录成绩的老登的名字
+    val recommender: String?, //录成绩的老登的名字
 
     @SerialName("tjsj")
     @Serializable(with = SubmitTimeSerializer::class)
