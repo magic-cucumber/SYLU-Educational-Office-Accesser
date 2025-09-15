@@ -35,11 +35,12 @@ data class ExamItem(
     @SerialName("xf")
     val credit: String, //学分
 
+    // 存在一例只有学分没有绩点的情况，此时按0处理。
     @SerialName("jd")
-    val gradePoint: String, //绩点
+    val gradePoint: String = "0.0", //绩点
 
     @SerialName("xfjd")
-    val crTimesGp: String, //学分*绩点
+    val crTimesGp: String = "0.0", //学分*绩点
 
     @SerialName("bfzcj")
     val absoluteScore: String, //考试绝对分数
