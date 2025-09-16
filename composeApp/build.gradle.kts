@@ -149,12 +149,14 @@ android {
     namespace = "top.kagg886.eoa"
     compileSdk = 35
 
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
+    if (useDesugarApi) {
+        compileOptions {
+            isCoreLibraryDesugaringEnabled = true
+        }
     }
 
     defaultConfig {
-        minSdk = 23
+        minSdk = if (useDesugarApi) 23 else 28
 
         applicationId = "top.kagg886.eoa.androidApp"
         versionCode = appVersionCode
@@ -207,7 +209,9 @@ dependencies {
     androidTestImplementation(libs.androidx.uitest.junit4)
     debugImplementation(libs.androidx.uitest.testManifest)
 
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    if (useDesugarApi) {
+        coreLibraryDesugaring(libs.desugar.jdk.libs)
+    }
 }
 
 compose.desktop {
@@ -238,6 +242,7 @@ buildConfig {
     // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
     packageName("top.kagg886.eoa.config")
     buildConfigField("DATABASE_VERSION", databaseVersion)
+    buildConfigField("APP_DESUGAR_ENABLED",useDesugarApi)
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
     buildConfigField("GIT_COMMIT_SHA", "123456")

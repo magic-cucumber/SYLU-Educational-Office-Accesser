@@ -1,5 +1,7 @@
 package top.kagg886.util
 
+import top.kagg886.eoa.config.BuildConfig
+
 /**
  * ================================================
  * Author:     886kagg
@@ -30,3 +32,6 @@ sealed interface Platform {
 }
 
 expect val Platform.Companion.current: Platform
+
+val Platform.Android.useDesugarApi: Boolean
+    get() = BuildConfig.APP_DESUGAR_ENABLED

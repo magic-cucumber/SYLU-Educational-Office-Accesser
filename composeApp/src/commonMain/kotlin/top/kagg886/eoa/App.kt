@@ -31,6 +31,7 @@ import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.component.dialog.DialogHost
 import top.kagg886.eoa.component.nav.NavHost
 import top.kagg886.eoa.component.snack.EOAToaster
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.RootEffect
 import top.kagg886.eoa.pages.RootRoute
 import top.kagg886.eoa.pages.announcement.AnnouncementRoute
@@ -45,8 +46,11 @@ import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.util.Platform
 import top.kagg886.util.asTaggedLogger
+import top.kagg886.util.current
 import top.kagg886.util.logger
+import top.kagg886.util.useDesugarApi
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
     error("not provided")
@@ -104,6 +108,20 @@ internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
 
     LaunchedEffect(Unit) {
         registerKermitLoggerIfExists(rootModel.appLogDao)
+        "App.kt".asTaggedLogger.i {
+            buildString {
+                appendLine("Application Info:")
+                appendLine("    Platform: ${Platform.current}")
+                appendLine("    Version: ${BuildConfig.APP_VERSION_NAME}(${BuildConfig.APP_VERSION_CODE})")
+
+                with(Platform.current) {
+                    if (this is Platform.Android) {
+                        appendLine("    Desugaring: $useDesugarApi")
+                    }
+                }
+
+            }
+        }
     }
 
     // 处理深层链接
