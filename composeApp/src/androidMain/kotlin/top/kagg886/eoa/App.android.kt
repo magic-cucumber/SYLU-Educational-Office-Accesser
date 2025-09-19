@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
 import kotlinx.coroutines.flow.MutableStateFlow
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
@@ -43,4 +44,4 @@ class AppActivity : ComponentActivity() {
 }
 
 actual fun downloadResourceUrl(info: UpdateInfo): String =
-    info.assets.first { it.name.endsWith(".apk") }.browser_download_url
+    info.assets.first { it.name.endsWith(if (BuildConfig.APP_DESUGAR_ENABLED) "-6.apk" else ".apk") }.browser_download_url
