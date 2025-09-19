@@ -50,7 +50,7 @@ fun Project.android(module: String, configure: LibraryExtension.() -> Unit = {})
 
         compileSdk = 35
         defaultConfig {
-            minSdk = 23
+            minSdk = if (useDesugarApi) 23 else 28
         }
 
         buildTypes {
