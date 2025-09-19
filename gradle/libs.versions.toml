@@ -1,6 +1,7 @@
 [versions]
 adaptive = "1.1.2"
 adaptive-suite = "1.8.2"
+aesKotlin = "1.0.1"
 agp = "8.11.0"
 androidx-activityCompose = "1.10.1"
 androidx-lifecycle = "2.9.3"
@@ -40,6 +41,7 @@ workRuntimeKtx = "2.10.3"
 [libraries]
 adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
 adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "adaptive-suite" }
+aes-kotlin = { module = "io.github.niyajali:aes-kotlin", version.ref = "aesKotlin" }
 android-application-gradle-plugin = { module = "com.android.application:com.android.application.gradle.plugin", version.ref = "agp" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 android-library-gradle-plugin = { module = "com.android.library:com.android.library.gradle.plugin", version.ref = "agp" }
@@ -74,6 +76,7 @@ ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktor" }
