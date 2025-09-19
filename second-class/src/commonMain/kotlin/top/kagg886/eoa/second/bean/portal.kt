@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
-data class Group(
+internal data class Group(
     @SerialName("group_name")
     val name: String,
 )
@@ -23,12 +23,12 @@ data class Resource(
 )
 
 @Serializable
-data class Portal(
+internal data class Portal(
     val group: Group,
     val resource: List<Resource>,
 )
 
 @Serializable
-data class PortalReturn(
+internal data class PortalReturn(
     val data: List<Portal>
 )
