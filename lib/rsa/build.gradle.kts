@@ -9,16 +9,17 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-group = "top.kagg886.util.rsa"
+group = "top.kagg886.util.security"
 version = "1.0"
 
-android("util.rsa") {
+android("util.security") {
     ndkVersion = "28.1.13356709"
 
     defaultConfig {
         externalNativeBuild {
             cmake {
-                targets += "cargo-build_rsa"
+                targets += "cargo-build_security"
+                arguments += "-DGIT_EXECUTABLE=/usr/bin/git"
             }
         }
         ndk {
@@ -48,7 +49,7 @@ kotlin {
             compilations.all {
                 cinterops {
                     val eoa by creating {
-                        defFile("src/iosMain/interop/librsa.def")
+                        defFile("src/iosMain/interop/libsecurity.def")
                         packageName("eoa")
                         includeDirs("src/iosMain/interop/include")
                     }
@@ -82,9 +83,9 @@ val currentJvmPlatform by lazy {
 
 val jvmPlatformLibraryName by lazy {
     when (currentJvmPlatform) {
-        JvmDesktopPlatform.MACOS -> "librsa.dylib"
-        JvmDesktopPlatform.LINUX -> "librsa.so"
-        JvmDesktopPlatform.WINDOWS -> "rsa.dll"
+        JvmDesktopPlatform.MACOS -> "libsecurity.dylib"
+        JvmDesktopPlatform.LINUX -> "libsecurity.so"
+        JvmDesktopPlatform.WINDOWS -> "security.dll"
     }
 }
 
@@ -106,7 +107,7 @@ val jvmMetadataGenerated = tasks.register("jvmMetadataGenerated") {
     dependsOn(jvmCargoBuildRelease)
     doFirst {
         val hash = project.file("src/rust/target/release/$jvmPlatformLibraryName").md5()
-        project.file("src/rust/target/release/rsa.hash").writeText(hash)
+        project.file("src/rust/target/release/security.hash").writeText(hash)
         logger.lifecycle("rust lib hash is $hash")
     }
 }
@@ -115,7 +116,7 @@ tasks.named<ProcessResources>("jvmProcessResources") {
     dependsOn(jvmMetadataGenerated)
     from(
         project.file("src/rust/target/release/$jvmPlatformLibraryName"),
-        project.file("src/rust/target/release/rsa.hash"),
+        project.file("src/rust/target/release/security.hash"),
     )
 }
 

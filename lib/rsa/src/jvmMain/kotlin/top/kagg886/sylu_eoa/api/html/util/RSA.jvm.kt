@@ -18,9 +18,9 @@ import java.nio.charset.StandardCharsets
 
 actual val RSA: RSAPlatform by lazy {
     val name = when (jvmTarget) {
-        JvmTarget.WINDOWS -> "rsa.dll"
-        JvmTarget.LINUX -> "librsa.so"
-        JvmTarget.MACOS -> "librsa.dylib"
+        JvmTarget.WINDOWS -> "security.dll"
+        JvmTarget.LINUX -> "libsecurity.so"
+        JvmTarget.MACOS -> "libsecurity.dylib"
     }
 
     val home = System.getProperty("user.home").toPath()

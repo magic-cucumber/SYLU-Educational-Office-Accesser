@@ -356,8 +356,7 @@ private fun SecondClassScreenContent(
                                 Badge(containerColor = MaterialTheme.colorScheme.secondary) {
                                     Text(
                                         "${item.score}",
-                                        modifier = Modifier.padding(8.dp),
-                                        fontSize = 0.9.em
+                                        modifier = Modifier.padding(8.dp)
                                     )
                                 }
                             }
