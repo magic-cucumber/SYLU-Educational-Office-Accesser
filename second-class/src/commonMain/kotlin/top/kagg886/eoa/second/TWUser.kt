@@ -150,7 +150,7 @@ class TWUser(
                 val info: Element = data[i]
 
                 val elements: Elements = info.getElementsByTag("td")
-                map[elements[3].text()].add(
+                map[if (elements[3].text() == "技能特长") "文体活动" else elements[3].text()].add(
                     SecondClassData(
                         elements[0].text(),
                         elements[1].text(),  //申请单位
@@ -167,9 +167,18 @@ class TWUser(
 
         val page = dom.getElementById("TPaged1")?.getElementsByTag("font")?.last()?.text()!!.toInt()
         for (i in 2..page) {
-            dom = client.get("SystemForm/StuAction/StuActionSearch.aspx") {
-                parameter("TPaged1", i)
-            }.apply {
+            dom = client.submitForm("SystemForm/StuAction/StuActionSearch.aspx", formParameters = Parameters.build {
+                set("__VIEWSTATE", dom.getElementById("__VIEWSTATE")!!.attr("value"))
+                set("__VIEWSTATEGENERATOR", dom.getElementById("__VIEWSTATEGENERATOR")!!.attr("value"))
+                set("__EVENTVALIDATION", dom.getElementById("__EVENTVALIDATION")!!.attr("value"))
+                set("__VIEWSTATEENCRYPTED","")
+                set("YearTime","")
+                set("ActivityType","")
+                set("OrgNo","")
+                set("ActivityName","")
+                set($$"TPaged1$GotoPage", i.toString())
+                set($$"TPaged1$Jump","跳 转")
+            }).apply {
                 if (status == HttpStatusCode.Found) {
                     error("vpn ticket outdated.")
                 }

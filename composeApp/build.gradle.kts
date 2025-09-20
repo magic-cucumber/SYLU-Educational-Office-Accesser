@@ -98,6 +98,7 @@ kotlin {
             implementation(project(":lib:ics-generator"))
             implementation(project(":lib:calender-exporter"))
             implementation(project(":lib:kolor-picker"))
+            implementation(project(":second-class"))
 
 
 //            FIXME: koog不兼容iOS，等待兼容版本发布后，删除此sub-module

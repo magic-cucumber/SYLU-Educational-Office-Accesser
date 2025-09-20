@@ -24,17 +24,11 @@ import kotlin.test.Test
 class EOASecondVPNTest {
     @Test
     fun testEOASecondVPN(): Unit = runBlocking {
-        val username = "admin"
-        val password = "admin123456"
-        val tw = "qwq"
+        val username = "2203050528"
+        val password = "Baleitem103@"
+        val tw = "Iveour@163.com"
 
         val client = VPNClient(
-            storage = object : Storage {
-                private var inner = ""
-                override fun get(): String = inner
-
-                override fun set(value: String) = run { inner = value}
-            },
             username = username,
             password = password,
         )
@@ -57,7 +51,7 @@ class EOASecondVPNTest {
 
         twClient.login(tw)
 
-        println(twClient.getData())
+        println(twClient.getData().entries.associate { it.key.id to it.value.sumOf { it.score } })
     }
 }
 

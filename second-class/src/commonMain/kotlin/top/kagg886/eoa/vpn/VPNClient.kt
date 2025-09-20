@@ -31,9 +31,9 @@ import kotlin.time.Clock
  * ================================================
  */
 
-class VPNClient(private val storage: Storage, private val username: String, private val password: String) :
+class VPNClient(private val username: String, private val password: String) :
     AutoCloseable {
-    private val cookie = StorageCookieStorage(this@VPNClient.storage)
+    private val cookie = AcceptAllCookiesStorage()
     private val it = HttpClient {
         engine {
             followRedirects = false
@@ -73,8 +73,13 @@ class VPNClient(private val storage: Storage, private val username: String, priv
      */
     suspend fun login(captchaHandler: (suspend (background: ByteArray, slider: ByteArray) -> CaptchaReturn?)? = null) {
         val redirect = it.get("login?cas_login=true").headers[HttpHeaders.Location]!!
+
+        if (redirect == "/") return //已登录用户无需重复登录
+
         val contextPath = redirect.substringBefore("/login")
-        val form = it.get(redirect).body<Document>().getElementById("pwdFromId")!!
+        val form = it.get(redirect).body<Document>().let {
+            it.getElementById("pwdFromId") ?: error("login failed.")
+        }
 
         run {
             @Serializable

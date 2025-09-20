@@ -22,6 +22,8 @@ import top.kagg886.eoa.pages.main.home.link.installLinkGraph
 import top.kagg886.eoa.pages.main.home.link.list.LinkListRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeScreen
+import top.kagg886.eoa.pages.main.home.second.SecondClassRoute
+import top.kagg886.eoa.pages.main.home.second.SecondClassScreen
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
 import top.kagg886.eoa.pages.main.home.summary.SummaryScreen
 
@@ -43,4 +45,5 @@ val installHomeGraph: NavGraphBuilder.() -> Unit = {
     }
 
     navigation<LinkRoute>(startDestination = LinkListRoute, builder = installLinkGraph)
+    transition<SecondClassRoute> { SecondClassScreen() }
 }
