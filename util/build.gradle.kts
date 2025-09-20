@@ -21,6 +21,7 @@ kotlin {
             dependencies {
                 api(libs.kermit)
                 api(libs.okio)
+                api(libs.ktor.client.logging)
             }
         }
 

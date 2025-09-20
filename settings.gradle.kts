@@ -44,6 +44,7 @@ include(":util")
 include(":lib:ics-generator")
 include(":lib:calender-exporter")
 include(":lib:kolor-picker")
+include(":lib:rsa")
 
 //includeBuild("external/koog") {
 //    dependencySubstitution {

@@ -31,6 +31,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import kotlin.time.Duration.Companion.seconds
 import top.kagg886.util.logger as kermit
@@ -296,9 +297,7 @@ class CourseEditModel(
                     ),
                     baseClient = HttpClient {
                         install(Logging) {
-                            logger = object : Logger {
-                                override fun log(message: String) = kermit.d(message)
-                            }
+                            logger = this@CourseEditModel.logger.asKtorLogger
                             level = LogLevel.ALL
                         }
                     }

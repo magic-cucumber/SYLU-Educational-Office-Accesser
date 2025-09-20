@@ -7,3 +7,8 @@ val Any.logger: Logger
 
 val String.asTaggedLogger: Logger
     get() = Logger.withTag(this)
+
+val Logger.asKtorLogger: io.ktor.client.plugins.logging.Logger
+    get() = object : io.ktor.client.plugins.logging.Logger {
+        override fun log(message: String) = d(message)
+    }

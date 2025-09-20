@@ -32,6 +32,9 @@ kotlin {
             implementation(libs.ksoup)
             implementation(libs.okio)
             implementation(libs.aes.kotlin)
+
+            implementation(project(":lib:rsa"))
+            implementation(project(":util"))
         }
 
         commonTest.dependencies {

@@ -22,6 +22,7 @@ import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
 import kotlinx.datetime.Clock
+import top.kagg886.util.asKtorLogger
 import kotlin.time.Duration.Companion.seconds
 
 internal class EOAHTMLClient : EOAClient {
@@ -45,9 +46,7 @@ internal class EOAHTMLClient : EOAClient {
             }
 
             install(Logging) {
-                logger = object : Logger {
-                    override fun log(message: String) = kermit.d(message)
-                }
+                logger = kermit.asKtorLogger
                 level = LogLevel.ALL
             }
 

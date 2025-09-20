@@ -1,10 +1,12 @@
+import io.ktor.http.Cookie
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import top.kagg886.eoa.second.Storage
-import top.kagg886.eoa.second.VPNClient
-import top.kagg886.eoa.second.bean.CaptchaReturn
+import top.kagg886.eoa.second.TWUser
+import top.kagg886.eoa.util.Storage
+import top.kagg886.eoa.vpn.VPNClient
+import top.kagg886.eoa.vpn.bean.CaptchaReturn
 import java.awt.*
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
@@ -24,16 +26,14 @@ class EOASecondVPNTest {
     fun testEOASecondVPN(): Unit = runBlocking {
         val username = "admin"
         val password = "123456"
+        val tw = "tw"
 
         val client = VPNClient(
             storage = object : Storage {
-                override fun get(): String? {
-                    return null
-                }
+                private var inner = ""
+                override fun get(): String = inner
 
-                override fun set(value: String) {
-
-                }
+                override fun set(value: String) = run { inner = value}
             },
             username = username,
             password = password,
@@ -46,7 +46,18 @@ class EOASecondVPNTest {
             )
         }
 
-        println(client.portal())
+        ///Resource(name=团委第二课堂系统, redirect=/http/77726476706e69737468656265737421e8f00f8f3e3c7d1e7b0c9ce29b5b/SyluTW/Sys/UserLogin.aspx)
+        val portal = client.portal().first { it.name == "团委第二课堂系统" }.redirect
+
+        val twClient = TWUser(
+            baseURL = "https://webvpn.sylu.edu.cn${portal.substringBefore("UserLogin.aspx")}",
+            user = username,
+            ticket = client.ticket()
+        )
+
+        twClient.login(tw)
+
+        println(twClient.getData())
     }
 }
 
