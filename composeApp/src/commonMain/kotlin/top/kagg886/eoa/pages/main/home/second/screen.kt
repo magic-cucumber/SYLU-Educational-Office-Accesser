@@ -319,7 +319,11 @@ private fun SecondClassScreenContent(
         val scope = rememberCoroutineScope()
 
         Column {
-            SecondaryScrollableTabRow(selectedTabIndex = pagerState.currentPage) {
+            SecondaryScrollableTabRow(
+                selectedTabIndex = pagerState.currentPage,
+                modifier = Modifier.fillMaxWidth(),
+                divider = {}
+            ) {
                 entries.forEachIndexed { index, (key, values) ->
                     Tab(
                         selected = pagerState.currentPage == index,
