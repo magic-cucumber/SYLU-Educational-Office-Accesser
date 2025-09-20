@@ -25,8 +25,8 @@ class EOASecondVPNTest {
     @Test
     fun testEOASecondVPN(): Unit = runBlocking {
         val username = "admin"
-        val password = "123456"
-        val tw = "tw"
+        val password = "admin123456"
+        val tw = "qwq"
 
         val client = VPNClient(
             storage = object : Storage {

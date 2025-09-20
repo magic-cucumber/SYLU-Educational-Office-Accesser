@@ -37,6 +37,9 @@ class TWUser(
 ) : AutoCloseable {
     private val log = "TWUser".asTaggedLogger
     private val client = HttpClient {
+        engine {
+            followRedirects = false
+        }
         defaultRequest {
             url(baseURL)
         }
@@ -75,8 +78,11 @@ class TWUser(
             "tRM1uJFbfRMkBq24AwIDAQAB"
 
     suspend fun login(pass: String) {
-        val dom = client.get("UserLogin.aspx").body<Document>()
-
+        val dom = client.get("UserLogin.aspx").apply {
+            if (status == HttpStatusCode.Found) {
+                error("vpn ticket outdated.")
+            }
+        }.body<Document>()
         //https://webvpn.sylu.edu.cn/http/77726476706e69737468656265737421e8f00f8f3e3c7d1e7b0c9ce29b5b/SyluTW/Sys/UserLogin.aspx" id="form1" style="height: 100%
         val loginResp = client.submitForm("UserLogin.aspx", formParameters = Parameters.build {
             set("UserName", user)
@@ -112,7 +118,11 @@ class TWUser(
     suspend fun getData(): Map<SecondClassDataSummary, List<SecondClassData>> {
         val map = mutableMapOf<SecondClassDataSummary, MutableList<SecondClassData>>()
 
-        var dom = client.get("SystemForm/FinishExam/StuFinishStudentScore.aspx").body<Document>()
+        var dom = client.get("SystemForm/FinishExam/StuFinishStudentScore.aspx").apply {
+            if (status == HttpStatusCode.Found) {
+                error("vpn ticket outdated.")
+            }
+        }.body<Document>()
 
         var id = 'A'
         while (id <= 'E') {
@@ -126,7 +136,11 @@ class TWUser(
         val sum1 = (e.ifEmpty { "0.00" }).toDouble()
         map[SecondClassDataSummary("All", sum1)] = mutableListOf()
 
-        dom = client.get("SystemForm/StuAction/StuActionSearch.aspx").body()
+        dom = client.get("SystemForm/StuAction/StuActionSearch.aspx").apply {
+            if (status == HttpStatusCode.Found) {
+                error("vpn ticket outdated.")
+            }
+        }.body()
 
 
         fun parse() {
@@ -155,6 +169,10 @@ class TWUser(
         for (i in 2..page) {
             dom = client.get("SystemForm/StuAction/StuActionSearch.aspx") {
                 parameter("TPaged1", i)
+            }.apply {
+                if (status == HttpStatusCode.Found) {
+                    error("vpn ticket outdated.")
+                }
             }.body()
             parse()
         }
