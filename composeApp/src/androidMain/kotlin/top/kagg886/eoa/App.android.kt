@@ -44,4 +44,4 @@ class AppActivity : ComponentActivity() {
 }
 
 actual fun downloadResourceUrl(info: UpdateInfo): String =
-    info.assets.first { it.name.endsWith(if (BuildConfig.APP_DESUGAR_ENABLED) "-6.apk" else ".apk") }.browser_download_url
+    info.assets.first { it.name == if (BuildConfig.APP_DESUGAR_ENABLED) "app-release-6.apk" else "app-release.apk" }.browser_download_url

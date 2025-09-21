@@ -208,7 +208,7 @@ private fun SecondClassScreenContent(
                     OutlinedTextField(
                         value = vpn,
                         onValueChange = { vpn = it },
-                        label = { Text("VPN 密码") },
+                        label = { Text("统一认证平台 密码") },
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                         visualTransformation = if (vpnVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -232,7 +232,7 @@ private fun SecondClassScreenContent(
                     OutlinedTextField(
                         value = tw,
                         onValueChange = { tw = it },
-                        label = { Text("团委网密码") },
+                        label = { Text("团委网 密码") },
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                         visualTransformation = if (twVisible) VisualTransformation.None else PasswordVisualTransformation(),
