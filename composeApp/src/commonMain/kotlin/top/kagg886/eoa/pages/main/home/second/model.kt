@@ -69,6 +69,12 @@ class SecondClassModel : ViewModel(), ContainerHost<SecondClassState, SecondClas
         reduce { SecondClassState.Success(data) }
     }
 
+    fun exit() = intent {
+        AppSecondClassMMKV.clear()
+        postSideEffect(SecondClassSideEffect.Toast(level = SnackBarType.Warning,"退出成功"))
+        reduce { SecondClassState.RequireLogin("","") }
+    }
+
     @OptIn(OrbitExperimental::class)
     fun login(vPassword: String, tPassword: String) = intent {
         reduce { SecondClassState.RequireLogin(vPassword, tPassword, true) }

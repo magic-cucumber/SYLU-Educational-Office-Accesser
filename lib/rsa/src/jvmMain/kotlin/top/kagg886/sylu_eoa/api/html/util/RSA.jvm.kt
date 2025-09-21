@@ -28,7 +28,7 @@ actual val RSA: RSAPlatform by lazy {
     if (!libPath.exists()) {
         useRes("/$name") { exportLibToPath(libPath) }
     } else {
-        val newHash = useRes("/rsa.hash") { readString(StandardCharsets.UTF_8) }
+        val newHash = useRes("/security.hash") { readString(StandardCharsets.UTF_8) }
         val oldHash = libPath.md5()
         if (newHash != oldHash) useRes("/$name") { exportLibToPath(libPath) }
     }

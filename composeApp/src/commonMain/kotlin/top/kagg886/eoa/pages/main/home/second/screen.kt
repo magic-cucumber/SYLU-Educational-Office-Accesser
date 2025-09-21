@@ -1,11 +1,13 @@
 package top.kagg886.eoa.pages.main.home.second
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,9 +32,12 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
+import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
 
@@ -47,77 +52,115 @@ import top.kagg886.eoa.vpn.bean.CaptchaReturn
 data object SecondClassRoute
 
 @Composable
-fun SecondClassScreen() = HomeScreen(
-    route = EOAHomeModule.SECOND,
-    title = { Text("第二课堂") },
-    fabIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
-    fabText = { Text("统计") },
-    fabOnClick = {}
-) {
+fun SecondClassScreen() {
+    val nav = LocalNavController.current
     val toast = LocalSnackBarHost.current
-    val model = viewModel {
+    val model = viewModel(nav.getBackStackEntry(MainRoute)) { //持久化vm，确保切换页面时状态不丢失
         SecondClassModel()
     }
-
-    var defered by remember { mutableStateOf<CompletableDeferred<CaptchaReturn?>?>(null) }
-    var background by remember { mutableStateOf<ByteArray?>(null) }
-    var frontend by remember { mutableStateOf<ByteArray?>(null) }
-
-    if (defered != null) {
-        AlertDialog(
-            onDismissRequest = {
-                defered!!.complete(null)
-                defered = null
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        defered!!.complete(null)
-                        defered = null
-                    }
-                ) {
-                    Text("取消")
+    HomeScreen(
+        route = EOAHomeModule.SECOND,
+        title = { Text("第二课堂") },
+        menu = {
+            var show by remember {
+                mutableStateOf(false)
+            }
+            IconButton(
+                onClick = {
+                    show = !show
                 }
-            },
-            title = { Text("请完成验证") },
-            text = {
-                CaptchaSlider(
-                    background = background!!,
-                    frontend = frontend!!,
-                    onResultResolved = { all, position ->
-                        defered!!.complete(
-                            CaptchaReturn(all, position)
-                        )
-                        defered = null
+            ) {
+                AnimatedContent(
+                    targetState = show,
+                    label = "logcat-actions",
+                    transitionSpec = createMenuButtonAnim { show }
+                ) {
+                    Icon(
+                        imageVector = if (it) Icons.Default.Close else Icons.Default.Menu,
+                        contentDescription = null
+                    )
+                }
+            }
+            DropdownMenu(
+                expanded = show,
+                onDismissRequest = { show = false },
+            ) {
+                DropdownMenuItem(
+                    text = {
+                        Text("退出二课")
+                    },
+                    leadingIcon = {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, "test")
+                    },
+                    onClick = {
+                        model.exit()
                     }
                 )
+            }
+        }
+    ) {
+
+
+        var defered by remember { mutableStateOf<CompletableDeferred<CaptchaReturn?>?>(null) }
+        var background by remember { mutableStateOf<ByteArray?>(null) }
+        var frontend by remember { mutableStateOf<ByteArray?>(null) }
+
+        if (defered != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    defered!!.complete(null)
+                    defered = null
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            defered!!.complete(null)
+                            defered = null
+                        }
+                    ) {
+                        Text("取消")
+                    }
+                },
+                title = { Text("请完成验证") },
+                text = {
+                    CaptchaSlider(
+                        background = background!!,
+                        frontend = frontend!!,
+                        onResultResolved = { all, position ->
+                            defered!!.complete(
+                                CaptchaReturn(all, position)
+                            )
+                            defered = null
+                        }
+                    )
+                }
+            )
+        }
+
+
+        model.collectSideEffect {
+            when (it) {
+                is SecondClassSideEffect.RequireCaptcha -> {
+                    background = it.background
+                    frontend = it.slider
+                    defered = it.callback
+                }
+
+                is SecondClassSideEffect.Toast -> toast.showSnackBar(it.level, it.message)
+            }
+        }
+
+        val state by model.collectAsState()
+
+        SecondClassScreenContent(
+            state = state,
+            onLoginButtonClicked = { vpn, tw ->
+                model.login(vpn, tw)
             }
         )
     }
 
-
-    model.collectSideEffect {
-        when (it) {
-            is SecondClassSideEffect.RequireCaptcha -> {
-                background = it.background
-                frontend = it.slider
-                defered = it.callback
-            }
-
-            is SecondClassSideEffect.Toast -> toast.showSnackBar(it.level, it.message)
-        }
-    }
-
-    val state by model.collectAsState()
-
-    SecondClassScreenContent(
-        state = state,
-        onLoginButtonClicked = { vpn, tw ->
-            model.login(vpn, tw)
-        }
-    )
 }
-
 @Composable
 private fun CaptchaSlider(
     modifier: Modifier = Modifier,
