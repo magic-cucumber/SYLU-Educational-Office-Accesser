@@ -1,3 +1,8 @@
+- **2025-09-24**
+  由于配置了分包处理，导致4.2.2以下的EOA无法自动更新到最新版本，此时请点击下面的链接进行下载：
+  Android9以上版本[请戳此链接](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/4.2.3/app-release.apk)
+  Android6-8版本[请戳此链接](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/4.2.3/app-release-6.apk)
+  
 - **2025-08-25**
 
   EOA 4.2.0在新学期到来时由于bug无法清除旧学期课表。
