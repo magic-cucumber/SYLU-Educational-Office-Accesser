@@ -2,6 +2,7 @@
 
 package top.kagg886.eoa.component.dialog
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,7 +72,8 @@ fun DialogPageScaffold(
                             min(DialogMaxWidth, LocalWindowInfo.current.containerSize.width.toDp() * 0.9f)
                         },
                     )
-                    .then(Modifier.semantics { paneTitle = dialogPaneDescription }),
+                    .then(Modifier.semantics { paneTitle = dialogPaneDescription })
+                    .clickable(enabled = true, indication = null, interactionSource = null, onClick = {}),
             propagateMinConstraints = true
         ) {
             AlertDialogContent(
