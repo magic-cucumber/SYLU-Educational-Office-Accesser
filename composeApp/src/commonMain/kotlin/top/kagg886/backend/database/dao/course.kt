@@ -19,7 +19,20 @@ data class CourseEntity(
 
 @Dao
 interface CourseDao {
-    @Query("DELETE FROM courses WHERE yearCode = :xnm AND semesterCode = :xqm")
+    /**
+     * xnm和xqm传当前的学期，会删除以下内容：
+     * 1. 学年名和学期名相同的非自定义课程
+     * 2. 学年名和学期名不相同的自定义课程
+     */
+    @Query("""
+        DELETE FROM courses
+        WHERE 
+        -- 情况1：非自定义且学年、学期匹配
+        (isUserAdded = 0 AND yearCode = :xnm AND semesterCode = :xqm)
+        OR
+        -- 情况2：自定义且学年或学期不匹配
+        (isUserAdded = 1 AND (yearCode != :xnm OR semesterCode != :xqm))
+    """)
     suspend fun clear(xnm: String, xqm: String)
 
     @Query("DELETE FROM courses")
