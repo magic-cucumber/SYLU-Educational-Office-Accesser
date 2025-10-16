@@ -39,6 +39,7 @@ import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuAnchorType
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
+import top.kagg886.eoa.pages.main.home.exam.export.ExamExportRoute
 import top.kagg886.eoa.pages.main.home.exam.statistic.ExamStatisticRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.createMenuButtonAnim
@@ -47,6 +48,7 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
+import top.kagg886.sylu_eoa.api.v2.bean.Term
 import top.kagg886.util.toFixed
 
 @Serializable
@@ -68,7 +70,11 @@ fun ExamListScreen() {
             }
 
             is ExamListSideEffect.NavigateToStatistic -> {
-                nav.navigate(ExamStatisticRoute(it.year,it.term))
+                nav.navigate(ExamStatisticRoute(it.year, it.term))
+            }
+
+            is ExamListSideEffect.NavigateToExport -> {
+                nav.navigate(ExamExportRoute(it.year,it.term))
             }
         }
     }
@@ -87,33 +93,68 @@ fun ExamListScreen() {
             }
             val state by model.collectAsState()
             val scope = rememberCoroutineScope()
+
+            var expanded by remember { mutableStateOf(false) }
             IconButton(
-                onClick = {
-                    scope.launch {
-                        if (state.drawerState.isOpen) {
-                            state.drawerState.close()
-                        } else {
-                            state.drawerState.open()
-                        }
-                    }
-                }
+                onClick = { expanded = !expanded }
             ) {
                 AnimatedContent(
-                    targetState = state.drawerState.currentValue,
-                    transitionSpec = createMenuButtonAnim { initialState == DrawerValue.Open }
+                    targetState = expanded,
+                    transitionSpec = createMenuButtonAnim { expanded }
                 ) {
                     when (it) {
-                        DrawerValue.Closed -> Icon(
-                            Icons.Default.FilterList,
-                            contentDescription = "筛选"
+                        true -> Icon(
+                            Icons.Default.Close,
+                            contentDescription = "菜单"
                         )
 
-                        DrawerValue.Open -> Icon(
-                            Icons.Default.Close,
+                        false -> Icon(
+                            Icons.Default.Menu,
                             contentDescription = "关闭"
                         )
                     }
                 }
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    onClick = {
+                        scope.launch {
+                            if (state.drawerState.isOpen) { state.drawerState.close() } else { state.drawerState.open() }
+                        }
+                        expanded = false
+                    },
+                    text = {
+                        Text("${if (state.drawerState.isOpen) "关闭" else "开启"}筛选")
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (state.drawerState.isOpen) Icons.Default.Close else Icons.Default.FilterList,
+                            contentDescription = if (state.drawerState.isOpen) "close" else "open",
+                        )
+                    },
+                    enabled = state is ExamListState.Success
+                )
+
+                DropdownMenuItem(
+                    onClick = {
+                        model.navigateToExport()
+                        expanded = false
+                    },
+                    text = {
+                        Text("导出")
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.FileDownload,
+                            contentDescription = "export"
+                        )
+                    },
+                    enabled = state is ExamListState.Success
+                )
             }
         },
         fabIcon = {
@@ -216,6 +257,7 @@ fun ExamListScreen() {
     }
 
 }
+
 @Composable
 fun ExamListScreenDrawer(
     keyword: String? = null,

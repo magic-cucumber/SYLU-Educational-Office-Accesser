@@ -10,6 +10,7 @@ androidx-uiTest = "1.9.0"
 buildConfig = "5.6.7"
 coil = "3.3.0"
 compose = "1.9.0-rc01"
+composeDnd = "0.4.0"
 composePlaceholderMaterial3 = "1.0.11"
 desugar_jdk_libs = "2.1.5"
 filekitCore = "0.10.0"
@@ -58,6 +59,7 @@ androidx-uitest-testManifest = { module = "androidx.compose.ui:ui-test-manifest"
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+compose-dnd = { module = "com.mohamedrejeb.dnd:compose-dnd", version.ref = "composeDnd" }
 compose-multiplatfrom-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "compose" }
 compose-placeholder-material3 = { module = "com.eygraber:compose-placeholder-material3", version.ref = "composePlaceholderMaterial3" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }

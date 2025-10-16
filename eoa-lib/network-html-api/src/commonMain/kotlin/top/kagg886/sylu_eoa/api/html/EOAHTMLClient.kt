@@ -22,6 +22,11 @@ import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.properties.Delegates
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import top.kagg886.util.asKtorLogger
 import kotlin.time.Duration.Companion.seconds
 
@@ -32,6 +37,7 @@ internal class EOAHTMLClient : EOAClient {
 
     private val json = Json {
         ignoreUnknownKeys = true
+        encodeDefaults = true
     }
 
     //懒加载，因为client需要在init之后才能使用
@@ -108,7 +114,7 @@ internal class EOAHTMLClient : EOAClient {
                                 if (e is InvalidCredentialsException) {
                                     throw e
                                 }
-                                kermit.d("Retry request: ${req.url.build().fullPath} failed.",e)
+                                kermit.d("Retry request: ${req.url.build().fullPath} failed.", e)
                                 null
                             }
                         }
@@ -327,6 +333,28 @@ internal class EOAHTMLClient : EOAClient {
         }
 
         return rtn
+    }
+
+    override suspend fun getExamExportSink(term: Term, config: ExamExportOptions): ByteArray {
+        val resp = client.submitForm(
+            url = "/cjcx/cjcx_dcListByXs.html",
+            formParameters = Parameters.build {
+                append("gnmkdmKey","N305005")
+                append("sessionUserKey", username)
+                append("xnm",term.xnm)
+                append("xqm", term.xqm)
+                append("dcclbh","JW_N305005_XSCXCJ")
+                append("exportModel.exportWjgs", config.format.toString().uppercase())
+                config.select.map { it.toFormValue() }.forEach {
+                    append("exportModel.selectCol", it)
+                }
+            }
+        )
+        if (!resp.contentType().toString().contains("application/vnd.ms-excel")) {
+            throw IllegalStateException("系统出错")
+        }
+
+        return resp.body<ByteArray>()
     }
 
     override suspend fun getClassTable(picker: TermPicker): ClassReturn {

@@ -152,6 +152,11 @@ internal class TestEOAClient : EOAClient {
         )
     }
 
+    override suspend fun getExamExportSink(
+        term: Term,
+        config: ExamExportOptions
+    ): ByteArray = byteArrayOf()
+
     override suspend fun getClassTable(picker: TermPicker): ClassReturn {
         return ClassReturn(
             extend = listOf(),

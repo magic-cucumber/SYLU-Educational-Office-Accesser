@@ -2,12 +2,14 @@ package top.kagg886.sylu_eoa.api.v2
 
 import top.kagg886.sylu_eoa.api.v2.bean.ClassReturn
 import top.kagg886.sylu_eoa.api.v2.bean.ClassTable
+import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 import top.kagg886.sylu_eoa.api.v2.bean.SystemNotice
 import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
+import top.kagg886.sylu_eoa.api.v2.bean.Term
 import top.kagg886.sylu_eoa.api.v2.bean.TermPicker
 import top.kagg886.sylu_eoa.api.v2.bean.TermResult
 import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
@@ -54,6 +56,14 @@ interface EOAClient {
      * @return 包含考试详情的列表
      */
     suspend fun getExamInfo(examItem: ExamItem): List<List<String>>
+
+    /**
+     * 导出指定学年学期的成绩单
+     * @param term 学期
+     * @param config 导出设置
+     * @return ]
+     */
+    suspend fun getExamExportSink(term: Term,config: ExamExportOptions): ByteArray
 
     /**
      * 获取指定学期的课程表

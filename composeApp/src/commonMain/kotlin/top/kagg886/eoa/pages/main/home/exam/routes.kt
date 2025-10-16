@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import top.kagg886.eoa.component.nav.transition
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailScreen
+import top.kagg886.eoa.pages.main.home.exam.export.ExamExportRoute
+import top.kagg886.eoa.pages.main.home.exam.export.ExamExportScreen
 import top.kagg886.eoa.pages.main.home.exam.list.ExamListRoute
 import top.kagg886.eoa.pages.main.home.exam.list.ExamListScreen
 import top.kagg886.eoa.pages.main.home.exam.statistic.ExamStatisticRoute
@@ -19,4 +21,5 @@ val installExamGraph: NavGraphBuilder.() -> Unit = {
     transition<ExamListRoute> { ExamListScreen() }
     transition<ExamDetailRoute> { ExamDetailScreen(it.toRoute()) }
     dialog<ExamStatisticRoute> { ExamStatisticScreen(it.toRoute()) }
+    dialog<ExamExportRoute> { ExamExportScreen(it.toRoute()) }
 }

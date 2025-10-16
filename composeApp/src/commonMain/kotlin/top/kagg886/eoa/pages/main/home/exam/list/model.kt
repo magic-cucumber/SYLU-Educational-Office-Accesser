@@ -39,6 +39,18 @@ class ExamListViewModel(
         }
     }
 
+    @OptIn(OrbitExperimental::class)
+    fun navigateToExport() = intent {
+        runOn<ExamListState.Success> {
+            val (year,terms) = state.selector[state.currentYearIndex]
+            val term = terms[state.currentTermIndex]
+
+            postSideEffect(
+                ExamListSideEffect.NavigateToExport(year.yearCode,term.semesterCode)
+            )
+        }
+    }
+
     override val container: Container<ExamListState, ExamListSideEffect> =
         container(ExamListState.Loading(DrawerState(DrawerValue.Closed))) {
             if (syncState is MainRouteViewState.SyncFailed) {
@@ -174,4 +186,5 @@ sealed interface ExamListState {
 sealed interface ExamListSideEffect {
     data class NavigateToDetail(val examId: Long) : ExamListSideEffect
     data class NavigateToStatistic(val year: String,val term: String) : ExamListSideEffect
+    data class NavigateToExport(val year: String,val term: String) : ExamListSideEffect
 }
