@@ -89,7 +89,7 @@ class CourseDetailViewModel(
                     val date =
                         AppSyncMMKV.calender!!.start
                             .plus(it.weekNumber - 1, DateTimeUnit.WEEK)
-                            .plus(it.dayOfWeek, DateTimeUnit.DAY)
+                            .plus(it.dayOfWeek - 1, DateTimeUnit.DAY) //dayOfWeek是礼拜x，所以如果是周一的话就要dayOfWeek - 1，以此类推。
                     val (start, end) = getTimeByLessonNumber(it.periodOfDay)
 
                     CourseRecordAndProgress(
