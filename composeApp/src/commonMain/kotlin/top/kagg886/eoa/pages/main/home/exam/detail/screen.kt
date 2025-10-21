@@ -640,7 +640,7 @@ private fun TimeLineItem(
             headlineContent = {
                 Text(
                     text = if (exam != null) {
-                        "${exam.absoluteScore} ( ${exam.credit}x${exam.gradePoint}=${exam.credit * exam.gradePoint} )"
+                        "${exam.absoluteScore} ( ${exam.credit}x${exam.gradePoint}=${(exam.credit * exam.gradePoint).toFixed(2)} )"
                     } else {
                         "加载中"
                     },
