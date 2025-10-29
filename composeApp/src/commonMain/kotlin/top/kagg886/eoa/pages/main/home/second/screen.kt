@@ -18,10 +18,17 @@ import androidx.compose.ui.graphics.Color.Companion
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -161,6 +168,7 @@ fun SecondClassScreen() {
     }
 
 }
+
 @Composable
 private fun CaptchaSlider(
     modifier: Modifier = Modifier,
@@ -331,23 +339,33 @@ private fun SecondClassScreenContent(
                             color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
+
+                    val color = MaterialTheme.colorScheme.primary
                     Text(
-                        "该功能使用校园VPN协议来实现免校园网访问二课数据的。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        "使用该功能前，请仔细回忆校园统一认证平台的密码（就是你激活学号的地方）。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        "随后您需要仔细回忆团委网的密码。只有正确填写这两个密码才能正常访问二课数据。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        "随后除非您修改了密码，否则每次进入功能时都将自动拉取。",
+                        buildAnnotatedString {
+                            append("该功能使用校园VPN协议来实现免校园网访问二课数据。\n")
+                            append("使用该功能前，请仔细回忆")
+
+                            withLink(
+                                LinkAnnotation.Url(
+                                    url = "https://webvpn.sylu.edu.cn/login",
+                                )
+                            ) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = color,
+                                        textDecoration = TextDecoration.Underline,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                ) {
+                                    append("校园统一认证平台")
+                                }
+                            }
+
+                            append("的密码（点击蓝色链接后，进入 '智慧理工统一身份认证登录'）。\n")
+                            append("随后您需要仔细回忆团委网的密码。只有正确填写这两个密码才能正常访问二课数据。\n")
+                            append("除非您修改密码，否则每次进入功能时都将自动拉取。\n")
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
