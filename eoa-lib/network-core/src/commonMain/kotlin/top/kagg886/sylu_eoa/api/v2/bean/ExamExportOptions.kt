@@ -89,57 +89,103 @@ data class ExamExportOptions(
         XLS, TXT, DBF
     }
 
+    @Serializable
     sealed interface SelectColumn {
         val remark: String
         val width: Int
 
+        @Serializable
+        @SerialName("KCH")
         data class KCH(override val remark: String = "课程代码", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("KCMC")
         data class KCMC(override val remark: String = "课程名称", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("XF")
         data class XF(override val remark: String = "学分", override val width: Int = 50) : SelectColumn
 
+        @Serializable
+        @SerialName("XNMMC")
         data class XNMMC(override val remark: String = "学年", override val width: Int = 90) : SelectColumn
 
+        @Serializable
+        @SerialName("JD")
         data class JD(override val remark: String = "绩点", override val width: Int = 50) : SelectColumn
 
+        @Serializable
+        @SerialName("KCXZMC")
         data class KCXZMC(override val remark: String = "课程性质", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("XQMMC")
         data class XQMMC(override val remark: String = "学期", override val width: Int = 50) : SelectColumn
 
+        @Serializable
+        @SerialName("CJBZ")
         data class CJBZ(override val remark: String = "成绩备注", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("KSXZ")
         data class KSXZ(override val remark: String = "成绩性质", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("SFXWKC")
         data class SFXWKC(override val remark: String = "是否学位课程", override val width: Int = 150) : SelectColumn
 
+        @Serializable
+        @SerialName("KKBBMC")
         data class KKBBMC(override val remark: String = "开课学院", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("KCBJ")
         data class KCBJ(override val remark: String = "课程标记", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("KCLBMC")
         data class KCLBMC(override val remark: String = "课程类别", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("KCGSMC")
         data class KCGSMC(override val remark: String = "课程归属", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("JXBMC")
         data class JXBMC(override val remark: String = "教学班", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("JSXM")
         data class JSXM(override val remark: String = "任课教师", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("KHFMC")
         data class KHFMC(override val remark: String = "考核方式", override val width: Int = 100) : SelectColumn
 
+        @Serializable
+        @SerialName("XH")
         data class XH(override val remark: String = "学号", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("XM")
         data class XM(override val remark: String = "姓名", override val width: Int = 80) : SelectColumn
 
+        @Serializable
+        @SerialName("XSBJMC")
         data class XSBJMC(override val remark: String = "学生标记", override val width: Int = 120) : SelectColumn
 
+        @Serializable
+        @SerialName("CJ")
         data class CJ(override val remark: String = "成绩", override val width: Int = 50) : SelectColumn
 
+        @Serializable
+        @SerialName("CJSFZF")
         data class CJSFZF(override val remark: String = "是否成绩作废", override val width: Int = 80) : SelectColumn
 
+        @Serializable
+        @SerialName("XFJD")
         data class XFJD(override val remark: String = "学分绩点", override val width: Int = 80) : SelectColumn
-    }
-}
+    }}
 
 // 扩展函数：获取字段名
 fun SelectColumn.getFieldName(): String = this::class.simpleName!!.lowercase()

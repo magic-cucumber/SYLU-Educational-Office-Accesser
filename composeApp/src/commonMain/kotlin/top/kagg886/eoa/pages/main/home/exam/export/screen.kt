@@ -70,7 +70,8 @@ fun ExamExportScreen(params: ExamExportRoute) {
         onDeselectAll = model::deselectAll,
         onReorder = model::reorderColumns,
         onExport = model::exportExam,
-        onCancel = model::cancel
+        onCancel = model::cancel,
+        onReset = model::reset
     )
 }
 
@@ -83,6 +84,7 @@ private fun ConfigContent(
     onSelectAll: () -> Unit,
     onDeselectAll: () -> Unit,
     onReorder: (Int, Int) -> Unit,
+    onReset: () -> Unit,
     onExport: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -178,6 +180,9 @@ private fun ConfigContent(
                         }
                         TextButton(onClick = onDeselectAll, enabled = !isExporting) {
                             Text("全不选")
+                        }
+                        TextButton(onClick = onReset, enabled = !isExporting) {
+                            Text("还原")
                         }
                     }
                 }
