@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.*
@@ -166,6 +167,24 @@ fun AboutScreen() {
                         .fillMaxWidth()
                         .clickable {
                             uriHandler.openUri("https://qm.qq.com/q/heTEDas3Mk")
+                        }
+                )
+            }
+
+            item {
+                // 邮件反馈
+                ListItem(
+                    headlineContent = { Text("邮件反馈") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.Email,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            uriHandler.openUri("mailto:iveour@163.com?subject=SYLU-EOA%20%E5%8A%9F%E8%83%BD%E5%8F%8D%E9%A6%88")
                         }
                 )
             }
