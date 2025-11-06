@@ -114,6 +114,14 @@ private inline fun SummaryContentV2(
         var cardHeight by remember {
             mutableStateOf(0.dp)
         }
+
+        var cardHeight2 by remember {
+            mutableStateOf(0.dp)
+        }
+
+        var cardHeight3 by remember {
+            mutableStateOf(0.dp)
+        }
         val density = LocalDensity.current
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -185,13 +193,17 @@ private inline fun SummaryContentV2(
                                 text = "本周实验课",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).onGloballyPositioned {
+                                    cardHeight2 = with(density) { it.size.height.toDp() }
+                                }
                             )
                         }
                         item {
                             ExperimentClassList(
                                 extendClasses = state.extendClass,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().onGloballyPositioned {
+                                    cardHeight3 = with(density) { it.size.height.toDp() }
+                                }
                             )
                         }
                     }
@@ -199,7 +211,7 @@ private inline fun SummaryContentV2(
                         item {
                             ErrorPage(
                                 modifier = Modifier.fillMaxWidth()
-                                    .height(maxHeight - cardHeight - 64.dp),
+                                    .height(maxHeight - cardHeight - cardHeight2 - cardHeight3 - 64.dp),
                                 icon = {
                                     Icon(
                                         imageVector = Icons.Default.Info,
@@ -554,7 +566,7 @@ private inline fun CourseItem(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                         }
-                        
+
                         // 考试课标识
                         course?.isExamine?.let { isExamine ->
                             if (isExamine) {
@@ -570,7 +582,7 @@ private inline fun CourseItem(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                         }
-                        
+
                         Text(
                             text = course?.name ?: "",
                             style = MaterialTheme.typography.titleMedium,
