@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -193,15 +194,16 @@ private fun CoursePageScreenSuccessContent(
                     when (swipeState.currentValue) {
                         SwipeToDismissBoxValue.EndToStart -> {
                             onCourseItemRemoveClicked(it!!)
+                            swipeState.snapTo(SwipeToDismissBoxValue.Settled)
                         }
 
                         SwipeToDismissBoxValue.StartToEnd -> {
                             onCourseItemClicked(it!!)
+                            swipeState.snapTo(SwipeToDismissBoxValue.Settled)
                         }
 
                         else -> {}
                     }
-                    swipeState.reset()
                 }
                 SwipeToDismissBox(
                     state = swipeState,
