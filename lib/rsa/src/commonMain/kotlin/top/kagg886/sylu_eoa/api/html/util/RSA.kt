@@ -1,10 +1,27 @@
 package top.kagg886.sylu_eoa.api.html.util
 
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.DelicateCryptographyApi
+import dev.whyoleg.cryptography.algorithms.SHA512
+import kotlinx.io.Buffer
+import kotlinx.io.readByteArray
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import dev.whyoleg.cryptography.algorithms.RSA as InternalRSA
 
-interface RSAPlatform {
-    fun encrypt(plaintext: String, exponent: String, modulus: String): String
+object RSA {
+    @OptIn(DelicateCryptographyApi::class)
+    fun encrypt(plaintext: String, exponent: String, modulus: String): String {
+
+        val cipher = CryptographyProvider.Default.get(InternalRSA.PKCS1)
+
+        val pubKey = cipher.publicKeyDecoder(SHA512).decodeFromByteArrayBlocking(
+            format = InternalRSA.PublicKey.Format.DER.Generic,
+            bytes = (exponent to modulus).asPublicDer()
+        )
+
+        return Base64.encode(pubKey.encryptor().encryptBlocking(plaintext.encodeToByteArray()))
+    }
 
     @OptIn(ExperimentalEncodingApi::class)
     fun encrypt(plaintext: String, x509: String): String {
@@ -20,7 +37,75 @@ interface RSAPlatform {
     }
 }
 
-expect val RSA: RSAPlatform
+private fun Pair<String,String>.asPublicDer(): ByteArray {
+
+    val exponent = Base64.decode(first)
+    val modulus  = Base64.decode(second)
+
+    fun Buffer.writeDerLength(len: Int) {
+        when {
+            len < 0x80 -> writeByte(len.toByte())
+            len <= 0xFF -> {
+                writeByte(0x81.toByte())
+                writeByte(len.toByte())
+            }
+            else -> {
+                writeByte(0x82.toByte())
+                writeByte((len shr 8).toByte())
+                writeByte(len.toByte())
+            }
+        }
+    }
+
+    fun derInteger(bytes: ByteArray): ByteArray {
+        val out = Buffer()
+
+        // Ensure positive INTEGER (leading 0 if high bit = 1)
+        val v = if (bytes.first().toInt() and 0x80 != 0) byteArrayOf(0x00) + bytes else bytes
+
+        out.writeByte(0x02)           // INTEGER
+        out.writeDerLength(v.size)
+        out.write(v)
+
+        return out.readByteArray()
+    }
+
+    fun derSequence(vararg parts: ByteArray): ByteArray {
+        val body = Buffer()
+        parts.forEach { body.write(it) }
+        val bodyBytes = body.readByteArray()
+
+        val out = Buffer()
+        out.writeByte(0x30)           // SEQUENCE
+        out.writeDerLength(bodyBytes.size)
+        out.write(bodyBytes)
+
+        return out.readByteArray()
+    }
+
+    // AlgorithmIdentifier: rsaEncryption OID + NULL
+    val algorithmId = byteArrayOf(
+        0x30, 0x0D,
+        0x06, 0x09,
+        0x2A, 0x86.toByte(), 0x48, 0x86.toByte(),
+        0xF7.toByte(), 0x0D, 0x01, 0x01, 0x01, // 1.2.840.113549.1.1.1
+        0x05, 0x00
+    )
+
+    val rsaPubKey = derSequence(
+        derInteger(modulus),
+        derInteger(exponent)
+    )
+
+    // BIT STRING (0 unused bits + RSAPublicKey)
+    val bitStringBuf = Buffer()
+    bitStringBuf.writeByte(0x03)  // BIT STRING
+    bitStringBuf.writeDerLength(1 + rsaPubKey.size)
+    bitStringBuf.writeByte(0x00)  // unused bits
+    bitStringBuf.write(rsaPubKey)
+
+    return derSequence(algorithmId, bitStringBuf.readByteArray())
+}
 
 @OptIn(ExperimentalEncodingApi::class)
 private fun parseSpkiToExponentModulusBase64(spkiBase64: String): Triple<String, String, Int> {
