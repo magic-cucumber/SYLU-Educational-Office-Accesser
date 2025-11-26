@@ -12,6 +12,7 @@ coil = "3.3.0"
 compose = "1.9.0-rc01"
 composeDnd = "0.4.0"
 composePlaceholderMaterial3 = "1.0.11"
+cryptographyCore = "0.5.0"
 desugar_jdk_libs = "2.1.5"
 filekitCore = "0.10.0"
 glance = "1.1.1"
@@ -62,6 +63,8 @@ coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.re
 compose-dnd = { module = "com.mohamedrejeb.dnd:compose-dnd", version.ref = "composeDnd" }
 compose-multiplatfrom-gradle-plugin = { module = "org.jetbrains.compose:org.jetbrains.compose.gradle.plugin", version.ref = "compose" }
 compose-placeholder-material3 = { module = "com.eygraber:compose-placeholder-material3", version.ref = "composePlaceholderMaterial3" }
+cryptography-core = { module = "dev.whyoleg.cryptography:cryptography-core", version.ref = "cryptographyCore" }
+cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptography-provider-optimal", version.ref = "cryptographyCore" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }

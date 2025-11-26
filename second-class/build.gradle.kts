@@ -31,9 +31,11 @@ kotlin {
             implementation(libs.ktor.client.encoding)
             implementation(libs.ksoup)
             implementation(libs.okio)
-            implementation(libs.aes.kotlin)
 
             implementation(project(":lib:rsa"))
+            implementation(libs.cryptography.core)
+            implementation(libs.cryptography.provider.optimal)
+
             implementation(project(":util"))
         }
 
