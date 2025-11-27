@@ -1,7 +1,6 @@
 package top.kagg886.eoa.vpn
 
 import com.fleeksoft.ksoup.nodes.Document
-import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.compression.*
@@ -15,13 +14,12 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import top.kagg886.eoa.util.Storage
-import top.kagg886.eoa.util.StorageCookieStorage
 import top.kagg886.eoa.util.internal.HtmlFormat
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
 import top.kagg886.eoa.vpn.bean.PortalReturn
 import top.kagg886.eoa.vpn.bean.Resource
 import top.kagg886.eoa.vpn.internal.aes
+import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
 
 /**

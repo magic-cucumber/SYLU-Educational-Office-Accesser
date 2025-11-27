@@ -96,6 +96,7 @@ kotlin {
             implementation(project(":eoa-lib:network-test-api"))
 
 
+            implementation(project(":lib:ktor-platform-engine"))
             implementation(project(":lib:ics-generator"))
             implementation(project(":lib:calender-exporter"))
             implementation(project(":lib:kolor-picker"))
@@ -114,7 +115,6 @@ kotlin {
             implementation(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
             implementation(libs.kotlinx.coroutines.android)
-            implementation(libs.ktor.client.okhttp)
 
             // Jetpack Glance for widgets
             implementation(libs.androidx.glance.appwidget)
@@ -125,16 +125,11 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
-            implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.sqlite.bundled)
 
             implementation(libs.mkmb.platform.windows)
             implementation(libs.mkmb.platform.linux)
             implementation(libs.mkmb.platform.macos)
-        }
-
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
         }
     }
 }

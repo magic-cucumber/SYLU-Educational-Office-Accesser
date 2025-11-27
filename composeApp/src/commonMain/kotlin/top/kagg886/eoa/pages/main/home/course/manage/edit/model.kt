@@ -16,7 +16,7 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
-import io.ktor.client.*
+import top.kagg886.util.http.HttpClient
 import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.LocalDate

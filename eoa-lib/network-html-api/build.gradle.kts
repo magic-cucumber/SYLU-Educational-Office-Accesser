@@ -29,7 +29,7 @@ kotlin {
             implementation(libs.mkmb.core)
             implementation(libs.sweet.api.runtime)
 
-            implementation(libs.ktor.client.core)
+            api(project(":lib:ktor-platform-engine"))
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.json)
@@ -42,16 +42,6 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
-        }
-
-        jvmTest.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
-        iosTest.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
-        androidInstrumentedTest.dependencies {
-            implementation(libs.ktor.client.okhttp)
         }
     }
 }

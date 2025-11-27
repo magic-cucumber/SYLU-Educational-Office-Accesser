@@ -1,7 +1,7 @@
 package top.kagg886.eoa.pages.update.download
 
 import androidx.lifecycle.ViewModel
-import io.ktor.client.*
+
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -18,6 +18,7 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.*
+import top.kagg886.util.http.HttpClient
 
 /**
  * ================================================

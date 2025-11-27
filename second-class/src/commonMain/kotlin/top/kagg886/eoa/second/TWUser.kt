@@ -3,7 +3,6 @@ package top.kagg886.eoa.second
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
 import com.fleeksoft.ksoup.select.Elements
-import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -21,6 +20,7 @@ import top.kagg886.eoa.util.internal.HttpResponseCharset
 import top.kagg886.sylu_eoa.api.html.util.RSA
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
+import top.kagg886.util.http.HttpClient
 
 val TW_KEYS = arrayOf(
     "思想成长",
