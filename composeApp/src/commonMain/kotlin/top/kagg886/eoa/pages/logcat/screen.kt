@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.logcat
+package top.kagg886.eoa.pages.logcat
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
@@ -29,7 +29,6 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.collectAsLazyPagingItems
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
-import top.kagg886.util.ChinaDateFormater
 import top.kagg886.util.ChinaTimeFormater
 
 @Serializable
@@ -348,7 +347,7 @@ private fun LogcatScreenFAB(
             }
             Spacer(modifier = Modifier.height(4.dp))
 
-            for (i in Severity.entries) {
+            for (i in entries) {
                 SmallFloatingActionButton(
                     onClick = {
                         onSeverityChange(i)

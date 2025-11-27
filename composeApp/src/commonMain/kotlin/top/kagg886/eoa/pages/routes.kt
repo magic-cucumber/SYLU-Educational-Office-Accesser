@@ -9,6 +9,8 @@ import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.pages.announcement.AnnouncementRoute
 import top.kagg886.eoa.pages.announcement.AnnouncementScreen
+import top.kagg886.eoa.pages.logcat.LogcatRoute
+import top.kagg886.eoa.pages.logcat.LogcatScreen
 import top.kagg886.eoa.pages.login.LoginRoute
 import top.kagg886.eoa.pages.login.LoginScreen
 import top.kagg886.eoa.pages.main.MainRoute
@@ -34,5 +36,6 @@ val installEOAGraph: (NavGraphBuilder.() -> Unit) = {
             )
         }
         navigation<MainRoute>(startDestination = HomeRoute, builder = installMainGraph)
+        composable<LogcatRoute> { LogcatScreen() }
     }
 }

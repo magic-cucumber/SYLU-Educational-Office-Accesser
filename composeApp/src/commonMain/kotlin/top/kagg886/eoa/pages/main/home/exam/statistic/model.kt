@@ -1,12 +1,10 @@
 package top.kagg886.eoa.pages.main.home.exam.statistic
 
 import androidx.lifecycle.ViewModel
-import androidx.room.Database
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.database.AppDatabase
-import top.kagg886.eoa.pages.main.logcat.LogcatState
 
 /**
  * ================================================

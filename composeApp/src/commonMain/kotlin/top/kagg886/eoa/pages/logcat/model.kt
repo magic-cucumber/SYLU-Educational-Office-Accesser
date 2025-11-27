@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.logcat
+package top.kagg886.eoa.pages.logcat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -35,6 +35,7 @@ import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.pages.main.MainRoute
+import top.kagg886.eoa.pages.logcat.LogcatRoute
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 
@@ -62,7 +63,11 @@ fun LoginScreen() {
             is LoginSideEffect.Toast -> {
                 snack.showSnackBar(
                     it.type,
-                    it.message
+                    it.message,
+                    actionTitle = "查看日志",
+                    action = {
+                        nav.navigate(LogcatRoute)
+                    }
                 )
             }
         }
