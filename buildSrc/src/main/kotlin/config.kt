@@ -10,3 +10,7 @@ import org.gradle.api.Project
 val Project.useDesugarApi: Boolean
     get() = (System.getenv("APP_DESUGAR") ?: System.getProperty("APP_DESUGAR") ?: findProperty("app.desugar"))
         .toString().toBooleanStrictOrNull() ?: false
+
+val Project.useProguard: Boolean
+    get() = (System.getenv("APP_PROGUARD") ?: System.getProperty("APP_PROGUARD") ?: findProperty("app.proguard"))
+        .toString().toBooleanStrictOrNull() ?: false

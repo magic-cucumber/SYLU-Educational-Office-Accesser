@@ -181,8 +181,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = useProguard
+            isShrinkResources = useProguard
 
             signingConfig = signingConfigs.getByName("test")
 
