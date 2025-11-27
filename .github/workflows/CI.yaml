@@ -28,6 +28,7 @@ jobs:
 
       - name: Build with Gradle Wrapper
         run: |
+          export APP_PROGUARD=true
           chmod +x ./gradlew
           ./gradlew assembleRelease
       - name: Rename apk
@@ -66,6 +67,7 @@ jobs:
 
       - name: Build with Gradle Wrapper
         run: |
+          export APP_PROGUARD=true
           export APP_DESUGAR=true
           chmod +x ./gradlew
           ./gradlew assembleRelease
