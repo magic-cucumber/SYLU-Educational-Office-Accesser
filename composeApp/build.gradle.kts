@@ -227,6 +227,14 @@ compose.desktop {
                 bundleID = "top.kagg886.eoa.desktopApp"
             }
         }
+
+        buildTypes {
+            release {
+                proguard {
+                    isEnabled = false
+                }
+            }
+        }
     }
 }
 
