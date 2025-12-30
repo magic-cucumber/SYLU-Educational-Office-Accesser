@@ -6,6 +6,9 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.compression.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.cookies.*
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
@@ -56,6 +59,13 @@ class VPNClient(private val username: String, private val password: String) :
 
         install(HttpCookies) {
             storage = cookie
+        }
+
+        install(Logging) {
+            level = LogLevel.BODY
+            logger = object : Logger {
+                override fun log(message: String) = println(message)
+            }
         }
     }
 
@@ -158,7 +168,7 @@ class VPNClient(private val username: String, private val password: String) :
 
         //登录成功
 
-        run {
+        val validate = run {
             var link = loginResp.headers[HttpHeaders.Location]!!
             while (true) {
                 val status = it.get(link)
@@ -167,8 +177,13 @@ class VPNClient(private val username: String, private val password: String) :
                     link = status.headers[HttpHeaders.Location]!!
                     continue
                 }
-                break
+                return@run status.body<String>()
             }
+            return@run ""
+        }
+
+        if (validate.contains("        var errorMessage = '")) {
+            error(validate.substringAfter("var errorMessage = '").substringBefore("'"))
         }
     }
 
@@ -179,7 +194,7 @@ class VPNClient(private val username: String, private val password: String) :
             "cookie was dead, please login again."
         }
 
-        return portalReturn.body<PortalReturn>().data.map { it.resource }.flatten()
+        return portalReturn.body<PortalReturn>().data.flatMap { it.resource }
     }
 }
 
