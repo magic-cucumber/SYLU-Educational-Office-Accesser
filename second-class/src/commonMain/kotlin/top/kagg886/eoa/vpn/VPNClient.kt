@@ -22,6 +22,8 @@ import top.kagg886.eoa.vpn.bean.CaptchaReturn
 import top.kagg886.eoa.vpn.bean.PortalReturn
 import top.kagg886.eoa.vpn.bean.Resource
 import top.kagg886.eoa.vpn.internal.aes
+import top.kagg886.util.asKtorLogger
+import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
 
@@ -32,8 +34,8 @@ import kotlin.time.Clock
  * ================================================
  */
 
-class VPNClient(private val username: String, private val password: String) :
-    AutoCloseable {
+class VPNClient(private val username: String, private val password: String) : AutoCloseable {
+    private val logger = "VPNClient".asTaggedLogger
     private val cookie = AcceptAllCookiesStorage()
     private val it = HttpClient {
         engine {
@@ -63,9 +65,7 @@ class VPNClient(private val username: String, private val password: String) :
 
         install(Logging) {
             level = LogLevel.BODY
-            logger = object : Logger {
-                override fun log(message: String) = println(message)
-            }
+            logger = this@VPNClient.logger.asKtorLogger
         }
     }
 
