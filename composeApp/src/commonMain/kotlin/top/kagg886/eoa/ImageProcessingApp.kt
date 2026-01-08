@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.saveImageToGallery
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -71,7 +73,7 @@ fun ImageProcessingApp(
                 )
             )
 
-            val scope = rememberCoroutineScope()
+            val scope = rememberCoroutineScope { Dispatchers.IO }
             val graphicsLayer = rememberGraphicsLayer()
 
             Box(

@@ -4,6 +4,10 @@
 <dict>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>我们需要您的同意才能将图片保存到您的相册。</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>我们需要访问您的相册以供您选择照片进行编辑。</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>

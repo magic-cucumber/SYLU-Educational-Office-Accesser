@@ -56,7 +56,7 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 @Suppress("unused")
-fun ImageProcessingViewController(item: NSExtensionItem): UIViewController = ComposeUIViewController {
+fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIViewController = ComposeUIViewController {
     initializeMMKV()
     val image by produceState(Result.failure(Exception("No image"))) {
         val providers = item.attachments as? List<NSItemProvider> ?: return@produceState
@@ -142,56 +142,7 @@ fun ImageProcessingViewController(item: NSExtensionItem): UIViewController = Com
 
     ImageProcessingApp(
         modifier = Modifier.fillMaxSize(),
-        todo = image.getOrThrow()
+        todo = image.getOrThrow(),
+        exit = exit
     )
 }
-
-//private func handleSharedImage() {
-//        // 2. 获取 Extension Context 中的输入项
-//        guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else { return }
-//
-//        for item in extensionItems {
-//            guard let providers = item.attachments else { continue }
-//
-//            for provider in providers {
-//                // 3. 检查是否包含图片类型 (public.image)
-//                if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-//
-//                    // 4. 异步加载图片
-//                    provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { [weak self] (item, error) in
-//                        guard let self = self else { return }
-//
-//                        if let error = error {
-//                            print("加载出错: \(error.localizedDescription)")
-//                            return
-//                        }
-//
-//                        // 处理加载到的数据 (可能是 URL 或 UIImage 对象)
-//                        self.processLoadedItem(item)
-//                    }
-//
-//                    //以此为例，我们只处理找到的第一张图片，找到后直接返回
-//                    return
-//                }
-//            }
-//        }
-//    }
-//
-//    private func processLoadedItem(_ item: NSSecureCoding?) {
-//        // 因为 loadItem 回调是在后台线程，UI 更新必须回到主线程
-//        DispatchQueue.main.async {
-//            if let url = item as? URL {
-//                // 情况 A: 分享的是一个文件路径 (URL)
-//                // 从磁盘读取图片
-//                if let data = try? Data(contentsOf: url) {
-//                    self.imageView.image = UIImage(data: data)
-//                }
-//            } else if let image = item as? UIImage {
-//                // 情况 B: 分享的直接是 UIImage 对象 (比如截屏)
-//                self.imageView.image = image
-//            } else if let data = item as? Data {
-//                // 情况 C: 分享的是二进制 Data
-//                self.imageView.image = UIImage(data: data)
-//            }
-//        }
-//    }

@@ -44,7 +44,7 @@ class ShareViewController: UIViewController {
     }
 
     private func loadKotlinPage(with item: NSExtensionItem) {
-        let kotlinVC = MainKt.ImageProcessingViewController(item: item)
+        let kotlinVC = MainKt.ImageProcessingViewController(item: item,exit: closeExtension)
         addChild(kotlinVC)
         view.addSubview(kotlinVC.view)
 
