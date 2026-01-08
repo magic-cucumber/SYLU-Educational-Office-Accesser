@@ -13,8 +13,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.eoa.theme.AppTheme
@@ -41,15 +44,17 @@ fun ImageProcessingApp(todo: ImageBitmap) = AppTheme(
                     .padding(16.dp), // 留出 10% 边框
                 contentAlignment = Alignment.Center
             ) {
-                val bottomInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
+                val bottomInset = with(WindowInsets.safeDrawing.asPaddingValues()) {
+                    (calculateTopPadding() + calculateLeftPadding(LocalLayoutDirection.current)) / 2
+                }
 
-                Surface(modifier = Modifier.wrapContentSize(), shape = RoundedCornerShape(bottomInset)) {
+                Surface(modifier = Modifier.wrapContentSize()) {
                     Image(
                         bitmap = todo,
                         contentDescription = "Cover Image",
                         // Fit 模式：保证不拉伸，至少一轴填满容器，且不裁剪
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.wrapContentSize()
+                        modifier = Modifier.wrapContentSize().clip(RoundedCornerShape(bottomInset))
                     )
 
 //                    // 文字现在是相对于“图片显示的实际大小”进行对齐
