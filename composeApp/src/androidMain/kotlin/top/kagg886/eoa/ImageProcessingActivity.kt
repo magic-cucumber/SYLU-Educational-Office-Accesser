@@ -60,7 +60,7 @@ class ImageProcessingActivity : ComponentActivity() {
                 return@setContent
             }
 
-            val sheetState = rememberModalBottomSheetState(false)
+            val sheetState = rememberModalBottomSheetState(true)
 
             var showSheet by remember { mutableStateOf(true) }
 
@@ -72,7 +72,7 @@ class ImageProcessingActivity : ComponentActivity() {
 
             if (showSheet) {
                 val configuration = with(LocalDensity.current) {
-                    LocalWindowInfo.current.containerSize.height.toDp() * 0.4f
+                    LocalWindowInfo.current.containerSize.height.toDp() * 0.8f
                 }
                 ModalBottomSheet(
                     onDismissRequest = { showSheet = false },
@@ -81,7 +81,8 @@ class ImageProcessingActivity : ComponentActivity() {
                     ImageProcessingApp(
                         modifier = Modifier.height(configuration),
                         background = BottomSheetDefaults.ContainerColor,
-                        todo =image!!
+                        todo = image!!,
+                        exit = { finish() }
                     )
                 }
             }
