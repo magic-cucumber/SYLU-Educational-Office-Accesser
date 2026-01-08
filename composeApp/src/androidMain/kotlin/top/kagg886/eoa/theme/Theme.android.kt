@@ -10,7 +10,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 internal actual fun SystemAppearance(isDark: Boolean) {
     val view = LocalView.current
     LaunchedEffect(isDark) {
-        val window = (view.context as Activity).window
+        val window = (view.context as? Activity)?.window ?: return@LaunchedEffect
         WindowInsetsControllerCompat(window, window.decorView).apply {
             isAppearanceLightStatusBars = isDark
             isAppearanceLightNavigationBars = isDark

@@ -140,7 +140,10 @@ fun ImageProcessingViewController(item: NSExtensionItem): UIViewController = Com
         return@ComposeUIViewController
     }
 
-    ImageProcessingApp(image.getOrThrow())
+    ImageProcessingApp(
+        modifier = Modifier.fillMaxSize(),
+        todo = image.getOrThrow()
+    )
 }
 
 //private func handleSharedImage() {

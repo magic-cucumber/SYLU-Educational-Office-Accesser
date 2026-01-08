@@ -7,17 +7,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.eoa.theme.AppTheme
@@ -30,13 +28,26 @@ import top.kagg886.eoa.theme.AppTheme
  */
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageProcessingApp(todo: ImageBitmap) = AppTheme(
+fun ImageProcessingApp(
+    modifier: Modifier = Modifier,
+    background: Color = MaterialTheme.colorScheme.background,
+    todo: ImageBitmap
+) = AppTheme(
     color = AppSettingsMMKV.color,
     nightTheme = isSystemInDarkTheme(),
 ) {
-    Surface(Modifier.fillMaxSize()) {
+    Surface(modifier, color = background) {
         Column(Modifier.fillMaxSize()) {
+            TopAppBar(
+                title = {
+                    Text("添加结果")
+                },
+                colors = TopAppBarDefaults.topAppBarColors().copy(
+                    containerColor = background
+                )
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -69,7 +80,6 @@ fun ImageProcessingApp(todo: ImageBitmap) = AppTheme(
                 }
             }
 
-            // --- 下半部分 (2/10) ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
