@@ -1,13 +1,14 @@
 package top.kagg886.backend.config
 
 import top.kagg886.mkmb.MMKV
+import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.sylu_eoa.api.v2.EOAClient
 import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.util.string
 
-private val mmkv = MMKV.mmkvWithID("login-properties")
+private val mmkv = MMKV.mmkvWithID("login-properties", mode = MMKVMode.MULTI_PROCESS)
 object AppLoginPropertiesMMKV : MMKV by mmkv,
     AppLoginPropertiesMMKVType {
     override var username: String by string("username", "")

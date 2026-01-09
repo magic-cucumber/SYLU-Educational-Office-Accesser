@@ -11,6 +11,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.serializersModuleOf
 import top.kagg886.mkmb.MMKV
+import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions
 import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions.SelectColumn
@@ -60,7 +61,7 @@ val ALL_SELECT_COLUMNS = listOf(
     SelectColumn.KCBJ(),      // 课程备注
 )
 
-object AppExportMMKV : MMKV by MMKV.mmkvWithID("class-export-settings"), AppExportMMKVType {
+object AppExportMMKV : MMKV by MMKV.mmkvWithID("class-export-settings", mode = MMKVMode.MULTI_PROCESS), AppExportMMKVType {
     override var columns: List<SelectColumn> by json("columns", ALL_SELECT_COLUMNS)
     override var selected: Set<SelectColumn> by json("selected", ALL_SELECT_COLUMNS.take(9).toSet())
     override fun reset() {

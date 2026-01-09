@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.mkmb.MMKV
+import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.util.ColorAsArgbSerializer
 import top.kagg886.util.DurationAsMillsSerializer
@@ -14,7 +15,7 @@ import top.kagg886.util.json
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
-object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings"), AppSettingsMMKVType {
+object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings", mode = MMKVMode.MULTI_PROCESS), AppSettingsMMKVType {
     override var theme: AppSettingsMMKVType.AppTheme by json(
         "theme",
         AppSettingsMMKVType.AppTheme.SystemDefault

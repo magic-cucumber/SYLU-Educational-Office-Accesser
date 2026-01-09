@@ -1,6 +1,7 @@
 package top.kagg886.backend.config
 
 import top.kagg886.mkmb.MMKV
+import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.util.string
 
@@ -11,7 +12,7 @@ import top.kagg886.util.string
  * ================================================
  */
 
-object AppAiMMKV : MMKV by MMKV.mmkvWithID("ai-setting"), AppAiMMKVType {
+object AppAiMMKV : MMKV by MMKV.mmkvWithID("ai-setting", mode = MMKVMode.MULTI_PROCESS), AppAiMMKVType {
     override var endpoint: String by string("endpoint", "")
     override var apiKey: String by string("api-key", "")
     override var model: String by string("model", "")

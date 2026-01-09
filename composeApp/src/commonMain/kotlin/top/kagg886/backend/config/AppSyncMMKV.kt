@@ -1,13 +1,14 @@
 package top.kagg886.backend.config
 
 import top.kagg886.mkmb.MMKV
+import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
 import top.kagg886.sylu_eoa.api.v2.bean.TermResult
 import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
 import top.kagg886.util.jsonOrNull
 
-object AppSyncMMKV : MMKV by MMKV.mmkvWithID("app-sync-config"), AppSyncMMKVType {
+object AppSyncMMKV : MMKV by MMKV.mmkvWithID("app-sync-config", mode = MMKVMode.MULTI_PROCESS), AppSyncMMKVType {
     override var profile: UserProfile? by jsonOrNull("profile")
     override var picker: TermResult? by jsonOrNull("picker")
     override var calender: SchoolCalender? by jsonOrNull("school-calender")

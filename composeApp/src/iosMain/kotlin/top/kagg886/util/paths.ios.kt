@@ -2,20 +2,12 @@ package top.kagg886.util
 
 import okio.Path
 import okio.Path.Companion.toPath
-import platform.Foundation.NSDocumentDirectory
-import platform.Foundation.NSSearchPathForDirectoriesInDomains
+import platform.Foundation.NSFileManager
 import platform.Foundation.NSTemporaryDirectory
-import platform.Foundation.NSUserDomainMask
 
 actual val dataPath: Path by lazy {
-    val path = NSSearchPathForDirectoriesInDomains(
-        directory = NSDocumentDirectory,
-        domainMask = NSUserDomainMask,
-        true,
-    )
-    with(Path) {
-        path[0]!!.toString().toPath()
-    }
+    //需要在 Signing & Capabilities 里配置
+    NSFileManager.defaultManager.containerURLForSecurityApplicationGroupIdentifier("group.top.kagg886.eoa.iosApp.shared")!!.path!!.toPath()
 }
 actual val cachePath: Path by lazy {
     NSTemporaryDirectory().toPath()
