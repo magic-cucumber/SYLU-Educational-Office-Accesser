@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		5ADD07962F0F819700668CD4 /* ImageProcessing.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5AF1D2392F1D04DD003100F7 /* sqlite3.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AF1D2382F1D04DD003100F7 /* sqlite3.xcframework */; };
+		5AF1D23A2F1D04DD003100F7 /* sqlite3.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AF1D2382F1D04DD003100F7 /* sqlite3.xcframework */; };
 		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 		A93A954229CC810D00F8E227 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A954129CC810D00F8E227 /* Preview Assets.xcassets */; };
@@ -40,6 +42,7 @@
 /* Begin PBXFileReference section */
 		5A3311852F10883300B8BC53 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
 		5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ImageProcessing.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5AF1D2382F1D04DD003100F7 /* sqlite3.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = sqlite3.xcframework; sourceTree = "<group>"; };
 		A93A953729CC810C00F8E227 /* SYLU-EOA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SYLU-EOA.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -57,18 +60,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5ADD078D2F0F819700668CD4 /* ImageProcessing */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = ImageProcessing;
-			sourceTree = "<group>";
-		};
+		5ADD078D2F0F819700668CD4 /* ImageProcessing */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ImageProcessing; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5AF1D2392F1D04DD003100F7 /* sqlite3.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +76,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5AF1D23A2F1D04DD003100F7 /* sqlite3.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,6 +124,7 @@
 		C4127409AE3703430489E7BC /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5AF1D2382F1D04DD003100F7 /* sqlite3.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

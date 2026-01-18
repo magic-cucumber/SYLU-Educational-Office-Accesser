@@ -105,13 +105,6 @@ jobs:
       - name: Install Rust Toolchain
         run: rustup default 1.86.0 && rustup target add aarch64-apple-ios && rustup component add rustfmt clippy
 
-      - name: Build Sqlite
-        run: |
-          cd libsqlite
-          chmod +x build.sh
-          ./build.sh
-          cd ../
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
