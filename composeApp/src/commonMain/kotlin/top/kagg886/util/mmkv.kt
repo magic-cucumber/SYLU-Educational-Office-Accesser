@@ -31,7 +31,7 @@ class DirectMMKVDelegate<T>(
     }
 }
 
-fun initializeMMKV() = MMKV.initialize(dataPath.resolve("config").absolutePath().toString()) {
+fun initializeMMKV() = if (!MMKV.initialized) MMKV.initialize(dataPath.resolve("config").absolutePath().toString()) {
     logFunc = { level, tag, it ->
         logger.log(
             severity = when (level) {
@@ -46,7 +46,7 @@ fun initializeMMKV() = MMKV.initialize(dataPath.resolve("config").absolutePath()
             throwable = null
         )
     }
-}
+} else Unit
 
 fun MMKV.string(key: String, default: String = "") =
     DirectMMKVDelegate(this, key, default, MMKV::getString, MMKV::set)
