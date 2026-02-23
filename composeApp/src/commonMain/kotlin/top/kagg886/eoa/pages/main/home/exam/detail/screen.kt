@@ -1,6 +1,5 @@
 package top.kagg886.eoa.pages.main.home.exam.detail
 
-import ai.koog.prompt.text.text
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

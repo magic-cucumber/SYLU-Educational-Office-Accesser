@@ -46,7 +46,6 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.material.icons.extended)
-            implementation(libs.koog.agents)
 
             implementation(libs.adaptive)
             implementation(libs.adaptive.navigation.suite)

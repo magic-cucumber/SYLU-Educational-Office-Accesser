@@ -1,7 +1,6 @@
 package top.kagg886.eoa
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +47,7 @@ import top.kagg886.eoa.theme.AppTheme
  */
 
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImageProcessingApp(
     modifier: Modifier = Modifier,
@@ -65,9 +64,9 @@ fun ImageProcessingApp(
                 title = {
                     Text("效果预览")
                 },
-                subtitle = {
-                    Text("若要修改效果，请前往 SYLU-EOA 系统设置")
-                },
+//                subtitle = {
+//                    Text("若要修改效果，请前往 SYLU-EOA 系统设置")
+//                },
                 colors = TopAppBarDefaults.topAppBarColors().copy(
                     containerColor = background
                 )
