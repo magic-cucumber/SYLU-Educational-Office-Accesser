@@ -25,6 +25,7 @@ import top.kagg886.eoa.vpn.internal.aes
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
+import kotlin.io.encoding.Base64
 import kotlin.time.Clock
 
 /**
@@ -124,7 +125,7 @@ class VPNClient(private val username: String, private val password: String) : Au
                     val errorMsg: String,
                 )
 
-                val captcha = captchaHandler(slider.bigImage.decodeBase64Bytes(), slider.smallImage.decodeBase64Bytes())
+                val captcha = captchaHandler(Base64.decode(slider.bigImage), Base64.decode(slider.smallImage))
                 checkNotNull(captcha) {
                     "the system required captcha but user cancelled"
                 }

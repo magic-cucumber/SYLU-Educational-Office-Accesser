@@ -3,7 +3,7 @@ package top.kagg886.util
 import kotlinx.datetime.*
 import kotlinx.datetime.format.char
 import top.kagg886.sylu_eoa.api.v2.bean.SchoolCalender
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlinx.datetime.format.DateTimeComponents
 import kotlin.time.ExperimentalTime
 
@@ -65,7 +65,7 @@ val ChinaDateFormater = LocalDateTime.Format {
     char('-')
     monthNumber()
     char('-')
-    dayOfMonth()
+    day()
     char(' ')
     hour()
     char(':')
@@ -78,7 +78,7 @@ val ChinaTimeFormater = DateTimeComponents.Format {
     char('-')
     monthNumber()
     char('-')
-    dayOfMonth()
+    day()
     char(' ')
     hour()
     char(':')

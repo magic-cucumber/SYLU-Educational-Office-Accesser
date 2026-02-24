@@ -23,7 +23,7 @@ import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.AppLogDao
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.logger
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost<LogcatState, LogcatSideEffect> {
     override val container: Container<LogcatState, LogcatSideEffect> = container(LogcatState.Loading) { all().join() }

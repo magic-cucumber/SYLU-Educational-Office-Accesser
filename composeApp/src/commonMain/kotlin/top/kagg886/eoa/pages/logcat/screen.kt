@@ -144,7 +144,7 @@ private fun LogcatScreenContent(
                             message = { Text("暂无日志") },
                             modifier = Modifier.fillMaxWidth().weight(1f)
                         )
-                        return
+                        return@Column
                     }
 
                     LazyColumn(

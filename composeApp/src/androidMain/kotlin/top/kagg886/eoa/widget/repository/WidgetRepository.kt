@@ -4,7 +4,7 @@ import co.touchlab.kermit.Severity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.databaseBuilder

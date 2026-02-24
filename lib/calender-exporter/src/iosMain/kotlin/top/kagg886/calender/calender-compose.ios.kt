@@ -10,6 +10,7 @@ import platform.EventKit.*
 import platform.Foundation.*
 import top.kagg886.calender.data.Event
 import top.kagg886.util.asTaggedLogger
+import kotlin.time.Instant
 
 @OptIn(ExperimentalForeignApi::class)
 internal class EKCalenderManager(private val accountName: String) : NativeCalenderManager {

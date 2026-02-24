@@ -28,13 +28,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
-import com.materialkolor.ktx.of
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalTime
 import kotlinx.serialization.Serializable
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
@@ -52,7 +49,6 @@ import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
-import top.kagg886.backend.database.dao.CourseExtendEntity
 
 @Serializable
 data object SummaryRoute

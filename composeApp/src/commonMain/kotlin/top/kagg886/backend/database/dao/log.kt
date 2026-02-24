@@ -4,10 +4,9 @@ import androidx.paging.PagingSource
 import androidx.room.*
 import androidx.room.ColumnInfo.Companion.INTEGER
 import co.touchlab.kermit.Severity
-import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDateTime
-import top.kagg886.backend.database.converters.TimeConverter
 import top.kagg886.backend.database.converters.SeverityConverter
+import top.kagg886.backend.database.converters.TimeConverter
+import kotlin.time.Instant
 
 @Entity(tableName = "log")
 @TypeConverters(TimeConverter::class, SeverityConverter::class)

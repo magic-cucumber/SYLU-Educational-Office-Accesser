@@ -1,7 +1,7 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room.*
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 @Entity(tableName = "sync_records")
 data class SyncRecordEntity(

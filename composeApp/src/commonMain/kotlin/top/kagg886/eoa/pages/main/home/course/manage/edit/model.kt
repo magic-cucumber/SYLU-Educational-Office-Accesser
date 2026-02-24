@@ -560,10 +560,22 @@ class CourseEditModel(
                     })
                 }.body<JsonObject>()
 
+                if (resp["error"] !== null) {
+                    val errorMessage = resp["error"]
+                        ?.jsonObject["message"]
+                        ?.jsonPrimitive?.content
+                        ?: "未知错误"
 
-                val respString =
-                    resp["choices"]?.jsonArray[0]?.jsonObject["message"]?.jsonObject["content"]?.jsonPrimitive?.content
-                        ?: error("找不到预期的返回。\n$resp")
+                    throw IllegalArgumentException("error occurred: $errorMessage")
+                }
+
+
+                val respString = resp["choices"]
+                    ?.jsonArray[0]
+                    ?.jsonObject["message"]
+                    ?.jsonObject["content"]
+                    ?.jsonPrimitive?.content
+                    ?: error("找不到预期的返回。\n$resp")
 
                 Json.decodeFromString<CourseAddReturn>(respString)
             } catch (ex: Exception) {

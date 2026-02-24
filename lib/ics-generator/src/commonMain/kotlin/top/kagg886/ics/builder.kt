@@ -6,7 +6,7 @@ import kotlinx.datetime.toLocalDateTime
 import top.kagg886.ics.data.*
 import top.kagg886.ics.util.IcsWriter
 import kotlin.properties.Delegates
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi

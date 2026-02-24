@@ -12,7 +12,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class CourseManageListModel(
     private val syncState: MainRouteViewState,

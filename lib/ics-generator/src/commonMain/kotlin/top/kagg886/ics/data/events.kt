@@ -159,7 +159,7 @@ internal fun formatDateTime(dateTime: LocalDateTime, isAllDay: Boolean = false):
     LocalDateTime.Format {
         year()
         monthNumber()
-        dayOfMonth()
+        day()
         if (!isAllDay) {
             char('T')
             hour()
@@ -195,57 +195,57 @@ internal fun formatText(text: String): String {
 
 /**
  * 将 Kotlin Duration 转换为 ISO 8601 格式的字符串
- * 
+ *
  * 用于 ICS 提醒的 trigger 时间和事件的 duration 字段。
  * 支持负数表示事件开始前的时间。
- * 
+ *
  * @param duration Kotlin Duration 对象
  * @param isNegative 是否为负数（事件开始前），默认为 false
  * @return ISO 8601 格式的持续时间字符串
- * 
+ *
  * 示例：
  * - Duration.parse("PT15M") -> "PT15M"
- * - Duration.parse("PT1H") -> "PT1H"  
+ * - Duration.parse("PT1H") -> "PT1H"
  * - Duration.parse("P1D") -> "P1D"
  * - 负数时间：formatDuration(Duration.parse("PT15M"), true) -> "-PT15M"
  */
 internal fun formatDuration(duration: Duration, isNegative: Boolean = false): String {
     return duration.toComponents { days, hours, minutes, seconds, _ ->
         val result = StringBuilder()
-        
+
         // 添加负号（如果需要）
         if (isNegative) result.append("-")
-        
+
         // ISO 8601 格式总是以 P 开头
         result.append("P")
-        
+
         // 添加日期部分
         if (days > 0) {
             result.append("${days}D")
         }
-        
+
         // 确定是否需要时间部分
         val hasTime = hours > 0 || minutes > 0 || seconds > 0 || (days == 0L)
-        
+
         if (hasTime) {
             result.append("T")
-            
+
             // 添加小时
             if (hours > 0) {
                 result.append("${hours}H")
             }
-            
+
             // 添加分钟
             if (minutes > 0) {
                 result.append("${minutes}M")
             }
-            
+
             // 添加秒（如果有秒，或者这是一个零持续时间）
             if (seconds > 0 || (days == 0L && hours == 0 && minutes == 0)) {
                 result.append("${seconds}S")
             }
         }
-        
+
         result.toString()
     }
 }

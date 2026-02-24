@@ -5,7 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -19,7 +19,7 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.util.asTaggedLogger
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
@@ -223,7 +223,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                     message = "登录凭证已过期！请重新登录"
                 )
             )
-            clear()
+            clear0()
             delay(3.seconds)
             postSideEffect(
                 MainRouteViewEffect.NavigateToLogin
@@ -245,7 +245,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
         }
     }
 
-    private suspend fun clear() {
+    private suspend fun clear0() {
         AppLoginPropertiesMMKV.clear()
         AppSyncMMKV.clear()
         database.examDao().clear()
@@ -258,7 +258,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
 
     fun logout() = intent {
         logger.i("开始登出")
-        clear()
+        clear0()
         postSideEffect(
             MainRouteViewEffect.Toast(
                 type = SnackBarType.Success,

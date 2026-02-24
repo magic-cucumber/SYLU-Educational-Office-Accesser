@@ -37,7 +37,7 @@ private object NotStandardISOLocalDateTimeSerializer : KSerializer<LocalDateTime
         char('-')
         monthNumber()
         char('-')
-        dayOfMonth()
+        day()
         char(' ')
         hour()
         char(':')

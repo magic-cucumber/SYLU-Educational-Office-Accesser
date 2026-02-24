@@ -26,6 +26,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.format.char
+import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -159,7 +160,7 @@ private fun CoursePageScreenSuccess(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "${state.thisWeekStartDate.monthNumber}月",
+                        text = "${state.thisWeekStartDate.month.number}月",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -359,7 +360,7 @@ private fun CoursePageScreenSuccess(
 private val OnlyMonthAndDayFormat = LocalDate.Format {
     monthNumber()
     char('-')
-    dayOfMonth()
+    day()
 }
 
 val cardHeight = 110.dp  // 每节课高度

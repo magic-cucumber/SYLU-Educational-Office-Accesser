@@ -40,7 +40,7 @@ val HttpResponseCharset = createClientPlugin("HTTPResponseCharset") {
 
         proceedWith(
             SavedHttpResponse(
-                call = response.call,
+                call = response.call as SavedHttpCall,
                 body = doc,
                 origin = response
             )

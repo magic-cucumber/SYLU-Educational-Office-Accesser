@@ -1,7 +1,7 @@
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.lifecycle.ViewModel
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container

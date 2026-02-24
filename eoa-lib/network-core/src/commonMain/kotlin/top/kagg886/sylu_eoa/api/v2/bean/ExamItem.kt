@@ -122,7 +122,7 @@ private val ChinaDateFormater = LocalDateTime.Format {
     char('-')
     monthNumber()
     char('-')
-    dayOfMonth()
+    day()
     char(' ')
     hour()
     char(':')

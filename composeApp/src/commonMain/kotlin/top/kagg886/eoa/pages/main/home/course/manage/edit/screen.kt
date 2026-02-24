@@ -21,6 +21,7 @@ import com.dokar.sonner.rememberToasterState
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -373,7 +374,7 @@ private fun CourseEditTime(
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                     Text(
-                                        "${currentDate.monthNumber}/${currentDate.dayOfMonth}",
+                                        "${currentDate.month.number}/${currentDate.day}",
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 }

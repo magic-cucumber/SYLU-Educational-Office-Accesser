@@ -1,7 +1,7 @@
 package top.kagg886.backend.database.converters
 
 import androidx.room.TypeConverter
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
 
 class TimeConverter {

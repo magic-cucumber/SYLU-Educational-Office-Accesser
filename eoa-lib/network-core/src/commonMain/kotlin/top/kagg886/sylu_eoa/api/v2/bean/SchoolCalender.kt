@@ -2,7 +2,7 @@ package top.kagg886.sylu_eoa.api.v2.bean
 
 import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @Serializable
