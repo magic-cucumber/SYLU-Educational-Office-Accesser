@@ -21,11 +21,11 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import sylu_eoa.composeapp.generated.resources.Res
@@ -72,7 +72,7 @@ fun WelcomeScreen() {
 @Preview
 @Composable
 private fun WelcomeScreenContent(
-    state: WelcomeViewModelState,
+    state: WelcomeViewModelState = WelcomeViewModelState.Empty,
     onNavigateToMain: () -> Unit = {},
     onShowDonationDialog: () -> Unit = {},
     onHideDonationDialog: () -> Unit = {},

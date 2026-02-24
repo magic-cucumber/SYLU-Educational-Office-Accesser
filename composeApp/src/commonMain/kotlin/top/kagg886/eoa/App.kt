@@ -1,9 +1,7 @@
 package top.kagg886.eoa
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,8 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation.NavDeepLinkRequest
@@ -41,16 +37,11 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.theme.AppTheme
-import top.kagg886.eoa.util.BackHandler
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
-import top.kagg886.util.Platform
-import top.kagg886.util.asTaggedLogger
-import top.kagg886.util.current
-import top.kagg886.util.logger
-import top.kagg886.util.useDesugarApi
+import top.kagg886.util.*
 
 val LocalNavController = staticCompositionLocalOf<NavHostController> {
     error("not provided")
