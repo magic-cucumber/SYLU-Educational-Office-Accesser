@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.Severity.*
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import kotlinx.datetime.format
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -79,7 +81,7 @@ fun LogcatScreen() {
 private fun LogcatScreenContent(
     modifier: Modifier = Modifier,
     state: LogcatState,
-    onTestButtonClicked: ()->Unit = {},
+    onTestButtonClicked: () -> Unit = {},
     onExportButtonClicked: () -> Unit = {},
     onClearButtonClicked: () -> Unit = {},
 ) = when (state) {
@@ -100,6 +102,25 @@ private fun LogcatScreenContent(
 
             else -> {
                 val scrollState = rememberLazyListState()
+
+                val isAtBottom by remember {
+                    derivedStateOf {
+                        scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0
+                    }
+                }
+
+                LaunchedEffect(data) {
+                    var previousCount = data.itemCount
+                    snapshotFlow { data.itemCount to isAtBottom }
+                        .distinctUntilChanged()
+                        .collect { (count, atBottom) ->
+                            if (atBottom && !scrollState.isScrollInProgress && count > previousCount) {
+                                scrollState.animateScrollToItem(0)
+                            }
+                            previousCount = count
+                        }
+                }
+
                 Column(modifier) {
                     TopAppBar(
                         title = {
@@ -270,7 +291,7 @@ private fun LogItem(log: AppLog) {
 private fun LogcatScreenActions(
     modifier: Modifier = Modifier,
     show: Boolean,
-    onTestButtonClicked: ()-> Unit,
+    onTestButtonClicked: () -> Unit,
     onDismiss: () -> Unit,
     onExportButtonClicked: () -> Unit,
     onClearButtonClicked: () -> Unit

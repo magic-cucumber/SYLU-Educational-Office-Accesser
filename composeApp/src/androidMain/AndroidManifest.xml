@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-sdk tools:overrideLibrary="com.mohamedrejeb.compose.dnd, top.kagg886.mkmb, top.kagg886.mkmb.android" />
+    <uses-sdk tools:overrideLibrary="com.mohamedrejeb.compose.dnd, top.kagg886.mkmb, top.kagg886.mkmb.android, com.dokar.sonner.core" />
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="SYLU-EOA"

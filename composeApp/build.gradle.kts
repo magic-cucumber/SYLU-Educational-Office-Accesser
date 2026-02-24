@@ -137,7 +137,7 @@ configurations.configureEach {
 
 android {
     namespace = "top.kagg886.eoa"
-    compileSdk = 35
+    compileSdk = 36
 
     if (useDesugarApi) {
         compileOptions {

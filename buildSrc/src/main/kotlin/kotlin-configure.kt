@@ -48,7 +48,7 @@ fun Project.android(module: String, configure: LibraryExtension.() -> Unit = {})
     (this as ExtensionAware).extensions.configure("android", Action<LibraryExtension> {
         namespace = "top.kagg886.$module"
 
-        compileSdk = 35
+        compileSdk = 36
         defaultConfig {
             minSdk = if (useDesugarApi) 23 else 28
         }
