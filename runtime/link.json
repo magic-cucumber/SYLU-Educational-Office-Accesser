@@ -3,6 +3,16 @@
     "name": "团委网",
     "url": "http://xg.sylu.edu.cn/SyluTW/Sys/UserLogin.aspx",
     "description": "使用此功能需要连接校园网。\n初始密码组合：\n1. SYLU+身份证后六位+!@#\n 2. 学号\n3. 身份证后六位。\n注意：遗忘密码请寻找本班团支书。"
+  },
+  {
+    "name": "校园VPN",
+    "url": "https://webvpn.sylu.edu.cn",
+    "description": "登录后可以免校园网访问校内网站。如第二课堂，图书馆系统等。\n若发现访问人数过多，则稍后登录即可。"
+  },
+  {
+    "name": "教育邮箱登录",
+    "url": "https://email.sylu.edu.cn",
+    "description": "教育邮箱网页版，隶属于网易企业邮箱。\n申请密码时请前往\\'今日校园\\'申请。"
   }
 ]
 
