@@ -19,6 +19,7 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.ksp)
     alias(libs.plugins.buildConfig)
+    id("com.google.osdetector") version "1.7.3"
 }
 
 kotlin {
@@ -86,7 +87,8 @@ kotlin {
             implementation(libs.compose.placeholder.material3)
             implementation(libs.filekit.dialog)
             implementation(libs.compose.dnd)
-//            implementation(libs.reveal.core)
+
+            implementation(libs.lexilabs.basic.sound)
 
             implementation(project(":util"))
             //方便切换到闭源后端
