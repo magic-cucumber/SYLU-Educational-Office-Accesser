@@ -311,7 +311,7 @@ private fun SettingScreenContent(
                                             .size(64.dp)
                                             .rotate(rotation.value)
                                             .clip(CircleShape)
-                                            .clickable(interactionSource = MutableInteractionSource(), enabled = state != AudioState.PLAYING) { player.play() },
+                                            .clickable(interactionSource = MutableInteractionSource(), enabled = state != AudioState.PLAYING && isApril) { player.play() },
                                         contentScale = ContentScale.Crop,
                                     )
 
