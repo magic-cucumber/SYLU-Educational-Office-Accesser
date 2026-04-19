@@ -26,7 +26,7 @@ interface CourseExtendDao {
     @Query("DELETE FROM courses_extend WHERE yearCode = :xnm AND semesterCode = :xqm")
     suspend fun clear(xnm: String, xqm: String)
 
-    @Query("DELETE FROM courses")
+    @Query("DELETE FROM courses_extend")
     suspend fun clearAll()
 
     @Query("SELECT * FROM courses_extend WHERE (:weekNumber IS NULL OR weekNumber = :weekNumber)")
