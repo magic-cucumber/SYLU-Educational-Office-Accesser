@@ -87,7 +87,7 @@ jobs:
           if-no-files-found: error
 
   build-ios:
-    runs-on: macos-26-arm64
+    runs-on: macos-14
     permissions:
       contents: read
     steps:
@@ -109,12 +109,12 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Switch XCode
-        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
 
       - name: Build with Gradle Wrapper
         run: |
-          export PATH=/Applications/Xcode_26.4.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/lib:$PATH
-          export LIBRARY_PATH="$LIBRARY_PATH:/Applications/Xcode_26.4.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/lib"
+          export PATH=/Applications/Xcode_16.2.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/lib:$PATH
+          export LIBRARY_PATH="$LIBRARY_PATH:/Applications/Xcode_16.2.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/usr/lib"
           ./gradlew buildReleaseIpa
 
       - name: Rename artifact
