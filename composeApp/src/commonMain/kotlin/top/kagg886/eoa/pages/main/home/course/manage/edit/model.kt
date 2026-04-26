@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import androidx.lifecycle.ViewModel
 import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
@@ -206,7 +207,7 @@ class CourseEditModel(
     }
 
     fun generateCourseByImage() = intent {
-        val picker = FileKit.openFilePicker(type = FileKitType.Image, title = "选择AI要读取的图片")
+        val picker = FileKit.openFilePicker(type = FileKitType.Image, dialogSettings = FileKitDialogSettings.createDefault())
 
         if (picker == null) {
             postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Warning, "请选择图片！"))
