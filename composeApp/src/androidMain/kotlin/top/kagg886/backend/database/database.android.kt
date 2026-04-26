@@ -1,7 +1,7 @@
 package top.kagg886.backend.database
 
-import androidx.room.Room
-import androidx.room.RoomDatabase
+import androidx.room3.Room
+import androidx.room3.RoomDatabase
 import top.kagg886.eoa.EOAApplication
 
 actual fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {

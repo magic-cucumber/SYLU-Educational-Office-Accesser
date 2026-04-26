@@ -1,8 +1,9 @@
 package top.kagg886.backend.database.dao
 
 import androidx.paging.PagingSource
-import androidx.room.*
-import androidx.room.ColumnInfo.Companion.INTEGER
+import androidx.room3.*
+import androidx.room3.ColumnInfo.Companion.INTEGER
+import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import co.touchlab.kermit.Severity
 import top.kagg886.backend.database.converters.SeverityConverter
 import top.kagg886.backend.database.converters.TimeConverter
@@ -22,6 +23,7 @@ data class AppLog(
 )
 
 @Dao
+@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
 interface AppLogDao {
     @Insert
     suspend fun insert(item: AppLog)

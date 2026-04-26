@@ -1,6 +1,6 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.*
+import androidx.room3.*
 
 /**
  * ================================================

@@ -1,12 +1,12 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.PrimaryKey
-import androidx.room.Query
+import androidx.room3.Dao
+import androidx.room3.Entity
+import androidx.room3.ForeignKey
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
+import androidx.room3.PrimaryKey
+import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
 
@@ -56,4 +56,3 @@ fun GPAEntity.toItem() = GPAScore(
     name = name,
     score = score
 )
-

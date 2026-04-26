@@ -1,6 +1,6 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.*
+import androidx.room3.*
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -56,4 +56,3 @@ interface CourseDao {
     @Delete
     suspend fun delete(item: CourseEntity)
 }
-

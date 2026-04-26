@@ -1,6 +1,6 @@
 package top.kagg886.backend.database.converters
 
-import androidx.room.TypeConverter
+import androidx.room3.TypeConverter
 import kotlinx.serialization.json.Json
 
 class ExamConverter {

@@ -1,7 +1,7 @@
 package top.kagg886.backend.database
 
-import androidx.room.Room
-import androidx.room.RoomDatabase
+import androidx.room3.Room
+import androidx.room3.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
 actual fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {

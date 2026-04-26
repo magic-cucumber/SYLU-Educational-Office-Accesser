@@ -1,6 +1,6 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room.*
+import androidx.room3.*
 import kotlinx.datetime.LocalDateTime
 import top.kagg886.backend.database.converters.ExamConverter
 import top.kagg886.backend.database.converters.TimeConverter

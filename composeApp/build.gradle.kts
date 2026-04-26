@@ -248,7 +248,7 @@ buildConfig {
     buildConfigField("GIT_COMMIT_SHA", "123456")
 }
 
-room {
+room3 {
     schemaDirectory("$projectDir/schemas")
 }
 
