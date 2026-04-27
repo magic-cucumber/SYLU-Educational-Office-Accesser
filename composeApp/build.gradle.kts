@@ -87,6 +87,7 @@ kotlin {
             implementation(libs.compose.placeholder.material3)
             implementation(libs.filekit.dialog)
             implementation(libs.compose.dnd)
+            implementation(libs.koog.agents)
 
             implementation(libs.lexilabs.basic.sound)
 
@@ -135,6 +136,12 @@ kotlin {
 
 configurations.configureEach {
     exclude(group = "io.ktor", module = "ktor-client-cio")
+    resolutionStrategy.eachDependency {
+        if (requested.group == "io.ktor") {
+            useVersion(libs.versions.ktor.get())
+            because("Kotlin/Native linking fails when ai.koog pulls older Ktor server modules than the app's Ktor client stack")
+        }
+    }
 }
 
 android {

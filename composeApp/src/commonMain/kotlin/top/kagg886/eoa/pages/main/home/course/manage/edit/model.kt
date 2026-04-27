@@ -1,23 +1,32 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
+import ai.koog.agents.core.tools.annotations.LLMDescription
+import ai.koog.prompt.dsl.ContentPartsBuilder
+import ai.koog.prompt.dsl.prompt
+import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
+import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
+import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
+import ai.koog.prompt.message.AttachmentContent
+import ai.koog.prompt.message.ContentPart
+import ai.koog.prompt.executor.model.StructureFixingParser
+import ai.koog.prompt.executor.model.executeStructured
+import ai.koog.prompt.structure.StructuredRequest
+import ai.koog.prompt.structure.StructuredRequestConfig
+import ai.koog.prompt.structure.json.JsonStructure
+import ai.koog.prompt.structure.json.generator.StandardJsonSchemaGenerator
 import androidx.lifecycle.ViewModel
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import top.kagg886.util.http.HttpClient
 import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
@@ -29,9 +38,8 @@ import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
-import top.kagg886.util.http.HttpClient
-import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
+import top.kagg886.util.logger as kermit
 
 class CourseEditModel(
     database: AppDatabase,
@@ -199,9 +207,10 @@ class CourseEditModel(
             )
         )
 
-        val sub = generateCourseByAIInternal(
-            JsonPrimitive("请解析以下课程描述并输出符合 CourseAddReturn 的 JSON:\n$it")
-        )
+        val sub = generateCourseByAIInternal {
+            text("请解析以下课程描述并输出符合 CourseAddReturn 的 JSON:")
+            text(it)
+        }
 
         sub.join()
     }
@@ -223,21 +232,17 @@ class CourseEditModel(
 
         val byt = picker.readBytes()
 
-        val sub = generateCourseByAIInternal(
-            buildJsonArray {
-                addJsonObject {
-                    put("type", "text")
-                    put("content", "请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:")
-                }
-
-                addJsonObject {
-                    put("type", "image_url")
-                    putJsonObject("image_url") {
-                        put("url", "data:image/png;base64,${Base64.encode(byt)}")
-                    }
-                }
-            }
-        )
+        val sub = generateCourseByAIInternal {
+            text("请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:")
+            image(
+                ContentPart.Image(
+                    content = AttachmentContent.Binary.Bytes(byt),
+                    format = "png",
+                    mimeType = "image/png",
+                    fileName = "capture.png"
+                )
+            )
+        }
 
         sub.join()
     }
@@ -275,7 +280,7 @@ class CourseEditModel(
     )
 
     @OptIn(OrbitExperimental::class)
-    private fun generateCourseByAIInternal(build: JsonElement) = intent {
+    private fun generateCourseByAIInternal(build: ContentPartsBuilder.() -> Unit) = intent {
         runOn<CourseEditState.Success> {
             reduce {
                 state.copy(
@@ -284,47 +289,50 @@ class CourseEditModel(
                 )
             }
 
-            val agent = HttpClient {
-                install(Logging) {
-                    logger = this@CourseEditModel.logger.asKtorLogger
-                    level = LogLevel.ALL
-                }
-
-                install(ContentNegotiation) {
-                    json(
-                        Json {
-                            ignoreUnknownKeys = true
+            // 按 Koog 0.8.0 文档，使用 MultiLLMPromptExecutor + executeStructured 获取结构化结果。
+            val agent = MultiLLMPromptExecutor(
+                OpenAILLMClient(
+                    apiKey = state.aiKey,
+                    settings = OpenAIClientSettings(
+                        baseUrl = state.aiEndpoint,
+                    ),
+                    baseClient = HttpClient {
+                        install(Logging) {
+                            logger = this@CourseEditModel.logger.asKtorLogger
+                            level = LogLevel.ALL
                         }
-                    )
-                }
-
-                defaultRequest {
-                    url(state.aiEndpoint)
-                    headers {
-                        append("Authorization", "Bearer ${state.aiKey}")
                     }
-                }
-            }
-            addCloseable(agent)
+                )
+            )
 
-            val (course, record) = try {
+            val response = runCatching {
                 val app = AppSyncMMKV.calender!!
-                val resp = agent.post("/v1/chat/completions") {
-                    contentType(ContentType.Application.Json)
-                    setBody(buildJsonObject {
-                        put("model", state.aiModel)
-                        put("stream", false)
-                        putJsonArray("messages") {
-                            add(buildJsonObject {
-                                put("role", "system")
-                                put(
-                                    "content", """
+                coroutineScope {
+                    val displayJob = launch {
+                        var cnt = 1
+                        while (true) {
+                            cnt = (cnt + 1) % 4
+                            delay(1.seconds)
+                            reduce {
+                                state.copy(
+                                    aiGenerating = (1..cnt).joinToString("") { "." }
+                                )
+                            }
+                        }
+                    }
+
+                    try {
+                        agent.executeStructured(
+                            prompt = prompt("structured-data") {
+                                system(
+                                    content = """
                                     你是课程信息提取Agent，将自然语言描述转为符合CourseAddReturn JSON Schema的结构化数据。
 
                                     ## 原则
                                     1. 仅提取输入中明确提到的信息，不推测、不补全。
                                     2. 缺失信息填null，不能虚构。
                                     3. 每个record仅对应一个weekNumber。
+
                                     ## 字段定义
                                     course:
                                     - name: 课程名（必须完整）
@@ -353,249 +361,30 @@ class CourseEditModel(
                                     - 无课程信息 → course = null
                                     - 无时间安排 → record = []
                                     - 输出严格符合CourseAddReturn结构，不能添加任何解释或多余字符
-                                """.trimIndent()
+                        )
+                                    """.trimIndent()
                                 )
-                            })
 
-                            add(buildJsonObject {
-                                put("role", "user")
-                                put("content", build)
-                            })
-
-                            add(buildJsonObject {
-                                put("role", "user")
-                                put(
-                                    "content", $$"""
-                                    ## NEXT MESSAGE OUTPUT FORMAT
-                                    The output in the next message MUST ADHERE TO CourseAddReturn format.
-
-                                    ### DEFINITION OF CourseAddReturn
-                                    The CourseAddReturn format is defined only and solely with JSON, without any additional characters, comments, backticks or anything similar.
-
-                                    You must adhere to the following JSON schema:
-                                    {
-                                        "$id": "CourseAddReturn",
-                                        "$defs": {
-                                            "LLMCourseReturn?": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "name": {
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ],
-                                                        "description": "课程名称，如'高等数学'"
-                                                    },
-                                                    "teacherName": {
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ],
-                                                        "description": "任课教师姓名，如'张教授'"
-                                                    },
-                                                    "classroomName": {
-                                                        "type": [
-                                                            "string",
-                                                            "null"
-                                                        ],
-                                                        "description": "上课教室，如'教学楼A101'"
-                                                    },
-                                                    "credits": {
-                                                        "type": [
-                                                            "number",
-                                                            "null"
-                                                        ],
-                                                        "description": "课程学分，如2.0"
-                                                    },
-                                                    "isDegreeRequired": {
-                                                        "type": [
-                                                            "boolean",
-                                                            "null"
-                                                        ],
-                                                        "description": "是否为学位课，true表示学位课"
-                                                    },
-                                                    "isExaminable": {
-                                                        "type": [
-                                                            "boolean",
-                                                            "null"
-                                                        ],
-                                                        "description": "是否为考试课，true标识考试课"
-                                                    }
-                                                },
-                                                "required": [
-                                                    "name",
-                                                    "teacherName",
-                                                    "classroomName",
-                                                    "credits",
-                                                    "isDegreeRequired",
-                                                    "isExaminable"
-                                                ],
-                                                "additionalProperties": false,
-                                                "description": "课程基本信息"
-                                            },
-                                            "LLMRecordReturn": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "weekNumber": {
-                                                        "type": "integer",
-                                                        "description": "具体的周数，表示这门课在第几周有课，从1开始计数。对于时间范围（如第3-16周），需要为每一周都创建一个独立的record。"
-                                                    },
-                                                    "dayOfWeek": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "integer"
-                                                        },
-                                                        "description": "dayOfWeek属性，在星期几会有这门课，1=周一，2=周二，...，7=周日"
-                                                    },
-                                                    "periodOfDay": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "array",
-                                                            "items": {
-                                                                "type": "integer"
-                                                            }
-                                                        },
-                                                        "description": "一个二维矩阵，纵坐标为dayOfWeek属性的index，横坐标为在第几节会有这门课。"
-                                                    }
-                                                },
-                                                "required": [
-                                                    "weekNumber",
-                                                    "dayOfWeek",
-                                                    "periodOfDay"
-                                                ],
-                                                "additionalProperties": false,
-                                                "description": "课程时间安排记录"
-                                            },
-                                            "CourseAddReturn": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "course": {
-                                                        "oneOf": [
-                                                            {
-                                                                "$ref": "#/$defs/LLMCourseReturn?"
-                                                            },
-                                                            {
-                                                                "type": "null"
-                                                            }
-                                                        ],
-                                                        "description": "课程基本信息"
-                                                    },
-                                                    "record": {
-                                                        "type": [
-                                                            "array",
-                                                            "null"
-                                                        ],
-                                                        "items": {
-                                                            "$ref": "#/$defs/LLMRecordReturn"
-                                                        },
-                                                        "description": "课程时间安排列表"
-                                                    }
-                                                },
-                                                "required": [
-                                                    "course",
-                                                    "record"
-                                                ],
-                                                "additionalProperties": false,
-                                                "description": "课程添加返回结果，包含课程基本信息和时间安排"
-                                            }
-                                        },
-                                        "$ref": "#/$defs/CourseAddReturn"
-                                    }
-
-                                    #### EXAMPLES
-                                    Here is an example of a valid response:
-                                    ```
-                                    {
-                                        "course": {
-                                            "name": "艺术鉴赏",
-                                            "classroomName": "A栋302"
-                                        },
-                                        "record": [
-                                            {
-                                                "weekNumber": 3,
-                                                "dayOfWeek": [
-                                                    3
-                                                ],
-                                                "periodOfDay": [
-                                                    [
-                                                        3,
-                                                        4
-                                                    ]
-                                                ]
-                                            },
-                                            {
-                                                "weekNumber": 4,
-                                                "dayOfWeek": [
-                                                    3
-                                                ],
-                                                "periodOfDay": [
-                                                    [
-                                                        3,
-                                                        4
-                                                    ]
-                                                ]
-                                            },
-                                            {
-                                                "weekNumber": 5,
-                                                "dayOfWeek": [
-                                                    3
-                                                ],
-                                                "periodOfDay": [
-                                                    [
-                                                        3,
-                                                        4
-                                                    ]
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                    ```
-                                    ## RESULT
-                                    Provide ONLY the resulting JSON, WITHOUT ANY free text comments, backticks, or other symbols.
-                                    Output should start with { and end with }
-
-                                """.trimIndent()
-                                )
-                            })
-                        }
-                    })
-                }.body<JsonObject>()
-
-                if (resp["error"] !== null) {
-                    val errorMessage = resp["error"]
-                        ?.jsonObject["message"]
-                        ?.jsonPrimitive?.content
-                        ?: "未知错误"
-
-                    throw IllegalArgumentException("error occurred: $errorMessage")
+                                user(build)
+                            },
+                            model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                            config = StructuredRequestConfig(
+                                default = StructuredRequest.Manual(
+                                    JsonStructure.create(
+                                        schemaGenerator = StandardJsonSchemaGenerator,
+                                        examples = example
+                                    )
+                                ),
+                            ),
+                            fixingParser = StructureFixingParser(
+                                model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                                retries = 3
+                            )
+                        ).getOrThrow().data
+                    } finally {
+                        displayJob.cancelAndJoin()
+                    }
                 }
-
-
-                val respString = resp["choices"]
-                    ?.jsonArray[0]
-                    ?.jsonObject["message"]
-                    ?.jsonObject["content"]
-                    ?.jsonPrimitive?.content
-                    ?: error("找不到预期的返回。\n$resp")
-
-                Json.decodeFromString<CourseAddReturn>(respString)
-            } catch (ex: Exception) {
-                logger.w("无法生成课表数据", ex)
-                postSideEffect(
-                    CourseEditSideEffect.Toast(
-                        SnackBarType.Error,
-                        ex.message ?: "生成课表数据时发生错误，请查看日志"
-                    )
-                )
-                return@runOn
-            } finally {
-                reduce {
-                    state.copy(
-                        enableSaveButton = true,
-                        aiGenerating = null
-                    )
-                }
-                agent.close()
             }
 
             reduce {
@@ -604,6 +393,20 @@ class CourseEditModel(
                     aiGenerating = null,
                 )
             }
+
+            if (response.isFailure) {
+                val ex = response.exceptionOrNull()
+                logger.w("无法生成课表数据", ex)
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Error,
+                        ex?.message ?: "生成课表数据时发生错误，请查看日志"
+                    )
+                )
+                return@runOn
+            }
+
+            val (course, record) = response.getOrThrow()
 
             if (course == null) {
                 postSideEffect(
@@ -615,11 +418,11 @@ class CourseEditModel(
                 return@runOn
             }
 
-            if (record.isNullOrEmpty() || record.flatMap { it.toEntity() }.isEmpty()) {
+            if (record.isNullOrEmpty()) {
                 postSideEffect(
                     CourseEditSideEffect.Toast(
                         SnackBarType.Success,
-                        "成功填写课程，但未检索到有效的课表数据。"
+                        "未检索到有效的课表数据。"
                     )
                 )
                 return@runOn
@@ -630,7 +433,7 @@ class CourseEditModel(
             postSideEffect(
                 CourseEditSideEffect.Toast(
                     SnackBarType.Success,
-                    "共生成了 ${record.flatMap { it.toEntity() }.size} 个课表，请查阅后点击确定。"
+                    "共生成了 ${record.flatMap { it.toEntity() }.size} 个课程，请查阅后点击确定。"
                 )
             )
 
@@ -648,19 +451,29 @@ class CourseEditModel(
 
 @Serializable
 @SerialName("CourseAddReturn")
+@LLMDescription("课程添加返回结果，包含课程基本信息和时间安排")
 private data class CourseAddReturn(
+    @property:LLMDescription("课程基本信息")
     val course: LLMCourseReturn?,
+    @property:LLMDescription("课程时间安排列表")
     val record: List<LLMRecordReturn>?
 )
 
 @Serializable
 @SerialName("LLMCourseReturn")
+@LLMDescription("课程基本信息")
 private data class LLMCourseReturn(
+    @property:LLMDescription("课程名称，如'高等数学'")
     val name: String?,
+    @property:LLMDescription("任课教师姓名，如'张教授'")
     val teacherName: String?,
+    @property:LLMDescription("上课教室，如'教学楼A101'")
     val classroomName: String?,
+    @property:LLMDescription("课程学分，如2.0")
     val credits: Float?,
+    @property:LLMDescription("是否为学位课，true表示学位课")
     val isDegreeRequired: Boolean?,
+    @property:LLMDescription("是否为考试课，true标识考试课")
     val isExaminable: Boolean?,
 ) {
     fun toEntity(year: String, sem: String): CourseEntity = CourseEntity(
@@ -678,9 +491,13 @@ private data class LLMCourseReturn(
 
 @Serializable
 @SerialName("LLMRecordReturn")
+@LLMDescription("课程时间安排记录")
 private data class LLMRecordReturn(
+    @property:LLMDescription("具体的周数，表示这门课在第几周有课，从1开始计数。对于时间范围（如第3-16周），需要为每一周都创建一个独立的record。")
     val weekNumber: Int, // 学期周数(从1开始)
+    @property:LLMDescription("dayOfWeek属性，在星期几会有这门课，1=周一，2=周二，...，7=周日")
     val dayOfWeek: List<Int>, // 星期几(1-7)
+    @property:LLMDescription("一个二维矩阵，纵坐标为dayOfWeek属性的index，横坐标为在第几节会有这门课。")
     val periodOfDay: List<List<Int>>, // 第几节课
 ) {
     fun toEntity(): List<CourseRecordEntity> = periodOfDay.withIndex().flatMap { (index, periods) ->
