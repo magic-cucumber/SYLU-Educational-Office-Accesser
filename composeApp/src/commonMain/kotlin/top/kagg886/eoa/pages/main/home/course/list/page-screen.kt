@@ -143,216 +143,304 @@ private fun CoursePageScreenSuccess(
     onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier.verticalScroll(rememberScrollState())) {
-        Column(Modifier.weight(1f)) {
-            // 第一个格子显示本周首天的月份
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(cardHeight / 2)
-                    .padding(horizontal = 2.dp, vertical = 4.dp),
-                tonalElevation = 1.dp,
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "${state.thisWeekStartDate.month.number}月",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            HorizontalDivider()
-
-            // 课节指示器
-            Column(modifier = Modifier.height(columnHeight)) {
-                for (i in 1..12) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(cardHeight).padding(cardPadding)
-                    ) {
-                        Text(
-                            text = "$i",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp)
-                        )
-
-                        val (start, end) = getTimeByLessonNumber(i)
-                        Text(
-                            text = "$start\n---\n$end",
-                            style = MaterialTheme.typography.labelMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-
-                }
-            }
+    BoxWithConstraints(modifier) {
+        val lessonIndicatorWidth = when {
+            maxWidth < 600.dp -> 56.dp
+            maxWidth < 840.dp -> 68.dp
+            else -> 84.dp
         }
-        for (i in 1..7) {
-            Column(Modifier.weight(1f)) {
-                val date = state.thisWeekStartDate.plus(i - 1, DateTimeUnit.DAY)
-                val isCurrentDay = date == state.currentDate
+        val expandedLessonIndicator = lessonIndicatorWidth >= 72.dp
 
+        Row(Modifier.verticalScroll(rememberScrollState())) {
+            Column(Modifier.width(lessonIndicatorWidth)) {
+                // 第一个格子显示本周首天的月份
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(cardHeight / 2)
                         .padding(horizontal = 2.dp, vertical = 4.dp),
-                    tonalElevation = if (isCurrentDay) 3.dp else 1.dp,
-                    color = if (isCurrentDay) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(vertical = 6.dp)
+                    Box(
+                        modifier = Modifier.padding(vertical = 6.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        val dayOfWeek = when (i) {
-                            1 -> "周一"
-                            2 -> "周二"
-                            3 -> "周三"
-                            4 -> "周四"
-                            5 -> "周五"
-                            6 -> "周六"
-                            7 -> "周日"
-                            else -> error("unreachable")
-                        }
-
                         Text(
-                            text = date.format(OnlyMonthAndDayFormat),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = if (isCurrentDay) FontWeight.Medium else FontWeight.Normal,
-                            color = if (isCurrentDay)
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        Text(
-                            text = dayOfWeek,
+                            text = "${state.thisWeekStartDate.month.number}月",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            color = if (isCurrentDay)
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            else
-                                MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
                 HorizontalDivider()
 
-                Box(modifier = Modifier.height(columnHeight)) {
-                    for ((next, course) in state.currentWeekCourse[i].orEmpty()) {
-                        val topOffset = cardHeight * (next - 1) // 节次从1开始
-                        val scheme = MaterialTheme.colorScheme
-                        val basicColor = remember(course,useNightMode) {
-                            when {
-                                course.hasConflict -> scheme.errorContainer
-                                !useNightMode -> Color.hsv(
-                                    hue = Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f,
-                                    saturation = 0.1412f,
-                                    value = 1f
-                                )
-                                else -> Color.hsv(
-                                    hue = Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f,
-                                    saturation = 0.3038f,
-                                    value = 0.3039f
-                                )
-                            }
-                        }
+                LessonIndicatorColumn(expanded = expandedLessonIndicator)
+            }
+            for (i in 1..7) {
+                Column(Modifier.weight(1f)) {
+                    val date = state.thisWeekStartDate.plus(i - 1, DateTimeUnit.DAY)
+                    val isCurrentDay = date == state.currentDate
 
-                        ElevatedCard(
-                            modifier = Modifier
-                                .offset(y = topOffset)
-                                .fillMaxWidth()
-                                .height(cardHeight)
-                                .padding(horizontal = cardPadding, vertical = cardPadding)
-                                .applyIf(!course.hasConflict) {
-                                    shareElementComposed(
-                                        sharedContentState = rememberSharedContentState(key = "list-course-to-detail-${course.asNoConflict.record.id}"),
-                                        animatedVisibilityScope = LocalAnimatedContentScope.current
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(cardHeight / 2)
+                            .padding(horizontal = 2.dp, vertical = 4.dp),
+                        tonalElevation = if (isCurrentDay) 3.dp else 1.dp,
+                        color = if (isCurrentDay) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        ) {
+                            val dayOfWeek = when (i) {
+                                1 -> "周一"
+                                2 -> "周二"
+                                3 -> "周三"
+                                4 -> "周四"
+                                5 -> "周五"
+                                6 -> "周六"
+                                7 -> "周日"
+                                else -> error("unreachable")
+                            }
+
+                            Text(
+                                text = date.format(OnlyMonthAndDayFormat),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = if (isCurrentDay) FontWeight.Medium else FontWeight.Normal,
+                                color = if (isCurrentDay)
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            Text(
+                                text = dayOfWeek,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCurrentDay)
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    HorizontalDivider()
+
+                    Box(modifier = Modifier.height(columnHeight)) {
+                        for ((next, course) in state.currentWeekCourse[i].orEmpty()) {
+                            val topOffset = cardHeight * (next - 1) // 节次从1开始
+                            val scheme = MaterialTheme.colorScheme
+                            val basicColor = remember(course,useNightMode) {
+                                when {
+                                    course.hasConflict -> scheme.errorContainer
+                                    !useNightMode -> Color.hsv(
+                                        hue = Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f,
+                                        saturation = 0.1412f,
+                                        value = 1f
+                                    )
+                                    else -> Color.hsv(
+                                        hue = Random(course.asNoConflict.course.name.hashCode()).nextInt(36000) / 100.0f,
+                                        saturation = 0.3038f,
+                                        value = 0.3039f
                                     )
                                 }
-                                .clip(CardDefaults.shape)
-                                .clickable {
-                                    if (course.hasConflict) {
-                                        onCourseConflictClicked(
-                                            course[0].record.dayOfWeek,
-                                            course[0].record.periodOfDay
-                                        )
-                                        return@clickable
-                                    }
-                                    onCourseItemClicked(course.asNoConflict)
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.elevatedCardElevation(
-                                defaultElevation = 2.dp
-                            ),
-                            colors = if (course.hasConflict) {
-                                CardDefaults.elevatedCardColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                )
-                            } else {
-                                CardDefaults.elevatedCardColors(
-                                    //使用hsv避免过于鲜艳的颜色
-                                    containerColor = basicColor,
-                                )
                             }
-                        ) {
-                            if (course.hasConflict) {
-                                Text(
-                                    "冲突课程 (${course.size}) 门",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(top = 6.dp)
-                                        .align(Alignment.CenterHorizontally)
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
 
-                                Text(
-                                    "点击查看",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                        .padding(bottom = 4.dp)
-                                )
-                            } else {
-                                Text(
-                                    course.asNoConflict.course.name,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
+                            ElevatedCard(
+                                modifier = Modifier
+                                    .offset(y = topOffset)
+                                    .fillMaxWidth()
+                                    .height(cardHeight)
+                                    .padding(horizontal = cardPadding, vertical = cardPadding)
+                                    .applyIf(!course.hasConflict) {
+                                        shareElementComposed(
+                                            sharedContentState = rememberSharedContentState(key = "list-course-to-detail-${course.asNoConflict.record.id}"),
+                                            animatedVisibilityScope = LocalAnimatedContentScope.current
+                                        )
+                                    }
+                                    .clip(CardDefaults.shape)
+                                    .clickable {
+                                        if (course.hasConflict) {
+                                            onCourseConflictClicked(
+                                                course[0].record.dayOfWeek,
+                                                course[0].record.periodOfDay
+                                            )
+                                            return@clickable
+                                        }
+                                        onCourseItemClicked(course.asNoConflict)
+                                    },
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.elevatedCardElevation(
+                                    defaultElevation = 2.dp
+                                ),
+                                colors = if (course.hasConflict) {
+                                    CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    )
+                                } else {
+                                    CardDefaults.elevatedCardColors(
+                                        //使用hsv避免过于鲜艳的颜色
+                                        containerColor = basicColor,
+                                    )
+                                }
+                            ) {
+                                if (course.hasConflict) {
+                                    Text(
+                                        "冲突课程 (${course.size}) 门",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(top = 6.dp)
+                                            .align(Alignment.CenterHorizontally)
+                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
 
-                                Spacer(modifier = Modifier.weight(1f))
+                                    Text(
+                                        "点击查看",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                            .padding(bottom = 4.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        course.asNoConflict.course.name,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
 
-                                Text(
-                                    course.asNoConflict.course.classroomName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                                        .padding(bottom = 4.dp)
-                                )
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    Text(
+                                        course.asNoConflict.course.classroomName,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                            .padding(bottom = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LessonIndicatorColumn(expanded: Boolean) {
+    Column(modifier = Modifier.height(columnHeight)) {
+        for (lessonNumber in 1..12) {
+            LessonIndicatorItem(
+                lessonNumber = lessonNumber,
+                expanded = expanded,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(cardHeight)
+                    .padding(cardPadding)
+            )
+        }
+    }
+}
+
+@Composable
+private fun LessonIndicatorItem(
+    lessonNumber: Int,
+    expanded: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val (start, end) = getTimeByLessonNumber(lessonNumber)
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        tonalElevation = 0.dp
+    ) {
+        if (expanded) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+            ) {
+                LessonNumberPill(lessonNumber)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = start.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.width(24.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                    Text(
+                        text = end.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1
+                    )
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                LessonNumberPill(lessonNumber)
+                Text(
+                    text = "${start}\n${end}",
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    lineHeight = MaterialTheme.typography.labelSmall.lineHeight,
+                    maxLines = 2
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LessonNumberPill(lessonNumber: Int) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Box(
+            modifier = Modifier.size(width = 28.dp, height = 24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = lessonNumber.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
         }
     }
 }
