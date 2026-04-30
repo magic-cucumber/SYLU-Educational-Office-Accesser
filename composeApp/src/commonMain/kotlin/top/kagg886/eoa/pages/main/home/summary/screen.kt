@@ -483,7 +483,7 @@ private fun TodayEmptyCard(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "可以查看课表或处理其他教务事项",
+                text = "吃饭，睡觉，打游戏。",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
             )

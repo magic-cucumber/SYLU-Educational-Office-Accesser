@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ViewTimeline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -49,6 +50,7 @@ fun SyncSettingsScreen() {
         state = modelState,
         syncDuration = syncDuration,
         onSyncDurationChanged = rootModel::postSyncTimeSetting,
+        onSyncActionStarted = model::startSyncForce,
     )
 }
 
@@ -58,6 +60,7 @@ private fun SyncSettingsContent(
     state: MainRouteViewState,
     syncDuration: Duration,
     onSyncDurationChanged: (Duration) -> Job,
+    onSyncActionStarted: () -> Job,
 ) {
     Scaffold(
         topBar = {
@@ -147,6 +150,49 @@ private fun SyncSettingsContent(
                 modifier = Modifier.clickable {
                     dialog = true
                 }
+            )
+
+            val syncButtonEnabled = state is MainRouteViewState.SyncSuccess || state is MainRouteViewState.SyncFailed
+            val syncButtonText = when (state) {
+                is MainRouteViewState.Empty -> "初始化中"
+                is MainRouteViewState.SyncProcess -> "正在同步"
+                else -> "立即同步"
+            }
+            val syncButtonHint = when (state) {
+                MainRouteViewState.Empty -> "初始化中"
+                is MainRouteViewState.SyncFailed -> state.message
+                is MainRouteViewState.SyncProcess -> "请稍等片刻..."
+                is MainRouteViewState.SyncSuccess -> "强制进行同步以跟进教务的最新更改。\n仅在确认教务课表变更后本地没有加载才能运行。"
+            }
+            val disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            val disabledSupportingColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+
+            ListItem(
+                colors = if (syncButtonEnabled) {
+                    ListItemDefaults.colors()
+                } else {
+                    ListItemDefaults.colors(
+                        headlineColor = disabledContentColor,
+                        leadingIconColor = disabledContentColor,
+                        supportingColor = disabledSupportingColor,
+                    )
+                },
+                headlineContent = {
+                    Text(syncButtonText)
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "立即同步",
+                    )
+                },
+                supportingContent = {
+                    Text(syncButtonHint)
+                },
+                modifier = Modifier.clickable(
+                    enabled = syncButtonEnabled,
+                    onClick = { onSyncActionStarted() }
+                )
             )
         }
     }
