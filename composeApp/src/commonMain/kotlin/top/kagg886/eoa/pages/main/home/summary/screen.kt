@@ -1,10 +1,7 @@
 package top.kagg886.eoa.pages.main.home.summary
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -16,13 +13,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -35,17 +32,14 @@ import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
-import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
-import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
@@ -90,54 +84,52 @@ fun SummaryScreen() {
 
         SummaryContentV2(
             state = state,
-            syncState = syncState,
             showExperimentClass = showExperimentClass,
-            onCourseItemClicked = { model.redirectToCourse(it) },
-            onSyncActionStarted = { mainViewModel.startSyncForce() }
+            onCourseItemClicked = { model.redirectToCourse(it) }
         )
     }
 }
 
 @Composable
-private inline fun SummaryContentV2(
+private fun SummaryContentV2(
     state: SummaryState,
-    syncState: MainRouteViewState,
     showExperimentClass: Boolean,
-    noinline onCourseItemClicked: (TodayClass) -> Unit = {},
-    noinline onSyncActionStarted: () -> Unit = {}
+    onCourseItemClicked: (TodayClass) -> Unit = {}
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
-        var cardHeight by remember {
-            mutableStateOf(0.dp)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val suiteType = currentLayoutType()
+        val expandedContent = suiteType != NavigationSuiteType.NavigationBar && maxWidth >= 720.dp
+        val horizontalContentPadding = if (expandedContent) 32.dp else 16.dp
+        val contentPadding = if (expandedContent) {
+            PaddingValues(
+                start = horizontalContentPadding,
+                top = 20.dp,
+                end = horizontalContentPadding,
+                bottom = 24.dp
+            )
+        } else {
+            PaddingValues(
+                start = horizontalContentPadding,
+                top = 12.dp,
+                end = horizontalContentPadding,
+                bottom = 24.dp
+            )
         }
 
-        var cardHeight2 by remember {
-            mutableStateOf(0.dp)
-        }
-
-        var cardHeight3 by remember {
-            mutableStateOf(0.dp)
-        }
-        val density = LocalDensity.current
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.matchParentSize()
+            contentPadding = contentPadding,
+            modifier = Modifier.fillMaxSize()
         ) {
             item {
-                SummaryContentPlaceHolderHeader(
+                TodayOverviewHeader(
                     state = state,
-                    modifier = Modifier.fillMaxWidth().onGloballyPositioned {
-                        cardHeight = with(density) { it.size.height.toDp() }
-                    },
-                    onSyncActionStarted = onSyncActionStarted,
-                    syncState = syncState,
-                    suiteType = currentLayoutType()
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             when (state) {
                 is SummaryState.Failed -> item {
-                    // 加载失败的页面
                     ErrorPage(
                         title = {
                             Text("数据同步失败")
@@ -145,13 +137,13 @@ private inline fun SummaryContentV2(
                         message = {
                             Text(state.msg)
                         },
-                        modifier = Modifier.fillMaxWidth().height(maxHeight - cardHeight - 64.dp),
+                        modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.72f),
                     )
                 }
 
                 is SummaryState.FailedButSuccess -> item {
                     ErrorPage(
-                        modifier = Modifier.fillMaxWidth().height(maxHeight - cardHeight - 64.dp),
+                        modifier = Modifier.fillMaxWidth().fillParentMaxHeight(0.72f),
                         icon = {
                             Icon(
                                 imageVector = Icons.Default.Info,
@@ -173,214 +165,55 @@ private inline fun SummaryContentV2(
                                 style = MaterialTheme.typography.bodyLarge,
                                 textAlign = TextAlign.Center
                             )
-
                         }
                     )
                 }
 
-                is SummaryState.Loading -> items(3) { _ ->
-                    CourseItem(null, onCourseItemClicked = onCourseItemClicked)
-                }
-
-                is SummaryState.Success -> {
-                    if (showExperimentClass && state.extendClass.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "本周实验课",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).onGloballyPositioned {
-                                    cardHeight2 = with(density) { it.size.height.toDp() }
-                                }
-                            )
-                        }
-                        item {
-                            ExperimentClassList(
-                                extendClasses = state.extendClass,
-                                modifier = Modifier.fillMaxWidth().onGloballyPositioned {
-                                    cardHeight3 = with(density) { it.size.height.toDp() }
-                                }
-                            )
-                        }
-                    }
-                    if (state.plan.isEmpty()) {
-                        item {
-                            ErrorPage(
-                                modifier = Modifier.fillMaxWidth()
-                                    .height(maxHeight - cardHeight - cardHeight2 - cardHeight3 - 64.dp),
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = "Info",
-                                        modifier = Modifier.size(80.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                },
-                                title = {
-                                    Text(
-                                        text = "提示",
-                                        style = MaterialTheme.typography.headlineMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                },
-                                message = {
-                                    Text(
-                                        text = "今天没有课程",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        textAlign = TextAlign.Center
-                                    )
-
-                                }
-                            )
-                        }
-                        return@LazyColumn
-                    }
-                    item {
-                        Text(
-                            text = "本日课程",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                        )
-                    }
-                    items(state.plan) { course ->
+                is SummaryState.Loading -> {
+                    items(3) {
                         CourseItem(
-                            course,
-                            modifier = Modifier.padding(start = 8.dp),
+                            null,
                             onCourseItemClicked = onCourseItemClicked
                         )
                     }
                 }
-            }
-        }
-    }
-}
 
-@Composable
-private inline fun SyncStateCard(
-    state: MainRouteViewState,
-    noinline onSyncActionStarted: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "系统状态",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            val (text, icon, containerColor, contentColor, enabled) = when (state) {
-                is MainRouteViewState.Empty -> {
-                    Tuple5(
-                        "系统正在初始化",
-                        null,
-                        MaterialTheme.colorScheme.outline,
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                        false
-                    )
-                }
-
-                is MainRouteViewState.SyncProcess -> {
-                    Tuple5(
-                        "系统正在同步",
-                        Icons.Default.Refresh,
-                        MaterialTheme.colorScheme.outline,
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                        false
-                    )
-                }
-
-                is MainRouteViewState.SyncSuccess -> {
-                    Tuple5(
-                        "系统同步成功",
-                        Icons.Default.Check,
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.onPrimary,
-                        true
-                    )
-                }
-
-                is MainRouteViewState.SyncFailed -> {
-                    Tuple5(
-                        "系统同步失败",
-                        Icons.Default.Close,
-                        MaterialTheme.colorScheme.error,
-                        MaterialTheme.colorScheme.onError,
-                        true
-                    )
-                }
-            }
-
-            val animatedContainerColor by animateColorAsState(
-                targetValue = containerColor,
-                animationSpec = tween(durationMillis = 300),
-                label = "containerColorAnimation"
-            )
-
-            val animatedContentColor by animateColorAsState(
-                targetValue = contentColor,
-                animationSpec = tween(durationMillis = 300),
-                label = "contentColorAnimation"
-            )
-
-            val infiniteTransition = rememberInfiniteTransition(label = "infiniteRotation")
-            val rotationAngle by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 1000, easing = LinearEasing)
-                ),
-                label = "rotationAnimation"
-            )
-
-            ExtendedFloatingActionButton(
-                onClick = { if (enabled) onSyncActionStarted() },
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = animatedContainerColor,
-                contentColor = animatedContentColor
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    AnimatedContent(
-                        targetState = icon,
-                        transitionSpec = createMenuButtonAnim { targetState != initialState }
-                    ) {
-                        if (it != null) {
-                            Icon(
-                                imageVector = it,
-                                contentDescription = text,
-                                modifier = Modifier
-                                    .rotate(if (state is MainRouteViewState.SyncProcess) rotationAngle else 0f)
-                                    .size(18.dp)
+                is SummaryState.Success -> {
+                    if (expandedContent) {
+                        item {
+                            ExpandedSummaryDashboard(
+                                state = state,
+                                showExperimentClass = showExperimentClass,
+                                onCourseItemClicked = onCourseItemClicked,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            return@AnimatedContent
                         }
-                        Box(Modifier.size(18.dp))
+                        return@LazyColumn
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AnimatedContent(
-                        targetState = text,
-                        transitionSpec = createMenuButtonAnim { targetState != initialState },
-                        label = "textAnimation"
-                    ) { animatedText ->
-                        Text(
-                            text = animatedText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
+
+                    if (showExperimentClass && state.extendClass.isNotEmpty()) {
+                        item {
+                            ExperimentSection(
+                                extendClasses = state.extendClass,
+                                compact = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    if (state.plan.isEmpty()) {
+                        item {
+                            TodayEmptyCard(
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        items(state.plan) { course ->
+                            CourseItem(
+                                course = course,
+                                onCourseItemClicked = onCourseItemClicked
+                            )
+                        }
                     }
                 }
             }
@@ -388,338 +221,189 @@ private inline fun SyncStateCard(
     }
 }
 
-// Helper data class for tuple
-private data class Tuple5<A, B, C, D, E>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D,
-    val fifth: E
-)
-
 @Composable
-private inline fun SummaryCard(
+private fun TodayOverviewHeader(
     state: SummaryState,
     modifier: Modifier = Modifier
 ) {
-    val showPlaceHolder by remember(state) {
-        derivedStateOf {
-            state is SummaryState.Loading
-        }
-    }
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                // Current week indicator
-                SummaryItem(
-                    showPlaceHolder = showPlaceHolder,
-                    details = when (state) {
-                        is SummaryState.Success -> "第 ${state.weekNumber} 周"
-                        else -> "-"
-                    },
-                    title = "当前周数",
-                )
-                SummaryItem(
-                    showPlaceHolder = showPlaceHolder,
-                    details = when (state) {
-                        is SummaryState.Success -> "共 ${state.plan.size} 节课"
-                        else -> "-"
-                    },
-                    title = "今日课程数",
-                )
-
-                SummaryItem(
-                    showPlaceHolder = showPlaceHolder,
-                    details = when (state) {
-                        is SummaryState.Success -> "${(state.progress * 100).toFixed(2)}%"
-                        else -> "-"
-                    },
-                    title = "学期进度"
-                )
-
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+        OverviewMetricRow(
+            state = state,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
-
 }
 
 @Composable
-private inline fun SummaryContentPlaceHolderHeader(
-    modifier: Modifier = Modifier,
-    suiteType: NavigationSuiteType,
-    syncState: MainRouteViewState,
+private fun OverviewMetricRow(
     state: SummaryState,
-    noinline onSyncActionStarted: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    when (suiteType) {
-        NavigationSuiteType.NavigationBar -> {
-            Column(modifier) {
-                SyncStateCard(
-                    state = syncState,
-                    onSyncActionStarted = onSyncActionStarted,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                SummaryCard(state, Modifier.fillMaxWidth())
-            }
-        }
-
-        else -> {
-            Row(
-                modifier.height(IntrinsicSize.Min)
-                    .applyIf(suiteType == NavigationSuiteType.NavigationDrawer) { padding(vertical = 16.dp) }) {
-                SyncStateCard(
-                    state = syncState,
-                    onSyncActionStarted = onSyncActionStarted,
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                SummaryCard(state, Modifier.weight(1f).fillMaxHeight())
-            }
-        }
+    val showPlaceHolder = state is SummaryState.Loading
+    val week = when (state) {
+        is SummaryState.Success -> "${state.weekNumber}"
+        else -> "--"
     }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private inline fun CourseItem(
-    course: TodayClass?,
-    modifier: Modifier = Modifier,
-    noinline onCourseItemClicked: (TodayClass) -> Unit,
-) {
-    val showPlaceHolder by remember(course) {
-        derivedStateOf {
-            course == null
-        }
+    val courses = when (state) {
+        is SummaryState.Success -> "${state.plan.size}"
+        else -> "--"
     }
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .shareElementComposed(
-                sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course?.recordId}"),
-                animatedVisibilityScope = LocalAnimatedContentScope.current
-            )
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = { course?.let { onCourseItemClicked(it) } }),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+    val progress = when (state) {
+        is SummaryState.Success -> "${(state.progress * 100).toFixed(1)}%"
+        else -> "--"
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            // Progress bar for ongoing classes
-            course?.progress?.let { progress ->
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        // 学位课标识
-                        course?.isDegreeProgram?.let { isDegree ->
-                            if (isDegree) {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.secondary,
-                                    contentColor = MaterialTheme.colorScheme.onSecondary
-                                ) {
-                                    Text(
-                                        text = "学位",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                        }
-
-                        // 考试课标识
-                        course?.isExamine?.let { isExamine ->
-                            if (isExamine) {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.tertiary,
-                                    contentColor = MaterialTheme.colorScheme.onTertiary
-                                ) {
-                                    Text(
-                                        text = "考试",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                        }
-
-                        Text(
-                            text = course?.name ?: "",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.placeholder(
-                                visible = showPlaceHolder,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
-                        )
-                    }
-
-                    // Show an indicator for ongoing classes
-                    course?.progress?.let {
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ) {
-                            Text(
-                                text = "进行中",
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = "Time",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .placeholder(
-                                visible = showPlaceHolder,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
-                    )
-
-                    Text(
-                        text = course?.date?.let { (start, end) -> "$start - $end" } ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .padding(start = 4.dp)
-                            .placeholder(
-                                visible = showPlaceHolder,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Place,
-                        contentDescription = "Location",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .placeholder(
-                                visible = showPlaceHolder,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
-                    )
-
-                    Text(
-                        text = course?.location ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .padding(start = 4.dp)
-                            .placeholder(
-                                visible = showPlaceHolder,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                HorizontalDivider()
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "授课教师: ${course?.teacher ?: ""}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.placeholder(
-                        visible = showPlaceHolder,
-                        highlight = PlaceholderHighlight.shimmer()
-                    )
-                )
-            }
-        }
+        OverviewMetric(
+            title = "教学周",
+            value = week,
+            showPlaceHolder = showPlaceHolder,
+            modifier = Modifier.weight(1f)
+        )
+        OverviewMetric(
+            title = "今日课程",
+            value = courses,
+            showPlaceHolder = showPlaceHolder,
+            modifier = Modifier.weight(1f)
+        )
+        OverviewMetric(
+            title = "学期进度",
+            value = progress,
+            showPlaceHolder = showPlaceHolder,
+            progressFraction = when (state) {
+                is SummaryState.Success -> state.progress.coerceIn(0f, 1f)
+                else -> null
+            },
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 @Composable
-private inline fun SummaryItem(
-    showPlaceHolder: Boolean,
-    details: String,
+private fun OverviewMetric(
     title: String,
+    value: String,
+    showPlaceHolder: Boolean,
+    progressFraction: Float? = null,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(8.dp)
+    val containerColor = MaterialTheme.colorScheme.surfaceVariant
+    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val progressColor = MaterialTheme.colorScheme.primary
+    val progressContentColor = MaterialTheme.colorScheme.onPrimary
+
+    Surface(
+        modifier = modifier.heightIn(min = 72.dp),
+        shape = shape,
+        color = containerColor,
+        contentColor = contentColor
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().clipToBounds()
+        ) {
+            val metricWidth = maxWidth
+
+            OverviewMetricContent(
+                title = title,
+                value = value,
+                showPlaceHolder = showPlaceHolder,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            progressFraction?.let { fraction ->
+                val progressWidth = metricWidth * fraction
+                Box(
+                    modifier = Modifier.matchParentSize()
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxHeight()
+                            .width(progressWidth)
+                            .background(progressColor)
+                    )
+                    CompositionLocalProvider(LocalContentColor provides progressContentColor) {
+                        ClippedOverviewMetricContent(
+                            title = title,
+                            value = value,
+                            showPlaceHolder = showPlaceHolder,
+                            fullWidth = metricWidth,
+                            clippedWidth = progressWidth,
+                            modifier = Modifier.fillMaxHeight()
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClippedOverviewMetricContent(
+    title: String,
+    value: String,
+    showPlaceHolder: Boolean,
+    fullWidth: Dp,
+    clippedWidth: Dp,
+    modifier: Modifier = Modifier
+) {
+    Layout(
+        content = {
+            OverviewMetricContent(
+                title = title,
+                value = value,
+                showPlaceHolder = showPlaceHolder
+            )
+        },
+        modifier = modifier.width(clippedWidth).clipToBounds()
+    ) { measurables, constraints ->
+        val contentWidth = fullWidth.roundToPx()
+        val visibleWidth = clippedWidth.roundToPx()
+        val placeable = measurables.first().measure(
+            constraints.copy(
+                minWidth = contentWidth,
+                maxWidth = contentWidth
+            )
+        )
+
+        layout(
+            width = visibleWidth.coerceIn(constraints.minWidth, constraints.maxWidth),
+            height = placeable.height.coerceIn(constraints.minHeight, constraints.maxHeight)
+        ) {
+            placeable.placeRelative(0, 0)
+        }
+    }
+}
+
+@Composable
+private fun OverviewMetricContent(
+    title: String,
+    value: String,
+    showPlaceHolder: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Surface(
-            modifier = Modifier
-                .size(width = 80.dp, height = 48.dp)
-                .placeholder(
-                    visible = showPlaceHolder,
-                    highlight = PlaceholderHighlight.shimmer()
-                ),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            shadowElevation = 4.dp
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = details,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
         Text(
             text = title,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.placeholder(
                 visible = showPlaceHolder,
                 highlight = PlaceholderHighlight.shimmer()
@@ -729,20 +413,116 @@ private inline fun SummaryItem(
 }
 
 @Composable
-private fun ExperimentClassList(
-    extendClasses: List<CourseExtendEntity>,
+private fun ExpandedSummaryDashboard(
+    state: SummaryState.Success,
+    showExperimentClass: Boolean,
+    onCourseItemClicked: (TodayClass) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        modifier = modifier
+    val showExperimentSection = showExperimentClass && state.extendClass.isNotEmpty()
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        items(extendClasses) { extendClass ->
-            ExperimentClassItem(
-                extendClass = extendClass,
-                modifier = Modifier.width(160.dp)
+        Column(
+            modifier = if (showExperimentSection) Modifier.weight(1.65f) else Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (state.plan.isEmpty()) {
+                TodayEmptyCard(Modifier.fillMaxWidth())
+            } else {
+                state.plan.forEach { course ->
+                    CourseItem(
+                        course = course,
+                        onCourseItemClicked = onCourseItemClicked
+                    )
+                }
+            }
+        }
+
+        if (showExperimentSection) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ExperimentSection(
+                    extendClasses = state.extendClass,
+                    compact = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayEmptyCard(
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.heightIn(min = 160.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.EventAvailable,
+                contentDescription = "今天没有课程",
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
+            Text(
+                text = "今天没有课程",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "可以查看课表或处理其他教务事项",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExperimentSection(
+    extendClasses: List<CourseExtendEntity>,
+    compact: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (compact) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(extendClasses) { extendClass ->
+                    ExperimentClassItem(
+                        extendClass = extendClass,
+                        modifier = Modifier.width(220.dp)
+                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                extendClasses.forEach { extendClass ->
+                    ExperimentClassItem(
+                        extendClass = extendClass,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
     }
 }
@@ -752,51 +532,279 @@ private fun ExperimentClassItem(
     extendClass: CourseExtendEntity,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    ElevatedCard(
         modifier = modifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
         )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = extendClass.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Surface(
+                    modifier = Modifier.size(36.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Science,
+                            contentDescription = "实验课",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
 
-            Text(
-                text = extendClass.teacherName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = extendClass.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = extendClass.teacherName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.82f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun CourseItem(
+    course: TodayClass?,
+    modifier: Modifier = Modifier,
+    onCourseItemClicked: (TodayClass) -> Unit,
+) {
+    val showPlaceHolder = course == null
+    val startTime = course?.date?.first?.toString() ?: "08:00"
+    val endTime = course?.date?.second?.toString() ?: "09:40"
+    val courseName = course?.name ?: "课程名称"
+    val location = course?.location ?: "上课地点"
+    val teacher = course?.teacher ?: "授课教师"
+    val cardModifier = if (course != null) {
+        modifier
+            .fillMaxWidth()
+            .shareElementComposed(
+                sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course.recordId}"),
+                animatedVisibilityScope = LocalAnimatedContentScope.current
             )
+    } else {
+        modifier.fillMaxWidth()
+    }
+
+    ElevatedCard(
+        onClick = { course?.let { onCourseItemClicked(it) } },
+        enabled = course != null,
+        modifier = cardModifier,
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            course?.progress?.let { progress ->
+                LinearProgressIndicator(
+                    progress = { progress.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            }
 
             Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Science,
-                    contentDescription = "实验课",
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                CourseTimeBlock(
+                    startTime = startTime,
+                    endTime = endTime,
+                    showPlaceHolder = showPlaceHolder
                 )
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = courseName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.placeholder(
+                            visible = showPlaceHolder,
+                            highlight = PlaceholderHighlight.shimmer()
+                        )
+                    )
+
+                    InfoLine(
+                        icon = Icons.Default.Place,
+                        text = location,
+                        contentDescription = "上课地点",
+                        showPlaceHolder = showPlaceHolder
+                    )
+                    InfoLine(
+                        icon = Icons.Default.Person,
+                        text = teacher,
+                        contentDescription = "授课教师",
+                        showPlaceHolder = showPlaceHolder
+                    )
+
+                    if (showPlaceHolder) {
+                        Surface(
+                            modifier = Modifier.size(width = 128.dp, height = 24.dp).placeholder(
+                                visible = true,
+                                highlight = PlaceholderHighlight.shimmer()
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            content = {}
+                        )
+                    } else {
+                        CourseBadges(course)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CourseTimeBlock(
+    startTime: String,
+    endTime: String,
+    showPlaceHolder: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.width(72.dp).heightIn(min = 72.dp).placeholder(
+            visible = showPlaceHolder,
+            highlight = PlaceholderHighlight.shimmer()
+        ),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = startTime,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.28f)
+            )
+            Text(
+                text = endTime,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun InfoLine(
+    icon: ImageVector,
+    text: String,
+    contentDescription: String,
+    showPlaceHolder: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.placeholder(
+                visible = showPlaceHolder,
+                highlight = PlaceholderHighlight.shimmer()
+            )
+        )
+    }
+}
+
+@Composable
+private fun CourseBadges(course: TodayClass?) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (course?.progress != null) {
+            Badge(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
                 Text(
-                    text = "实验课",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = "进行中",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+
+        if (course?.isDegreeProgram == true) {
+            Badge(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
+            ) {
+                Text(
+                    text = "学位",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+
+        if (course?.isExamine == true) {
+            Badge(
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onTertiary
+            ) {
+                Text(
+                    text = "考试",
+                    style = MaterialTheme.typography.labelSmall
                 )
             }
         }
