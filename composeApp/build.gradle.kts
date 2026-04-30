@@ -148,6 +148,12 @@ android {
     namespace = "top.kagg886.eoa"
     compileSdk = 36
 
+    packaging {
+        resources {
+            excludes += "META-INF/DEPENDENCIES"
+        }
+    }
+
     if (useDesugarApi) {
         compileOptions {
             isCoreLibraryDesugaringEnabled = true
