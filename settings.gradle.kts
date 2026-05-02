@@ -40,7 +40,6 @@ include(":eoa-lib:network-html-api")
 include(":eoa-lib:network-test-api")
 include(":second-class")
 include(":util")
-include(":koog-request-generated")
 
 include(":lib:ics-generator")
 include(":lib:calender-exporter")
