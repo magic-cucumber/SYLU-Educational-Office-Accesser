@@ -16,17 +16,13 @@ import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavHostController
 import androidx.navigation.NavUri
 import androidx.navigation.compose.rememberNavController
-import app.lexilabs.basic.sound.Audio
-import app.lexilabs.basic.sound.ExperimentalBasicSound
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
-import coil3.compose.LocalPlatformContext
 import coil3.util.Logger
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import sylu_eoa.composeapp.generated.resources.Res
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.component.dialog.DialogHost
 import top.kagg886.eoa.component.nav.NavHost
@@ -59,54 +55,17 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
     error("not provided")
 }
 
-@OptIn(ExperimentalBasicSound::class)
-val LocalMediaPlayer = staticCompositionLocalOf<Audio> {
-    error("not provided")
-}
-
-@OptIn(ExperimentalBasicSound::class)
-@Composable
-private fun rememberMediaPlayer(): Audio {
-    val ctx = LocalPlatformContext.current
-
-    val audio = remember(ctx) {
-        Audio()
-    }
-
-    LaunchedEffect(audio) {
-        when(Platform.current) {
-            is Platform.Android-> {
-                audio.resource = Res.getUri("files/april-music.mp3")
-            }
-
-            else -> {
-                val path = dataPath.resolve("april-music.mp3")
-                if (!path.exists() || path.size == 0L) {
-                    path.parent?.mkdirs()
-                    path.createNewFile()
-                    path.writeByteArray(Res.readBytes("files/april-music.mp3"))
-                }
-
-                audio.resource = path.toString()
-            }
-        }
-
-        audio.load(ctx)
-    }
-
-    return audio
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class, ExperimentalBasicSound::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
 @Composable
 internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
     LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
     LocalNavController provides rememberNavController(),
     LocalSnackBarHost provides rememberToasterState(),
-    LocalMediaPlayer provides rememberMediaPlayer()
 ) {
     val nav = LocalNavController.current
     val snack = LocalSnackBarHost.current
+
+
     val rootModel = rootViewModel()
     rootModel.collectSideEffect {
         when (it) {

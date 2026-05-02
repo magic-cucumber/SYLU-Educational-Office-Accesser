@@ -15,7 +15,6 @@ composePlaceholderMaterial3 = "1.0.12"
 cryptographyCore = "0.6.0"
 desugar_jdk_libs = "2.1.5"
 filekitCore = "0.13.0"
-lexilabs-basic="0.2.5"
 glance = "1.1.1"
 kermit = "2.1.0"
 koogAgents = "0.8.0"
@@ -69,7 +68,6 @@ cryptography-provider-optimal = { module = "dev.whyoleg.cryptography:cryptograph
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
-lexilabs-basic-sound = { module = "app.lexilabs.basic:basic-sound", version.ref = "lexilabs-basic" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 koog-agents = { module = "ai.koog:koog-agents", version.ref = "koogAgents" }
 kotlin-compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }

@@ -84,8 +84,7 @@ kotlin {
             implementation(libs.filekit.dialog)
             implementation(libs.compose.dnd)
             implementation(libs.koog.agents)
-
-            implementation(libs.lexilabs.basic.sound)
+//            implementation(libs.reveal.core)
 
             implementation(project(":composeApp-backend"))
             implementation(project(":widgetApp"))
