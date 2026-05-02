@@ -1,4 +1,4 @@
-import ComposeApp
+import WidgetApp
 import Social
 import UIKit
 import UniformTypeIdentifiers

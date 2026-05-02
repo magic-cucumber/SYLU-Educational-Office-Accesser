@@ -11,7 +11,13 @@ version = "1.0"
 android("widgetApp")
 
 kotlin {
-    library()
+    library(ios = {
+        binaries.framework {
+            baseName = "WidgetApp"
+            isStatic = true
+            linkerOpts += "-lsqlite3"
+        }
+    })
 
     sourceSets {
         commonMain.dependencies {
