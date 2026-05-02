@@ -21,6 +21,9 @@ import top.kagg886.backend.database.dao.GPADao
 import top.kagg886.backend.database.dao.GPAEntity
 import top.kagg886.backend.database.dao.GPASummaryDao
 import top.kagg886.backend.database.dao.GPASummaryEntity
+import top.kagg886.backend.database.dao.SecondClassDao
+import top.kagg886.backend.database.dao.SecondClassDataEntity
+import top.kagg886.backend.database.dao.SecondClassSummaryEntity
 import top.kagg886.backend.database.dao.SyncRecordEntity
 import top.kagg886.backend.database.dao.SyncRecordDao
 import top.kagg886.backend.database.dao.SystemNoticeDao
@@ -39,11 +42,14 @@ import top.kagg886.util.dataPath
         CourseRecordEntity::class,
         SyncRecordEntity::class,
         AppLog::class,
-        SystemNoticeEntity::class
+        SystemNoticeEntity::class,
+        SecondClassSummaryEntity::class,
+        SecondClassDataEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
     autoMigrations = [
-        AutoMigration(from = 6, to = 7)
+        AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8)
     ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -55,6 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun courseExtendDao(): CourseExtendDao
     abstract fun courseRecordDao(): CourseRecordDao
     abstract fun noticeDao(): SystemNoticeDao
+    abstract fun secondClassDao(): SecondClassDao
 
     abstract fun syncRecordDao(): SyncRecordDao
     abstract fun appLogDao(): AppLogDao

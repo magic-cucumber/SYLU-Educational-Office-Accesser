@@ -10,6 +10,7 @@ import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
+import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -248,11 +249,14 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
     private suspend fun clear0() {
         AppLoginPropertiesMMKV.clear()
         AppSyncMMKV.clear()
+        AppSecondClassMMKV.clear()
+
         database.examDao().clear()
         database.gpaSummaryDao().clear()
         database.gpaDao().clear()
         database.courseDao().clearAll()
         database.examDao().clear()
+        database.secondClassDao().clear()
         syncDao.clear()
     }
 

@@ -42,6 +42,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.pages.main.MainRoute
+import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.util.createMenuButtonAnim
@@ -62,8 +63,9 @@ data object SecondClassRoute
 fun SecondClassScreen() {
     val nav = LocalNavController.current
     val toast = LocalSnackBarHost.current
+    val mainModel = mainViewModel()
     val model = viewModel(nav.getBackStackEntry(MainRoute)) { //持久化vm，确保切换页面时状态不丢失
-        SecondClassModel()
+        SecondClassModel(mainModel.database)
     }
     HomeScreen(
         route = EOAHomeModule.SECOND,
