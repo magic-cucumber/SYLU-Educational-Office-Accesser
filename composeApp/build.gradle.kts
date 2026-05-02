@@ -8,16 +8,12 @@ import java.util.zip.ZipOutputStream
 val appVersion = project.findProperty("app.version") as String
 val appVersionCode = (project.findProperty("app.code") as String).toInt()
 
-val databaseVersion = (project.findProperty("database.version") as String).toInt()
-
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
     id("com.android.application")
     alias(libs.plugins.kotlinx.serialization)
-    alias(libs.plugins.room)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.buildConfig)
     id("com.google.osdetector") version "1.7.3"
 }
@@ -91,6 +87,8 @@ kotlin {
 
             implementation(libs.lexilabs.basic.sound)
 
+            implementation(project(":composeApp-backend"))
+            implementation(project(":widgetApp"))
             implementation(project(":util"))
             //方便切换到闭源后端
             implementation(project(":eoa-lib:network-html-api"))
@@ -254,24 +252,10 @@ buildConfig {
     // BuildConfig configuration here.
     // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
     packageName("top.kagg886.eoa.config")
-    buildConfigField("DATABASE_VERSION", databaseVersion)
     buildConfigField("APP_DESUGAR_ENABLED",useDesugarApi)
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
     buildConfigField("GIT_COMMIT_SHA", "123456")
-}
-
-room3 {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    with(libs.room.compiler) {
-        add("kspAndroid", this)
-        add("kspJvm", this)
-        add("kspIosArm64", this)
-        add("kspIosSimulatorArm64", this)
-    }
 }
 
 

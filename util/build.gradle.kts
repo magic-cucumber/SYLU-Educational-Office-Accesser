@@ -19,9 +19,12 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                api(libs.compose.foundation)
                 api(libs.kermit)
                 api(libs.okio)
                 api(libs.ktor.client.logging)
+                api(libs.kotlinx.serialization.json)
+                api(libs.mkmb.core)
             }
         }
 
@@ -30,4 +33,3 @@ kotlin {
         }
     }
 }
-

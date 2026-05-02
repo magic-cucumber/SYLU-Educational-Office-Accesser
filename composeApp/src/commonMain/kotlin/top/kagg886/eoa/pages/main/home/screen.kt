@@ -6,7 +6,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.adaptive.NavigationSuiteScaffold
@@ -124,41 +123,34 @@ fun HomeScreen(
     )
 }
 
-@Serializable
-enum class EOAHomeModule(val target: Any, val display: String, val icon: ImageVector) {
-    SUMMARY(
-        target = SummaryRoute,
-        display = "首页",
-        icon = Icons.Default.Home
-    ),
+typealias EOAHomeModule = top.kagg886.backend.config.EOAHomeModule
 
-    COURSE(
-        target = CourseRoute,
-        display = "课表",
-        icon = Icons.Default.CalendarMonth
-    ),
+val EOAHomeModule.target: Any
+    get() = when (this) {
+        EOAHomeModule.SUMMARY -> SummaryRoute
+        EOAHomeModule.COURSE -> CourseRoute
+        EOAHomeModule.EXAM -> ExamRoute
+        EOAHomeModule.GPA -> GPARoute
+        EOAHomeModule.SECOND -> SecondClassRoute
+        EOAHomeModule.LINK -> LinkListRoute
+    }
 
-    EXAM(
-        target = ExamRoute,
-        display = "考试",
-        icon = Icons.Default.Bookmark
-    ),
+val EOAHomeModule.display: String
+    get() = when (this) {
+        EOAHomeModule.SUMMARY -> "首页"
+        EOAHomeModule.COURSE -> "课表"
+        EOAHomeModule.EXAM -> "考试"
+        EOAHomeModule.GPA -> "绩点"
+        EOAHomeModule.SECOND -> "二课"
+        EOAHomeModule.LINK -> "友链"
+    }
 
-    GPA(
-        target = GPARoute,
-        display = "绩点",
-        icon = Icons.Default.Star
-    ),
-
-    SECOND(
-        target = SecondClassRoute,
-        display = "二课",
-        icon = Icons.Default.Accessibility
-    ),
-
-    LINK(
-        target = LinkListRoute,
-        display = "友链",
-        icon = Icons.Default.Link
-    )
-}
+val EOAHomeModule.icon: ImageVector
+    get() = when (this) {
+        EOAHomeModule.SUMMARY -> Icons.Default.Home
+        EOAHomeModule.COURSE -> Icons.Default.CalendarMonth
+        EOAHomeModule.EXAM -> Icons.Default.Bookmark
+        EOAHomeModule.GPA -> Icons.Default.Star
+        EOAHomeModule.SECOND -> Icons.Default.Accessibility
+        EOAHomeModule.LINK -> Icons.Default.Link
+    }

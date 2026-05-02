@@ -21,6 +21,7 @@ import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
+import top.kagg886.eoa.pages.main.home.display
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.shared.applyIf
