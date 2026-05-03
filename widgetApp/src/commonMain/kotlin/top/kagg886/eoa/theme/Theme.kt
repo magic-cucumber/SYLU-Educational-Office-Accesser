@@ -19,4 +19,4 @@ internal fun AppTheme(
 }
 
 @Composable
-internal expect fun SystemAppearance(isDark: Boolean)
+expect fun SystemAppearance(isDark: Boolean)

@@ -19,11 +19,4 @@ internal fun AppTheme(
         isDark = nightTheme,
         content = content,
     )
-
-    //useDarkTheme = nightTheme,
-    //        style = PaletteStyle.Fidelity,
-    //        content = content
 }
-
-@Composable
-internal expect fun SystemAppearance(isDark: Boolean)
