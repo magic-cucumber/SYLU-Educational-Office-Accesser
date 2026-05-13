@@ -1,6 +1,12 @@
 package top.kagg886.eoa.pages.main.home.second
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion
 import androidx.compose.ui.layout.ContentScale
@@ -45,6 +52,7 @@ import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
+import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
@@ -67,44 +75,83 @@ fun SecondClassScreen() {
     val model = viewModel(nav.getBackStackEntry(MainRoute)) { //持久化vm，确保切换页面时状态不丢失
         SecondClassModel(mainModel.database)
     }
+    val state by model.collectAsState()
     HomeScreen(
         route = EOAHomeModule.SECOND,
         title = { Text("第二课堂") },
         menu = {
-            var show by remember {
-                mutableStateOf(false)
-            }
-            IconButton(
-                onClick = {
-                    show = !show
+            val successState = state as? SecondClassState.Success
+            if (successState == null) {
+                SecondClassDefaultMenu()
+            } else {
+                val menuItemEnabled = !successState.loading
+                val refreshRotation = if (successState.loading) {
+                    val refreshTransition = rememberInfiniteTransition(label = "second-refresh")
+                    val rotation by refreshTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 1000, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "second-refresh-rotation"
+                    )
+                    rotation
+                } else {
+                    0f
                 }
-            ) {
-                AnimatedContent(
-                    targetState = show,
-                    label = "logcat-actions",
-                    transitionSpec = createMenuButtonAnim { show }
+                var show by remember {
+                    mutableStateOf(false)
+                }
+                IconButton(
+                    onClick = {
+                        show = !show
+                    }
                 ) {
-                    Icon(
-                        imageVector = if (it) Icons.Default.Close else Icons.Default.Menu,
-                        contentDescription = null
+                    AnimatedContent(
+                        targetState = show,
+                        label = "logcat-actions",
+                        transitionSpec = createMenuButtonAnim { show }
+                    ) {
+                        Icon(
+                            imageVector = if (it) Icons.Default.Close else Icons.Default.Menu,
+                            contentDescription = null
+                        )
+                    }
+                }
+                DropdownMenu(
+                    expanded = show,
+                    onDismissRequest = { show = false },
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("刷新")
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "刷新",
+                                modifier = Modifier.rotate(refreshRotation)
+                            )
+                        },
+                        enabled = menuItemEnabled,
+                        onClick = {
+                            model.login()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text("退出二课")
+                        },
+                        leadingIcon = {
+                            Icon(Icons.AutoMirrored.Filled.ExitToApp, "test")
+                        },
+                        enabled = menuItemEnabled,
+                        onClick = {
+                            model.exit()
+                        }
                     )
                 }
-            }
-            DropdownMenu(
-                expanded = show,
-                onDismissRequest = { show = false },
-            ) {
-                DropdownMenuItem(
-                    text = {
-                        Text("退出二课")
-                    },
-                    leadingIcon = {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, "test")
-                    },
-                    onClick = {
-                        model.exit()
-                    }
-                )
             }
         }
     ) {
@@ -159,8 +206,6 @@ fun SecondClassScreen() {
             }
         }
 
-        val state by model.collectAsState()
-
         SecondClassScreenContent(
             state = state,
             onLoginButtonClicked = { vpn, tw ->
@@ -169,6 +214,18 @@ fun SecondClassScreen() {
         )
     }
 
+}
+
+@Composable
+private fun SecondClassDefaultMenu() {
+    val nav = LocalNavController.current
+    IconButton(
+        onClick = {
+            nav.navigate(SettingsRoute)
+        },
+    ) {
+        Icon(Icons.Default.AccountBox, contentDescription = "返回")
+    }
 }
 
 @Composable

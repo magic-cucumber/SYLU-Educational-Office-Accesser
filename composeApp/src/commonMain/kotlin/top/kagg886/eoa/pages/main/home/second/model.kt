@@ -35,23 +35,19 @@ class SecondClassModel(
         val cache = secondClassDao.all()
 
         if (cache.isNotEmpty()) {
-            reduce { SecondClassState.Success(cache) }
+            reduce { SecondClassState.Success(false, cache) }
         }
 
         if (AppSecondClassMMKV.vpnPassword.isBlank() || AppSecondClassMMKV.twPassword.isBlank()) { //初始情况直接跳转到配置页面
             if (cache.isEmpty()) {
-                reduce { SecondClassState.RequireLogin("", "") }
+                reduce {
+                    SecondClassState.RequireLogin(
+                        AppSecondClassMMKV.vpnPassword,
+                        AppSecondClassMMKV.twPassword
+                    )
+                }
             }
             return@container
-        }
-
-        if (cache.isEmpty()) {
-            reduce {
-                SecondClassState.RequireLogin(
-                    AppSecondClassMMKV.vpnPassword,
-                    AppSecondClassMMKV.twPassword
-                )
-            }
         }
         login().join()
     }
@@ -70,6 +66,9 @@ class SecondClassModel(
     ) = intent {
         runOn<SecondClassState.RequireLogin> {
             reduce { state.copy(vpn = vPassword, tw = tPassword, progress = true) }
+        }
+        runOn<SecondClassState.Success> {
+            reduce { state.copy(loading = true) }
         }
         log.i("开始登录VPN")
         val vpn = VPNClient(
@@ -148,7 +147,7 @@ class SecondClassModel(
         }
 
         secondClassDao.replaceAll(data)
-        reduce { SecondClassState.Success(data) }
+        reduce { SecondClassState.Success(false, data) }
         AppSecondClassMMKV.vpnPassword = vPassword
         AppSecondClassMMKV.twPassword = tPassword
     }
@@ -170,7 +169,11 @@ sealed interface SecondClassState {
 
     data class RequireLogin(val vpn: String, val tw: String, val progress: Boolean = false) : SecondClassState
 
-    data class Success(val value: Map<SecondClassDataSummary, List<SecondClassData>>) : SecondClassState
+    data class Success(
+        val loading: Boolean = false,
+        val value: Map<SecondClassDataSummary, List<SecondClassData>>
+    ) :
+        SecondClassState
 }
 
 
