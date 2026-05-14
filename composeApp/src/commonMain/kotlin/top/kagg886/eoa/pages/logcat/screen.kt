@@ -27,6 +27,7 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.ExpandableText
+import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.collectAsLazyPagingItems
 import top.kagg886.eoa.util.createMenuButtonAnim
@@ -37,7 +38,7 @@ import top.kagg886.util.ChinaTimeFormater
 data object LogcatRoute
 
 @Composable
-fun LogcatScreen() {
+fun LogcatScreen() = MainScreen {
     val rootViewModel = rootViewModel()
 
     val model = viewModel {
