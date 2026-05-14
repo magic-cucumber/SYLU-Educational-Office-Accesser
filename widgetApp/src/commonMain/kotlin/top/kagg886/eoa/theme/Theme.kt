@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 import com.materialkolor.DynamicMaterialTheme
 
 @Composable
-internal fun AppTheme(
+fun AppTheme(
     color: Color,
     nightTheme: Boolean,
     content: @Composable () -> Unit
