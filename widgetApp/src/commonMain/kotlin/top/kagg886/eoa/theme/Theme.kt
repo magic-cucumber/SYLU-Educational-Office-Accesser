@@ -1,5 +1,6 @@
 package top.kagg886.eoa.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.DynamicMaterialTheme
@@ -10,7 +11,9 @@ internal fun AppTheme(
     nightTheme: Boolean,
     content: @Composable () -> Unit
 ) {
-    SystemAppearance(nightTheme)
+    val systemIsDark = isSystemInDarkTheme()
+
+    SystemAppearance(systemIsDark)
     DynamicMaterialTheme(
         seedColor = color,
         isDark = nightTheme,
