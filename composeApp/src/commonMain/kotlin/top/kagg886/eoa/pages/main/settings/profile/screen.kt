@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
+import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
 import top.kagg886.eoa.pages.main.settings.list.SettingsModel
@@ -27,7 +28,7 @@ data object SettingsProfile
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsProfileScreen() {
+fun SettingsProfileScreen() = MainScreen {
     val nav = LocalNavController.current
     val mainRouteViewModel = mainViewModel()
     val mainState by mainRouteViewModel.collectAsState()

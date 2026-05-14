@@ -25,6 +25,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
@@ -38,7 +39,7 @@ import kotlin.time.ExperimentalTime
 data object SyncSettingsRoute
 
 @Composable
-fun SyncSettingsScreen() {
+fun SyncSettingsScreen() = MainScreen {
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
     val syncDuration by rootState.syncDuration.collectAsState()

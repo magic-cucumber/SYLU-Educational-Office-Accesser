@@ -33,6 +33,7 @@ import sylu_eoa.composeapp.generated.resources.icon
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.config.BuildConfig
+import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.setText
@@ -42,7 +43,7 @@ data object AboutRoute
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutScreen() {
+fun AboutScreen() = MainScreen {
     var showDonationDialog by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboard.current
     val uriHandler = LocalUriHandler.current

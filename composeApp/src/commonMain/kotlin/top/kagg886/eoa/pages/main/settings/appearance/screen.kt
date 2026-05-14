@@ -20,6 +20,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.display
 import top.kagg886.eoa.pages.rootViewModel
@@ -34,7 +35,7 @@ import kotlin.time.ExperimentalTime
 data object AppearanceSettingsRoute
 
 @Composable
-fun AppearanceSettingsScreen() {
+fun AppearanceSettingsScreen() = MainScreen {
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
     val color by rootState.color.collectAsState()
