@@ -61,8 +61,8 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
     val appLogDao = database.appLogDao()
 
     override val container: Container<RootState, RootEffect> = container(RootState()) {
-        appLogDao.clear((Clock.System.now() - 1.days).toEpochMilliseconds())
-        "RootViewModel".asTaggedLogger.i("日志清理成功。")
+        val count = appLogDao.clear((Clock.System.now() - 1.days).toEpochMilliseconds())
+        "RootViewModel".asTaggedLogger.i("清理了 $count 条数据。")
 
         viewModelScope.launch {
             state.theme.collect {

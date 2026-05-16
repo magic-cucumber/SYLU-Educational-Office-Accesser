@@ -9,27 +9,41 @@ import androidx.paging.cachedIn
 import co.touchlab.kermit.Severity
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
-import io.github.vinceglb.filekit.writeString
+import io.github.vinceglb.filekit.sink
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.io.buffered
+import kotlinx.io.writeString
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
+import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
-import top.kagg886.backend.database.dao.AppLogDao
+import top.kagg886.backend.database.dao.log
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.logger
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 
-class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost<LogcatState, LogcatSideEffect> {
+class LogcatModel(private val database: AppDatabase) : ViewModel(), ContainerHost<LogcatState, LogcatSideEffect> {
+    private val appLogDao = database.appLogDao()
     override val container: Container<LogcatState, LogcatSideEffect> = container(LogcatState.Loading) { all().join() }
 
     fun all(level: Severity? = Severity.Info) = intent {
-        val data = Pager(config = PagingConfig(10)) { appLogDao.getLogsByPage(level?.ordinal) }.flow.cachedIn(viewModelScope)
+        val data = Pager(
+            config = PagingConfig(
+                10,
+                enablePlaceholders = false
+            )
+        ) { appLogDao.getLogsByPage(level?.ordinal) }.flow.cachedIn(viewModelScope)
 
         reduce {
             LogcatState.LoadingSuccess(level, data)
@@ -48,9 +62,6 @@ class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost
     }
 
     fun export() = intent {
-        val data = withContext(Dispatchers.IO) {
-            appLogDao.getLogs()
-        }
         val file = FileKit.openFileSaver(
             suggestedName = "EOA log export - ${Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())}",
             extension = "log",
@@ -61,16 +72,43 @@ class LogcatModel(private val appLogDao: AppLogDao) : ViewModel(), ContainerHost
             return@intent
         }
 
-        withContext(Dispatchers.IO) {
-            file.writeString(data.joinToString("\n") { bean ->
-                val stacktrace = bean.stacktrace?.let { "\n${it}" } ?: ""
-                with(bean) {
-                    "$time ${level.name.take(1)}/$tag: $message$stacktrace"
-                }
-            })
+        val data = withContext(Dispatchers.IO) {
+            database.log()
         }
 
-        postSideEffect(LogcatSideEffect.ShowToast(SnackBarType.Success, "日志导出成功"))
+        val count = appLogDao.count().toFloat()
+
+        @OptIn(OrbitExperimental::class)
+        runOn<LogcatState.LoadingSuccess> {
+            reduce {
+                state.copy(exporting = true, exportingProgress = 0, exportingAll = count)
+            }
+
+            withContext(Dispatchers.IO) {
+                val sink = file.sink().buffered()
+                @OptIn(ExperimentalCoroutinesApi::class)
+                data.chunked(20).collect { data -> //flush data in every 20 lines.
+                    sink.writeString(
+                        data.joinToString("\n") { bean ->
+                            val stacktrace = bean.stacktrace?.let { "\n${it}" } ?: ""
+                            with(bean) {
+                                "$time ${level.name.take(1)}/$tag: $message$stacktrace"
+                            }
+                        }
+                    )
+                    sink.flush()
+                    reduce {
+                        state.copy(exportingProgress = state.exportingProgress + data.size)
+                    }
+                }
+            }
+
+            postSideEffect(LogcatSideEffect.ShowToast(SnackBarType.Success, "日志导出成功"))
+
+            reduce {
+                state.copy(exporting = false, exportingProgress = 0, exportingAll = 0f)
+            }
+        }
     }
 }
 
@@ -79,7 +117,11 @@ sealed class LogcatState {
     data object Loading : LogcatState()
     data class LoadingSuccess(
         val severity: Severity?,
-        val flow: Flow<PagingData<AppLog>>
+        val flow: Flow<PagingData<AppLog>>,
+
+        val exporting: Boolean = false,
+        val exportingProgress: Int = 0,
+        val exportingAll: Float = 0f,
     ) : LogcatState()
 }
 

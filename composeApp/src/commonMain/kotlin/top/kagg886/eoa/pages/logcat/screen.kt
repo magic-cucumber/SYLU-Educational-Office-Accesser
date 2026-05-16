@@ -42,7 +42,7 @@ fun LogcatScreen() = MainScreen {
     val rootViewModel = rootViewModel()
 
     val model = viewModel {
-        LogcatModel(rootViewModel.appLogDao)
+        LogcatModel(rootViewModel.database)
     }
 
     val snack = LocalSnackBarHost.current
@@ -88,6 +88,17 @@ private fun LogcatScreenContent(
 ) = when (state) {
     LogcatState.Loading -> {}
     is LogcatState.LoadingSuccess -> {
+
+        if (state.exporting) {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("正在导出...") },
+                icon = { Icon(Icons.Default.Download, null) },
+                text = { LinearProgressIndicator(progress = { state.exportingProgress / state.exportingAll }, modifier = Modifier.fillMaxWidth()) },
+                confirmButton = { },
+            )
+        }
+
         val data = state.flow.collectAsLazyPagingItems()
 
         when {
