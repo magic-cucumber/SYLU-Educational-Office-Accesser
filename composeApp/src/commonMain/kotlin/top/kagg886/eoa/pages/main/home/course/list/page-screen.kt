@@ -72,6 +72,7 @@ fun CoursePageListScreen(
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
     val theme by rootState.theme.collectAsState()
+    val hideWeekendCourse by rootState.hideWeekendCourse.collectAsState()
 
     val systemNight = isSystemInDarkTheme()
     val useNightMode = remember(theme, systemNight) {
@@ -86,6 +87,7 @@ fun CoursePageListScreen(
         index = index,
         state = state,
         useNightMode = useNightMode,
+        hideWeekendCourse = hideWeekendCourse,
         onCourseItemClicked = {
             model.navigateToCourseDetail(it)
         },
@@ -100,6 +102,7 @@ private fun CoursePageScreenContent(
     index: Int,
     state: CoursePageState,
     useNightMode: Boolean,
+    hideWeekendCourse: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
     onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit
 ) {
@@ -140,6 +143,7 @@ private fun CoursePageScreenContent(
             CoursePageScreenSuccess(
                 state = state,
                 useNightMode = useNightMode,
+                hideWeekendCourse = hideWeekendCourse,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
                 modifier = Modifier.fillMaxSize().verticalScroll(scroll).miuiLongShotSupport(enabled = coursePagerState.currentPage == index, scrollState = scroll)
@@ -153,6 +157,7 @@ private fun CoursePageScreenContent(
 private fun CoursePageScreenSuccess(
     state: CoursePageState.Success,
     useNightMode: Boolean,
+    hideWeekendCourse: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
     onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit,
     modifier: Modifier = Modifier
@@ -194,7 +199,19 @@ private fun CoursePageScreenSuccess(
 
                 LessonIndicatorColumn(expanded = expandedLessonIndicator)
             }
-            for (i in 1..7) {
+            val visibleDays = remember(hideWeekendCourse, state.currentWeekCourse) {
+                if (
+                    hideWeekendCourse &&
+                    state.currentWeekCourse[6].isNullOrEmpty() &&
+                    state.currentWeekCourse[7].isNullOrEmpty()
+                ) {
+                    1..5
+                } else {
+                    1..7
+                }
+            }
+
+            for (i in visibleDays) {
                 Column(Modifier.weight(1f)) {
                     val date = state.thisWeekStartDate.plus(i - 1, DateTimeUnit.DAY)
                     val isCurrentDay = date == state.currentDate

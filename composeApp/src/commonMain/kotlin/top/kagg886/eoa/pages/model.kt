@@ -95,6 +95,12 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         }
 
         viewModelScope.launch {
+            state.hideWeekendCourse.collect {
+                AppSettingsMMKV.hideWeekendCourse = it
+            }
+        }
+
+        viewModelScope.launch {
             state.syncDuration.collect {
                 AppSettingsMMKV.syncDuration = it
             }
@@ -126,6 +132,10 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 
     fun postShowExperimentClassSetting(enabled: Boolean) = intent {
         state.showExperimentClass.value = enabled
+    }
+
+    fun postHideWeekendCourseSetting(enabled: Boolean) = intent {
+        state.hideWeekendCourse.value = enabled
     }
 
     fun log(severity: Severity, tag: String, message: String, throwable: Throwable?) = intent {
@@ -181,7 +191,8 @@ data class RootState(
     val module: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(AppSettingsMMKV.homeModule),
     val syncDuration: MutableStateFlow<Duration> = MutableStateFlow(AppSettingsMMKV.syncDuration),
     val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius),
-    val showExperimentClass: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showExperimentClass)
+    val showExperimentClass: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showExperimentClass),
+    val hideWeekendCourse: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.hideWeekendCourse)
 )
 
 sealed interface RootEffect {

@@ -43,6 +43,7 @@ fun AppearanceSettingsScreen() = MainScreen {
     val module by rootState.module.collectAsState()
     val systemWidgetRadius by rootState.systemWidgetRadius.collectAsState()
     val showExperimentClass by rootState.showExperimentClass.collectAsState()
+    val hideWeekendCourse by rootState.hideWeekendCourse.collectAsState()
     val snack = LocalSnackBarHost.current
 
     AppearanceSettingsContent(
@@ -51,11 +52,13 @@ fun AppearanceSettingsScreen() = MainScreen {
         module = module,
         systemWidgetRadius = systemWidgetRadius,
         showExperimentClass = showExperimentClass,
+        hideWeekendCourse = hideWeekendCourse,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
         onModuleChanged = rootModel::postEOAModuleSetting,
         onSystemWidgetRadiusChanged = rootModel::postSystemWidgetRadiusSetting,
         onShowExperimentClassChanged = rootModel::postShowExperimentClassSetting,
+        onHideWeekendCourseChanged = rootModel::postHideWeekendCourseSetting,
         onEggClicked = {
             snack.showSnackBar(SnackBarType.Error, "为什么要演奏春...")
         }
@@ -70,11 +73,13 @@ private fun AppearanceSettingsContent(
     module: List<EOAHomeModule>,
     systemWidgetRadius: Boolean,
     showExperimentClass: Boolean,
+    hideWeekendCourse: Boolean,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
     onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
     onSystemWidgetRadiusChanged: (Boolean) -> Unit,
     onShowExperimentClassChanged: (Boolean) -> Unit,
+    onHideWeekendCourseChanged: (Boolean) -> Unit,
     onEggClicked: () -> Unit,
 ) {
     Scaffold(
@@ -301,6 +306,23 @@ private fun AppearanceSettingsContent(
                     }
                 )
             }
+
+            ListItem(
+                headlineContent = { Text("隐藏周末课程") },
+                supportingContent = { Text("若周六/日均无课程，则课表页周六/日会被隐藏。") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.EventBusy,
+                        "隐藏周末课程"
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = hideWeekendCourse,
+                        onCheckedChange = onHideWeekendCourseChanged
+                    )
+                }
+            )
 
             ListItem(
                 headlineContent = { Text("显示实验课提示") },
