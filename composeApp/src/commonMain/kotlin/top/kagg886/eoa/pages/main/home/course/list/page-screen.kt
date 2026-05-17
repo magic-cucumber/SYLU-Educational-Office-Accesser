@@ -83,6 +83,7 @@ fun CoursePageListScreen(
     }
 
     CoursePageScreenContent(
+        index = index,
         state = state,
         useNightMode = useNightMode,
         onCourseItemClicked = {
@@ -96,6 +97,7 @@ fun CoursePageListScreen(
 
 @Composable
 private fun CoursePageScreenContent(
+    index: Int,
     state: CoursePageState,
     useNightMode: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
@@ -125,13 +127,22 @@ private fun CoursePageScreenContent(
 
         is CoursePageState.Success -> {
 
+            val mainViewModel = mainViewModel()
+            val syncState by mainViewModel.collectAsState()
+            val courseModel = viewModel<CourseListViewModel>(key = syncState.toString())
+            val courseState by courseModel.collectAsState()
+            val coursePagerState = remember(courseState) {
+                (courseState as? CourseListState.Success)!!.state
+            }
+
             val scroll = rememberScrollState()
+
             CoursePageScreenSuccess(
                 state = state,
                 useNightMode = useNightMode,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
-                modifier = Modifier.fillMaxSize().verticalScroll(scroll).miuiLongShotSupport(scroll)
+                modifier = Modifier.fillMaxSize().verticalScroll(scroll).miuiLongShotSupport(enabled = coursePagerState.currentPage == index, scrollState = scroll)
             )
         }
     }

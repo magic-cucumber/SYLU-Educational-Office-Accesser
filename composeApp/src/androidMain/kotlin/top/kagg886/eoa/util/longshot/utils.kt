@@ -3,10 +3,7 @@ package top.kagg886.eoa.util.longshot
 import android.content.Context
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import top.kagg886.util.asTaggedLogger
 
@@ -41,20 +38,20 @@ internal class ScrollStateLongShotTarget(
         } else {
             scrollState.value > 0
         }
-        logger.i("ScrollState target canScrollVertically(direction=$direction) -> $result，value=${scrollState.value}，max=${scrollState.maxValue}")
+        logger.d("ScrollState target canScrollVertically(direction=$direction) -> $result，value=${scrollState.value}，max=${scrollState.maxValue}")
         return result
     }
 
     override fun scrollBy(x: Int, y: Int) {
-        logger.i("ScrollState target scrollBy(x=$x, y=$y)，before=${scrollState.value}")
+        logger.d("ScrollState target scrollBy(x=$x, y=$y)，before=${scrollState.value}")
         scope.launch {
             scrollState.scrollBy(y.toFloat())
-            logger.i("ScrollState target scrollBy 完成，after=${scrollState.value}")
+            logger.d("ScrollState target scrollBy 完成，after=${scrollState.value}")
         }
     }
 
     override fun getScrollY(): Int {
-        logger.i("ScrollState target getScrollY -> ${scrollState.value}")
+        logger.d("ScrollState target getScrollY -> ${scrollState.value}")
         return scrollState.value
     }
 }

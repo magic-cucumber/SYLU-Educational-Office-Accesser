@@ -46,7 +46,7 @@ fun ComponentActivity.setContent(
             .getChildAt(0) as? LongShotRootView
 
     if (existingLongShotRoot != null) {
-        logger.i("复用 MIUI 长截屏代理根布局")
+        logger.d("复用 MIUI 长截屏代理根布局")
         setOwners()
         existingLongShotRoot.setContent(parent, content)
     } else {
@@ -135,7 +135,7 @@ private class MiuiLongShotControlView(
     private val defaultFillerHeightDp = defaultLongShotFillerHeightDp()
 
     init {
-        logger.i("创建 MIUI 长截屏代理 View，默认 fillerHeight=${defaultFillerHeightDp}px")
+        logger.d("创建 MIUI 长截屏代理 View，默认 fillerHeight=${defaultFillerHeightDp}px")
         alpha = 0f
         isFillViewport = true
         isVerticalScrollBarEnabled = false
@@ -162,17 +162,17 @@ private class MiuiLongShotControlView(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        logger.i("MIUI 长截屏代理 View 已挂载")
+        logger.d("MIUI 长截屏代理 View 已挂载")
         fillerHeightJob = MainScope().launch(Dispatchers.Main.immediate) {
             registry.targetFlow.collectLatest { target ->
-                logger.i("长截屏 active target 变化：${target?.let { it::class.simpleName } ?: "null"}")
+                logger.d("长截屏 active target 变化：${target?.let { it::class.simpleName } ?: "null"}")
                 updateFillerHeight(target?.fillerHeightDp ?: defaultFillerHeightDp)
             }
         }
     }
 
     override fun onDetachedFromWindow() {
-        logger.i("MIUI 长截屏代理 View 已卸载")
+        logger.d("MIUI 长截屏代理 View 已卸载")
         fillerHeightJob?.cancel()
         fillerHeightJob = null
         super.onDetachedFromWindow()
@@ -181,19 +181,19 @@ private class MiuiLongShotControlView(
     override fun canScrollVertically(direction: Int): Boolean {
         val target = registry.target()
         val result = target?.canScrollVertically(direction) ?: false
-        logger.i("代理 View canScrollVertically(direction=$direction) -> $result，target=${target?.let { it::class.simpleName } ?: "null"}")
+        logger.d("代理 View canScrollVertically(direction=$direction) -> $result，target=${target?.let { it::class.simpleName } ?: "null"}")
         return result
     }
 
     override fun scrollBy(x: Int, y: Int) {
         val target = registry.target()
-        logger.i("代理 View scrollBy(x=$x, y=$y)，target=${target?.let { it::class.simpleName } ?: "null"}")
+        logger.d("代理 View scrollBy(x=$x, y=$y)，target=${target?.let { it::class.simpleName } ?: "null"}")
         super.scrollBy(x, y)
         target?.scrollBy(x, y)
     }
 
     override fun setDrawingCacheEnabled(enabled: Boolean) {
-        logger.i("代理 drawing cache enabled=$enabled")
+        logger.d("代理 drawing cache enabled=$enabled")
         super.setDrawingCacheEnabled(enabled)
         contentView.isDrawingCacheEnabled = enabled
     }
@@ -203,18 +203,18 @@ private class MiuiLongShotControlView(
     }
 
     override fun buildDrawingCache(autoScale: Boolean) {
-        logger.i("代理 buildDrawingCache(autoScale=$autoScale)")
+        logger.d("代理 buildDrawingCache(autoScale=$autoScale)")
         super.buildDrawingCache(autoScale)
         contentView.buildDrawingCache(autoScale)
     }
 
     override fun getDrawingCache(autoScale: Boolean): Bitmap? {
-        logger.i("代理 getDrawingCache(autoScale=$autoScale)")
+        logger.d("代理 getDrawingCache(autoScale=$autoScale)")
         return contentView.getDrawingCache(autoScale)
     }
 
     override fun destroyDrawingCache() {
-        logger.i("代理 destroyDrawingCache")
+        logger.d("代理 destroyDrawingCache")
         super.destroyDrawingCache()
         contentView.destroyDrawingCache()
     }
@@ -224,10 +224,9 @@ private class MiuiLongShotControlView(
     override fun onTouchEvent(ev: MotionEvent): Boolean = false
 
     private fun updateFillerHeight(heightDp: Int) {
-        logger.i("更新长截屏代理高度：${heightDp}px")
+        logger.d("更新长截屏代理高度：${heightDp}px")
         val params = fillerView.layoutParams
         params.height = heightDp.dpToPx(context)
         fillerView.layoutParams = params
     }
 }
-
