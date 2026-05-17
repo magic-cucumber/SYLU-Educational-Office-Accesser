@@ -26,8 +26,8 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.about.AboutRoute
-import top.kagg886.eoa.pages.logcat.LogcatRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
@@ -66,11 +66,11 @@ fun SettingListScreen() = MainScreen {
         onSyncSettingsClicked = {
             nav.navigate(SyncSettingsRoute)
         },
+        onAdvancedSettingsClicked = {
+            nav.navigate(AdvancedSettingsRoute)
+        },
         onAboutClicked = {
             nav.navigate(AboutRoute)
-        },
-        onLogcatClicked = {
-            nav.navigate(LogcatRoute)
         }
     )
 }
@@ -83,8 +83,8 @@ private fun SettingScreenContent(
     onLogoutButtonClicked: () -> Unit,
     onAppearanceSettingsClicked: () -> Unit,
     onSyncSettingsClicked: () -> Unit,
+    onAdvancedSettingsClicked: () -> Unit,
     onAboutClicked: () -> Unit,
-    onLogcatClicked: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -295,16 +295,22 @@ private fun SettingScreenContent(
             )
 
             ListItem(
-                headlineContent = {
-                    Text("系统日志")
-                },
+                headlineContent = { Text("高级") },
                 leadingContent = {
                     Icon(
                         Icons.Default.DeveloperMode,
-                        contentDescription = "系统设置",
+                        contentDescription = "高级设置",
                     )
                 },
-                modifier = Modifier.clickable(onClick = onLogcatClicked)
+                trailingContent = {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "进入",
+                    )
+                },
+                modifier = Modifier.clickable {
+                    onAdvancedSettingsClicked()
+                }
             )
 
             val rootViewModel = rootViewModel()

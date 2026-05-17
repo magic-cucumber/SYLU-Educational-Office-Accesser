@@ -16,6 +16,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.chunked
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -43,7 +44,7 @@ class LogcatModel(private val database: AppDatabase) : ViewModel(), ContainerHos
                 10,
                 enablePlaceholders = false
             )
-        ) { appLogDao.getLogsByPage(level?.ordinal) }.flow.cachedIn(viewModelScope)
+        ) { appLogDao.getLogsByPage(level?.ordinal) }.flow.cachedIn(viewModelScope + Dispatchers.IO)
 
         reduce {
             LogcatState.LoadingSuccess(level, data)
