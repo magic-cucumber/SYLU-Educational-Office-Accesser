@@ -128,7 +128,7 @@ private fun CoursePageScreenContent(
                 useNightMode = useNightMode,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             )
         }
     }
@@ -151,7 +151,7 @@ private fun CoursePageScreenSuccess(
         }
         val expandedLessonIndicator = lessonIndicatorWidth >= 72.dp
 
-        Row(Modifier.verticalScroll(rememberScrollState())) {
+        Row {
             Column(Modifier.width(lessonIndicatorWidth)) {
                 // 第一个格子显示本周首天的月份
                 Surface(

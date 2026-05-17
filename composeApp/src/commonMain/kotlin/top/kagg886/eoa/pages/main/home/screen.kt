@@ -80,7 +80,7 @@ fun HomeScreen(
                 )
             }
 
-            val otherModule = EOAHomeModule.entries - homeModule
+            val otherModule = EOAHomeModule.entries - homeModule.toSet()
             if (otherModule.isNotEmpty()) {
                 var popMenu by mutableStateOf(false)
                 item(
