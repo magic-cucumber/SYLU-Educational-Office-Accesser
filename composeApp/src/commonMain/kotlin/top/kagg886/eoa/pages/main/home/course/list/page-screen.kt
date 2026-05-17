@@ -38,6 +38,7 @@ import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.rootViewModel
+import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
@@ -123,12 +124,14 @@ private fun CoursePageScreenContent(
         }
 
         is CoursePageState.Success -> {
+
+            val scroll = rememberScrollState()
             CoursePageScreenSuccess(
                 state = state,
                 useNightMode = useNightMode,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                modifier = Modifier.fillMaxSize().verticalScroll(scroll).miuiLongShotSupport(scroll)
             )
         }
     }
