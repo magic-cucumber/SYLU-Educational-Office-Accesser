@@ -43,36 +43,46 @@ import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.MMKVOptions
 import top.kagg886.mkmb.initializeWithMultiProcess
 import top.kagg886.util.dataPath
+import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 import kotlin.coroutines.resume
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.setUnhandledExceptionHook
 
+@OptIn(ExperimentalNativeApi::class)
 @Suppress("unused")
-fun MainViewController(): UIViewController = ComposeUIViewController {
-    setSingletonImageLoaderFactory { context ->
-        ImageLoader.Builder(context)
-            .installCoilConfig()
-            .build()
+fun MainViewController(): UIViewController {
+    setUnhandledExceptionHook {
+        "MainViewController".asTaggedLogger.a(it) { "App crashed" }
     }
 
-    initializeMMKV()
-    MMKV.initializeWithMultiProcess(dataPath.toString(), MMKVOptions().apply {
-        logFunc = { level, tag, it ->
-            logger.log(
-                severity = when (level) {
-                    MMKVOptions.LogLevel.Debug -> Severity.Debug
-                    MMKVOptions.LogLevel.Info -> Severity.Info
-                    MMKVOptions.LogLevel.Warning -> Severity.Warn
-                    MMKVOptions.LogLevel.Error -> Severity.Error
-                    MMKVOptions.LogLevel.None -> Severity.Assert
-                },
-                tag = "MMKV $tag",
-                message = it,
-                throwable = null
-            )
+    return ComposeUIViewController {
+        setSingletonImageLoaderFactory { context ->
+            ImageLoader.Builder(context)
+                .installCoilConfig()
+                .build()
         }
-    })
-    App()
+
+        initializeMMKV()
+        MMKV.initializeWithMultiProcess(dataPath.toString(), MMKVOptions().apply {
+            logFunc = { level, tag, it ->
+                logger.log(
+                    severity = when (level) {
+                        MMKVOptions.LogLevel.Debug -> Severity.Debug
+                        MMKVOptions.LogLevel.Info -> Severity.Info
+                        MMKVOptions.LogLevel.Warning -> Severity.Warn
+                        MMKVOptions.LogLevel.Error -> Severity.Error
+                        MMKVOptions.LogLevel.None -> Severity.Assert
+                    },
+                    tag = "MMKV $tag",
+                    message = it,
+                    throwable = null
+                )
+            }
+        })
+        App()
+    }
 }
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)

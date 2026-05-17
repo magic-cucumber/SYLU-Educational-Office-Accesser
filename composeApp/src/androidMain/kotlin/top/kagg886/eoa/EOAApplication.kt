@@ -5,12 +5,27 @@ import android.app.Application
 import android.content.Context
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import top.kagg886.util.asTaggedLogger
 
-class EOAApplication : Application(), SingletonImageLoader.Factory {
+class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.UncaughtExceptionHandler {
+    private val logger = "EOAApplication".asTaggedLogger
+    private var defaultUncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler(this)
+    }
+
     override fun newImageLoader(context: Context): ImageLoader {
         return ImageLoader.Builder(context)
             .installCoilConfig()
             .build()
+    }
+
+    override fun uncaughtException(t: Thread, e: Throwable) {
+        logger.a(e) { "App crashed on thread ${t.name}" }
+        defaultUncaughtExceptionHandler?.uncaughtException(t, e)
     }
 
     companion object {
