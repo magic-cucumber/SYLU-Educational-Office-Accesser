@@ -3,7 +3,7 @@ package top.kagg886.eoa.pages.main.home.course.list
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.datetime.*
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -26,7 +26,7 @@ class CoursePageViewModel(
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
+                    setDataUnsafe()
                     return@container
                 }
                 // 否则提示同步失败
@@ -40,7 +40,7 @@ class CoursePageViewModel(
             if (syncState is MainRouteViewState.SyncProcess) {
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
+                    setDataUnsafe()
                     return@container
                 }
                 // 否则展示加载中
@@ -52,40 +52,42 @@ class CoursePageViewModel(
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
-                setDataUnsafe().join()
+                setDataUnsafe()
                 return@container
             }
         }
 
     fun setDataUnsafe() = intent {
-        withContext(Dispatchers.IO) {
-            val courseGroupByWeekNumber = courseRecordDao
-                .getCoursesWithRecordInfo(weekNumber = weekNumber)
-                .groupBy { it.record.dayOfWeek }
-                .map { (weekNumber, courseAndRecord) ->
-                    weekNumber to courseAndRecord.groupBy { it.record.periodOfDay }
-                }
-                .toMap()
+        courseRecordDao
+            .getCoursesWithRecordInfoFlow(weekNumber = weekNumber)
+            .flowOn(Dispatchers.IO)
+            .collect { course ->
+                val data = course
+                    .groupBy { it.record.dayOfWeek }
+                    .map { (weekNumber, courseAndRecord) ->
+                        weekNumber to courseAndRecord.groupBy { it.record.periodOfDay }
+                    }
+                    .toMap()
 
-            reduce {
-                CoursePageState.Success(
-                    thisWeekStartDate = AppSyncMMKV.calender!!.start.plus(
-                        weekNumber - 1,
-                        DateTimeUnit.WEEK
-                    ),
-                    currentWeekCourse = courseGroupByWeekNumber,
-                    currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
-                )
+                reduce {
+                    CoursePageState.Success(
+                        thisWeekStartDate = AppSyncMMKV.calender!!.start.plus(
+                            weekNumber - 1,
+                            DateTimeUnit.WEEK
+                        ),
+                        currentWeekCourse = data,
+                        currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                    )
+                }
             }
-        }
     }
 
     fun navigateToCourseDetail(it: CourseAndRecord) = intent {
         postSideEffect(CoursePageSideEffect.NavigateToCourseDetail(it.record.id!!))
     }
 
-    fun navigateToConflictDetail(weekNumber: Int,dayOfWeek:Int, periodOfDay:Int) = intent {
-         postSideEffect(CoursePageSideEffect.NavigateToConflictDetail(weekNumber,dayOfWeek, periodOfDay))
+    fun navigateToConflictDetail(weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) = intent {
+        postSideEffect(CoursePageSideEffect.NavigateToConflictDetail(weekNumber, dayOfWeek, periodOfDay))
     }
 }
 
@@ -102,5 +104,6 @@ sealed interface CoursePageState {
 
 sealed interface CoursePageSideEffect {
     data class NavigateToCourseDetail(val recordId: Long) : CoursePageSideEffect
-    data class NavigateToConflictDetail(val weekNumber: Int,val dayOfWeek:Int, val periodOfDay:Int) : CoursePageSideEffect
+    data class NavigateToConflictDetail(val weekNumber: Int, val dayOfWeek: Int, val periodOfDay: Int) :
+        CoursePageSideEffect
 }

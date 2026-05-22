@@ -9,6 +9,7 @@ import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
+import kotlinx.coroutines.flow.Flow
 
 @Entity(
     tableName = "course_records",
@@ -83,6 +84,39 @@ interface CourseRecordDao {
         dayOfWeek: Int? = null,
         periodOfDay: Int? = null
     ): List<CourseAndRecord>
+
+    @Query(
+        """
+    SELECT 
+        c.id AS id,
+        c.name AS name,
+        c.teacherName AS teacherName,
+        c.classroomName AS classroomName,
+        c.credits AS credits,
+        c.isDegreeRequired AS isDegreeRequired,
+        c.isExaminable AS isExaminable,
+        c.isUserAdded AS isUserAdded,
+        c.yearCode AS yearCode,
+        c.semesterCode AS semesterCode,
+        
+        cr.id AS record_id,
+        cr.courseId AS record_courseId,
+        cr.weekNumber AS record_weekNumber,
+        cr.dayOfWeek AS record_dayOfWeek,
+        cr.periodOfDay AS record_periodOfDay,
+        cr.isUserAdded AS record_isUserAdded
+        
+    FROM courses c
+    JOIN course_records cr ON cr.courseId = c.id
+    WHERE cr.weekNumber = :weekNumber AND (:dayOfWeek IS NULL OR cr.dayOfWeek = :dayOfWeek) AND (:periodOfDay IS NULL OR cr.periodOfDay = :periodOfDay)
+    ORDER BY cr.periodOfDay
+"""
+    )
+    fun getCoursesWithRecordInfoFlow(
+        weekNumber: Int,
+        dayOfWeek: Int? = null,
+        periodOfDay: Int? = null
+    ): Flow<List<CourseAndRecord>>
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

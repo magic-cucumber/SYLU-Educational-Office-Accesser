@@ -254,14 +254,14 @@ private fun CourseListScreenContent(
 
 @Composable
 private fun CourseDrawerContent(
-    state: CourseListState.Success,
+    state: CourseListState.Success
 ) {
     HorizontalPager(
         state = state.state,
         modifier = Modifier.fillMaxSize(),
     ) {
         CoursePageListScreen(
-            index = it
+            index = it,
         )
     }
 }
