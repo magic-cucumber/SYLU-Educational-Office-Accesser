@@ -281,22 +281,16 @@ private fun CaptchaSlider(
             onValueChange = { ratio ->
                 sliderPosPx = (ratio * maxSliderPx).coerceIn(0f, maxSliderPx)
             },
-            modifier = Modifier.width(targetWidth)
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Button(
-            onClick = {
+            onValueChangeFinished = {
                 // 直接传组件宽度与滑块距离（组件像素）
                 val canvas = canvasWidthPx.toInt()
                 val move = sliderPosPx.toInt()
                 onResultResolved(canvas, move)
             },
-            enabled = maxSliderPx > 0f
-        ) {
-            Text("提交")
-        }
+            modifier = Modifier.width(targetWidth)
+        )
+
+        Spacer(Modifier.height(8.dp))
     }
 }
 

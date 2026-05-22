@@ -245,10 +245,6 @@ internal class TestEOAClient : EOAClient {
             GPAScoreSummary(
                 name = "2023学年第一学期",
                 score = 3.78
-            ),
-            GPAScoreSummary(
-                name = "总体GPA",
-                score = 3.42
             )
         )
     }
@@ -256,36 +252,28 @@ internal class TestEOAClient : EOAClient {
     override suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore> {
         return when (summary.name) {
             "2024学年第一学期" -> listOf(
-                GPAScore(name = "高等数学", score = "85"),
-                GPAScore(name = "线性代数", score = "92"),
-                GPAScore(name = "程序设计基础", score = "78"),
-                GPAScore(name = "大学英语", score = "55"),
-                GPAScore(name = "体育", score = "88")
+                GPAScore(name = "人工智能：无尽的前沿", score = "2.0"),
+                GPAScore(name = "大语言模型及AIGC基础导论", score = "1.5"),
+                GPAScore(name = "迈向共生、共享、共创的人工智能时代——DeepSeek大模型原理、技术与应用", score = "1.0"),
+                GPAScore(name = "AI技术的最新发展和挑战", score = "1.0"),
+                GPAScore(name = "新科技革命解放人脑", score = "0.5")
             )
 
             "2023学年第二学期" -> listOf(
-                GPAScore(name = "数据结构", score = "72"),
-                GPAScore(name = "计算机组成原理", score = "80"),
-                GPAScore(name = "概率论与数理统计", score = "75"),
-                GPAScore(name = "大学物理", score = "68"),
-                GPAScore(name = "马克思主义基本原理", score = "82")
+                GPAScore(name = "科技革命与大国兴衰", score = "2.0"),
+                GPAScore(name = "新一轮科技革命的发展趋势与未来展望", score = "1.5"),
+                GPAScore(name = "科技革命与国家命运", score = "1.0"),
+                GPAScore(name = "历史上的科技革命与产业变革", score = "1.0"),
+                GPAScore(name = "新科技革命与产业变革", score = "0.5")
             )
 
             "2023学年第一学期" -> listOf(
-                GPAScore(name = "C语言程序设计", score = "90"),
-                GPAScore(name = "高等数学(上)", score = "88"),
-                GPAScore(name = "大学英语(1)", score = "85"),
-                GPAScore(name = "思想道德与法治", score = "92"),
-                GPAScore(name = "军事理论", score = "95")
+                GPAScore(name = "赋能无处不在的3D智能：多粒度算法与硬件的协同", score = "2.0"),
+                GPAScore(name = "极端天气与突发事件对交通运行影响分析", score = "1.5"),
+                GPAScore(name = "怀疑立场与革命性科技突破：来自超越知识理论的启示", score = "1.0"),
+                GPAScore(name = "“新的科学革命的结构”中的哲学与科学", score = "1.0"),
+                GPAScore(name = "AI赋能的信任与可信AI", score = "0.5")
             )
-
-            "总体GPA" -> listOf(
-                GPAScore(name = "专业课平均分", score = "82.5"),
-                GPAScore(name = "公共课平均分", score = "78.3"),
-                GPAScore(name = "选修课平均分", score = "85.7"),
-                GPAScore(name = "实践课平均分", score = "90.2")
-            )
-
             else -> listOf()
         }
     }
