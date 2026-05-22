@@ -3,6 +3,17 @@ on:
   push:
     branches:
       - '*'
+    paths:
+      - buildSrc/**
+      - composeApp/**
+      - composeApp-backend/**
+      - eoa-lib/**
+      - lib/**
+      - iosApp/**
+      - second-class/**
+      - util/**
+      - widgetApp/**
+      - .github/workflows/CI.yml
   pull_request:
   workflow_dispatch:
 
