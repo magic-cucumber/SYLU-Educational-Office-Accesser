@@ -30,7 +30,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/kagg886/SYLU-Educational-Office-Accesser' }
+      { icon: 'github', link: 'https://gitee.com/kagg886/SYLU-Educational-Office-Accesser' }
     ]
   }
 })
