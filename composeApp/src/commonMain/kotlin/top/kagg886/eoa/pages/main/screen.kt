@@ -18,10 +18,10 @@ import top.kagg886.eoa.util.showSnackBar
 
 @Composable
 fun MainScreen(content: @Composable () -> Unit) {
-    val model = mainViewModel()
+    val model = mainViewModelOrNull()
     val nav = LocalNavController.current
     val snack = LocalSnackBarHost.current
-    model.collectSideEffect { effect ->
+    model?.collectSideEffect { effect ->
         when (effect) {
             is MainRouteViewEffect.Toast -> {
                 snack.showSnackBar(
@@ -29,7 +29,7 @@ fun MainScreen(content: @Composable () -> Unit) {
                     title = when (effect.type) {
                         Success -> "成功"
                         Warning -> "警告"
-                        SnackBarType.Error -> "错误"
+                        Error -> "错误"
                         Info -> "信息"
                     },
                     description = effect.message,

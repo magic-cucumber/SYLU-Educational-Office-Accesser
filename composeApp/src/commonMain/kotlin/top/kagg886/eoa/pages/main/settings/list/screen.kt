@@ -27,6 +27,7 @@ import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.about.AboutRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
@@ -40,7 +41,8 @@ data object SettingListRoute
 @Composable
 fun SettingListScreen() = MainScreen {
     val nav = LocalNavController.current
-    val mainRouteViewModel = mainViewModel()
+    val mainRouteViewModel = mainViewModelOrNull() ?: return@MainScreen
+
     val mainState by mainRouteViewModel.collectAsState()
     val model = viewModel(key = mainState.toString()) {
         SettingsModel(mainState, mainRouteViewModel.database)

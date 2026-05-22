@@ -13,21 +13,21 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.MainScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 
 @Serializable
 data object LogoutConfirmRoute
 
 @Composable
 fun LogoutConfirmScreen() = MainScreen {
-    val model = mainViewModel()
+    val model = mainViewModelOrNull()
     val nav = LocalNavController.current
     DialogPageScaffold(
         title = { Text("退出登录") },
         icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
         confirmButton = {
             TextButton(
-                onClick = { model.logout() },
+                onClick = { model?.logout() },
             ) {
                 Text("确认")
             }

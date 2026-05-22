@@ -25,6 +25,7 @@ import top.kagg886.util.asTaggedLogger
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
+@Deprecated("it will be throw error when main-route not attached. such as exit login.",replaceWith = ReplaceWith("mainViewModelOrNull()"))
 @Composable
 fun mainViewModel(): MainRouteViewModel = mainViewModelOrNull() ?: throw IllegalArgumentException("No destination with route MainRoute is on the NavController's back stack.")
 @Composable
