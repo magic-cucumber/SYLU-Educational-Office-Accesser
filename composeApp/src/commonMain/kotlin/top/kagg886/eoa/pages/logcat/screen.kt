@@ -23,12 +23,20 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.AppLog
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.ExpandableText
+import top.kagg886.eoa.pages.login.LoginRoute
+import top.kagg886.eoa.pages.main.MainRouteViewEffect
 import top.kagg886.eoa.pages.main.MainScreen
+import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
+import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.SnackBarType.Success
+import top.kagg886.eoa.util.SnackBarType.Warning
 import top.kagg886.eoa.util.collectAsLazyPagingItems
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
@@ -38,14 +46,42 @@ import top.kagg886.util.ChinaTimeFormater
 data object LogcatRoute
 
 @Composable
-fun LogcatScreen() = MainScreen {
+fun LogcatScreen() {
+    val mainModel = mainViewModelOrNull()
+    val nav = LocalNavController.current
+    val snack = LocalSnackBarHost.current
     val rootViewModel = rootViewModel()
-
     val model = viewModel {
         LogcatModel(rootViewModel.database)
     }
 
-    val snack = LocalSnackBarHost.current
+    mainModel?.collectSideEffect { effect ->
+        when (effect) {
+            is MainRouteViewEffect.Toast -> {
+                snack.showSnackBar(
+                    type = effect.type,
+                    title = when (effect.type) {
+                        Success -> "成功"
+                        Warning -> "警告"
+                        SnackBarType.Error -> "错误"
+                        SnackBarType.Info -> "信息"
+                    },
+                    description = effect.message,
+                )
+            }
+
+            is MainRouteViewEffect.NavigateToLogin -> {
+                nav.navigate(LoginRoute) {
+                    popUpTo(nav.graph.id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
+
+
     model.collectSideEffect {
         when (it) {
             is LogcatSideEffect.ShowToast -> snack.showSnackBar(it.level, it.message)
@@ -68,7 +104,7 @@ fun LogcatScreen() = MainScreen {
         }
 
         LogcatScreenFAB(
-            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd),
+            modifier = Modifier.padding(16.dp).align(Alignment.BottomEnd).navigationBarsPadding(),
             expand = expand,
             onExpandChangeRequest = { expand = it },
             severity = (state as? LogcatState.LoadingSuccess)?.severity,
@@ -184,6 +220,11 @@ private fun LogcatScreenContent(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         reverseLayout = true,
                         state = scrollState,
+                        // 三大金刚键适配
+                        contentPadding = PaddingValues(
+                            top = 0.dp,
+                            bottom = WindowInsets.safeGestures.asPaddingValues().calculateBottomPadding()
+                        )
                     ) {
                         items(
                             count = data.itemCount,

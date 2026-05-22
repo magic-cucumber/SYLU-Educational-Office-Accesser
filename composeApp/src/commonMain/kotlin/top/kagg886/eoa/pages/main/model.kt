@@ -1,9 +1,11 @@
 package top.kagg886.eoa.pages.main
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.delay
 import kotlin.time.Instant
 import org.orbitmvi.orbit.Container
@@ -24,11 +26,20 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun mainViewModel(): MainRouteViewModel {
+fun mainViewModel(): MainRouteViewModel = mainViewModelOrNull() ?: throw IllegalArgumentException("No destination with route MainRoute is on the NavController's back stack.")
+@Composable
+fun mainViewModelOrNull(): MainRouteViewModel? {
     val nav = LocalNavController.current
-    val parentEntry = remember {
-        nav.getBackStackEntry(MainRoute) // 嵌套图 route
+
+    val state by nav.currentBackStackEntryAsState()
+    val parentEntry = remember(state) {
+        runCatching { nav.getBackStackEntry(MainRoute) }.getOrNull() // 嵌套图 route
     }
+
+    if (parentEntry == null) {
+        return null
+    }
+
     val rootModel = rootViewModel()
     return viewModel(parentEntry) {
         MainRouteViewModel(rootModel.database)
