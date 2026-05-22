@@ -19,7 +19,7 @@ import top.kagg886.calender.data.Event
 
 internal class AndroidCalenderManager internal constructor(val ctx: Context, account: String) :
     NativeCalenderManager {
-    val accountId = getCalenderAccount(account)
+    val accountId by lazy { getCalenderAccount(account) }
 
     override fun getEvents(): List<Event> {
 
