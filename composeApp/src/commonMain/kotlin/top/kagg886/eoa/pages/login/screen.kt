@@ -113,43 +113,35 @@ private fun LoginScreenContent(
                 onDismissRequest = {
                     onVerifyCodeInput("")
                 },
-                title = { Text("请输入验证码") },
+                title = { Text("请输入下方图片中显示的验证码") },
                 text = {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("请输入下方图片中显示的验证码")
+                        // Display the captcha image with same height as the text field
+                        AsyncImage(
+                            model = state.data,
+                            contentDescription = "验证码图片",
+                            modifier = Modifier.height(56.dp),
+                            contentScale = ContentScale.FillHeight
+                        )
+
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Row(
+                        OutlinedTextField(
+                            value = captchaText,
+                            onValueChange = { captchaText = it },
+                            singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = captchaText,
-                                onValueChange = { captchaText = it },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                                label = { Text("验证码") },
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = {
-                                    if (captchaText.isNotBlank()) {
-                                        onVerifyCodeInput(captchaText)
-                                    }
-                                })
-                            )
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            // Display the captcha image with same height as the text field
-                            AsyncImage(
-                                model = state.data,
-                                contentDescription = "验证码图片",
-                                modifier = Modifier.height(56.dp),
-                                contentScale = ContentScale.FillHeight
-                            )
-                        }
+                            label = { Text("验证码") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = {
+                                if (captchaText.isNotBlank()) {
+                                    onVerifyCodeInput(captchaText)
+                                }
+                            })
+                        )
                     }
                 },
                 confirmButton = {
