@@ -1,6 +1,9 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.Container
@@ -24,7 +27,7 @@ class CourseManageListModel(
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
+                    setDataUnsafe()
                     return@container
                 }
                 // 否则提示同步失败
@@ -38,7 +41,7 @@ class CourseManageListModel(
             if (syncState is MainRouteViewState.SyncProcess) {
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
+                    setDataUnsafe()
                     return@container
                 }
                 // 否则展示加载中
@@ -50,7 +53,7 @@ class CourseManageListModel(
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
-                setDataUnsafe().join()
+                setDataUnsafe()
                 return@container
             }
         }
@@ -62,14 +65,17 @@ class CourseManageListModel(
         if (isBeforeInTerm) w = 0
         if (isInHoliday) w = AppSyncMMKV.calender!!.count()
 
-        val entity = courseDao.all()
-        reduce {
-            CourseManageState.Success(
-                currentWeek = w,
-                data = entity,
-                onlyShowUserCourse = onlyShowUserCourse,
-            )
-        }
+        courseDao.allFlow()
+            .flowOn(Dispatchers.IO)
+            .collect { entity ->
+                reduce {
+                    CourseManageState.Success(
+                        currentWeek = w,
+                        data = entity,
+                        onlyShowUserCourse = onlyShowUserCourse,
+                    )
+                }
+            }
     }
 
     @OptIn(OrbitExperimental::class)

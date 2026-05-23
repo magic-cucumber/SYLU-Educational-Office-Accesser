@@ -1,6 +1,7 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room3.*
+import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -40,6 +41,9 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
     suspend fun all(onlyUserAdded: Boolean = false): List<CourseEntity>
+
+    @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
+    fun allFlow(onlyUserAdded: Boolean = false): Flow<List<CourseEntity>>
 
     @Insert
     suspend fun insert(item: CourseEntity): Long
