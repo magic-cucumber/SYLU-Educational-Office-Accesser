@@ -16,7 +16,7 @@ private let widgetLogPrefix = "[TodayCourseWidget]"
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> CourseEntry {
         Self.log("placeholder requested")
-        
+
         return CourseEntry(date: Date(), content: .loading)
     }
 
@@ -37,8 +37,9 @@ struct Provider: TimelineProvider {
         Self.log("getTimeline requested, family=\(String(describing: context.family))")
         Task {
             let entry = await loadEntry()
-            let timeline = Timeline(entries: [entry], policy: .after(Self.nextMidnight()))
-            Self.log("getTimeline completed, entry=\(entry.content.debugDescription), nextReload=\(Self.nextMidnight())")
+            let nextReload = Self.nextReloadDate(for: entry)
+            let timeline = Timeline(entries: [entry], policy: .after(nextReload))
+            Self.log("getTimeline completed, entry=\(entry.content.debugDescription), nextReload=\(nextReload)")
             completion(timeline)
         }
     }
@@ -48,11 +49,11 @@ struct Provider: TimelineProvider {
         Self.log("loadEntry started at \(date)")
 
         do {
-            WidgetRuntime.bootstrap()
-            Self.log("WidgetRuntime bootstrapped, requesting Kotlin WidgetRepository.getTodayCourses()")
-            let result = try await WidgetRepository().getTodayCourses()
-            Self.log("Kotlin WidgetRepository returned type=\(String(describing: type(of: result))), value=\(String(describing: result))")
-            let content = CourseResultParser.parse(result)
+            let repository = WidgetRuntime.repository()
+            Self.log("WidgetRuntime repository ready, requesting Kotlin WidgetRepository.getTodayCourses()")
+            let courses: [TodayClass]? = try await repository.getTodayCourses()
+            Self.log("Kotlin WidgetRepository returned courses count=\(courses?.count ?? 0)")
+            let content = CourseResultParser.parse(courses)
             Self.log("parsed content=\(content.debugDescription)")
             return CourseEntry(date: date, content: content)
         } catch {
@@ -69,6 +70,20 @@ struct Provider: TimelineProvider {
         ) ?? Date().addingTimeInterval(24 * 60 * 60)
     }
 
+    private static func nextReloadDate(for entry: CourseEntry, from now: Date = Date()) -> Date {
+        let frequentRefresh = now.addingTimeInterval(15 * 60)
+        var candidates = [frequentRefresh, nextMidnight()]
+
+        if case .loaded(let courses) = entry.content {
+            candidates += courses
+                .compactMap { $0.endDate(onSameDayAs: now) }
+                .filter { $0 > now }
+                .map { $0.addingTimeInterval(60) }
+        }
+
+        return candidates.min() ?? frequentRefresh
+    }
+
     private static func log(_ message: String) {
         print("\(widgetLogPrefix) Provider: \(message)")
     }
@@ -78,22 +93,29 @@ private enum WidgetRuntime {
     private static let lock = NSLock()
     private static var bootstrapped = false
     private static var database: AppDatabase?
+    private static var cachedRepository: WidgetRepository?
 
-    static func bootstrap() {
+    static func repository() -> WidgetRepository {
         log("bootstrap requested")
         lock.lock()
         defer { lock.unlock() }
 
-        guard !bootstrapped else {
+        if let cachedRepository {
             log("bootstrap skipped, already bootstrapped")
-            return
+            return cachedRepository
         }
+
         log("initializing MMKV via shared Kotlin initializeMMKV()")
         Mmkv_iosKt.initializeMMKV()
         log("building Room database")
-        database = DatabaseKt.databaseBuilder().build()
+        let database = DatabaseKt.databaseBuilder().build()
+        self.database = database
+        log("building WidgetRepository")
+        let repository = WidgetRepository(database: database)
+        cachedRepository = repository
         bootstrapped = true
         log("bootstrap completed")
+        return repository
     }
 
     private static func log(_ message: String) {
@@ -133,6 +155,7 @@ struct CourseViewModel: Identifiable {
     let location: String
     let period: Int
     let timeRange: String
+    let endMinuteOfDay: Int?
     let progress: Float?
 
     init(course: TodayClass) {
@@ -141,26 +164,53 @@ struct CourseViewModel: Identifiable {
         teacher = course.teacher
         location = course.location
         period = Int(course.period)
-        timeRange = Self.formatTimeRange(course)
+        let formattedTime = Self.formattedTimeRange(course)
+        timeRange = formattedTime.text
+        endMinuteOfDay = Self.minuteOfDay(from: formattedTime.end)
         progress = course.progress?.floatValue
     }
 
-    init(id: Int64, name: String, teacher: String, location: String, period: Int, timeRange: String, progress: Float?) {
+    init(id: Int64, name: String, teacher: String, location: String, period: Int, timeRange: String, endMinuteOfDay: Int?, progress: Float?) {
         self.id = id
         self.name = name
         self.teacher = teacher
         self.location = location
         self.period = period
         self.timeRange = timeRange
+        self.endMinuteOfDay = endMinuteOfDay
         self.progress = progress
     }
 
-    private static func formatTimeRange(_ course: TodayClass) -> String {
-        guard let start = course.date.first, let end = course.date.second else {
-            return ""
+    var isFinished: Bool {
+        guard let endMinuteOfDay else {
+            return false
         }
 
-        return "\(format(start))-\(format(end))"
+        let components = Calendar.current.dateComponents([.hour, .minute], from: Date())
+        let currentMinute = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+        return currentMinute >= endMinuteOfDay
+    }
+
+    func endDate(onSameDayAs date: Date) -> Date? {
+        guard let endMinuteOfDay else {
+            return nil
+        }
+
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        components.hour = endMinuteOfDay / 60
+        components.minute = endMinuteOfDay % 60
+        components.second = 0
+        return Calendar.current.date(from: components)
+    }
+
+    private static func formattedTimeRange(_ course: TodayClass) -> (text: String, end: String) {
+        guard let start = course.date.first, let end = course.date.second else {
+            return ("", "")
+        }
+
+        let startText = format(start)
+        let endText = format(end)
+        return ("\(startText)-\(endText)", endText)
     }
 
     private static func format(_ time: Any) -> String {
@@ -171,6 +221,17 @@ struct CourseViewModel: Identifiable {
         return text
     }
 
+    private static func minuteOfDay(from time: String) -> Int? {
+        let parts = time.split(separator: ":")
+        guard parts.count >= 2,
+              let hour = Int(parts[0]),
+              let minute = Int(parts[1]) else {
+            return nil
+        }
+
+        return hour * 60 + minute
+    }
+
     static let samples = [
         CourseViewModel(
             id: 1,
@@ -179,6 +240,7 @@ struct CourseViewModel: Identifiable {
             location: "A101",
             period: 1,
             timeRange: "08:00-09:35",
+            endMinuteOfDay: 9 * 60 + 35,
             progress: 0.42
         ),
         CourseViewModel(
@@ -188,58 +250,33 @@ struct CourseViewModel: Identifiable {
             location: "B203",
             period: 3,
             timeRange: "10:00-11:35",
+            endMinuteOfDay: 11 * 60 + 35,
             progress: nil
         )
     ]
 }
 
 private enum CourseResultParser {
-    static func parse(_ result: Any?) -> CourseContent {
-        if let courses = result as? [TodayClass] {
-            log("received Swift [TodayClass], count=\(courses.count)")
-            return courses.isEmpty ? .message("今日无课程!") : .loaded(courses.map(CourseViewModel.init(course:)))
-        }
-
-        if let array = result as? NSArray {
-            log("received NSArray, count=\(array.count), elementTypes=\(array.map { String(describing: type(of: $0)) })")
-            let courses = array.compactMap { $0 as? TodayClass }
-            if courses.count == array.count {
-                return courses.isEmpty ? .message("今日无课程!") : .loaded(courses.map(CourseViewModel.init(course:)))
-            }
-        }
-
-        guard let result else {
-            log("received nil result")
+    static func parse(_ courses: [TodayClass]?) -> CourseContent {
+        guard let courses else {
+            log("received nil courses")
             return .error("暂无课程数据")
         }
 
-        log("received non-course result type=\(String(describing: type(of: result))), value=\(String(describing: result))")
-        return .error(readableFailureMessage(from: result))
+        log("received courses, count=\(courses.count)")
+        let visibleCourses = courses
+            .map(CourseViewModel.init(course:))
+            .filter { !$0.isFinished }
+
+        if courses.isEmpty {
+            return .message("今日无课程!")
+        }
+
+        return visibleCourses.isEmpty ? .message("今日课程已结束") : .loaded(visibleCourses)
     }
 
     private static func log(_ message: String) {
         print("\(widgetLogPrefix) Parser: \(message)")
-    }
-
-    private static func readableFailureMessage(from result: Any) -> String {
-        let text = String(describing: result)
-        let patterns = [
-            #"message=([^,)]+)"#,
-            #"IllegalStateException: ([^)]*)"#,
-            #"Failure\((.*)\)"#
-        ]
-
-        for pattern in patterns {
-            if let range = text.range(of: pattern, options: .regularExpression) {
-                return String(text[range])
-                    .replacingOccurrences(of: "message=", with: "")
-                    .replacingOccurrences(of: "IllegalStateException: ", with: "")
-                    .replacingOccurrences(of: "Failure(", with: "")
-                    .replacingOccurrences(of: ")", with: "")
-            }
-        }
-
-        return text.isEmpty ? "暂无课程数据" : text
     }
 }
 
@@ -332,37 +369,69 @@ private struct EmptyCourseView: View {
 
 private struct CourseListView: View {
     let courses: [CourseViewModel]
+    private let rowPadding: CGFloat = 6
+    private let maxVisibleCourseCount = 2
 
     var body: some View {
-        VStack(spacing: 8) {
-            ForEach(courses.prefix(3)) { course in
-                CourseItemView(course: course)
+        let visibleCourses = Array(courses.prefix(maxVisibleCourseCount))
+
+        VStack(spacing: rowPadding) {
+            ForEach(0..<maxVisibleCourseCount, id: \.self) { index in
+                Group {
+                    if index < visibleCourses.count {
+                        CourseItemView(
+                            course: visibleCourses[index],
+                            position: itemPosition(at: index, count: visibleCourses.count)
+                        )
+                    } else {
+                        Color.clear
+                    }
+                }
+                .frame(maxHeight: .infinity)
             }
         }
+        .padding(rowPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private func itemPosition(at index: Int, count: Int) -> CourseItemPosition {
+        if count <= 1 {
+            return .single
+        }
+
+        if index == 0 {
+            return .top
+        }
+
+        if index == count - 1 {
+            return .bottom
+        }
+
+        return .middle
     }
 }
 
 private struct CourseItemView: View {
     let course: CourseViewModel
+    let position: CourseItemPosition
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(color(for: course.name))
                 .frame(width: 4)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(course.name)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
 
                 HStack(spacing: 4) {
-                    Text("\(formatPeriod(course.period)) · \(course.location)")
+                    Text(detailText)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .minimumScaleFactor(0.7)
 
                     Spacer(minLength: 4)
 
@@ -373,22 +442,21 @@ private struct CourseItemView: View {
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-
-                if !course.timeRange.isEmpty {
-                    Text(course.timeRange)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
             }
         }
-        .padding(8)
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(.quaternary, in: CourseItemShape(position: position, radius: 8))
+        .clipped()
     }
 
-    private func formatPeriod(_ period: Int) -> String {
-        "第\(period)-\(period + 1)节"
+    private var detailText: String {
+        if course.timeRange.isEmpty {
+            return course.location
+        }
+
+        return "\(course.timeRange) - \(course.location)"
     }
 
     private func color(for text: String) -> Color {
@@ -397,6 +465,96 @@ private struct CourseItemView: View {
         }
         return Color(hue: Double(seed % 360) / 360.0, saturation: 0.64, brightness: 0.95)
     }
+}
+
+private enum CourseItemPosition {
+    case single
+    case top
+    case middle
+    case bottom
+}
+
+private struct CourseItemShape: Shape {
+    let position: CourseItemPosition
+    let radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let corners = roundedCorners(for: position)
+        let radius = min(radius, min(rect.width, rect.height) / 2)
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.minX + (corners.topLeft ? radius : 0), y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - (corners.topRight ? radius : 0), y: rect.minY))
+
+        if corners.topRight {
+            path.addArc(
+                center: CGPoint(x: rect.maxX - radius, y: rect.minY + radius),
+                radius: radius,
+                startAngle: .degrees(-90),
+                endAngle: .degrees(0),
+                clockwise: false
+            )
+        }
+
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - (corners.bottomRight ? radius : 0)))
+
+        if corners.bottomRight {
+            path.addArc(
+                center: CGPoint(x: rect.maxX - radius, y: rect.maxY - radius),
+                radius: radius,
+                startAngle: .degrees(0),
+                endAngle: .degrees(90),
+                clockwise: false
+            )
+        }
+
+        path.addLine(to: CGPoint(x: rect.minX + (corners.bottomLeft ? radius : 0), y: rect.maxY))
+
+        if corners.bottomLeft {
+            path.addArc(
+                center: CGPoint(x: rect.minX + radius, y: rect.maxY - radius),
+                radius: radius,
+                startAngle: .degrees(90),
+                endAngle: .degrees(180),
+                clockwise: false
+            )
+        }
+
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + (corners.topLeft ? radius : 0)))
+
+        if corners.topLeft {
+            path.addArc(
+                center: CGPoint(x: rect.minX + radius, y: rect.minY + radius),
+                radius: radius,
+                startAngle: .degrees(180),
+                endAngle: .degrees(270),
+                clockwise: false
+            )
+        }
+
+        path.closeSubpath()
+        return path
+    }
+
+    private func roundedCorners(for position: CourseItemPosition) -> RoundedCorners {
+        switch position {
+        case .single:
+            return RoundedCorners(topLeft: true, topRight: true, bottomLeft: true, bottomRight: true)
+        case .top:
+            return RoundedCorners(topLeft: true, topRight: true, bottomLeft: false, bottomRight: false)
+        case .middle:
+            return RoundedCorners(topLeft: false, topRight: false, bottomLeft: false, bottomRight: false)
+        case .bottom:
+            return RoundedCorners(topLeft: false, topRight: false, bottomLeft: true, bottomRight: true)
+        }
+    }
+}
+
+private struct RoundedCorners {
+    let topLeft: Bool
+    let topRight: Bool
+    let bottomLeft: Bool
+    let bottomRight: Bool
 }
 
 struct TodayCourseWidget: Widget {
@@ -414,7 +572,8 @@ struct TodayCourseWidget: Widget {
         }
         .configurationDisplayName("今日课程")
         .description("查看今天的课程安排。")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }
 

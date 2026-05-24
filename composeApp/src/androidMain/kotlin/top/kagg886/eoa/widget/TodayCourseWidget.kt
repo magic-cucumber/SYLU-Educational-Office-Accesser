@@ -17,6 +17,8 @@ import androidx.glance.layout.padding
 import com.materialkolor.DynamicMaterialTheme
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
+import top.kagg886.backend.database.databaseBuilder
+import top.kagg886.backend.database.databasePath
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.widget.repository.TodayClass
 import top.kagg886.eoa.widget.repository.WidgetRepository
@@ -24,6 +26,7 @@ import top.kagg886.eoa.widget.ui.TodayCourseContent
 import top.kagg886.eoa.widget.util.dpFrom
 import top.kagg886.mkmb.MMKV
 import top.kagg886.util.asTaggedLogger
+import top.kagg886.util.dataPath
 import top.kagg886.util.initializeMMKV
 
 
@@ -37,13 +40,17 @@ val LocalInnerRadius = staticCompositionLocalOf<Dp> {
  */
 class TodayCourseWidget : GlanceAppWidget() {
     private val logger = "TodayCourseWidget".asTaggedLogger
+    private val database by lazy {
+        logger.i("build database, dataPath=$dataPath, databasePath=$databasePath")
+        databaseBuilder().build()
+    }
 
     @SuppressLint("RestrictedApi")
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         if (!MMKV.initialized) {
             initializeMMKV()
         }
-        val repository = WidgetRepository()
+        val repository = WidgetRepository(database)
         registerKermitLoggerIfExists(repository.logDao)
         logger.i("小组件: $id 准备绘制")
         provideContent {
@@ -98,7 +105,7 @@ private fun TodayCourseWidgetContent(
     }
 
     LaunchedEffect(Unit) {
-        courses = repository.getTodayCourses()
+        courses = runCatching { repository.getTodayCourses() }
     }
 
     TodayCourseContent(

@@ -58,8 +58,18 @@
       allowLocationSimulation = "YES"
       launchAutomaticallySubstyle = "2"
       queueDebuggingEnableBacktraceRecording = "Yes">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.springboard">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "5AC637732FC28E29002EDA6F"
+            BuildableName = "TodayCourseWidgetExtension.appex"
+            BlueprintName = "TodayCourseWidgetExtension"
+            ReferencedContainer = "container:iosApp.xcodeproj">
+         </BuildableReference>
+      </RemoteRunnable>
+      <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A93A953629CC810C00F8E227"
@@ -67,7 +77,7 @@
             BlueprintName = "iosApp"
             ReferencedContainer = "container:iosApp.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"
@@ -81,7 +91,7 @@
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "_XCWidgetFamily"
-            value = "systemMedium"
+            value = "systemSmall"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>

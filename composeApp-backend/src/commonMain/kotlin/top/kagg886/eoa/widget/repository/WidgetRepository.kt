@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import kotlin.time.Clock
 import top.kagg886.backend.config.AppSyncMMKV
+import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.databasePath
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.databaseBuilder
@@ -19,13 +20,8 @@ import top.kagg886.util.getTimeByLessonNumber
 /**
  * 小组件数据仓库，封装数据库访问逻辑
  */
-class WidgetRepository() {
+class WidgetRepository(private val database: AppDatabase) {
     private val logger = "WidgetRepository".asTaggedLogger
-
-    private val database by lazy {
-        logger.i("build database, dataPath=$dataPath, databasePath=$databasePath")
-        databaseBuilder().build()
-    }
     private val courseRecordDao by lazy { database.courseRecordDao() }
 
     val logDao by lazy { database.appLogDao() }
@@ -33,7 +29,8 @@ class WidgetRepository() {
     /**
      * 获取今日课程
      */
-    suspend fun getTodayCourses(): Result<List<TodayClass>> = withContext(Dispatchers.IO) {
+    @Throws(IllegalStateException::class)
+    suspend fun getTodayCourses(): List<TodayClass> = withContext(Dispatchers.IO) {
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         logger.i("getTodayCourses start, now=$today, timezone=${TimeZone.currentSystemDefault()}, dataPath=$dataPath, databasePath=$databasePath")
 
@@ -42,31 +39,25 @@ class WidgetRepository() {
         val calender = AppSyncMMKV.calender
         logger.i(
             "AppSync snapshot: profile=${profile?.name ?: "null"}, picker=${picker != null}, " +
-                "calender=${calender?.let { "${it.start}..${it.end}" } ?: "null"}"
+                    "calender=${calender?.let { "${it.start}..${it.end}" } ?: "null"}"
         )
 
         val (isInHoliday, isBeforeInTerm, currentWeek) = calender?.calculateWeekNumber() ?: run {
             logger.w("AppSync calender is null, widget cannot calculate current week")
-            return@withContext Result.failure(
-                IllegalStateException("请先同步数据")
-            )
+            throw IllegalStateException("请先同步数据")
         }
         logger.i("week calculation result: isInHoliday=$isInHoliday, isBeforeInTerm=$isBeforeInTerm, currentWeek=$currentWeek")
 
         if (currentWeek == -1) {
-            return@withContext when {
+            when {
                 isInHoliday -> {
                     logger.i("currentWeek=-1 because today is in holiday")
-                    Result.failure(
-                        IllegalStateException("享受假期吧!")
-                    )
+                    throw IllegalStateException("享受假期吧!")
                 }
 
                 isBeforeInTerm -> {
                     logger.i("currentWeek=-1 because today is before term")
-                    Result.failure(
-                        IllegalStateException("准备开学吧!")
-                    )
+                    throw IllegalStateException("准备开学吧!")
                 }
 
                 else -> {
@@ -84,15 +75,15 @@ class WidgetRepository() {
         )
         logger.i(
             "query course plan result: count=${plan.size}, " +
-                "records=${plan.take(5).joinToString { "${it.course.name}#${it.record.id}@period${it.record.periodOfDay}" }}"
+                    "records=${
+                        plan.take(5).joinToString { "${it.course.name}#${it.record.id}@period${it.record.periodOfDay}" }
+                    }"
         )
 
         if (plan.isEmpty()) {
             val allRecordCount = courseRecordDao.all().size
             logger.w("course plan is empty for today, totalCourseRecordCount=$allRecordCount")
-            return@withContext Result.failure(
-                IllegalStateException("今日无课程!")
-            )
+            throw IllegalStateException("今日无课程!")
         }
         //将课表计划和课表信息合并
         val period = today.time.getPeriodNumber()
@@ -104,22 +95,20 @@ class WidgetRepository() {
             current.toFloat() / all.toFloat()
         }
 
-        Result.success(
-            plan.groupBy { it.course }.flatMap { (course, records) ->
-                records.map { record ->
-                    TodayClass(
-                        name = course.name,
-                        teacher = course.teacherName,
-                        location = course.classroomName,
-                        date = getTimeByLessonNumber(record.record.periodOfDay),
-                        recordId = record.record.id!!,
-                        courseId = course.id!!,
-                        period = record.record.periodOfDay,
-                        progress = if (period == record.record.periodOfDay) progress else null
-                    )
-                }
+        plan.groupBy { it.course }.flatMap { (course, records) ->
+            records.map { record ->
+                TodayClass(
+                    name = course.name,
+                    teacher = course.teacherName,
+                    location = course.classroomName,
+                    date = getTimeByLessonNumber(record.record.periodOfDay),
+                    recordId = record.record.id!!,
+                    courseId = course.id!!,
+                    period = record.record.periodOfDay,
+                    progress = if (period == record.record.periodOfDay) progress else null
+                )
             }
-        )
+        }
     }
 
     suspend fun log(severity: Severity, tag: String, msg: String, e: Throwable? = null) = logDao.insert(
