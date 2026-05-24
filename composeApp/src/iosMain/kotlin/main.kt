@@ -6,32 +6,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.window.ComposeUIViewController
-import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
-import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.ObjCObjectVar
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.value
+import kotlinx.cinterop.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.toByteString
 import org.jetbrains.skia.Image
-import platform.Foundation.NSData
-import platform.Foundation.NSDataReadingMappedIfSafe
-import platform.Foundation.NSError
-import platform.Foundation.NSExtensionItem
-import platform.Foundation.NSItemProvider
-import platform.Foundation.NSURL
-import platform.Foundation.dataWithContentsOfURL
+import platform.Foundation.*
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIViewController
@@ -39,16 +25,11 @@ import platform.UniformTypeIdentifiers.UTTypeImage
 import top.kagg886.eoa.App
 import top.kagg886.eoa.ImageProcessingApp
 import top.kagg886.eoa.installCoilConfig
-import top.kagg886.mkmb.MMKV
-import top.kagg886.mkmb.MMKVOptions
-import top.kagg886.mkmb.initializeWithMultiProcess
-import top.kagg886.util.dataPath
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 import kotlin.coroutines.resume
 import kotlin.experimental.ExperimentalNativeApi
-import kotlin.native.setUnhandledExceptionHook
 
 @OptIn(ExperimentalNativeApi::class)
 @Suppress("unused")
@@ -64,22 +45,7 @@ fun MainViewController(): UIViewController {
                 .build()
         }
 
-        MMKV.initializeWithMultiProcess(dataPath.toString(), MMKVOptions().apply {
-            logFunc = { level, tag, it ->
-                logger.log(
-                    severity = when (level) {
-                        MMKVOptions.LogLevel.Debug -> Severity.Debug
-                        MMKVOptions.LogLevel.Info -> Severity.Info
-                        MMKVOptions.LogLevel.Warning -> Severity.Warn
-                        MMKVOptions.LogLevel.Error -> Severity.Error
-                        MMKVOptions.LogLevel.None -> Severity.Assert
-                    },
-                    tag = "MMKV $tag",
-                    message = it,
-                    throwable = null
-                )
-            }
-        })
+        initializeMMKV()
         App()
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.window.ComposeUIViewController
+import co.touchlab.kermit.Severity
 import kotlinx.cinterop.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -21,6 +22,10 @@ import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIViewController
 import platform.UniformTypeIdentifiers.UTTypeImage
 import top.kagg886.eoa.ImageProcessingApp
+import top.kagg886.mkmb.MMKV
+import top.kagg886.mkmb.MMKVOptions
+import top.kagg886.mkmb.initializeWithMultiProcess
+import top.kagg886.util.dataPath
 import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 import kotlin.coroutines.resume

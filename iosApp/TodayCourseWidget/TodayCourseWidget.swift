@@ -11,14 +11,19 @@ import SwiftUI
 import ComposeAppBackend
 
 private let todayCourseWidgetKind = "TodayCourseWidget"
+private let widgetLogPrefix = "[TodayCourseWidget]"
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> CourseEntry {
-        CourseEntry(date: Date(), content: .loading)
+        Self.log("placeholder requested")
+        
+        return CourseEntry(date: Date(), content: .loading)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CourseEntry) -> Void) {
+        Self.log("getSnapshot requested, isPreview=\(context.isPreview), family=\(String(describing: context.family))")
         if context.isPreview {
+            Self.log("getSnapshot uses built-in sample data")
             completion(CourseEntry(date: Date(), content: .loaded(CourseViewModel.samples)))
             return
         }
@@ -29,22 +34,30 @@ struct Provider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CourseEntry>) -> Void) {
+        Self.log("getTimeline requested, family=\(String(describing: context.family))")
         Task {
             let entry = await loadEntry()
             let timeline = Timeline(entries: [entry], policy: .after(Self.nextMidnight()))
+            Self.log("getTimeline completed, entry=\(entry.content.debugDescription), nextReload=\(Self.nextMidnight())")
             completion(timeline)
         }
     }
 
     private func loadEntry() async -> CourseEntry {
         let date = Date()
+        Self.log("loadEntry started at \(date)")
 
         do {
             WidgetRuntime.bootstrap()
+            Self.log("WidgetRuntime bootstrapped, requesting Kotlin WidgetRepository.getTodayCourses()")
             let result = try await WidgetRepository().getTodayCourses()
-            return CourseEntry(date: date, content: CourseResultParser.parse(result))
+            Self.log("Kotlin WidgetRepository returned type=\(String(describing: type(of: result))), value=\(String(describing: result))")
+            let content = CourseResultParser.parse(result)
+            Self.log("parsed content=\(content.debugDescription)")
+            return CourseEntry(date: date, content: content)
         } catch {
-            return CourseEntry(date: date, content: .message(error.localizedDescription))
+            Self.log("loadEntry failed: \(error.localizedDescription)")
+            return CourseEntry(date: date, content: .error(error.localizedDescription))
         }
     }
 
@@ -55,6 +68,10 @@ struct Provider: TimelineProvider {
             matchingPolicy: .nextTime
         ) ?? Date().addingTimeInterval(24 * 60 * 60)
     }
+
+    private static func log(_ message: String) {
+        print("\(widgetLogPrefix) Provider: \(message)")
+    }
 }
 
 private enum WidgetRuntime {
@@ -63,13 +80,24 @@ private enum WidgetRuntime {
     private static var database: AppDatabase?
 
     static func bootstrap() {
+        log("bootstrap requested")
         lock.lock()
         defer { lock.unlock() }
 
-        guard !bootstrapped else { return }
+        guard !bootstrapped else {
+            log("bootstrap skipped, already bootstrapped")
+            return
+        }
+        log("initializing MMKV via shared Kotlin initializeMMKV()")
         Mmkv_iosKt.initializeMMKV()
+        log("building Room database")
         database = DatabaseKt.databaseBuilder().build()
         bootstrapped = true
+        log("bootstrap completed")
+    }
+
+    private static func log(_ message: String) {
+        print("\(widgetLogPrefix) Runtime: \(message)")
     }
 }
 
@@ -82,6 +110,20 @@ enum CourseContent {
     case loading
     case loaded([CourseViewModel])
     case message(String)
+    case error(String)
+
+    var debugDescription: String {
+        switch self {
+        case .loading:
+            return "loading"
+        case .loaded(let courses):
+            return "loaded(count=\(courses.count), ids=\(courses.map(\.id)))"
+        case .message(let message):
+            return "message(\(message))"
+        case .error(let message):
+            return "error(\(message))"
+        }
+    }
 }
 
 struct CourseViewModel: Identifiable {
@@ -154,10 +196,12 @@ struct CourseViewModel: Identifiable {
 private enum CourseResultParser {
     static func parse(_ result: Any?) -> CourseContent {
         if let courses = result as? [TodayClass] {
+            log("received Swift [TodayClass], count=\(courses.count)")
             return courses.isEmpty ? .message("今日无课程!") : .loaded(courses.map(CourseViewModel.init(course:)))
         }
 
         if let array = result as? NSArray {
+            log("received NSArray, count=\(array.count), elementTypes=\(array.map { String(describing: type(of: $0)) })")
             let courses = array.compactMap { $0 as? TodayClass }
             if courses.count == array.count {
                 return courses.isEmpty ? .message("今日无课程!") : .loaded(courses.map(CourseViewModel.init(course:)))
@@ -165,10 +209,16 @@ private enum CourseResultParser {
         }
 
         guard let result else {
-            return .message("暂无课程数据")
+            log("received nil result")
+            return .error("暂无课程数据")
         }
 
-        return .message(readableFailureMessage(from: result))
+        log("received non-course result type=\(String(describing: type(of: result))), value=\(String(describing: result))")
+        return .error(readableFailureMessage(from: result))
+    }
+
+    private static func log(_ message: String) {
+        print("\(widgetLogPrefix) Parser: \(message)")
     }
 
     private static func readableFailureMessage(from result: Any) -> String {
@@ -206,20 +256,29 @@ struct TodayCourseWidgetEntryView: View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack(spacing: 8) {
-            header
-
+        Group {
             switch entry.content {
-            case .loading:
-                EmptyCourseView(message: "Loading...")
-            case .message(let message):
-                EmptyCourseView(message: message)
-            case .loaded(let courses):
-                CourseListView(courses: courses)
+            case .error(let message):
+                CenterMessageView(message: message)
+            default:
+                VStack(spacing: 8) {
+                    header
+
+                    switch entry.content {
+                    case .loading:
+                        EmptyCourseView(message: "Loading...")
+                    case .message(let message):
+                        EmptyCourseView(message: message)
+                    case .loaded(let courses):
+                        CourseListView(courses: courses)
+                    case .error:
+                        EmptyView()
+                    }
+                }
             }
         }
         .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var header: some View {
@@ -240,6 +299,20 @@ struct TodayCourseWidgetEntryView: View {
             .tint(.primary)
             .accessibilityLabel("刷新今日课程")
         }
+    }
+}
+
+private struct CenterMessageView: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .lineLimit(4)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }
 
