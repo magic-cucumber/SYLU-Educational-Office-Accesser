@@ -27,7 +27,13 @@ struct Provider: TimelineProvider {
             let entry = await loadEntry()
             let nextReloadDate = nextReloadDate(for: entry)
             
-            await WidgetRuntime.log(severity: Kermit_coreSeverity.debug,message: "getTimeLine: \(entry.state), nextReloadDate: \(nextReloadDate)")
+            // nextReloadDate 为 UTC 时间，避免用户困惑，改为东八区。
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "zh_CN")
+            formatter.timeZone = TimeZone(identifier: "Asia/Shanghai")
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            
+            await WidgetRuntime.log(severity: Kermit_coreSeverity.debug,message: "getTimeLine: \(entry.state), nextReloadDate: \(formatter.string(from: nextReloadDate))")
             
             completion(Timeline(entries: [entry], policy: .after(nextReloadDate)))
         }
