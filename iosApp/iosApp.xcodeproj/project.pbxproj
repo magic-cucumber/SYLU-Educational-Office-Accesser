@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5AC637762FC28E29002EDA6F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AC637752FC28E29002EDA6F /* WidgetKit.framework */; };
+		5AC637782FC28E29002EDA6F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AC637772FC28E29002EDA6F /* SwiftUI.framework */; };
+		5AC637832FC28E2A002EDA6F /* TodayCourseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5ADD07962F0F819700668CD4 /* ImageProcessing.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
@@ -14,6 +17,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		5AC637812FC28E2A002EDA6F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A93A952F29CC810C00F8E227 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5AC637732FC28E29002EDA6F;
+			remoteInfo = TodayCourseWidgetExtension;
+		};
 		5ADD07942F0F819700668CD4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A93A952F29CC810C00F8E227 /* Project object */;
@@ -30,6 +40,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				5AC637832FC28E2A002EDA6F /* TodayCourseWidgetExtension.appex in Embed Foundation Extensions */,
 				5ADD07962F0F819700668CD4 /* ImageProcessing.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -39,6 +50,9 @@
 
 /* Begin PBXFileReference section */
 		5A3311852F10883300B8BC53 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
+		5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TodayCourseWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5AC637752FC28E29002EDA6F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		5AC637772FC28E29002EDA6F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ImageProcessing.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953729CC810C00F8E227 /* SYLU-EOA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SYLU-EOA.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
@@ -47,6 +61,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5AC637862FC28E2A002EDA6F /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5AC637732FC28E29002EDA6F /* TodayCourseWidgetExtension */;
+		};
 		5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -57,10 +78,42 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5ADD078D2F0F819700668CD4 /* ImageProcessing */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ImageProcessing; sourceTree = "<group>"; };
+		5AC637792FC28E29002EDA6F /* TodayCourseWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5AC637862FC28E2A002EDA6F /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = TodayCourseWidget;
+			sourceTree = "<group>";
+		};
+		5ADD078D2F0F819700668CD4 /* ImageProcessing */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ImageProcessing;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5AC637712FC28E29002EDA6F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5AC637782FC28E29002EDA6F /* SwiftUI.framework in Frameworks */,
+				5AC637762FC28E29002EDA6F /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5ADD07892F0F819700668CD4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -83,6 +136,7 @@
 			children = (
 				A93A953929CC810C00F8E227 /* iosApp */,
 				5ADD078D2F0F819700668CD4 /* ImageProcessing */,
+				5AC637792FC28E29002EDA6F /* TodayCourseWidget */,
 				A93A953829CC810C00F8E227 /* Products */,
 				C4127409AE3703430489E7BC /* Frameworks */,
 			);
@@ -93,6 +147,7 @@
 			children = (
 				A93A953729CC810C00F8E227 /* SYLU-EOA.app */,
 				5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */,
+				5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -119,6 +174,8 @@
 		C4127409AE3703430489E7BC /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5AC637752FC28E29002EDA6F /* WidgetKit.framework */,
+				5AC637772FC28E29002EDA6F /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -126,6 +183,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5AC637732FC28E29002EDA6F /* TodayCourseWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5AC637872FC28E2A002EDA6F /* Build configuration list for PBXNativeTarget "TodayCourseWidgetExtension" */;
+			buildPhases = (
+				5AC637882FC28E2A002EDA6F /* Compile Kotlin Backend */,
+				5AC637702FC28E29002EDA6F /* Sources */,
+				5AC637712FC28E29002EDA6F /* Frameworks */,
+				5AC637722FC28E29002EDA6F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5AC637792FC28E29002EDA6F /* TodayCourseWidget */,
+			);
+			name = TodayCourseWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = TodayCourseWidgetExtension;
+			productReference = 5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		5ADD078B2F0F819700668CD4 /* ImageProcessing */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5ADD079B2F0F819700668CD4 /* Build configuration list for PBXNativeTarget "ImageProcessing" */;
@@ -163,6 +243,7 @@
 			);
 			dependencies = (
 				5ADD07952F0F819700668CD4 /* PBXTargetDependency */,
+				5AC637822FC28E2A002EDA6F /* PBXTargetDependency */,
 			);
 			name = iosApp;
 			productName = iosApp;
@@ -175,9 +256,12 @@
 		A93A952F29CC810C00F8E227 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 2600;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 1420;
 				TargetAttributes = {
+					5AC637732FC28E29002EDA6F = {
+						CreatedOnToolsVersion = 26.4;
+					};
 					5ADD078B2F0F819700668CD4 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -201,11 +285,19 @@
 			targets = (
 				A93A953629CC810C00F8E227 /* iosApp */,
 				5ADD078B2F0F819700668CD4 /* ImageProcessing */,
+				5AC637732FC28E29002EDA6F /* TodayCourseWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5AC637722FC28E29002EDA6F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5ADD078A2F0F819700668CD4 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -225,6 +317,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		5AC637882FC28E2A002EDA6F /* Compile Kotlin Backend */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Compile Kotlin Backend";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :composeApp-backend:embedAndSignAppleFrameworkForXcode\n";
+		};
 		A9D80A052AAB5CDE006C8738 /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -260,6 +366,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5AC637702FC28E29002EDA6F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5ADD07882F0F819700668CD4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -278,6 +391,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5AC637822FC28E2A002EDA6F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5AC637732FC28E29002EDA6F /* TodayCourseWidgetExtension */;
+			targetProxy = 5AC637812FC28E2A002EDA6F /* PBXContainerItemProxy */;
+		};
 		5ADD07952F0F819700668CD4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5ADD078B2F0F819700668CD4 /* ImageProcessing */;
@@ -286,6 +404,97 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		5AC637842FC28E2A002EDA6F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TodayCourseWidget/TodayCourseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "${TEAM_ID}";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodayCourseWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TodayCourseWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"ComposeAppBackend\"",
+					"-lsqlite3",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp.TodayCourseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5AC637852FC28E2A002EDA6F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = TodayCourseWidget/TodayCourseWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TodayCourseWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TodayCourseWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					"\"ComposeAppBackend\"",
+					"-lsqlite3",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp.TodayCourseWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		5ADD07982F0F819700668CD4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -562,6 +771,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5AC637872FC28E2A002EDA6F /* Build configuration list for PBXNativeTarget "TodayCourseWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5AC637842FC28E2A002EDA6F /* Debug */,
+				5AC637852FC28E2A002EDA6F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		5ADD079B2F0F819700668CD4 /* Build configuration list for PBXNativeTarget "ImageProcessing" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

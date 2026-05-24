@@ -18,6 +18,14 @@ kotlin {
     library(
         android = {
             publishLibraryVariants("release")
+        },
+        ios = {
+            binaries.framework {
+                baseName = "ComposeAppBackend"
+                isStatic = true
+                export(project(":util"))
+                linkerOpts += "-lsqlite3"
+            }
         }
     )
 
@@ -33,9 +41,9 @@ kotlin {
             api(libs.room.runtime)
             api(libs.room.paging)
 
-            implementation(libs.mkmb.core)
+            api(libs.mkmb.core)
 
-            implementation(project(":util"))
+            api(project(":util"))
             api(project(":eoa-lib:network-html-api"))
             api(project(":eoa-lib:network-test-api"))
             api(project(":second-class"))

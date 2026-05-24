@@ -78,7 +78,6 @@ kotlin {
             implementation(libs.orbit.viewmodel)
             implementation(libs.orbit.compose)
 
-            implementation(libs.mkmb.core)
             implementation(libs.sonner)
             implementation(libs.compose.placeholder.material3)
             implementation(libs.filekit.dialog)

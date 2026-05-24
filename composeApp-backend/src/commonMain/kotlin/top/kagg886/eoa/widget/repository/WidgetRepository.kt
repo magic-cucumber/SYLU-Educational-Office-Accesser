@@ -2,6 +2,7 @@ package top.kagg886.eoa.widget.repository
 
 import co.touchlab.kermit.Severity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import kotlin.time.Clock
@@ -30,7 +31,9 @@ class WidgetRepository() {
     suspend fun getTodayCourses(): Result<List<TodayClass>> = withContext(Dispatchers.IO) {
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
-        val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
+        val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender?.calculateWeekNumber() ?: return@withContext Result.failure(
+            IllegalStateException("请先同步数据")
+        )
 
         if (currentWeek == -1) {
             return@withContext when {

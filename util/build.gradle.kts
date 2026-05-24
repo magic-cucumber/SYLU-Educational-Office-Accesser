@@ -25,6 +25,7 @@ kotlin {
                 api(libs.ktor.client.logging)
                 api(libs.kotlinx.serialization.json)
                 api(libs.mkmb.core)
+                api(libs.kotlinx.datetime)
             }
         }
 

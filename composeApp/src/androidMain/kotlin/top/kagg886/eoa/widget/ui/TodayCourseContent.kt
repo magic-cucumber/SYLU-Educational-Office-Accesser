@@ -1,7 +1,6 @@
 package top.kagg886.eoa.widget.ui
 
 import android.annotation.SuppressLint
-import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

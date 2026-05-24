@@ -64,7 +64,6 @@ fun MainViewController(): UIViewController {
                 .build()
         }
 
-        initializeMMKV()
         MMKV.initializeWithMultiProcess(dataPath.toString(), MMKVOptions().apply {
             logFunc = { level, tag, it ->
                 logger.log(
@@ -88,23 +87,7 @@ fun MainViewController(): UIViewController {
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 @Suppress("unused")
 fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIViewController = ComposeUIViewController {
-//    initializeMMKV()
-    MMKV.initializeWithMultiProcess(dataPath.toString(), MMKVOptions().apply {
-        logFunc = { level, tag, it ->
-            logger.log(
-                severity = when (level) {
-                    MMKVOptions.LogLevel.Debug -> Severity.Debug
-                    MMKVOptions.LogLevel.Info -> Severity.Info
-                    MMKVOptions.LogLevel.Warning -> Severity.Warn
-                    MMKVOptions.LogLevel.Error -> Severity.Error
-                    MMKVOptions.LogLevel.None -> Severity.Assert
-                },
-                tag = "MMKV $tag",
-                message = it,
-                throwable = null
-            )
-        }
-    })
+    initializeMMKV()
     val image by produceState(Result.failure(Exception("No image"))) {
         val providers = item.attachments as? List<NSItemProvider> ?: return@produceState
         val provider = providers.firstOrNull { it.hasItemConformingToTypeIdentifier(UTTypeImage.identifier) }
