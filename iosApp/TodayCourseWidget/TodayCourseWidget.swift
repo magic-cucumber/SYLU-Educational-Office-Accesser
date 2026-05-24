@@ -27,7 +27,7 @@ struct Provider: TimelineProvider {
             let entry = await loadEntry()
             let nextReloadDate = nextReloadDate(for: entry)
             
-            await WidgetRuntime.log(severity: Kermit_coreSeverity.debug,messsage: "getTimeLine: \(entry.state), nextReloadDate: \(nextReloadDate)")
+            await WidgetRuntime.log(severity: Kermit_coreSeverity.debug,message: "getTimeLine: \(entry.state), nextReloadDate: \(nextReloadDate)")
             
             completion(Timeline(entries: [entry], policy: .after(nextReloadDate)))
         }
@@ -89,12 +89,12 @@ private enum WidgetRuntime {
     static let repository: WidgetRepository = {
         Mmkv_iosKt.initializeMMKV()
         let database = DatabaseKt.databaseBuilder().build()
-//        registerKermitLoggerIfExistsAppLogDao(database.appLogDao())
+        LoggerKt.registerKermitLoggerIfExists(appLogDao: database.appLogDao())
         return WidgetRepository(database: database)
     }()
     
-    static func log(severity: Kermit_coreSeverity,messsage:String) async {
-        _ = try? await WidgetRuntime.repository.log(severity: severity, tag: "TodayCourseWidget", msg: messsage, e: nil)
+    static func log(severity: Kermit_coreSeverity,message:String) async {
+        LogKt.asTaggedLogger("TodayClassWidget").log(severity: severity,tag: "TodayClassWidget", throwable: nil, message: message)
     }
 }
 
