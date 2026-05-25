@@ -2,6 +2,12 @@
 
 package top.kagg886.eoa.pages.main.settings.sync
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,6 +35,7 @@ import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -145,6 +152,7 @@ private fun SyncSettingsContent(
                                 Text("距离下次同步还有${it.toComponents { days, hours, _, _, _ -> "${days}天${hours}时" }}")
                             }
                         }
+
                         else -> Text("同步成功后，下一次同步会延长多少天")
                     }
                 },
@@ -159,11 +167,24 @@ private fun SyncSettingsContent(
                 is MainRouteViewState.SyncProcess -> "正在同步"
                 else -> "立即同步"
             }
-            val syncButtonHint = when (state) {
-                MainRouteViewState.Empty -> "初始化中"
-                is MainRouteViewState.SyncFailed -> state.message
-                is MainRouteViewState.SyncProcess -> "请稍等片刻..."
-                is MainRouteViewState.SyncSuccess -> "强制进行同步以跟进教务的最新更改。\n仅在确认教务课表变更后本地没有加载才能运行。"
+            val syncButtonHint by remember(state) {
+                derivedStateOf {
+                    when (state) {
+                        MainRouteViewState.Empty -> "初始化中"
+                        is MainRouteViewState.SyncFailed -> state.message
+                        is MainRouteViewState.SyncProcess -> when (val progress = state.progress) {
+                            MainRouteViewState.SyncProcessProgress.ProcessingCourseData -> "正在同步课程表..."
+                            is MainRouteViewState.SyncProcessProgress.ProcessingExamData -> "正在同步考试成绩..." + if (progress.current == -1) "" else "${progress.current}/${progress.all}"
+                            is MainRouteViewState.SyncProcessProgress.ProcessingGPAData -> "正在同步GPA数据..." + if (progress.current == -1) "" else "${progress.current}/${progress.all}"
+                            MainRouteViewState.SyncProcessProgress.ProcessingSchoolCalendar -> "正在同步学年日历..."
+                            is MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice -> "正在同步教务${if (progress.readable) "已读" else "未读"}通知..."
+                            MainRouteViewState.SyncProcessProgress.ProcessingTermData -> "正在获取当前学期..."
+                            MainRouteViewState.SyncProcessProgress.ProcessingUserData -> "正在获取用户信息..."
+                        }
+
+                        is MainRouteViewState.SyncSuccess -> "强制进行同步以跟进教务的最新更改。\n仅在确认教务课表变更后本地没有加载才能运行。"
+                    }
+                }
             }
             val disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             val disabledSupportingColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
@@ -188,7 +209,14 @@ private fun SyncSettingsContent(
                     )
                 },
                 supportingContent = {
-                    Text(syncButtonHint)
+                    AnimatedContent(
+                        targetState = syncButtonHint,
+                        transitionSpec = {
+                            slideInVertically { height -> height } + fadeIn() togetherWith slideOutVertically { height -> -height } + fadeOut()
+                        }
+                    ) {
+                        Text(it)
+                    }
                 },
                 modifier = Modifier.clickable(
                     enabled = syncButtonEnabled,

@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlin.time.Instant
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
@@ -25,9 +26,14 @@ import top.kagg886.util.asTaggedLogger
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
-@Deprecated("it will be throw error when main-route not attached. such as exit login.",replaceWith = ReplaceWith("mainViewModelOrNull()"))
+@Deprecated(
+    "it will be throw error when main-route not attached. such as exit login.",
+    replaceWith = ReplaceWith("mainViewModelOrNull()")
+)
 @Composable
-fun mainViewModel(): MainRouteViewModel = mainViewModelOrNull() ?: throw IllegalArgumentException("No destination with route MainRoute is on the NavController's back stack.")
+fun mainViewModel(): MainRouteViewModel = mainViewModelOrNull()
+    ?: throw IllegalArgumentException("No destination with route MainRoute is on the NavController's back stack.")
+
 @Composable
 fun mainViewModelOrNull(): MainRouteViewModel? {
     val nav = LocalNavController.current
@@ -88,128 +94,170 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
         reduce {
             MainRouteViewState.SyncProcess(
                 haveDirtyData = haveDirtyData,
+                progress = MainRouteViewState.SyncProcessProgress.ProcessingUserData
             )
         }
         logger.i("开始同步")
         postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Info, message = "开始同步"))
         val result = runCatching {
-            with(AppLoginPropertiesMMKV.client) {
-                AppSyncMMKV.profile = getUserProfile()
-                logger.i("成功同步用户信息")
-                AppSyncMMKV.calender = getSchoolCalender()
-                logger.i("成功同步校历信息")
+            @OptIn(OrbitExperimental::class)
+            runOn<MainRouteViewState.SyncProcess> {
+                with(AppLoginPropertiesMMKV.client) {
+                    AppSyncMMKV.profile = getUserProfile()
+                    logger.i("成功同步用户信息")
 
-                database.examDao().let {
-                    it.clear()
-                    for (item in getExamList()) {
-                        val details = getExamInfo(item)
-                        it.insert(item.toEntity(details))
-                    }
-                }
-                logger.i("成功同步考试信息")
+                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingSchoolCalendar) }
+                    AppSyncMMKV.calender = getSchoolCalender()
+                    logger.i("成功同步校历信息")
 
-                val gpa = database.gpaDao()
-                database.gpaSummaryDao().let {
-                    it.clear()
-                    for (item in getGPAScores()) {
-                        val gpaSummaryId = it.insert(item.toEntity())
 
-                        for (item in getGPAScoreList(item)) {
-                            gpa.insert(item.toEntity(gpaSummaryId))
+                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(-1, -1)) }
+                    database.examDao().let {
+                        it.clear()
+                        val items = getExamList()
+                        for ((i, item) in items.withIndex()) {
+                            reduce {
+                                state.copy(
+                                    progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(
+                                        i,
+                                        items.size
+                                    )
+                                )
+                            }
+                            val details = getExamInfo(item)
+                            it.insert(item.toEntity(details))
                         }
                     }
-                }
-                logger.i("成功同步GPA信息")
+                    logger.i("成功同步考试信息")
 
-                database.noticeDao().let { dao ->
-                    dao.clear()
-                    getNotice(true).forEach {
-                        dao.insert(
-                            SystemNoticeEntity(
-                                id = it.id,
-                                title = it.title,
-                                content = it.content,
-                                time = it.createTime,
-                                isRead = true
+                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(-1, -1)) }
+                    val gpa = database.gpaDao()
+                    database.gpaSummaryDao().let {
+                        it.clear()
+                        val items = getGPAScores()
+                        for ((i, item) in items.withIndex()) {
+                            reduce {
+                                state.copy(
+                                    progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(
+                                        i,
+                                        items.size
+                                    )
+                                )
+                            }
+                            val gpaSummaryId = it.insert(item.toEntity())
+                            for (item in getGPAScoreList(item)) {
+                                gpa.insert(item.toEntity(gpaSummaryId))
+                            }
+                        }
+                    }
+                    logger.i("成功同步GPA信息")
+
+                    database.noticeDao().let { dao ->
+                        dao.clear()
+
+                        reduce {
+                            state.copy(
+                                progress = MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice(
+                                    true
+                                )
                             )
-                        )
+                        }
+                        getNotice(true).forEach {
+                            dao.insert(
+                                SystemNoticeEntity(
+                                    id = it.id,
+                                    title = it.title,
+                                    content = it.content,
+                                    time = it.createTime,
+                                    isRead = true
+                                )
+                            )
+                        }
+
+                        reduce {
+                            state.copy(
+                                progress = MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice(
+                                    false
+                                )
+                            )
+                        }
+                        getNotice(false).forEach {
+                            dao.insert(
+                                SystemNoticeEntity(
+                                    id = it.id,
+                                    title = it.title,
+                                    content = it.content,
+                                    time = it.createTime,
+                                    isRead = false
+                                )
+                            )
+                        }
+                    }
+                    logger.i("成功同步系统通知")
+
+                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingTermData) }
+                    val oldPicker = AppSyncMMKV.picker
+                    AppSyncMMKV.picker = getAllAvailableTerms()
+                    logger.i("成功同步学期信息")
+
+                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingCourseData) }
+                    val courseDao = database.courseDao()
+                    val recordDao = database.courseRecordDao()
+                    val courseExtendDao = database.courseExtendDao()
+                    oldPicker?.default?.asTerm()?.run {
+                        courseDao.clear(xnm, xqm)
+                        courseExtendDao.clear(xnm, xqm)
                     }
 
-                    getNotice(false).forEach {
-                        dao.insert(
-                            SystemNoticeEntity(
-                                id = it.id,
-                                title = it.title,
-                                content = it.content,
-                                time = it.createTime,
-                                isRead = false
-                            )
-                        )
-                    }
-                }
-                logger.i("成功同步系统通知")
+                    val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)
 
-                val oldPicker = AppSyncMMKV.picker
-                AppSyncMMKV.picker = getAllAvailableTerms()
-                logger.i("成功同步学期信息")
+                    courseExtendDao.insertAll(
+                        science.flatMap {
+                            it.rangeAllTerm.map { weekNumber ->
+                                with(AppSyncMMKV.picker!!.default.asTerm()) {
+                                    CourseExtendEntity(
+                                        name = it.name,
+                                        teacherName = it.teacher,
+                                        weekNumber = weekNumber,
+                                        yearCode = xnm,
+                                        semesterCode = xqm,
+                                    )
+                                }
+                            }
+                        }
+                    )
 
-                val courseDao = database.courseDao()
-                val recordDao = database.courseRecordDao()
-                val courseExtendDao = database.courseExtendDao()
-
-                oldPicker?.default?.asTerm()?.run {
-                    courseDao.clear(xnm, xqm)
-                    courseExtendDao.clear(xnm,xqm)
-                }
-
-                val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)
-
-                courseExtendDao.insertAll(
-                    science.flatMap {
-                        it.rangeAllTerm.map { weekNumber->
-                            with(AppSyncMMKV.picker!!.default.asTerm()) {
-                                CourseExtendEntity(
-                                    name = it.name,
-                                    teacherName = it.teacher,
-                                    weekNumber = weekNumber,
+                    for (i in tables) {
+                        val bindId = courseDao.insert(
+                            item = with(AppSyncMMKV.picker!!.default.asTerm()) {
+                                CourseEntity(
+                                    name = i.name,
+                                    teacherName = i.teacher,
+                                    classroomName = i.room,
+                                    credits = i.score.toFloat(),
+                                    isDegreeRequired = i.isDegreeProgram,
+                                    isExaminable = i.classType == "考试",
                                     yearCode = xnm,
                                     semesterCode = xqm,
                                 )
                             }
-                        }
-                    }
-                )
-
-                for (i in tables) {
-                    val bindId = courseDao.insert(
-                        item = with(AppSyncMMKV.picker!!.default.asTerm()) {
-                            CourseEntity(
-                                name = i.name,
-                                teacherName = i.teacher,
-                                classroomName = i.room,
-                                credits = i.score.toFloat(),
-                                isDegreeRequired = i.isDegreeProgram,
-                                isExaminable = i.classType == "考试",
-                                yearCode = xnm,
-                                semesterCode = xqm,
-                            )
-                        }
-                    )
-                    val dayNumber = i.dayInWeek
-                    i.rangeAllTerm.forEach { weekNumber ->
-                        i.rangeEveryDay.forEach { lessonNumber ->
-                            recordDao.insert(
-                                CourseRecordEntity(
-                                    courseId = bindId,
-                                    weekNumber = weekNumber,
-                                    dayOfWeek = dayNumber.toInt(),
-                                    periodOfDay = lessonNumber
+                        )
+                        val dayNumber = i.dayInWeek
+                        i.rangeAllTerm.forEach { weekNumber ->
+                            i.rangeEveryDay.forEach { lessonNumber ->
+                                recordDao.insert(
+                                    CourseRecordEntity(
+                                        courseId = bindId,
+                                        weekNumber = weekNumber,
+                                        dayOfWeek = dayNumber.toInt(),
+                                        periodOfDay = lessonNumber
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
+                    logger.i("成功同步课程信息")
                 }
-                logger.i("成功同步课程信息")
             }
         }
 
@@ -304,7 +352,7 @@ sealed interface MainRouteViewState {
      * 正在同步
      * @param haveDirtyData 是否在之前同步过
      */
-    data class SyncProcess(val haveDirtyData: Boolean = false) :
+    data class SyncProcess(val haveDirtyData: Boolean = false, val progress: SyncProcessProgress) :
         MainRouteViewState
 
     /**
@@ -319,6 +367,45 @@ sealed interface MainRouteViewState {
      */
     data class SyncFailed(val haveDirtyData: Boolean = false, val message: String) :
         MainRouteViewState
+
+
+    sealed interface SyncProcessProgress {
+        /*
+         * 正在同步用户信息
+         */
+        data object ProcessingUserData : SyncProcessProgress
+
+        /*
+         * 正在同步校历信息
+         */
+        data object ProcessingSchoolCalendar : SyncProcessProgress
+
+        /*
+         * 正在同步考试信息
+         */
+        data class ProcessingExamData(val current: Int, val all: Int) : SyncProcessProgress
+
+        /*
+         * 正在同步 GPA 信息
+         */
+        data class ProcessingGPAData(val current: Int, val all: Int) : SyncProcessProgress
+
+        /*
+         * 正在同步系统通知
+         */
+        data class ProcessingSystemNotice(val readable: Boolean) : SyncProcessProgress
+
+        /*
+         * 正在同步学期信息
+         */
+        data object ProcessingTermData : SyncProcessProgress
+
+        /*
+         * 正在同步课程信息
+         */
+        data object ProcessingCourseData : SyncProcessProgress
+
+    }
 }
 
 sealed interface MainRouteViewEffect {
