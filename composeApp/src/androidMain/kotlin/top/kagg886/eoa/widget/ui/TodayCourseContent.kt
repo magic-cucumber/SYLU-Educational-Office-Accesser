@@ -131,7 +131,7 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(WidgetUtils.createCourseDetailAction(course.recordId))
+            .clickable(if (course.conflict) WidgetUtils.createCourseConflictAction(course.weekNumber,course.period) else WidgetUtils.createCourseDetailAction(course.recordId))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -186,7 +186,7 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
                 }
 
                 Text(
-                    text = "${WidgetUtils.formatPeriod(course.period)} • ${course.location}",
+                    text = WidgetUtils.formatPeriod(course.period) + if (!course.conflict) " • ${course.location}" else "",
                     style = TextStyle(
                         fontSize = 10.sp,
                         color = ColorProvider(MaterialTheme.colorScheme.onSurface)

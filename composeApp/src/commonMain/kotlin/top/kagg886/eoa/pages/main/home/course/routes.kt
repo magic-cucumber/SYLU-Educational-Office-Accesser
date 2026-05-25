@@ -36,7 +36,12 @@ val installCourseGraph: NavGraphBuilder.() -> Unit = {
         startDestination = CourseManageListRoute,
         builder = installCourseManageRoute
     )
-    dialog<CourseConflictRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
+    dialog<CourseConflictRoute>(
+        dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+        deepLinks = listOf(
+            navDeepLink<CourseConflictRoute>(basePath = "eoa://course/conflict")
+        )
+    ) {
         CourseConflictScreen(
             it.toRoute()
         )

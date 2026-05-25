@@ -6,14 +6,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toLocalDateTime
 import top.kagg886.eoa.AppActivity
 import top.kagg886.eoa.EOAApplication
 import top.kagg886.eoa.widget.TodayCourseWidget
 import kotlin.random.Random
+import kotlin.time.Clock
 
 /**
  * 小组件工具类
@@ -73,6 +76,17 @@ object WidgetUtils {
      */
     fun createCourseDetailAction(recordId: Long) = actionStartActivity(
         Intent(Intent.ACTION_VIEW, "eoa://course/profile/$recordId".toUri()).apply {
+            setClass(EOAApplication.getApp(), AppActivity::class.java)
+        }
+    )
+
+    fun createCourseConflictAction(weekNumber: Int, periodOfDay: Int) = actionStartActivity(
+        Intent(
+            Intent.ACTION_VIEW,
+            "eoa://course/conflict/$weekNumber/${
+                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfWeek.isoDayNumber
+            }/$periodOfDay".toUri()
+        ).apply {
             setClass(EOAApplication.getApp(), AppActivity::class.java)
         }
     )

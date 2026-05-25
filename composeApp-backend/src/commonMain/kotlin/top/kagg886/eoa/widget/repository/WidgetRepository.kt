@@ -95,20 +95,34 @@ class WidgetRepository(private val database: AppDatabase) {
             current.toFloat() / all.toFloat()
         }
 
-        plan.groupBy { it.course }.flatMap { (course, records) ->
-            records.map { record ->
+        plan
+            .map { (course, record) ->
                 TodayClass(
+                    weekNumber = currentWeek,
                     name = course.name,
                     teacher = course.teacherName,
                     location = course.classroomName,
-                    date = getTimeByLessonNumber(record.record.periodOfDay),
-                    recordId = record.record.id!!,
+                    date = getTimeByLessonNumber(record.periodOfDay),
+                    recordId = record.id!!,
                     courseId = course.id!!,
-                    period = record.record.periodOfDay,
-                    progress = if (period == record.record.periodOfDay) progress else null
+                    period = record.periodOfDay,
+                    progress = if (period == record.periodOfDay) progress else null
                 )
             }
-        }
+            .groupBy { it.date }
+            .map { (_, classes) ->
+                if (classes.size == 1) {
+                    classes.single()
+                } else {
+                    val sample = classes.first()
+                    sample.copy(
+                        name = "冲突课程 (${classes.size}) 门",
+                        teacher = "",
+                        location = "",
+                        conflict = true
+                    )
+                }
+            }
     }
 
     suspend fun log(severity: Severity, tag: String, msg: String, e: Throwable? = null) = logDao.insert(
@@ -123,6 +137,7 @@ class WidgetRepository(private val database: AppDatabase) {
 }
 
 data class TodayClass(
+    val weekNumber: Int,
     val recordId: Long,
     val courseId: Long,
     val name: String,
@@ -131,5 +146,6 @@ data class TodayClass(
     val date: Pair<LocalTime, LocalTime>,
     val period: Int,
 
-    val progress: Float? = null
+    val progress: Float? = null,
+    val conflict: Boolean = false,
 )
