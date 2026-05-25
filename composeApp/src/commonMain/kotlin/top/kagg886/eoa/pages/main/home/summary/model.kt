@@ -93,35 +93,56 @@ class SummaryModel(
         }
 
         val extendClass = courseExtendDao.all(currentWeek)
+
+        val plans: List<TodayClass> = plan
+            .map { (course, record) ->
+                TodayClass.Single(
+                    name = course.name,
+                    teacher = course.teacherName,
+                    location = course.classroomName,
+                    date = getTimeByLessonNumber(record.periodOfDay),
+                    recordId = record.id!!,
+                    courseId = course.id!!,
+                    progress = if (period == record.periodOfDay) progress else null,
+                    isDegreeProgram = course.isDegreeRequired,
+                    isExamine = course.isExaminable,
+                )
+            }
+            .groupBy { it.date }
+            .map { (_, classes) ->
+                if (classes.size == 1) {
+                    classes.single()
+                } else {
+                    TodayClass.Conflict(
+                        date = classes.first().date,
+                        progress = classes.first().progress,
+                        data = classes
+                    )
+                }
+            }
         reduce {
             SummaryState.Success(
                 weekNumber = currentWeek,
                 dayPeriod = period,
                 progress = with(AppSyncMMKV.calender!!) {
-                    start.until(today.date, DateTimeUnit.DAY).toFloat() /  start.until(end,DateTimeUnit.DAY)
+                    start.until(today.date, DateTimeUnit.DAY).toFloat() / start.until(end, DateTimeUnit.DAY)
                 },
-                plan = plan.groupBy { it.course }.flatMap { (course, records) ->
-                    records.map { record ->
-                        TodayClass(
-                            name = course.name,
-                            teacher = course.teacherName,
-                            location = course.classroomName,
-                            date = getTimeByLessonNumber(record.record.periodOfDay),
-                            recordId = record.record.id!!,
-                            courseId = course.id!!,
-                            progress = if (period == record.record.periodOfDay) progress else null,
-                            isDegreeProgram = course.isDegreeRequired,
-                            isExamine = course.isExaminable,
-                        )
-                    }
-                },
+                plan = plans,
                 extendClass = extendClass
             )
         }
     }
 
     fun redirectToCourse(it: TodayClass) = intent {
-        postSideEffect(SummarySideEffect.NavigateToCourseInfo(it.recordId))
+        when (it) {
+            is TodayClass.Single -> {
+                postSideEffect(SummarySideEffect.NavigateToCourseInfo(it.recordId))
+            }
+
+            is TodayClass.Conflict -> {
+                //TODO 冲突课程需要展示对话框
+            }
+        }
     }
 }
 
@@ -136,7 +157,7 @@ sealed interface SummaryState {
      */
     data class Success(
         val weekNumber: Int,
-        val dayPeriod:Int?,
+        val dayPeriod: Int?,
         val progress: Float,
         val extendClass: List<CourseExtendEntity>,
         val plan: List<TodayClass>,

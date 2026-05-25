@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.More
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -598,10 +599,13 @@ private fun CourseItem(
     val showPlaceHolder = course == null
     val startTime = course?.date?.first?.toString() ?: "08:00"
     val endTime = course?.date?.second?.toString() ?: "09:40"
-    val courseName = course?.name ?: "课程名称"
-    val location = course?.location ?: "上课地点"
-    val teacher = course?.teacher ?: "授课教师"
-    val cardModifier = if (course != null) {
+    val courseName = when(course) {
+        is TodayClass.Conflict -> "冲突课程 (${course.data.size}门)"
+        is TodayClass.Single -> course.name
+        null -> "课程名称"
+    }
+
+    val cardModifier = if (course != null && course is TodayClass.Single) {
         modifier
             .fillMaxWidth()
             .shareElementComposed(
@@ -662,18 +666,69 @@ private fun CourseItem(
                         )
                     )
 
-                    InfoLine(
-                        icon = Icons.Default.Place,
-                        text = location,
-                        contentDescription = "上课地点",
-                        showPlaceHolder = showPlaceHolder
-                    )
-                    InfoLine(
-                        icon = Icons.Default.Person,
-                        text = teacher,
-                        contentDescription = "授课教师",
-                        showPlaceHolder = showPlaceHolder
-                    )
+                    when (course) {
+                        is TodayClass.Single -> {
+                            InfoLine(
+                                icon = Icons.Default.Place,
+                                text = course.location,
+                                contentDescription = "上课地点",
+                                showPlaceHolder = showPlaceHolder
+                            )
+                            InfoLine(
+                                icon = Icons.Default.Person,
+                                text = course.teacher,
+                                contentDescription = "授课教师",
+                                showPlaceHolder = showPlaceHolder
+                            )
+                        }
+
+                        is TodayClass.Conflict -> {
+
+                            when (course.data.size) {
+                                2 -> {
+                                    for (i in course.data) {
+                                        InfoLine(
+                                            icon = Icons.Default.CalendarToday,
+                                            text = i.name,
+                                            contentDescription = "课程名称",
+                                            showPlaceHolder = showPlaceHolder
+                                        )
+                                    }
+                                }
+
+                                else -> {
+                                    InfoLine(
+                                        icon = Icons.Default.CalendarToday,
+                                        text = course.data.first().name,
+                                        contentDescription = "课程名称",
+                                        showPlaceHolder = showPlaceHolder
+                                    )
+
+                                    InfoLine(
+                                        icon = Icons.AutoMirrored.Filled.More,
+                                        text = "+ ${course.data.size - 2}", //正好为3个时，为 前面的2个 + 更多的占位符
+                                        contentDescription = "更多",
+                                        showPlaceHolder = showPlaceHolder
+                                    )
+                                }
+                            }
+                        }
+
+                        null -> {
+                            InfoLine(
+                                icon = Icons.Default.Person,
+                                text = "",
+                                contentDescription = "授课教师",
+                                showPlaceHolder = showPlaceHolder
+                            )
+                            InfoLine(
+                                icon = Icons.Default.Person,
+                                text = "",
+                                contentDescription = "授课教师",
+                                showPlaceHolder = showPlaceHolder
+                            )
+                        }
+                    }
 
                     if (showPlaceHolder) {
                         Surface(
@@ -785,7 +840,7 @@ private fun CourseBadges(course: TodayClass?) {
             }
         }
 
-        if (course?.isDegreeProgram == true) {
+        if ((course as? TodayClass.Single)?.isDegreeProgram == true) {
             Badge(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary
@@ -797,7 +852,7 @@ private fun CourseBadges(course: TodayClass?) {
             }
         }
 
-        if (course?.isExamine == true) {
+        if ((course as? TodayClass.Single)?.isExamine == true) {
             Badge(
                 containerColor = MaterialTheme.colorScheme.tertiary,
                 contentColor = MaterialTheme.colorScheme.onTertiary
