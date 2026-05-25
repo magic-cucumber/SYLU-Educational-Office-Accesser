@@ -1,15 +1,20 @@
 package top.kagg886.eoa.widget.ui
 
 import android.annotation.SuppressLint
+import android.util.TypedValue
+import android.widget.RemoteViews
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.itemsIndexed
@@ -19,6 +24,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import top.kagg886.eoa.R
 import top.kagg886.eoa.AppActivity
 import top.kagg886.eoa.widget.LocalInnerRadius
 import top.kagg886.eoa.widget.component.RefreshButton
@@ -157,26 +163,18 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
             Column(
                 modifier = GlanceModifier.fillMaxWidth()
             ) {
-                Text(
-                    text = course.name,
-                    maxLines = 2,
-                    style = TextStyle(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = ColorProvider(MaterialTheme.colorScheme.onSurface)
+                Row(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CourseNameText(
+                        name = course.name,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = GlanceModifier.defaultWeight()
                     )
-                )
 
-                Row(modifier = GlanceModifier.fillMaxWidth()) {
-                    Text(
-                        text = "${WidgetUtils.formatPeriod(course.period)} • ${course.location}",
-                        style = TextStyle(
-                            fontSize = 10.sp,
-                            color = ColorProvider(MaterialTheme.colorScheme.onSurface)
-                        )
-                    )
                     course.progress?.let {
-                        Spacer(modifier = GlanceModifier.defaultWeight())
+                        Spacer(modifier = GlanceModifier.width(4.dp))
                         Text(
                             text = "${(it * 100).toFixed(2)}%",
                             style = TextStyle(
@@ -186,7 +184,36 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
                         )
                     }
                 }
+
+                Text(
+                    text = "${WidgetUtils.formatPeriod(course.period)} • ${course.location}",
+                    style = TextStyle(
+                        fontSize = 10.sp,
+                        color = ColorProvider(MaterialTheme.colorScheme.onSurface)
+                    )
+                )
             }
         }
     }
+}
+
+@Composable
+private fun CourseNameText(
+    name: String,
+    color: Color,
+    modifier: GlanceModifier = GlanceModifier
+) {
+    val context = LocalContext.current
+    val remoteViews = remember(context.packageName, name, color) {
+        RemoteViews(context.packageName, R.layout.widget_course_name_text).apply {
+            setTextViewText(R.id.widget_course_name_text, name)
+            setTextViewTextSize(R.id.widget_course_name_text, TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTextColor(R.id.widget_course_name_text, color.toArgb())
+        }
+    }
+
+    AndroidRemoteViews(
+        remoteViews = remoteViews,
+        modifier = modifier
+    )
 }

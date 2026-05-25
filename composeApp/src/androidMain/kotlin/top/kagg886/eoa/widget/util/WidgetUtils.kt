@@ -59,7 +59,7 @@ object WidgetUtils {
      * 格式化时间段
      */
     fun formatPeriod(period: Int): String {
-        return "第${period}节"
+        return "#$period"
     }
 
 
