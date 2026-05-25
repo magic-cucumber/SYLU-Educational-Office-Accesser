@@ -30,6 +30,8 @@ public inline fun <reified T : Any> NavGraphBuilder.transition(
     deepLinks: List<NavDeepLink> = emptyList(),
     noinline content: @Composable (AnimatedContentScope.(NavBackStackEntry) -> Unit)
 ): Unit = composable<T>(
+    typeMap = typeMap,
+    deepLinks = deepLinks,
     enterTransition = { fadeIn() },
     exitTransition = { fadeOut() },
     popEnterTransition = { fadeIn() },

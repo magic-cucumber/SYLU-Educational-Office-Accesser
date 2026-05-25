@@ -38,6 +38,7 @@ import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.handleDeepLink
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
@@ -118,9 +119,7 @@ internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
     // 处理深层链接
     LaunchedEffect(deepLinkUri) {
         if (deepLinkUri != null) {
-            nav.handleDeepLink(
-                NavDeepLinkRequest.Builder.fromUri(NavUri(deepLinkUri)).build()
-            )
+            nav.handleDeepLink(deepLinkUri)
         }
     }
 

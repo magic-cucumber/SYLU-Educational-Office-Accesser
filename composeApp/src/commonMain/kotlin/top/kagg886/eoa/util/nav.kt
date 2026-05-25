@@ -17,3 +17,8 @@ fun <T : Any> NavHostController.replace(route: T, builder: NavOptionsBuilder.() 
         }
     }
 }
+
+
+expect fun NavHostController.handleDeepLink(
+    uri: String
+)
