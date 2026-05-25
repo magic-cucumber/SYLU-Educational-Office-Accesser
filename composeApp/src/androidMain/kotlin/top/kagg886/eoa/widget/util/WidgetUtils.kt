@@ -80,12 +80,14 @@ object WidgetUtils {
         }
     )
 
-    fun createCourseConflictAction(weekNumber: Int, periodOfDay: Int) = actionStartActivity(
+    fun createCourseConflictAction(
+        weekNumber: Int,
+        dayOfWeek: Int = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfWeek.isoDayNumber,
+        periodOfDay: Int
+    ) = actionStartActivity(
         Intent(
             Intent.ACTION_VIEW,
-            "eoa://course/conflict/$weekNumber/${
-                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfWeek.isoDayNumber
-            }/$periodOfDay".toUri()
+            "eoa://course/conflict/$weekNumber/$dayOfWeek/$periodOfDay".toUri()
         ).apply {
             setClass(EOAApplication.getApp(), AppActivity::class.java)
         }

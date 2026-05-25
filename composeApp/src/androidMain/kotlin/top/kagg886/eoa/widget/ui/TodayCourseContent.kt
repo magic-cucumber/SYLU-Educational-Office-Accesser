@@ -131,7 +131,7 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(if (course.conflict) WidgetUtils.createCourseConflictAction(course.weekNumber,course.period) else WidgetUtils.createCourseDetailAction(course.recordId))
+            .clickable(if (course.conflict) WidgetUtils.createCourseConflictAction(course.weekNumber, periodOfDay = course.period) else WidgetUtils.createCourseDetailAction(course.recordId))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically

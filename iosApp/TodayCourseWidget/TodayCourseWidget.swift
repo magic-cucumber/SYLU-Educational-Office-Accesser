@@ -149,7 +149,6 @@ extension TodayClass {
 
     static let samples = [
         TodayClass.sample(
-            recordId: 1,
             name: "高等数学",
             location: "A101",
             start: 8 * 60,
@@ -157,7 +156,6 @@ extension TodayClass {
             progress: 0.42
         ),
         TodayClass.sample(
-            recordId: 2,
             name: "大学英语",
             location: "B203",
             start: 10 * 60,
@@ -167,7 +165,6 @@ extension TodayClass {
     ]
 
     private static func sample(
-        recordId: Int64,
         name: String,
         location: String,
         start: Int,
@@ -175,8 +172,9 @@ extension TodayClass {
         progress: Float?
     ) -> TodayClass {
         TodayClass(
-            recordId: recordId,
-            courseId: recordId,
+            weekNumber: 1,
+            recordId: 1,
+            courseId: 1,
             name: name,
             teacher: "",
             location: location,
@@ -195,7 +193,8 @@ extension TodayClass {
                 )
             ),
             period: 1,
-            progress: progress.map { KotlinFloat(value: $0) }
+            progress: progress.map { KotlinFloat(value: $0) },
+            conflict: false
         )
     }
 }
@@ -291,8 +290,11 @@ private struct CourseListView: View {
     var body: some View {
         VStack(spacing: 6) {
             ForEach(Array(courses.prefix(2)), id: \.recordId) { course in
-                CourseRow(course: course)
-                    .frame(maxHeight: .infinity)
+                Link(destination: course.deepLinkURL) {
+                    CourseRow(course: course)
+                        .frame(maxHeight: .infinity)
+                }
+                .buttonStyle(.plain)
             }
 
             if courses.count == 1 {
@@ -320,14 +322,14 @@ private struct CourseRow: View {
                     .minimumScaleFactor(0.75)
 
                 HStack(spacing: 4) {
-                    Text("\(course.startTime.timeText)-\(course.endTime.timeText) - \(course.location)")
+                    Text("#\(course.period)" + (course.conflict ? "" : " - \(course.location)"))
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
                     Spacer()
 
                     if let progress = course.progress {
-                        Text("\(String(format: "%.2f", progress.doubleValue))")
+                        Text("\(String(format: "%.2f", progress.doubleValue * 100))%")
                             .lineLimit(1)
                     }
                 }
@@ -355,6 +357,23 @@ private struct CourseRow: View {
     }
 }
 
+private extension TodayClass {
+    var deepLinkURL: URL {
+        if conflict {
+            return URL(string: "eoa://course/conflict/\(weekNumber)/\(Date.isoWeekdayNumber)/\(period)")!
+        }
+
+        return URL(string: "eoa://course/profile/\(recordId)")!
+    }
+}
+
+private extension Date {
+    static var isoWeekdayNumber: Int {
+        let weekday = Calendar.current.component(.weekday, from: .now)
+        return weekday == 1 ? 7 : weekday - 1
+    }
+}
+
 struct TodayCourseWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: widgetKind, provider: Provider()) { entry in
@@ -379,4 +398,3 @@ struct TodayCourseWidget: Widget {
     CourseEntry(date: .now, state: .loading)
     CourseEntry(date: .now, state: .courses(TodayClass.samples))
 }
-

@@ -21,6 +21,7 @@ import coil3.ImageLoader
 import coil3.util.Logger
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -56,9 +57,24 @@ val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwne
     error("not provided")
 }
 
+
+data class DeeplinkController(
+    internal val deepLinkFlow: MutableSharedFlow<String?> = MutableSharedFlow(
+        replay = 1,
+        extraBufferCapacity = 16
+    ),
+) {
+    fun handleDeepLink(deepLink: String?) = deepLinkFlow.tryEmit(deepLink)
+}
+
+@Composable
+fun rememberDeepLinkController(): DeeplinkController = remember {
+    DeeplinkController()
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
 @Composable
-internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
+internal fun App(controller: DeeplinkController = rememberDeepLinkController()) = CompositionLocalProvider(
     LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
     LocalNavController provides rememberNavController(),
     LocalSnackBarHost provides rememberToasterState(),
@@ -117,9 +133,11 @@ internal fun App(deepLinkUri: String? = null) = CompositionLocalProvider(
     }
 
     // 处理深层链接
-    LaunchedEffect(deepLinkUri) {
-        if (deepLinkUri != null) {
-            nav.handleDeepLink(deepLinkUri)
+    LaunchedEffect(controller) {
+        controller.deepLinkFlow.collect { deepLinkUri ->
+            if (deepLinkUri != null) {
+                nav.handleDeepLink(deepLinkUri)
+            }
         }
     }
 

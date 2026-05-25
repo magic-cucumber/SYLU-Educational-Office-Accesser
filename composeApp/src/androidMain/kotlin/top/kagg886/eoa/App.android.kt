@@ -7,9 +7,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.withIndex
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.longshot.setContent
@@ -17,7 +23,6 @@ import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
 
 class AppActivity : ComponentActivity() {
-    private val logger = "AppActivity".asTaggedLogger
 
     private val deepLinkFlow = MutableStateFlow<String?>(null)
 
@@ -28,11 +33,14 @@ class AppActivity : ComponentActivity() {
         FileKit.init(this)
 
         setContent {
-            val deepLinkUri by deepLinkFlow.collectAsState(null)
-            LaunchedEffect(deepLinkUri) {
-                logger.d("发现深层链接：$deepLinkUri")
+            val controller = rememberDeepLinkController()
+
+            LaunchedEffect(deepLinkFlow) {
+                deepLinkFlow.collect { v ->
+                    controller.handleDeepLink(v)
+                }
             }
-            App(deepLinkUri = deepLinkUri)
+            App(controller)
         }
     }
 
