@@ -140,7 +140,14 @@ class SummaryModel(
             }
 
             is TodayClass.Conflict -> {
-                //TODO 冲突课程需要展示对话框
+                val sample = courseRecordDao.getById(it.data.first().recordId)
+                postSideEffect(
+                    SummarySideEffect.NavigateToConflictInfo(
+                        weekNumber = sample.weekNumber,
+                        dayOfWeek = sample.dayOfWeek,
+                        periodOfDay = sample.periodOfDay
+                    )
+                )
             }
         }
     }
@@ -181,5 +188,9 @@ sealed interface SummaryState {
 sealed interface SummarySideEffect {
     data class NavigateToCourseInfo(
         val courseId: Long,
+    ) : SummarySideEffect
+
+    data class NavigateToConflictInfo(
+        val weekNumber: Int, val dayOfWeek: Int, val periodOfDay: Int
     ) : SummarySideEffect
 }

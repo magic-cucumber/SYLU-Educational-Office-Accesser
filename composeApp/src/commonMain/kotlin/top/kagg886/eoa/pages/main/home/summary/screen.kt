@@ -35,6 +35,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
+import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
@@ -78,6 +79,10 @@ fun SummaryScreen() {
             when (it) {
                 is SummarySideEffect.NavigateToCourseInfo -> {
                     nav.navigate(CourseDetailRoute(it.courseId))
+                }
+
+                is SummarySideEffect.NavigateToConflictInfo -> {
+                    nav.navigate(CourseConflictRoute(it.weekNumber, it.dayOfWeek, it.periodOfDay))
                 }
             }
         }
