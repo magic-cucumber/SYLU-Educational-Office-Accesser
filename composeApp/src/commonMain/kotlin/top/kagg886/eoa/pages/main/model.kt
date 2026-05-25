@@ -79,7 +79,10 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             return@intent
         }
         val lastSyncTime = Instant.fromEpochMilliseconds(syncDao.getLastSyncTime() ?: 0)
-        if (Clock.System.now() - lastSyncTime > AppSettingsMMKV.syncDuration) {
+        val lastSyncUnSuccess = syncDao.getLastSyncSuccess()?.not() ?: true
+
+        //上次同步未成功 或 距离上次同步超过一定时间 时，开始同步
+        if ((Clock.System.now() - lastSyncTime > AppSettingsMMKV.syncDuration) || lastSyncUnSuccess) {
             startSyncForce()
             return@intent
         }
@@ -298,6 +301,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             )
         )
         logger.e("同步失败！", ex)
+        syncDao.markSync(SyncRecordEntity(updatedStamp = lastSyncTime ?: 0, success = false))
         reduce {
             MainRouteViewState.SyncFailed(
                 haveDirtyData,
