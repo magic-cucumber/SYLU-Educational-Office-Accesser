@@ -267,6 +267,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
         database.gpaSummaryDao().clear()
         database.gpaDao().clear()
         database.courseDao().clearAll()
+        database.courseExtendDao().clearAll()
         database.examDao().clear()
         database.secondClassDao().clear()
         syncDao.clear()
