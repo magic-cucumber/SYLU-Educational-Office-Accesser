@@ -262,6 +262,7 @@ private fun CourseDrawerContent(
     ) {
         CoursePageListScreen(
             index = it,
+            courseListState = state,
         )
     }
 }

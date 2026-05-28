@@ -48,7 +48,8 @@ import kotlin.random.Random
 
 @Composable
 fun CoursePageListScreen(
-    index: Int
+    index: Int,
+    courseListState: CourseListState.Success
 ) {
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
@@ -86,6 +87,7 @@ fun CoursePageListScreen(
     CoursePageScreenContent(
         index = index,
         state = state,
+        courseListState = courseListState,
         useNightMode = useNightMode,
         hideWeekendCourse = hideWeekendCourse,
         onCourseItemClicked = {
@@ -101,10 +103,11 @@ fun CoursePageListScreen(
 private fun CoursePageScreenContent(
     index: Int,
     state: CoursePageState,
+    courseListState: CourseListState.Success,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,
-    onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit
+    onCourseConflictClicked: (dayOfWeek: Int, periodOfDay: Int) -> Unit,
 ) {
     when (state) {
         is CoursePageState.Failed -> {
@@ -129,15 +132,6 @@ private fun CoursePageScreenContent(
         }
 
         is CoursePageState.Success -> {
-
-            val mainViewModel = mainViewModel()
-            val syncState by mainViewModel.collectAsState()
-            val courseModel = viewModel<CourseListViewModel>(key = syncState.toString())
-            val courseState by courseModel.collectAsState()
-            val coursePagerState = remember(courseState) {
-                (courseState as? CourseListState.Success)!!.state
-            }
-
             val scroll = rememberScrollState()
 
             CoursePageScreenSuccess(
@@ -146,7 +140,7 @@ private fun CoursePageScreenContent(
                 hideWeekendCourse = hideWeekendCourse,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
-                modifier = Modifier.fillMaxSize().verticalScroll(scroll).miuiLongShotSupport(enabled = coursePagerState.currentPage == index, scrollState = scroll)
+                modifier = Modifier.fillMaxSize().verticalScroll(scroll).miuiLongShotSupport(enabled = courseListState.state.currentPage == index, scrollState = scroll)
             )
         }
     }

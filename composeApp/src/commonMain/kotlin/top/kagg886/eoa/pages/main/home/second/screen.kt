@@ -56,6 +56,7 @@ import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
+import top.kagg886.util.toFixed
 
 /**
  * ================================================
@@ -447,7 +448,7 @@ private fun SecondClassScreenContent(
                         text = {
                             val number = remember { values.sumOf { it.score } }
                             Text(
-                                "${key.id}\n${number}/${key.max}",
+                                "${key.id}\n${number.toFixed(2)}/${key.max}",
                                 color = if (number >= key.max) Color.Unspecified else MaterialTheme.colorScheme.error
                             )
                         }
