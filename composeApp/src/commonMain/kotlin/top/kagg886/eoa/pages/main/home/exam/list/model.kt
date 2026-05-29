@@ -100,13 +100,14 @@ class ExamListViewModel(
             ExamListState.Loading(state.drawerState)
         }
 
+        val picker = AppSyncMMKV.picker ?: return@intent
         withContext(Dispatchers.IO) {
             // Map<学年，该学年的所有学期>
             // 复用之前的对象，防止重复计算
             val terms = originTerms ?: listOf(TERM_ALL_PICKER)
-                .plus(AppSyncMMKV.picker!!.list)
+                .plus(picker.list)
                 .plus(
-                    AppSyncMMKV.picker!!.list.map { i ->
+                    picker.list.map { i ->
                         TERM_ALL_PICKER.copy(yearName = i.asDisplay().xnm to i.asTerm().xnm)
                     }
                 )
@@ -124,9 +125,9 @@ class ExamListViewModel(
 
             //默认值为当前学年学期的代号
             val year = currentYearIndex
-                ?: terms.indexOfFirst { AppSyncMMKV.picker!!.default.asTerm().xnm == it.first.yearCode }
+                ?: terms.indexOfFirst { picker.default.asTerm().xnm == it.first.yearCode }
             val term = currentTermIndex
-                ?: terms[year].second.indexOfFirst { AppSyncMMKV.picker!!.default.asTerm().xqm == it.semesterCode }
+                ?: terms[year].second.indexOfFirst { picker.default.asTerm().xqm == it.semesterCode }
 
             val selectYear = terms[year]
             val selectSemester = selectYear.second[term]
