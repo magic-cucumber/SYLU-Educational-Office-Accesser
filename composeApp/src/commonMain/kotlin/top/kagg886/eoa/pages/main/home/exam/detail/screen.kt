@@ -3,6 +3,8 @@ package top.kagg886.eoa.pages.main.home.exam.detail
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -42,6 +44,7 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
@@ -125,11 +128,12 @@ private fun ExamDetailScreenSuccess(
 private fun ExamDetailPanelPhone(
     state: ExamDetailState.Success?
 ) {
+    val lazyListState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(lazyListState)
+            .miuiLongShotSupport(lazyListState),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 分数卡片
@@ -142,6 +146,8 @@ private fun ExamDetailPanelPhone(
         ExamDetailTable(state?.records?.detail)
 
         ExamDetailTimeLine(state?.timeline)
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

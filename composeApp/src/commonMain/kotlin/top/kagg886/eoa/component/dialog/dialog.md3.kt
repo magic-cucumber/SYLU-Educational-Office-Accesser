@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.AlertDialogContent
 import androidx.compose.material3.AlertDialogDefaults
@@ -72,6 +75,8 @@ fun DialogPageScaffold(
                             min(DialogMaxWidth, LocalWindowInfo.current.containerSize.width.toDp() * 0.9f)
                         },
                     )
+                    .safeGesturesPadding()
+                    .imePadding()
                     .then(Modifier.semantics { paneTitle = dialogPaneDescription })
                     .clickable(enabled = true, indication = null, interactionSource = null, onClick = {}),
             propagateMinConstraints = true

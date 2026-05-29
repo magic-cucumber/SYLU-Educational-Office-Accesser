@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -52,6 +53,7 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.util.createMenuButtonAnim
+import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
 import top.kagg886.util.toFixed
@@ -164,7 +166,7 @@ fun SecondClassScreen() {
         SecondClassScreenContent(
             state = state,
             onLoginButtonClicked = { vpn, tw ->
-                model.login(vpn, tw,true)
+                model.login(vpn, tw, true)
             }
         )
     }
@@ -493,7 +495,8 @@ private fun SecondClassScreenContent(
 
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 val (_, value) = entries[page]
-                LazyColumn {
+                val state = rememberLazyListState()
+                LazyColumn(state = state, modifier = Modifier.miuiLongShotSupport(state)) {
                     items(value) { item ->
                         ListItem(
                             headlineContent = { Text(item.name) },

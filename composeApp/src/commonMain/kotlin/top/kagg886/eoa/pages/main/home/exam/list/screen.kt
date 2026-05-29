@@ -7,7 +7,9 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -44,6 +46,7 @@ import top.kagg886.eoa.pages.main.home.exam.statistic.ExamStatisticRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
@@ -452,8 +455,13 @@ fun ExamListContent(
         return
     }
     val layoutType = currentLayoutType()
+
+    val lazyListState = remember(state) {
+        state?.lazyListState ?: LazyListState()
+    }
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
+        state = lazyListState,
+        modifier = Modifier.fillMaxWidth().miuiLongShotSupport(lazyListState),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(16.dp)
     ) {

@@ -1,5 +1,6 @@
 package top.kagg886.eoa.pages.main.home.exam.list
 
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.lifecycle.ViewModel
@@ -151,6 +152,7 @@ class ExamListViewModel(
                     currentYearIndex = year,
                     currentTermIndex = term,
                     drawerState = state.drawerState,
+                    lazyListState = LazyListState()
                 )
             }
         }
@@ -162,6 +164,8 @@ sealed interface ExamListState {
     val drawerState: DrawerState
 
     data class Success(
+        val lazyListState: LazyListState,
+
         val keyword: String?,
         val passFilter: PassFilter,
         val degreeFilter: DegreeFilter,

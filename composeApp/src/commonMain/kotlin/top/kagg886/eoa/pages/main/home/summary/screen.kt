@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.More
@@ -41,6 +42,7 @@ import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
@@ -122,10 +124,13 @@ private fun SummaryContentV2(
             )
         }
 
+        val lazyListState = rememberLazyListState()
+
         LazyColumn(
+            state = lazyListState,
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = contentPadding,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().miuiLongShotSupport(lazyListState)
         ) {
             item {
                 TodayOverviewHeader(
