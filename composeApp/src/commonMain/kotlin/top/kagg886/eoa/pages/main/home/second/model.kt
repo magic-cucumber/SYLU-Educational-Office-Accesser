@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.second
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -62,7 +63,8 @@ class SecondClassModel(
     @OptIn(OrbitExperimental::class)
     fun login(
         vPassword: String = AppSecondClassMMKV.vpnPassword,
-        tPassword: String = AppSecondClassMMKV.twPassword
+        tPassword: String = AppSecondClassMMKV.twPassword,
+        calDuelAdditional: Boolean = false,
     ) = intent {
         runOn<SecondClassState.RequireLogin> {
             reduce { state.copy(vpn = vPassword, tw = tPassword, progress = true) }
@@ -77,12 +79,46 @@ class SecondClassModel(
         ).apply { addCloseable(this) }
 
         try {
-            vpn.login { background, slider ->
-                log.i("处理滑动验证码")
-                CompletableDeferred<CaptchaReturn?>().apply {
-                    postSideEffect(SecondClassSideEffect.RequireCaptcha(background, slider, this))
-                }.await().apply { log.i("滑动验证码处理完成: $this") }
-            }
+            vpn.login(
+                totpHandler = if (!calDuelAdditional) null else ({
+                    log.i("处理TOTP二次验证")
+                    val deferred = CompletableDeferred<Int?>()
+                    runOn<SecondClassState.RequireLogin> {
+                        reduce {
+                            state.copy(additional = SecondClassState.RequireLogin.TOTP(deferred))
+                        }
+                    }
+                    val code = deferred.await()
+
+                    runOn<SecondClassState.RequireLogin> {
+                        reduce {
+                            state.copy(additional = null)
+                        }
+                    }
+                    log.i("TOTP二次验证处理完成")
+
+                    code
+                }),
+                captchaHandler = if (!calDuelAdditional) null else { background, slider ->
+                    log.i("处理滑动验证码")
+                    val deferred = CompletableDeferred<CaptchaReturn?>()
+                    runOn<SecondClassState.RequireLogin> {
+                        reduce {
+                            state.copy(additional = SecondClassState.RequireLogin.Captcha(deferred, slider, background))
+                        }
+                    }
+                    val result = deferred.await()
+
+                    log.i("滑动验证码处理完成: $this")
+                    runOn<SecondClassState.RequireLogin> {
+                        reduce {
+                            state.copy(additional = null)
+                        }
+                    }
+
+                    result
+                }
+            )
         } catch (e: Throwable) {
             log.e("无法登录到 VPN", e)
             postSideEffect(
@@ -167,7 +203,38 @@ class SecondClassModel(
 sealed interface SecondClassState {
     data object Initial : SecondClassState
 
-    data class RequireLogin(val vpn: String, val tw: String, val progress: Boolean = false) : SecondClassState
+    data class RequireLogin(
+        val vpn: String,
+        val tw: String,
+        val progress: Boolean = false,
+        val additional: AdditionalVerify? = null
+    ) : SecondClassState {
+
+        sealed interface AdditionalVerify
+
+        data class Captcha(val deferred: CompletableDeferred<CaptchaReturn?>, val fronted: ByteArray, val background: ByteArray) :
+            AdditionalVerify {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Captcha) return false
+
+                if (deferred != other.deferred) return false
+                if (!fronted.contentEquals(other.fronted)) return false
+                if (!background.contentEquals(other.background)) return false
+
+                return true
+            }
+
+            override fun hashCode(): Int {
+                var result = deferred.hashCode()
+                result = 31 * result + fronted.contentHashCode()
+                result = 31 * result + background.contentHashCode()
+                return result
+            }
+        }
+
+        data class TOTP(val deferred: CompletableDeferred<Int?>) : AdditionalVerify
+    }
 
     data class Success(
         val loading: Boolean = false,
@@ -179,27 +246,4 @@ sealed interface SecondClassState {
 
 sealed interface SecondClassSideEffect {
     data class Toast(val level: SnackBarType = SnackBarType.Info, val message: String) : SecondClassSideEffect
-    data class RequireCaptcha(
-        val background: ByteArray,
-        val slider: ByteArray,
-        val callback: CompletableDeferred<CaptchaReturn?>
-    ) : SecondClassSideEffect {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other !is RequireCaptcha) return false
-
-            if (!background.contentEquals(other.background)) return false
-            if (!slider.contentEquals(other.slider)) return false
-            if (callback != other.callback) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = background.contentHashCode()
-            result = 31 * result + slider.contentHashCode()
-            result = 31 * result + callback.hashCode()
-            return result
-        }
-    }
 }

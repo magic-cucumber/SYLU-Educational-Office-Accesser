@@ -33,12 +33,17 @@ class EOASecondVPNTest {
             password = password,
         )
 
-        client.login { b,s->
-            CaptchaReturn(
-                560,
-                waitSliderWidth(s,b).toInt()
-            )
-        }
+        client.login(
+            totpHandler = {
+                770242
+            },
+            captchaHandler = { b,s->
+                CaptchaReturn(
+                    560,
+                    waitSliderWidth(s,b).toInt()
+                )
+            }
+        )
 
         ///Resource(name=团委第二课堂系统, redirect=/http/77726476706e69737468656265737421e8f00f8f3e3c7d1e7b0c9ce29b5b/SyluTW/Sys/UserLogin.aspx)
         val portal = client.portal().first { it.name == "团委第二课堂系统" }.redirect

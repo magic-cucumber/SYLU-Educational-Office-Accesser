@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -38,7 +37,6 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.CompletableDeferred
@@ -157,52 +155,8 @@ fun SecondClassScreen() {
         }
     ) {
 
-
-        var defered by remember { mutableStateOf<CompletableDeferred<CaptchaReturn?>?>(null) }
-        var background by remember { mutableStateOf<ByteArray?>(null) }
-        var frontend by remember { mutableStateOf<ByteArray?>(null) }
-
-        if (defered != null) {
-            AlertDialog(
-                onDismissRequest = {
-                    defered!!.complete(null)
-                    defered = null
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            defered!!.complete(null)
-                            defered = null
-                        }
-                    ) {
-                        Text("取消")
-                    }
-                },
-                title = { Text("请完成验证") },
-                text = {
-                    CaptchaSlider(
-                        background = background!!,
-                        frontend = frontend!!,
-                        onResultResolved = { all, position ->
-                            defered!!.complete(
-                                CaptchaReturn(all, position)
-                            )
-                            defered = null
-                        }
-                    )
-                }
-            )
-        }
-
-
         model.collectSideEffect {
             when (it) {
-                is SecondClassSideEffect.RequireCaptcha -> {
-                    background = it.background
-                    frontend = it.slider
-                    defered = it.callback
-                }
-
                 is SecondClassSideEffect.Toast -> toast.showSnackBar(it.level, it.message)
             }
         }
@@ -210,7 +164,7 @@ fun SecondClassScreen() {
         SecondClassScreenContent(
             state = state,
             onLoginButtonClicked = { vpn, tw ->
-                model.login(vpn, tw)
+                model.login(vpn, tw,true)
             }
         )
     }
@@ -304,6 +258,87 @@ private fun SecondClassScreenContent(
 ) = when (state) {
     SecondClassState.Initial -> Unit
     is SecondClassState.RequireLogin -> {
+        when (state.additional) {
+            null -> Unit
+            is SecondClassState.RequireLogin.TOTP -> {
+                var code by remember {
+                    mutableStateOf("")
+                }
+                AlertDialog(
+                    onDismissRequest = {
+                        state.additional.deferred.complete(null)
+                    },
+                    confirmButton = {
+                        TextButton(
+                            enabled = code.isNotBlank(),
+                            onClick = {
+                                state.additional.deferred.complete(code.toInt())
+                            }
+                        ) {
+                            Text("确认")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                state.additional.deferred.complete(null)
+                            }
+                        ) {
+                            Text("取消")
+                        }
+                    },
+                    title = { Text("二次验证") },
+                    text = {
+                        OutlinedTextField(
+                            value = code,
+                            onValueChange = { value ->
+                                code = value
+                            },
+                            singleLine = true,
+                            label = { Text("请输入六位数动态口令。") },
+                            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                )
+            }
+
+            is SecondClassState.RequireLogin.Captcha -> {
+                val captcha = state.additional
+                AlertDialog(
+                    onDismissRequest = {
+                        captcha.deferred.complete(null)
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                captcha.deferred.complete(null)
+                            }
+                        ) {
+                            Text("取消")
+                        }
+                    },
+                    title = { Text("请完成验证") },
+                    text = {
+                        CaptchaSlider(
+                            background = captcha.background,
+                            frontend = captcha.fronted,
+                            onResultResolved = { all, position ->
+                                captcha.deferred.complete(
+                                    CaptchaReturn(all, position)
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+        }
+
+
         var vpn by remember { mutableStateOf(state.vpn) } // vpn密码
         var tw by remember { mutableStateOf(state.tw) } // 团委密码
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

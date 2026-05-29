@@ -76,11 +76,15 @@ class VPNClient(private val username: String, private val password: String) : Au
     override fun close() = it.close()
 
     /**
+     * @param totpHandler TOTP验证的code
      * @param captchaHandler 该handler传入大图片和小图片。
      *
      * 返回：1.大图片的长度 2.小图片在大图片中的距离。
      */
-    suspend fun login(captchaHandler: (suspend (background: ByteArray, slider: ByteArray) -> CaptchaReturn?)? = null) {
+    suspend fun login(
+        totpHandler: (suspend () -> Int?)? = null,
+        captchaHandler: (suspend (background: ByteArray, slider: ByteArray) -> CaptchaReturn?)? = null,
+    ) {
         val redirect = it.get("login?cas_login=true").headers[HttpHeaders.Location]!!
 
         if (redirect == "/") return //已登录用户无需重复登录
@@ -169,6 +173,7 @@ class VPNClient(private val username: String, private val password: String) : Au
 
         //登录成功
 
+        //validate的值：登录出现问题返回含特征的html，需要二次验证返回固定值。
         val validate = run {
             var link = loginResp.headers[HttpHeaders.Location]!!
             while (true) {
@@ -176,11 +181,56 @@ class VPNClient(private val username: String, private val password: String) : Au
 
                 if (status.status == HttpStatusCode.Found) {
                     link = status.headers[HttpHeaders.Location]!!
+
+                    if (link == "/login?second_login=true") {
+                        return@run link
+                    }
                     continue
                 }
                 return@run status.body<String>()
             }
             return@run ""
+        }
+
+        //TOTP
+        if (validate == "/login?second_login=true") {
+            checkNotNull(totpHandler) {
+                "the system required TOTP but handler not found"
+            }
+            while (true) {
+                val code = totpHandler()
+                checkNotNull(code) {
+                    "the system required TOTP but user cancelled"
+                }
+
+                @Serializable
+                data class TOTPResult(
+                    val success: Boolean,
+                    val url: String? = null,
+                    val message: String? = null,
+                )
+
+                val result = it.submitForm(
+                    url = "/do-second-login",
+                    formParameters = Parameters.build {
+                        append("username", "")
+                        append("code", code.toString().padStart(6, '0'))
+                    }
+                ).body<TOTPResult>()
+
+                if (result.success) {
+                    //mock browser
+                    it.get(result.url!!).body<String>()
+                    break
+                }
+
+                //{
+                //  "success": true,
+                //  "url": "/",
+                //  "message": "xxxx",
+                //}
+            }
+            return
         }
 
         if (validate.contains("        var errorMessage = '")) {
