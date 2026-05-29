@@ -1,9 +1,13 @@
 package top.kagg886.eoa.util.longshot
 
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import top.kagg886.util.asTaggedLogger
 
 /**
@@ -17,8 +21,6 @@ import top.kagg886.util.asTaggedLogger
 
 internal val LocalLongShotTargetRegistry = staticCompositionLocalOf<LongShotTargetRegistry> { error("not provided") }
 
-private val logger = "LongShot".asTaggedLogger
-
 class LongShotTargetRegistry {
     private val activeTarget = MutableStateFlow<LongShotTarget?>(null)
     val targetFlow: StateFlow<LongShotTarget?> = activeTarget
@@ -26,7 +28,7 @@ class LongShotTargetRegistry {
     fun register(target: LongShotTarget) {
         val current = activeTarget.value
         if (current !== target) {
-            logger.i("注册长截屏目标：${target::class.simpleName}，fillerHeight=${target.fillerHeightDp}px")
+            logger.i("注册长截屏目标：${target::class.simpleName}")
             activeTarget.value = target
             return
         }
@@ -44,9 +46,29 @@ class LongShotTargetRegistry {
 }
 
 interface LongShotTarget {
-    val fillerHeightDp: Int
-
     fun canScrollVertically(direction: Int): Boolean
     fun scrollBy(x: Int, y: Int)
-    fun getScrollY(): Int
+}
+
+internal class ScrollableStateLongShotTarget(
+    private val state: ScrollableState,
+    private val scope: CoroutineScope
+) : LongShotTarget {
+    override fun canScrollVertically(direction: Int): Boolean {
+        val result = if (direction > 0) {
+            state.canScrollForward
+        } else {
+            state.canScrollBackward
+        }
+        logger.d("ScrollState target canScrollVertically(direction=$direction) -> $result")
+        return result
+    }
+
+    override fun scrollBy(x: Int, y: Int) {
+        logger.d("ScrollState target scrollBy(x=$x, y=$y)")
+        scope.launch {
+            state.scrollBy(y.toFloat())
+            logger.d("ScrollState target scrollBy 完成")
+        }
+    }
 }

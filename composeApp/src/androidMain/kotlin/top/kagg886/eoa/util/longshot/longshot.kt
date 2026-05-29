@@ -33,10 +33,6 @@ import top.kagg886.util.asTaggedLogger
  * ================================================
  */
 
-private val logger = "LongShot".asTaggedLogger
-
-
-
 fun ComponentActivity.setContent(
     parent: CompositionContext? = null,
     content: @Composable () -> Unit,
@@ -131,7 +127,6 @@ private class MiuiLongShotControlView(
     private val contentView: View,
 ) : ScrollView(context) {
     private val fillerView = View(context)
-    private var fillerHeightJob: Job? = null
     private val defaultFillerHeightDp = defaultLongShotFillerHeightDp()
 
     init {
@@ -163,18 +158,11 @@ private class MiuiLongShotControlView(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         logger.d("MIUI 长截屏代理 View 已挂载")
-        fillerHeightJob = MainScope().launch(Dispatchers.Main.immediate) {
-            registry.targetFlow.collectLatest { target ->
-                logger.d("长截屏 active target 变化：${target?.let { it::class.simpleName } ?: "null"}")
-                updateFillerHeight(target?.fillerHeightDp ?: defaultFillerHeightDp)
-            }
-        }
+        updateFillerHeight(Int.MAX_VALUE)
     }
 
     override fun onDetachedFromWindow() {
         logger.d("MIUI 长截屏代理 View 已卸载")
-        fillerHeightJob?.cancel()
-        fillerHeightJob = null
         super.onDetachedFromWindow()
     }
 

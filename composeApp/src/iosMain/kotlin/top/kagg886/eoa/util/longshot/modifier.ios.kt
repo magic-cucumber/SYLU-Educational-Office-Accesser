@@ -1,13 +1,13 @@
 package top.kagg886.eoa.util.longshot
 
-import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
 import top.kagg886.util.asTaggedLogger
 
 actual fun Modifier.miuiLongShotSupport(
-    scrollState: ScrollState,
+    scrollState: ScrollableState,
     enabled: Boolean,
 ): Modifier = this.apply {
     "LongShot".asTaggedLogger.w("longshot api is unsupported on this platform")
