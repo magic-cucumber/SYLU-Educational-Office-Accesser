@@ -43,9 +43,8 @@ kotlin {
 
             api(libs.mkmb.core)
 
+            api(project(":eoa-lib:network-core"))
             api(project(":util"))
-            api(project(":eoa-lib:network-html-api"))
-            api(project(":eoa-lib:network-test-api"))
             api(project(":second-class"))
         }
 

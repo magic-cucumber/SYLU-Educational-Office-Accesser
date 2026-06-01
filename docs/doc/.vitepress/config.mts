@@ -24,7 +24,8 @@ export default defineConfig({
           { text: '小组件', link: '/widget' },
           { text: '图片标记', link: '/image-markup' },
           { text: '教务通知', link: '/academic-notice' },
-          { text: '设置', link: '/settings' }
+          { text: '设置', link: '/settings' },
+          { text: '更新日志', link: '/update' }
         ]
       }
     ],

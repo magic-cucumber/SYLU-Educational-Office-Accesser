@@ -31,6 +31,7 @@
 - [图片标记](./image-markup.md)
 - [教务通知](./academic-notice.md)
 - [设置](./settings.md)
+- [更新日志](./update.md)
 
 ## 下载
 
