@@ -7,13 +7,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Severity
 import io.ktor.client.call.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
 import kotlinx.serialization.json.Json
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
@@ -31,8 +31,10 @@ import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun rootViewModel(): RootViewModel {
@@ -51,6 +53,11 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
                     ignoreUnknownKeys = true
                 }
             )
+        }
+
+
+        install(HttpTimeout) {
+            requestTimeoutMillis = 10.seconds.inWholeMilliseconds
         }
     }
 
@@ -151,7 +158,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
     }
 
 
-    fun checkUpdate() = intent {
+    fun checkUpdate(silent: Boolean = true) = intent {
         val info = try {
             client.get("https://gitee.com/api/v5/repos/kagg886/sylu-educational-office-accesser/releases/latest")
                 .body<UpdateInfo>()
@@ -162,7 +169,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         }
         if (info.name != BuildConfig.APP_VERSION_NAME) {
             postSideEffect(RootEffect.NavigateToUpdatePage(info))
-        } else {
+        } else if (!silent) {
             postSideEffect(RootEffect.Toast(SnackBarType.Success, "已是最新版本"))
         }
     }

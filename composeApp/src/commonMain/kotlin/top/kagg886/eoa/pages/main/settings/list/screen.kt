@@ -327,7 +327,7 @@ private fun SettingScreenContent(
                     )
                 },
                 modifier = Modifier.clickable {
-                    rootViewModel.checkUpdate()
+                    rootViewModel.checkUpdate(false)
                 }
             )
 
