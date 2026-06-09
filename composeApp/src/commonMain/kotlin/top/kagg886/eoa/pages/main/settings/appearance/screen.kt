@@ -4,6 +4,8 @@ package top.kagg886.eoa.pages.main.settings.appearance
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,8 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.kborowy.colorpicker.KolorPicker
+import com.mohamedrejeb.compose.dnd.reorder.ReorderContainer
+import com.mohamedrejeb.compose.dnd.reorder.ReorderableItem
+import com.mohamedrejeb.compose.dnd.reorder.rememberReorderState
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -23,9 +29,9 @@ import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.display
+import top.kagg886.eoa.pages.main.home.icon
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
-import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.Platform
 import top.kagg886.util.current
@@ -226,6 +232,9 @@ private fun AppearanceSettingsContent(
 
             var moduleDialog by remember { mutableStateOf(false) }
             if (moduleDialog) {
+                val reorderState = rememberReorderState<EOAHomeModule>()
+                val dialogModules = module + EOAHomeModule.entries.filter { it !in module }
+
                 AlertDialog(
                     onDismissRequest = { moduleDialog = false },
                     confirmButton = {
@@ -239,35 +248,89 @@ private fun AppearanceSettingsContent(
                     },
                     title = { Text("自定义底部栏") },
                     text = {
-                        Column {
-                            EOAHomeModule.entries.forEach { moduleItem ->
-                                ListItem(
-                                    headlineContent = {
-                                        Text(moduleItem.display)
-                                    },
-                                    leadingContent = {
-                                        Checkbox(
-                                            checked = module.contains(moduleItem),
-                                            onCheckedChange = null,
-                                        )
-                                    },
-                                    modifier = Modifier.applyIf(moduleItem !== EOAHomeModule.SUMMARY) {
-                                        clickable {
-                                            val newModule = if (module.contains(moduleItem)) {
-                                                module - moduleItem
-                                            } else {
-                                                module + moduleItem
+                        ReorderContainer(
+                            state = reorderState,
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)
+                        ) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(dialogModules, key = { it.name }) { moduleItem ->
+                                    val selected = moduleItem in module
+                                    val switchEnabled = moduleItem != EOAHomeModule.SUMMARY && (selected || module.size < 3)
+                                    ReorderableItem(
+                                        state = reorderState,
+                                        key = moduleItem.name,
+                                        data = moduleItem,
+                                        enabled = selected && moduleItem != EOAHomeModule.SUMMARY,
+                                        onDrop = { dragState ->
+                                            val draggedModule = dragState.data
+                                            val fromIndex = module.indexOf(draggedModule)
+                                            val toIndex = module.indexOf(moduleItem)
+                                            if (
+                                                draggedModule != EOAHomeModule.SUMMARY &&
+                                                moduleItem != EOAHomeModule.SUMMARY &&
+                                                moduleItem in module
+                                            ) {
+                                                onModuleChanged(
+                                                    module.toMutableList().apply {
+                                                        removeAt(fromIndex)
+                                                        add(toIndex, draggedModule)
+                                                    }
+                                                )
                                             }
-                                            if (newModule.size > 3) {
-                                                return@clickable
+                                        },
+                                        onDragEnter = { dragState ->
+                                            val draggedModule = dragState.data
+                                            val fromIndex = module.indexOf(draggedModule)
+                                            val toIndex = module.indexOf(moduleItem)
+                                            if (
+                                                draggedModule != EOAHomeModule.SUMMARY &&
+                                                moduleItem != EOAHomeModule.SUMMARY &&
+                                                moduleItem in module &&
+                                                fromIndex != toIndex
+                                            ) {
+                                                onModuleChanged(
+                                                    module.toMutableList().apply {
+                                                        removeAt(fromIndex)
+                                                        add(toIndex, draggedModule)
+                                                    }
+                                                )
                                             }
-                                            onModuleChanged(newModule)
+                                        },
+                                        draggableContent = {
+                                            ModuleListItem(
+                                                moduleItem = moduleItem,
+                                                selected = selected,
+                                                switchEnabled = switchEnabled,
+                                                onSelectedChanged = {},
+                                                isDragShadow = true,
+                                            )
                                         }
-                                    },
-                                    colors = ListItemDefaults.colors(
-                                        containerColor = AlertDialogDefaults.containerColor
-                                    )
-                                )
+                                    ) {
+                                        ModuleListItem(
+                                            moduleItem = moduleItem,
+                                            selected = selected,
+                                            switchEnabled = switchEnabled,
+                                            onSelectedChanged = { checked ->
+                                                when {
+                                                    moduleItem == EOAHomeModule.SUMMARY -> Unit
+                                                    checked && module.size < 3 -> {
+                                                        onModuleChanged(module + moduleItem)
+                                                    }
+                                                    !checked -> {
+                                                        onModuleChanged(module - moduleItem)
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .animateItem()
+                                                .graphicsLayer {
+                                                    alpha = if (isDragging) 0f else 1f
+                                                },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -351,3 +414,40 @@ private val BUILTIN_COLORS = mapOf(
     "风祝绿" to Color(26, 240, 79),
     "拉格蓝" to Color(118, 145, 217)
 )
+
+@Composable
+private fun ModuleListItem(
+    moduleItem: EOAHomeModule,
+    selected: Boolean,
+    switchEnabled: Boolean,
+    onSelectedChanged: (Boolean) -> Unit,
+    isDragShadow: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    ListItem(
+        headlineContent = {
+            Text(moduleItem.display)
+        },
+        leadingContent = {
+            Icon(
+                imageVector = moduleItem.icon,
+                contentDescription = moduleItem.display
+            )
+        },
+        trailingContent = {
+            Switch(
+                checked = selected,
+                enabled = switchEnabled,
+                onCheckedChange = onSelectedChanged,
+            )
+        },
+        modifier = modifier,
+        colors = ListItemDefaults.colors(
+            containerColor = if (isDragShadow) {
+                MaterialTheme.colorScheme.surfaceVariant
+            } else {
+                AlertDialogDefaults.containerColor
+            }
+        )
+    )
+}
