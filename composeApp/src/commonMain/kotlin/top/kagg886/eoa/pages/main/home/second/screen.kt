@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -81,7 +80,7 @@ fun SecondClassScreen() {
         route = EOAHomeModule.SECOND,
         title = { Text("第二课堂") },
         menu = {
-            val successState = state as? SecondClassState.Success
+            val successState = state as? SecondClassState.Success<*>
             if (successState == null) {
                 SecondClassDefaultMenu()
             } else {
@@ -166,7 +165,7 @@ fun SecondClassScreen() {
         SecondClassScreenContent(
             state = state,
             onLoginButtonClicked = { vpn, tw ->
-                model.login(vpn, tw, true)
+                model.login(vpn, tw)
             }
         )
     }
@@ -259,87 +258,10 @@ private fun SecondClassScreenContent(
     onLoginButtonClicked: (vpn: String, tw: String) -> Unit,
 ) = when (state) {
     SecondClassState.Initial -> Unit
-    is SecondClassState.RequireLogin -> {
-        when (state.additional) {
-            null -> Unit
-            is SecondClassState.RequireLogin.TOTP -> {
-                var code by remember {
-                    mutableStateOf("")
-                }
-                AlertDialog(
-                    onDismissRequest = {
-                        state.additional.deferred.complete(null)
-                    },
-                    confirmButton = {
-                        TextButton(
-                            enabled = code.isNotBlank(),
-                            onClick = {
-                                state.additional.deferred.complete(code.toInt())
-                            }
-                        ) {
-                            Text("确认")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
-                            onClick = {
-                                state.additional.deferred.complete(null)
-                            }
-                        ) {
-                            Text("取消")
-                        }
-                    },
-                    title = { Text("二次验证") },
-                    text = {
-                        OutlinedTextField(
-                            value = code,
-                            onValueChange = { value ->
-                                code = value
-                            },
-                            singleLine = true,
-                            label = { Text("请输入六位数动态口令。") },
-                            leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                )
-            }
-
-            is SecondClassState.RequireLogin.Captcha -> {
-                val captcha = state.additional
-                AlertDialog(
-                    onDismissRequest = {
-                        captcha.deferred.complete(null)
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                captcha.deferred.complete(null)
-                            }
-                        ) {
-                            Text("取消")
-                        }
-                    },
-                    title = { Text("请完成验证") },
-                    text = {
-                        CaptchaSlider(
-                            background = captcha.background,
-                            frontend = captcha.fronted,
-                            onResultResolved = { all, position ->
-                                captcha.deferred.complete(
-                                    CaptchaReturn(all, position)
-                                )
-                            }
-                        )
-                    }
-                )
-            }
+    is SecondClassState.RequireLogin<*> -> {
+        if (state.additional != null) {
+            SecondClassAdditionalVerifyDialogIfExists(state.additional)
         }
-
 
         var vpn by remember { mutableStateOf(state.vpn) } // vpn密码
         var tw by remember { mutableStateOf(state.tw) } // 团委密码
@@ -465,7 +387,11 @@ private fun SecondClassScreenContent(
         }
     }
 
-    is SecondClassState.Success -> {
+    is SecondClassState.Success<*> -> {
+        if (state.additional != null) {
+            SecondClassAdditionalVerifyDialogIfExists(state.additional)
+        }
+
         val entries = remember(state) { state.value.entries.toList().dropLast(1) }
         val pagerState = rememberPagerState(pageCount = { entries.size })
         val scope = rememberCoroutineScope()
@@ -519,6 +445,87 @@ private fun SecondClassScreenContent(
                     item { Spacer(Modifier.height(8.dp)) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SecondClassAdditionalVerifyDialogIfExists(additional: SecondClassState.AdditionalVerify<*>) {
+    when (additional) {
+        is SecondClassState.TOTPAcceptable -> {
+            var code by remember {
+                mutableStateOf("")
+            }
+            AlertDialog(
+                onDismissRequest = {
+                    additional.deferred.complete(null)
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = code.isNotBlank(),
+                        onClick = {
+                            additional.deferred.complete(code.toInt())
+                        }
+                    ) {
+                        Text("确认")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            additional.deferred.complete(null)
+                        }
+                    ) {
+                        Text("取消")
+                    }
+                },
+                title = { Text("二次验证") },
+                text = {
+                    OutlinedTextField(
+                        value = code,
+                        onValueChange = { value ->
+                            code = value
+                        },
+                        singleLine = true,
+                        label = { Text("请输入六位数动态口令。") },
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            )
+        }
+
+        is SecondClassState.CaptchaAcceptable -> {
+            AlertDialog(
+                onDismissRequest = {
+                    additional.deferred.complete(null)
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            additional.deferred.complete(null)
+                        }
+                    ) {
+                        Text("取消")
+                    }
+                },
+                title = { Text("请完成验证") },
+                text = {
+                    CaptchaSlider(
+                        background = additional.background,
+                        frontend = additional.fronted,
+                        onResultResolved = { all, position ->
+                            additional.deferred.complete(
+                                CaptchaReturn(all, position)
+                            )
+                        }
+                    )
+                }
+            )
         }
     }
 }
