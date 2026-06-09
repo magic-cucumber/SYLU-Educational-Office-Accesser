@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.AlertDialogContent
@@ -41,6 +42,9 @@ import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.rootViewModel
+import top.kagg886.eoa.util.shared.applyIf
+import top.kagg886.util.Platform
+import top.kagg886.util.current
 
 /**
  * ================================================
@@ -75,7 +79,8 @@ fun DialogPageScaffold(
                             min(DialogMaxWidth, LocalWindowInfo.current.containerSize.width.toDp() * 0.9f)
                         },
                     )
-                    .safeGesturesPadding()
+                    .applyIf(Platform.current is Platform.Desktop) { padding(vertical = 14.dp) }
+                    .applyIf(Platform.current !is Platform.Desktop) { safeGesturesPadding() }
                     .imePadding()
                     .then(Modifier.semantics { paneTitle = dialogPaneDescription })
                     .clickable(enabled = true, indication = null, interactionSource = null, onClick = {}),
