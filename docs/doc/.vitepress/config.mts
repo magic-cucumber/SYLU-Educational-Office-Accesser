@@ -3,7 +3,12 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "EOA - Website",
   description: "沈阳理工大学神秘小软件",
+  head: [
+    ['link', { rel: 'icon', type: 'image/png', href: '/icon.png' }]
+  ],
   themeConfig: {
+    logo: '/icon.png',
+
     nav: [
       { text: '首页', link: '/' },
       { text: '文档', link: '/welcome' }

@@ -4,6 +4,9 @@ layout: home
 hero:
   name: 面向沈理的教务系统客户端。
   tagline: 开源，简洁，小巧，native
+  image:
+    src: /hero.png
+    alt: EOA Website
   actions:
     - theme: brand
       text: 立即下载
