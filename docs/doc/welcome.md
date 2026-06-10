@@ -20,7 +20,6 @@
 
 ## 文档索引
 
-- [架构特性](./architecture.md)
 - [登录](./login.md)
 - [课表页面](./course-timetable.md)
 - [课表总览](./course-overview.md)
