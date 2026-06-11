@@ -1,7 +1,14 @@
 package top.kagg886.eoa.pages.main.home.second
 
 import androidx.lifecycle.ViewModel
+import co.touchlab.kermit.Logger.Companion.w
+import io.ktor.network.sockets.SocketTimeoutException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withTimeout
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -17,6 +24,10 @@ import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.vpn.VPNClient
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
 import top.kagg886.util.asTaggedLogger
+import top.kagg886.util.race
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTimedValue
 
 /**
  * ================================================
@@ -38,7 +49,8 @@ class SecondClassModel(
             reduce { SecondClassState.Success<Nothing>(false, cache) }
         }
 
-        if (AppSecondClassMMKV.vpnPassword.isBlank() || AppSecondClassMMKV.twPassword.isBlank()) { //初始情况直接跳转到配置页面
+        //twPassword为blank时跳转到配置页面
+        if (AppSecondClassMMKV.twPassword.isBlank()) {
             if (cache.isEmpty()) {
                 reduce {
                     SecondClassState.RequireLogin<Nothing>(
@@ -64,22 +76,10 @@ class SecondClassModel(
         vPassword: String = AppSecondClassMMKV.vpnPassword,
         tPassword: String = AppSecondClassMMKV.twPassword,
     ) = intent {
-        @OptIn(OrbitExperimental::class)
-        suspend fun Syntax<SecondClassState, SecondClassSideEffect>.cleanLoading(
-            vPassword: String,
-            tPassword: String
-        ) {
-            runOn<SecondClassState.RequireLogin<*>> {
-                reduce { state.copy(vpn = vPassword, tw = tPassword, progress = false) }
-            }
-
-            runOn<SecondClassState.Success<*>> {
-                reduce {
-                    state.copy(loading = false, additional = null)
-                }
-            }
+        if (tPassword.isBlank()) {
+            postSideEffect(SecondClassSideEffect.Toast(level = SnackBarType.Warning, message = "团委网密码不能为空"))
+            return@intent
         }
-
 
         runOn<SecondClassState.RequireLogin<*>> {
             reduce { state.copy(vpn = vPassword, tw = tPassword, progress = true) }
@@ -87,99 +87,149 @@ class SecondClassModel(
         runOn<SecondClassState.Success<*>> {
             reduce { state.copy(loading = true) }
         }
+
+        /**
+         * 1. vPassword存在时，同时使用vpn，内网模式并行登录，取最快返回的结果(如果已连接内网，则一般内网比外网快)。
+         * 2. vPassword不存在时，只使用内网模式登录。
+         */
+        val data = try {
+            when {
+                vPassword.isBlank() -> loginByInternal(tPassword, 20.seconds)
+                else -> supervisorScope {
+                    race(
+                        async { loginByInternal(tPassword, 5.seconds) },
+                        async { loginByVpn(vPassword, tPassword, 20.seconds) }
+                    )
+                }
+            }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+
+            log.e("无法获取第二课堂数据", e)
+            postSideEffect(
+                SecondClassSideEffect.Toast(
+                    SnackBarType.Error,
+                    "无法获取第二课堂数据，原因：${e.message ?: "未知错误"} \n详情请参考日志。"
+                )
+            )
+            runOn<SecondClassState.RequireLogin<*>> {
+                reduce { state.copy(vpn = vPassword, tw = tPassword, progress = false, additional = null) }
+            }
+            runOn<SecondClassState.Success<*>> {
+                reduce {
+                    state.copy(loading = false, additional = null)
+                }
+            }
+            return@intent
+        }
+
+        secondClassDao.replaceAll(data)
+        reduce { SecondClassState.Success<Nothing>(false, data) }
+        AppSecondClassMMKV.vpnPassword = vPassword
+        AppSecondClassMMKV.twPassword = tPassword
+    }
+
+    private suspend fun loginByInternal(
+        tPassword: String,
+        timeout: Duration
+    ): Map<SecondClassDataSummary, List<SecondClassData>> = withTimeout(timeout) {
+        log.i("开始内网登录")
+        val tw = TWUser(
+            baseURL = "http://xg.sylu.edu.cn/SyluTW/Sys/",
+            user = AppLoginPropertiesMMKV.username,
+        ).apply { addCloseable(this) }
+
+        tw.login(tPassword)
+
+        log.i("内网登录完成，开始获取信息")
+        val data = tw.getData()
+        log.i("成功获取二课数据。来源：内网")
+
+        data
+    }
+
+    @OptIn(OrbitExperimental::class)
+    private suspend fun Syntax<SecondClassState, SecondClassSideEffect>.loginByVpn(
+        vPassword: String,
+        tPassword: String,
+        timeout: Duration,
+    ): Map<SecondClassDataSummary, List<SecondClassData>> = withTimeout(timeout) {
         log.i("开始登录VPN")
         val vpn = VPNClient(
             AppLoginPropertiesMMKV.username,
             vPassword
         ).apply { addCloseable(this) }
 
-        try {
-            vpn.login(
-                totpHandler = {
-                    log.i("处理TOTP二次验证")
-                    val deferred = CompletableDeferred<Int?>()
-                    runOn<SecondClassState.RequireLogin<SecondClassState.TOTPAcceptable>> {
-                        reduce {
-                            state.copy(additional = SecondClassState.RequireLogin.TOTP(deferred))
+        val (portal, time) = withTimeout(timeout) {
+            measureTimedValue {
+                vpn.login(
+                    totpHandler = {
+                        log.i("处理TOTP二次验证")
+                        val deferred = CompletableDeferred<Int?>()
+                        runOn<SecondClassState.RequireLogin<SecondClassState.TOTPAcceptable>> {
+                            reduce {
+                                state.copy(additional = SecondClassState.RequireLogin.TOTP(deferred))
+                            }
                         }
-                    }
-                    runOn<SecondClassState.Success<SecondClassState.TOTPAcceptable>> {
-                        reduce {
-                            state.copy(additional = SecondClassState.Success.TOTP(deferred))
+                        runOn<SecondClassState.Success<SecondClassState.TOTPAcceptable>> {
+                            reduce {
+                                state.copy(additional = SecondClassState.Success.TOTP(deferred))
+                            }
                         }
-                    }
-                    val code = deferred.await()
+                        val code = deferred.await()
+                        log.i("TOTP二次验证处理完成")
+                        runOn<SecondClassState.RequireLogin<*>> {
+                            reduce {
+                                state.copy(additional = null)
+                            }
+                        }
+                        runOn<SecondClassState.Success<*>> {
+                            reduce {
+                                state.copy(additional = null)
+                            }
+                        }
 
-                    runOn<SecondClassState.RequireLogin<*>> {
-                        reduce {
-                            state.copy(additional = null)
+                        code
+                    },
+                    captchaHandler = { background, slider ->
+                        log.i("处理滑动验证码")
+                        val deferred = CompletableDeferred<CaptchaReturn?>()
+                        runOn<SecondClassState.RequireLogin<SecondClassState.CaptchaAcceptable>> {
+                            reduce {
+                                state.copy(additional = SecondClassState.RequireLogin.Captcha(deferred, slider, background))
+                            }
                         }
-                    }
-                    runOn<SecondClassState.Success<*>> {
-                        reduce {
-                            state.copy(additional = null)
+                        runOn<SecondClassState.Success<SecondClassState.CaptchaAcceptable>> {
+                            reduce {
+                                state.copy(additional = SecondClassState.Success.Captcha(deferred, slider, background))
+                            }
                         }
-                    }
-                    log.i("TOTP二次验证处理完成")
+                        val result = deferred.await()
+                        log.i("滑动验证码处理完成: $this")
+                        runOn<SecondClassState.RequireLogin<*>> {
+                            reduce {
+                                state.copy(additional = null)
+                            }
+                        }
+                        runOn<SecondClassState.Success<*>> {
+                            reduce {
+                                state.copy(additional = null)
+                            }
+                        }
 
-                    code
-                },
-                captchaHandler = { background, slider ->
-                    log.i("处理滑动验证码")
-                    val deferred = CompletableDeferred<CaptchaReturn?>()
-                    runOn<SecondClassState.RequireLogin<SecondClassState.CaptchaAcceptable>> {
-                        reduce {
-                            state.copy(additional = SecondClassState.RequireLogin.Captcha(deferred, slider, background))
-                        }
+                        result
                     }
-                    runOn<SecondClassState.Success<SecondClassState.CaptchaAcceptable>> {
-                        reduce {
-                            state.copy(additional = SecondClassState.Success.Captcha(deferred, slider, background))
-                        }
-                    }
-                    val result = deferred.await()
-
-                    log.i("滑动验证码处理完成: $this")
-                    runOn<SecondClassState.RequireLogin<*>> {
-                        reduce {
-                            state.copy(additional = null)
-                        }
-                    }
-                    runOn<SecondClassState.Success<*>> {
-                        reduce {
-                            state.copy(additional = null)
-                        }
-                    }
-
-                    result
-                }
-            )
-        } catch (e: Throwable) {
-            log.e("无法登录到 VPN", e)
-            postSideEffect(
-                SecondClassSideEffect.Toast(
-                    SnackBarType.Error,
-                    "无法登录到校园VPN，原因：${e.message ?: "未知错误"} \n详情请参考日志。"
                 )
-            )
-            cleanLoading(vPassword, tPassword)
-            return@intent
+                vpn.portal()
+                    .first { it.name == "团委第二课堂系统" }
+                    .redirect
+            }
         }
 
-        val portal = try {
-            vpn.portal()
-                .first { it.name == "团委第二课堂系统" }
-                .redirect
-        } catch (e: Throwable) {
-            log.e("无法获取团委网入口", e)
-            postSideEffect(
-                SecondClassSideEffect.Toast(
-                    SnackBarType.Error,
-                    "无法获取团委网入口，原因：${e.message ?: "未知错误"} \n详情请参考日志。"
-                )
-            )
-            cleanLoading(vPassword, tPassword)
-            return@intent
+        log.d("成功登录VPN")
+
+        if (timeout == Duration.ZERO) {
+            throw SocketTimeoutException("timeout.")
         }
 
         val tw = TWUser(
@@ -188,39 +238,12 @@ class SecondClassModel(
             ticket = vpn.ticket()
         ).apply { addCloseable(this) }
 
+        tw.login(tPassword)
+        log.i("VPN登录完成，开始获取信息")
+        val data = tw.getData()
+        log.i("成功获取二课数据。来源：VPN")
 
-        try {
-            tw.login(tPassword)
-        } catch (e: Throwable) {
-            log.e("无法登录到 团委网", e)
-            postSideEffect(
-                SecondClassSideEffect.Toast(
-                    SnackBarType.Error,
-                    "无法登录到团委网，原因：${e.message ?: "未知错误"} \n详情请参考日志。"
-                )
-            )
-            cleanLoading(vPassword, tPassword)
-            return@intent
-        }
-
-        val data = try {
-            tw.getData()
-        } catch (e: Throwable) {
-            log.e("无法获取第二课堂数据", e)
-            postSideEffect(
-                SecondClassSideEffect.Toast(
-                    SnackBarType.Error,
-                    "无法获取第二课堂数据，原因：${e.message ?: "未知错误"} \n详情请参考日志。"
-                )
-            )
-            cleanLoading(vPassword, tPassword)
-            return@intent
-        }
-
-        secondClassDao.replaceAll(data)
-        reduce { SecondClassState.Success<Nothing>(false, data) }
-        AppSecondClassMMKV.vpnPassword = vPassword
-        AppSecondClassMMKV.twPassword = tPassword
+        data
     }
 }
 

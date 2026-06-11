@@ -3,7 +3,7 @@
 
 package top.kagg886.eoa.util.internal
 
-import com.fleeksoft.charset.Charsets
+import com.fleeksoft.charset.Charsets as FleekCharsets
 import com.fleeksoft.io.ByteBufferFactory
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -11,6 +11,8 @@ import io.ktor.client.plugins.api.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.util.pipeline.*
+import io.ktor.utils.io.*
+import kotlinx.io.readByteArray
 
 
 /**
@@ -22,30 +24,47 @@ import io.ktor.util.pipeline.*
 
 val HttpResponseCharset = createClientPlugin("HTTPResponseCharset") {
     on(ResponseHook) {
-        val response = it.call.save().response
-        val header = response.headers[HttpHeaders.ContentType].orEmpty()
-
-        if (header.startsWith("text/") && !header.contains("charset=")) {
+        val header = it.headers[HttpHeaders.ContentType].orEmpty()
+        if (!header.startsWith("text/") || !header.contains("charset=", ignoreCase = true)) {
             return@on
         }
 
-        val charset = Charsets.forName(header.substringAfter("charset=").substringBefore(","))
+        val charsetName = header
+            .substringAfter("charset=", "")
+            .substringBefore(";")
+            .substringBefore(",")
+            .trim()
+            .trim('"')
 
-        val origin = response.bodyAsBytes()
+        if (charsetName.isEmpty() || charsetName.equals("utf-8", ignoreCase = true)) {
+            return@on
+        }
+
+        val charset = FleekCharsets.forName(charsetName)
+
+        @OptIn(InternalAPI::class)
+        val origin = it.rawContent.readRemaining().readByteArray()
         val doc = ByteBufferFactory.wrap(origin)
             .let(charset::decode)
             .toString() //FIXME: 需要优化
             .encodeToByteArray()
 
+        val headers = Headers.build {
+            appendAll(it.headers)
+            remove(HttpHeaders.ContentLength)
+            set(HttpHeaders.ContentLength, doc.size.toString())
+            set(HttpHeaders.ContentType, header.replaceCharset("UTF-8"))
+        }
 
         proceedWith(
-            SavedHttpResponse(
-                call = response.call as SavedHttpCall,
-                body = doc,
-                origin = response
-            )
+            it.call.replaceResponse(headers = headers) { ByteReadChannel(doc) }.response
         )
     }
+}
+
+private val regex = Regex("charset\\s*=\\s*\"?[A-Za-z0-9._-]+\"?", RegexOption.IGNORE_CASE)
+private fun String.replaceCharset(charset: String): String {
+    return replace(regex, "charset=$charset")
 }
 
 

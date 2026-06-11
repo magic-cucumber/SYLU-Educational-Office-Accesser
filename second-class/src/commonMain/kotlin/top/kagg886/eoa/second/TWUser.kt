@@ -21,6 +21,8 @@ import top.kagg886.sylu_eoa.api.html.util.RSA
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 val TW_KEYS = arrayOf(
     "思想成长",
@@ -33,7 +35,7 @@ val TW_KEYS = arrayOf(
 class TWUser(
     val baseURL: String,
     val user: String,
-    val ticket: Cookie,
+    val ticket: Cookie? = null
 ) : AutoCloseable {
     private val log = "TWUser".asTaggedLogger
     private val client = HttpClient {
@@ -46,8 +48,10 @@ class TWUser(
 
         install(HttpCookies) {
             storage = AcceptAllCookiesStorage().apply {
-                runBlocking {
-                    addCookie("${baseURL}UserLogin.aspx", ticket)
+                ticket?.let {
+                    runBlocking {
+                        addCookie("${baseURL}UserLogin.aspx", it)
+                    }
                 }
             }
         }
@@ -81,6 +85,10 @@ class TWUser(
         val dom = client.get("UserLogin.aspx").apply {
             if (status == HttpStatusCode.Found) {
                 error("vpn ticket outdated.")
+            }
+
+            if (status != HttpStatusCode.OK) {
+                error("service unavailable.")
             }
         }.body<Document>()
         //https://webvpn.sylu.edu.cn/http/77726476706e69737468656265737421e8f00f8f3e3c7d1e7b0c9ce29b5b/SyluTW/Sys/UserLogin.aspx" id="form1" style="height: 100%
@@ -171,13 +179,13 @@ class TWUser(
                 set("__VIEWSTATE", dom.getElementById("__VIEWSTATE")!!.attr("value"))
                 set("__VIEWSTATEGENERATOR", dom.getElementById("__VIEWSTATEGENERATOR")!!.attr("value"))
                 set("__EVENTVALIDATION", dom.getElementById("__EVENTVALIDATION")!!.attr("value"))
-                set("__VIEWSTATEENCRYPTED","")
-                set("YearTime","")
-                set("ActivityType","")
-                set("OrgNo","")
-                set("ActivityName","")
+                set("__VIEWSTATEENCRYPTED", "")
+                set("YearTime", "")
+                set("ActivityType", "")
+                set("OrgNo", "")
+                set("ActivityName", "")
                 set($$"TPaged1$GotoPage", i.toString())
-                set($$"TPaged1$Jump","跳 转")
+                set($$"TPaged1$Jump", "跳 转")
             }).apply {
                 if (status == HttpStatusCode.Found) {
                     error("vpn ticket outdated.")

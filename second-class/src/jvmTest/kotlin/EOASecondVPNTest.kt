@@ -12,6 +12,8 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.*
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * ================================================
@@ -24,9 +26,9 @@ import kotlin.test.Test
 class EOASecondVPNTest {
     @Test
     fun testEOASecondVPN(): Unit = runBlocking {
-        val username = "2203050528"
-        val password = "Baleitem103@"
-        val tw = "Iveour@163.com"
+        val username = ""
+        val password = ""
+        val tw = ""
 
         val client = VPNClient(
             username = username,
@@ -57,6 +59,28 @@ class EOASecondVPNTest {
         twClient.login(tw)
 
         println(twClient.getData().entries.associate { it.key.id to it.value.sumOf { it.score } })
+    }
+
+    @Test
+    fun testEOAVpnDirect(): Unit = runBlocking {
+        val username = ""
+        val password = ""
+
+        val twClient = TWUser(
+            baseURL = "http://xg.sylu.edu.cn/SyluTW/Sys/",
+            user = username
+        )
+
+        twClient.login(password)
+
+        println(twClient.getData().entries.associate { it.key.id to it.value.sumOf { it.score } })
+    }
+
+    @Test
+    fun testDurationNegative(): Unit = runBlocking {
+        val a = 1.seconds
+        val b = 1.minutes
+        println(a - b)
     }
 }
 

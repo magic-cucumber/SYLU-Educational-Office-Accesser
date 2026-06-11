@@ -33,7 +33,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions.SelectColumn
  *
  * ### 基本参数
  * - `gnmkdmKey`: N305005
- * - `sessionUserKey`: 2203050528
+ * - `sessionUserKey`: **********
  * - `xnm`: 2025 (学年)
  * - `xqm`: 3 (学期)
  * - `sfzgcj`: (空值)
@@ -73,7 +73,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions.SelectColumn
  * ## 功能分析
  * 这个表单是一个**学生成绩查询和导出**功能：
  * - 查询2025年第3学期的成绩数据
- * - 用户ID为2203050528
+ * - 用户ID为**********
  * - 导出格式为Excel (.xls)
  * - 包含学生基本信息、课程信息、成绩信息等23个字段
  * - 按升序排列

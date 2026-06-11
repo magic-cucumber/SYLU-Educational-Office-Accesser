@@ -15,6 +15,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,8 +26,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -46,12 +49,13 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.util.createMenuButtonAnim
+import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
@@ -82,7 +86,14 @@ fun SecondClassScreen() {
         menu = {
             val successState = state as? SecondClassState.Success<*>
             if (successState == null) {
-                SecondClassDefaultMenu()
+                val uri = LocalUriHandler.current
+                IconButton(
+                    onClick = {
+                        uri.openUri("https://eoa.kagg886.top/second-class.html#二课登录")
+                    },
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Help, contentDescription = "帮助")
+                }
             } else {
                 val menuItemEnabled = !successState.loading
                 val refreshRotation = if (successState.loading) {
@@ -171,19 +182,6 @@ fun SecondClassScreen() {
     }
 
 }
-
-@Composable
-private fun SecondClassDefaultMenu() {
-    val nav = LocalNavController.current
-    IconButton(
-        onClick = {
-            nav.navigate(SettingsRoute)
-        },
-    ) {
-        Icon(Icons.Default.AccountBox, contentDescription = "返回")
-    }
-}
-
 @Composable
 private fun CaptchaSlider(
     modifier: Modifier = Modifier,
@@ -268,30 +266,6 @@ private fun SecondClassScreenContent(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    var vpnVisible by remember { mutableStateOf(false) }
-                    OutlinedTextField(
-                        value = vpn,
-                        onValueChange = { vpn = it },
-                        label = { Text("统一认证平台 密码") },
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
-                        visualTransformation = if (vpnVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { vpnVisible = !vpnVisible }) {
-                                Icon(
-                                    if (vpnVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Next
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.progress
-                    )
-
                     var twVisible by remember { mutableStateOf(false) }
                     OutlinedTextField(
                         value = tw,
@@ -316,9 +290,33 @@ private fun SecondClassScreenContent(
                         enabled = !state.progress
                     )
 
+                    var vpnVisible by remember { mutableStateOf(false) }
+                    OutlinedTextField(
+                        value = vpn,
+                        onValueChange = { vpn = it },
+                        label = { Text("统一认证平台 密码 (可选)") },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                        visualTransformation = if (vpnVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { vpnVisible = !vpnVisible }) {
+                                Icon(
+                                    if (vpnVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.progress
+                    )
+
                     Button(
                         onClick = { onLoginButtonClicked(vpn, tw) },
-                        enabled = vpn.isNotBlank() && tw.isNotBlank() && !state.progress,
+                        enabled = tw.isNotBlank() && !state.progress,
                         modifier = Modifier.fillMaxWidth().height(48.dp)
                     ) {
                         if (state.progress) {
@@ -353,31 +351,51 @@ private fun SecondClassScreenContent(
                         )
                     }
 
-                    val color = MaterialTheme.colorScheme.primary
-                    Text(
-                        buildAnnotatedString {
-                            append("该功能使用校园VPN协议来实现免校园网访问二课数据。\n")
-                            append("使用该功能前，请仔细回忆")
+                    val suite = currentLayoutType()
+                    val theme = MaterialTheme.colorScheme
+                    val linkStyles = TextLinkStyles(
+                        style = SpanStyle(
+                            color = theme.primary,
+                            textDecoration = TextDecoration.Underline
+                        ),
+                        pressedStyle = SpanStyle(
+                            color = theme.primary.copy(alpha = 0.8f),
+                            textDecoration = TextDecoration.Underline
+                        )
+                    )
 
+                    Text(
+                        text = buildAnnotatedString {
+                            append("请先确认自己还记得团委网的登录密码。如果忘记了，可以进入")
                             withLink(
-                                LinkAnnotation.Url(
-                                    url = "https://webvpn.sylu.edu.cn/login",
+                                link = LinkAnnotation.Url(
+                                    url = "http://xg.sylu.edu.cn/SyluTW/Sys/UserLogin.aspx",
+                                    styles = linkStyles
                                 )
                             ) {
-                                withStyle(
-                                    SpanStyle(
-                                        color = color,
-                                        textDecoration = TextDecoration.Underline,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                ) {
-                                    append("校园统一认证平台")
-                                }
+                                append("团委网")
+                            }
+                            append("找回或确认密码。")
+
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append("(需要校园网)")
                             }
 
-                            append("的密码（点击蓝色链接后，进入 '智慧理工统一身份认证登录'）。\n")
-                            append("随后您需要仔细回忆团委网的密码。只有正确填写这两个密码才能正常访问二课数据。\n")
-                            append("除非您修改密码，否则每次进入功能时都将自动拉取。\n")
+                            appendLine()
+
+                            append("如果您需要在校园网外使用第二课堂，请同时填写")
+                            withLink(
+                                link = LinkAnnotation.Url(
+                                    url = "https://webvpn.sylu.edu.cn/login",
+                                    styles = linkStyles
+                                )
+                            ) {
+                                append("学校 WebVPN 登录页")
+                            }
+                            appendLine("中“智慧理工统一身份认证登录”入口使用的密码。")
+                            appendLine("打开页面后请点击“智慧理工统一身份认证登录”，这里需要的是智慧理工用户名和密码，不是右侧“账号登录”的密码。")
+
+                            appendLine("如果您还有不清楚的地方，可以点击屏幕${if (suite == NavigationSuiteType.NavigationBar) "右上角" else "左上角"}的帮助按钮查看 EOA 帮助页面。")
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
