@@ -83,7 +83,8 @@ kotlin {
             implementation(libs.filekit.dialog)
             implementation(libs.compose.dnd)
             implementation(libs.koog.agents)
-//            implementation(libs.reveal.core)
+            implementation(libs.reveal.core)
+            implementation(libs.reveal.shapes)
 
             implementation(project(":composeApp-backend"))
             implementation(project(":widgetApp"))

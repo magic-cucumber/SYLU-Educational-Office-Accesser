@@ -1,6 +1,5 @@
 package top.kagg886.eoa.component.adaptive
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -55,6 +54,7 @@ import kotlin.jvm.JvmInline
 @Composable
 fun NavigationSuiteScaffold(
     navigationSuiteItems: NavigationSuiteScope.() -> Unit,
+    navigationSuiteModifier: Modifier = Modifier,
     enableNavigation: Boolean = true,
     modifier: Modifier = Modifier,
     layoutType: NavigationSuiteType =
@@ -71,7 +71,8 @@ fun NavigationSuiteScaffold(
                     enable = enableNavigation,
                     layoutType = layoutType,
                     colors = navigationSuiteColors,
-                    content = navigationSuiteItems
+                    content = navigationSuiteItems,
+                    modifier = navigationSuiteModifier
                 )
             },
             layoutType = layoutType,
@@ -79,10 +80,10 @@ fun NavigationSuiteScaffold(
                 Box(
                     Modifier.consumeWindowInsets(
                         when (layoutType) {
-                            NavigationSuiteType.NavigationBar ->
+                            NavigationBar ->
                                 NavigationBarDefaults.windowInsets
 
-                            NavigationSuiteType.NavigationRail ->
+                            NavigationRail ->
                                 NavigationRailDefaults.windowInsets
 
                             NavigationSuiteType.NavigationDrawer ->
@@ -95,7 +96,7 @@ fun NavigationSuiteScaffold(
                     val scope by rememberStateOfItems(navigationSuiteItems)
 
                     when (layoutType) {
-                        NavigationSuiteType.NavigationBar -> {
+                        NavigationBar -> {
                             val title by scope.title
                             val menu by scope.menu
                             val fab by scope.fabIcon
@@ -143,7 +144,7 @@ fun NavigationSuiteScaffold(
                             }
                         }
 
-                        NavigationSuiteType.NavigationRail -> {
+                        NavigationRail -> {
                             val title by scope.title
                             val back by scope.back
                             Scaffold(
@@ -219,7 +220,7 @@ fun NavigationSuiteScaffoldLayout(
         val navigationPlaceable =
             measurables.fastFirst { it.layoutId == NavigationSuiteLayoutIdTag }
                 .measure(looseConstraints)
-        val isNavigationBar = layoutType == NavigationSuiteType.NavigationBar
+        val isNavigationBar = layoutType == NavigationBar
         val layoutHeight = constraints.maxHeight
         val layoutWidth = constraints.maxWidth
         // Find the content composable through it's layoutId tag
@@ -288,7 +289,7 @@ fun NavigationSuite(
     val defaultItemColors = NavigationSuiteDefaults.itemColors()
 
     when (layoutType) {
-        NavigationSuiteType.NavigationBar -> {
+        NavigationBar -> {
             NavigationBar(
                 modifier = modifier,
                 containerColor = colors.navigationBarContainerColor,
@@ -311,7 +312,7 @@ fun NavigationSuite(
             }
         }
 
-        NavigationSuiteType.NavigationRail -> {
+        NavigationRail -> {
             NavigationRail(
                 modifier = modifier,
                 containerColor = colors.navigationRailContainerColor,
@@ -618,13 +619,13 @@ object NavigationSuiteScaffoldDefaults {
             if (windowPosture.isTabletop ||
                 windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
             ) {
-                NavigationSuiteType.NavigationBar
+                NavigationBar
             } else if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED ||
                 windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.MEDIUM
             ) {
-                NavigationSuiteType.NavigationRail
+                NavigationRail
             } else {
-                NavigationSuiteType.NavigationBar
+                NavigationBar
             }
         }
     }

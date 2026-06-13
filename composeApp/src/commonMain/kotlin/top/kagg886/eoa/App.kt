@@ -12,9 +12,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavHostController
-import androidx.navigation.NavUri
 import androidx.navigation.compose.rememberNavController
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
@@ -27,6 +25,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.component.dialog.DialogHost
 import top.kagg886.eoa.component.nav.NavHost
+import top.kagg886.eoa.component.reveal.RevealCanvasContainer
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.RootEffect
@@ -81,7 +80,6 @@ internal fun App(controller: DeeplinkController = rememberDeepLinkController()) 
 ) {
     val nav = LocalNavController.current
     val snack = LocalSnackBarHost.current
-
 
     val rootModel = rootViewModel()
     rootModel.collectSideEffect {
@@ -152,15 +150,17 @@ internal fun App(controller: DeeplinkController = rememberDeepLinkController()) 
             Surface(Modifier.fillMaxSize()) {
                 SharedTransitionLayout {
                     CompositionLocalProvider(LocalShareTransitionScope provides this) {
-                        NavHost(
-                            modifier = Modifier.fillMaxSize(),
-                            navController = nav,
-                            startDestination = RootRoute,
-                            dialogHost = { nav ->
-                                DialogHost(dialogNavigator = nav)
-                            },
-                            builder = installEOAGraph,
-                        )
+                        RevealCanvasContainer {
+                            NavHost(
+                                modifier = Modifier.fillMaxSize(),
+                                navController = nav,
+                                startDestination = RootRoute,
+                                dialogHost = { nav ->
+                                    DialogHost(dialogNavigator = nav)
+                                },
+                                builder = installEOAGraph,
+                            )
+                        }
                     }
                 }
 
