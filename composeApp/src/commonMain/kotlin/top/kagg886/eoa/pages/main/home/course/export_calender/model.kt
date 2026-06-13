@@ -18,6 +18,7 @@ import top.kagg886.calendar.v2.state.Event
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getTimeByLessonNumber
+import top.kagg886.util.logger
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -41,6 +42,7 @@ class CourseExportCalenderModel(
                 message = "清空原有日程..."
             )
         }
+        logger.i("开始清空日程")
 
         calendar.transaction {
             val events = calendar.getEvents(
@@ -55,6 +57,7 @@ class CourseExportCalenderModel(
                 message = "解析数据库..."
             )
         }
+        logger.i("开始解析数据库")
 
         val (isInHoliday, isBeforeInTerm, weekNumber) = schoolCalender.calculateWeekNumber()
 
@@ -71,6 +74,7 @@ class CourseExportCalenderModel(
                 message = "准备课程..."
             )
         }
+        logger.i("准备生成日历事件")
 
         val days = (0 until schoolCalender.count()).flatMap { weekIdx ->
             (0 until 7).map { dayIdx ->
@@ -120,6 +124,8 @@ class CourseExportCalenderModel(
                 message = "写入日程..."
             )
         }
+
+        logger.i("开始写入日程")
 
         calendar.transaction {
             events.forEach { event ->
