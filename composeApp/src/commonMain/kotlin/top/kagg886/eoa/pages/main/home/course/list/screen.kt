@@ -25,14 +25,20 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.manage.list.CourseManageListRoute
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.createMenuButtonAnim
+import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
@@ -42,7 +48,7 @@ data object CourseListRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun CourseListScreen() {
+fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseList) {
     val nav = LocalNavController.current
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
@@ -51,6 +57,10 @@ fun CourseListScreen() {
     }
 
     val state by model.collectAsState()
+    val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+        else -> ContainerArrow.Bottom
+    }
     HomeScreen(
         route = EOAHomeModule.COURSE,
         title = {
@@ -86,7 +96,10 @@ fun CourseListScreen() {
                 onClick = {
                     iconExpanded = true
                 },
-                enabled = state is CourseListState.Success
+                enabled = state is CourseListState.Success,
+                modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
+                    Text("点这里可以刷新课表、回到本周，也可以快速跳到其他周。")
+                }
             ) {
                 Icon(
                     Icons.Default.Menu,
@@ -176,7 +189,9 @@ fun CourseListScreen() {
         fabModifier = Modifier.shareElementComposed(
             sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
             animatedVisibilityScope = LocalAnimatedContentScope.current
-        )
+        ).revealableAutoMeasured(1, fabArrow) {
+            Text("点这里管理课表，可以添加、修改课程，也可以导出课表。")
+        }
     ) {
         val scope = rememberCoroutineScope()
         model.collectSideEffect {

@@ -41,6 +41,7 @@ fun HomeScreen(
     fabIcon: @Composable (() -> Unit)? = null,
     fabText: @Composable (() -> Unit)? = null,
     fabOnClick: () -> Unit = {},
+    suiteModifier: Modifier = Modifier,
     fabModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
@@ -52,6 +53,7 @@ fun HomeScreen(
     NavigationSuiteScaffold(
         enableNavigation = enableNavigation,
         modifier = modifier,
+        navigationSuiteModifier = suiteModifier,
         navigationSuiteItems = {
             menu(menu)
             title(title)

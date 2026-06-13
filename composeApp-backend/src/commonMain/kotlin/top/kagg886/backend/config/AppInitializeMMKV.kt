@@ -16,6 +16,12 @@ object AppInitializeMMKV : MMKV by MMKV.mmkvWithID("initialize-setting", mode = 
     override var offset: Pair<Int, Int>? by jsonOrNull("offset")
     override var announce: String by string("announce", "")
     override var link: List<Link> by json("link", listOf())
+
+    override var tutorialSummary: Boolean by boolean("tutorial-summary", true)
+    override var tutorialCourseList: Boolean by boolean("tutorial-course-list", true)
+    override var tutorialCourseManage: Boolean by boolean("tutorial-course-manage", true)
+    override var tutorialExamList: Boolean by boolean("tutorial-exam-list", true)
+    override var tutorialSecondClassLogin: Boolean by boolean("tutorial-second-class-login", true)
 }
 
 sealed interface AppInitializeMMKVType {
@@ -26,4 +32,12 @@ sealed interface AppInitializeMMKVType {
 
     var announce: String
     var link: List<Link>
+
+    var tutorialSummary: Boolean
+    var tutorialCourseList: Boolean
+    var tutorialCourseManage: Boolean
+    var tutorialExamList: Boolean
+    var tutorialSecondClassLogin: Boolean
+
+
 }

@@ -1,12 +1,7 @@
 package top.kagg886.eoa.pages.main.home.second
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,18 +22,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,13 +37,17 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.MainRoute
-import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
+import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
@@ -80,107 +74,125 @@ fun SecondClassScreen() {
         SecondClassModel(mainModel.database)
     }
     val state by model.collectAsState()
-    HomeScreen(
-        route = EOAHomeModule.SECOND,
-        title = { Text("第二课堂") },
-        menu = {
-            val successState = state as? SecondClassState.Success<*>
-            if (successState == null) {
-                val uri = LocalUriHandler.current
-                IconButton(
-                    onClick = {
-                        uri.openUri("https://eoa.kagg886.top/second-class.html#二课登录")
-                    },
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Help, contentDescription = "帮助")
-                }
-            } else {
-                val menuItemEnabled = !successState.loading
-                val refreshRotation = if (successState.loading) {
-                    val refreshTransition = rememberInfiniteTransition(label = "second-refresh")
-                    val rotation by refreshTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 1000, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart
-                        ),
-                        label = "second-refresh-rotation"
-                    )
-                    rotation
-                } else {
-                    0f
-                }
-                var show by remember {
-                    mutableStateOf(false)
-                }
-                IconButton(
-                    onClick = {
-                        show = !show
-                    }
-                ) {
-                    AnimatedContent(
-                        targetState = show,
-                        label = "logcat-actions",
-                        transitionSpec = createMenuButtonAnim { show }
+    var showTutorial by remember { mutableStateOf(AppInitializeMMKV.tutorialSecondClassLogin) }
+    RevealContainer(
+        steps = 2,
+        show = showTutorial && state is SecondClassState.RequireLogin<*>,
+        onShowDismissed = {
+            AppInitializeMMKV.tutorialSecondClassLogin = false
+            showTutorial = false
+        },
+    ) {
+        HomeScreen(
+            route = EOAHomeModule.SECOND,
+            title = { Text("第二课堂") },
+            menu = {
+                val successState = state as? SecondClassState.Success<*>
+                if (successState == null) {
+                    val uri = LocalUriHandler.current
+                    val helpModifier =
+                        if (state is SecondClassState.RequireLogin<*>) {
+                            Modifier.revealableAutoMeasured(1, ContainerArrow.Bottom) {
+                                Text("如果还有不明白的地方，点击这里查看更多帮助。")
+                            }
+                        } else {
+                            Modifier
+                        }
+                    IconButton(
+                        onClick = {
+                            uri.openUri("https://eoa.kagg886.top/second-class.html#二课登录")
+                        },
+                        modifier = helpModifier,
                     ) {
-                        Icon(
-                            imageVector = if (it) Icons.Default.Close else Icons.Default.Menu,
-                            contentDescription = null
+                        Icon(Icons.AutoMirrored.Filled.Help, contentDescription = "帮助")
+                    }
+                } else {
+                    val menuItemEnabled = !successState.loading
+                    val refreshRotation = if (successState.loading) {
+                        val refreshTransition = rememberInfiniteTransition(label = "second-refresh")
+                        val rotation by refreshTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 360f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(durationMillis = 1000, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart
+                            ),
+                            label = "second-refresh-rotation"
+                        )
+                        rotation
+                    } else {
+                        0f
+                    }
+                    var show by remember {
+                        mutableStateOf(false)
+                    }
+                    IconButton(
+                        onClick = {
+                            show = !show
+                        }
+                    ) {
+                        AnimatedContent(
+                            targetState = show,
+                            label = "logcat-actions",
+                            transitionSpec = createMenuButtonAnim { show }
+                        ) {
+                            Icon(
+                                imageVector = if (it) Icons.Default.Close else Icons.Default.Menu,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = show,
+                        onDismissRequest = { show = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("刷新")
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "刷新",
+                                    modifier = Modifier.rotate(refreshRotation)
+                                )
+                            },
+                            enabled = menuItemEnabled,
+                            onClick = {
+                                model.login()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text("退出二课")
+                            },
+                            leadingIcon = {
+                                Icon(Icons.AutoMirrored.Filled.ExitToApp, "test")
+                            },
+                            enabled = menuItemEnabled,
+                            onClick = {
+                                model.exit()
+                            }
                         )
                     }
                 }
-                DropdownMenu(
-                    expanded = show,
-                    onDismissRequest = { show = false },
-                ) {
-                    DropdownMenuItem(
-                        text = {
-                            Text("刷新")
-                        },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Refresh,
-                                contentDescription = "刷新",
-                                modifier = Modifier.rotate(refreshRotation)
-                            )
-                        },
-                        enabled = menuItemEnabled,
-                        onClick = {
-                            model.login()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = {
-                            Text("退出二课")
-                        },
-                        leadingIcon = {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, "test")
-                        },
-                        enabled = menuItemEnabled,
-                        onClick = {
-                            model.exit()
-                        }
-                    )
+            }
+        ) {
+
+            model.collectSideEffect {
+                when (it) {
+                    is SecondClassSideEffect.Toast -> toast.showSnackBar(it.level, it.message)
                 }
             }
-        }
-    ) {
 
-        model.collectSideEffect {
-            when (it) {
-                is SecondClassSideEffect.Toast -> toast.showSnackBar(it.level, it.message)
-            }
+            SecondClassScreenContent(
+                state = state,
+                onLoginButtonClicked = { vpn, tw ->
+                    model.login(vpn, tw)
+                }
+            )
         }
-
-        SecondClassScreenContent(
-            state = state,
-            onLoginButtonClicked = { vpn, tw ->
-                model.login(vpn, tw)
-            }
-        )
     }
-
 }
 @Composable
 private fun CaptchaSlider(
@@ -334,7 +346,10 @@ private fun SecondClassScreenContent(
             }
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Top) {
+                    Text("这里说明第二课堂登录需要的注意事项。请务必仔细阅读！")
+                }
             ) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

@@ -11,7 +11,7 @@ class WelcomeViewModel : ViewModel(), ContainerHost<WelcomeViewModelState, Welco
     override val container: Container<WelcomeViewModelState, WelcomeSideEffect> =
         container(WelcomeViewModelState.Empty) {
             if (AppInitializeMMKV.initialize) {
-                completeWelcome().join()
+                completeWelcomeWithoutTutorial().join()
                 return@container
             }
             reduce {
@@ -22,6 +22,15 @@ class WelcomeViewModel : ViewModel(), ContainerHost<WelcomeViewModelState, Welco
     fun completeWelcome() = intent {
         AppInitializeMMKV.initialize = true
         postSideEffect(WelcomeSideEffect.NavigateToLogin)
+    }
+
+    fun completeWelcomeWithoutTutorial() = intent {
+        AppInitializeMMKV.tutorialSummary = false
+        AppInitializeMMKV.tutorialCourseList = false
+        AppInitializeMMKV.tutorialCourseManage = false
+        AppInitializeMMKV.tutorialExamList = false
+        AppInitializeMMKV.tutorialSecondClassLogin = false
+        completeWelcome().join()
     }
 
     @OptIn(OrbitExperimental::class)

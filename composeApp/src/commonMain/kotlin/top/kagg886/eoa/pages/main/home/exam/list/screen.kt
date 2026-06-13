@@ -1,6 +1,5 @@
 package top.kagg886.eoa.pages.main.home.exam.list
 
-import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuBox
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,8 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.Navigator
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
@@ -32,12 +28,17 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.drawer.SupportRTLModalNavigationDrawer
 import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuAnchorType
+import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuBox
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
@@ -51,15 +52,14 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
-import top.kagg886.sylu_eoa.api.v2.bean.Term
 import top.kagg886.util.toFixed
 
 @Serializable
 data object ExamListRoute
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun ExamListScreen() {
+fun ExamListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExamList) {
     val mainViewModel = mainViewModel()
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
@@ -82,6 +82,10 @@ fun ExamListScreen() {
         }
     }
     val state by model.collectAsState()
+    val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+        else -> ContainerArrow.Bottom
+    }
 
     HomeScreen(
         route = EOAHomeModule.EXAM,
@@ -99,7 +103,10 @@ fun ExamListScreen() {
 
             var expanded by remember { mutableStateOf(false) }
             IconButton(
-                onClick = { expanded = !expanded }
+                onClick = { expanded = !expanded },
+                modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
+                    Text("点这里可以打开筛选抽屉，也可以导出当前考试数据。")
+                }
             ) {
                 AnimatedContent(
                     targetState = expanded,
@@ -169,7 +176,10 @@ fun ExamListScreen() {
         fabText = {
             Text("绩点统计")
         },
-        fabOnClick = model::navigateToStatistic
+        fabOnClick = model::navigateToStatistic,
+        fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+            Text("点这里查看本地统计的总绩点。")
+        }
     ) {
         SupportRTLModalNavigationDrawer(
             drawerState = state.drawerState,
@@ -251,6 +261,9 @@ fun ExamListScreen() {
             content = {
                 ExamListScreenContent(
                     state,
+                    modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Top) {
+                        Text("这里是考试列表。点击考试可以查看更多信息。例如历史挂科，得分组成等。")
+                    },
                     onExamItemClicked = {
                         model.navigateToDetail(it)
                     },
@@ -414,6 +427,7 @@ fun ExamListScreenDrawer(
 @Composable
 fun ExamListScreenContent(
     state: ExamListState,
+    modifier: Modifier = Modifier,
     onExamItemClicked: (ExamEntity) -> Unit = {},
 ) {
     when (state) {
@@ -421,13 +435,14 @@ fun ExamListScreenContent(
             ErrorPage(
                 title = { Text("考试列表加载失败") },
                 message = { Text(state.msg) },
-                modifier = Modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize()
             )
         }
 
         is ExamListState.Loading -> {
             ExamListContent(
                 null,
+                modifier,
                 onExamItemClicked
             )
         }
@@ -435,6 +450,7 @@ fun ExamListScreenContent(
         is ExamListState.Success -> {
             ExamListContent(
                 state,
+                modifier,
                 onExamItemClicked,
             )
         }
@@ -444,13 +460,14 @@ fun ExamListScreenContent(
 @Composable
 fun ExamListContent(
     state: ExamListState.Success?,
+    modifier: Modifier = Modifier,
     onExamItemClicked: (ExamEntity) -> Unit,
 ) {
     if (state?.entity?.isEmpty() == true) {
         ErrorPage(
             title = { Text("没有考试") },
             message = { Text("点击菜单按钮以弹出筛选框") },
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         )
         return
     }
@@ -461,7 +478,7 @@ fun ExamListContent(
     }
     LazyColumn(
         state = lazyListState,
-        modifier = Modifier.fillMaxWidth().miuiLongShotSupport(lazyListState),
+        modifier = modifier.fillMaxWidth().miuiLongShotSupport(lazyListState),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(16.dp)
     ) {

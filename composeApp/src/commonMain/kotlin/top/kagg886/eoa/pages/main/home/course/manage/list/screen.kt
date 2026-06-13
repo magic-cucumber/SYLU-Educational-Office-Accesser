@@ -19,21 +19,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
-import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.export_calender.CourseExportCalenderRoute
 import top.kagg886.eoa.pages.main.home.course.export_ics.CourseExportIcsRoute
 import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
-import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditState
 import top.kagg886.eoa.pages.main.mainViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
@@ -46,7 +48,7 @@ data object CourseManageListRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun CourseManageListScreen() {
+fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCourseManage) {
     val mainModel = mainViewModel()
     val mainState by mainModel.collectAsState()
     val model = viewModel {
@@ -54,6 +56,12 @@ fun CourseManageListScreen() {
     }
     val nav = LocalNavController.current
     val state by model.collectAsState()
+    val menuArrow = ContainerArrow.Bottom
+    val surfaceArrow = ContainerArrow.Top
+    val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+        else -> ContainerArrow.Bottom
+    }
 
     HomeScreen(
         route = EOAHomeModule.COURSE,
@@ -63,7 +71,10 @@ fun CourseManageListScreen() {
             var showDropdownMenu by remember { mutableStateOf(false) }
             IconButton(
                 onClick = { showDropdownMenu = true },
-                enabled = state is CourseManageState.Success
+                enabled = state is CourseManageState.Success,
+                modifier = Modifier.revealableAutoMeasured(0, menuArrow) {
+                    Text("点这里可以隐藏系统课程，也可以把课表保存成文件或写入系统日历。")
+                }
             ) {
                 Icon(
                     imageVector = Icons.Default.Menu,
@@ -104,7 +115,10 @@ fun CourseManageListScreen() {
             )
         },
         fabText = { Text("添加课程") },
-        fabOnClick = { model.openAddOrEditCourse(null) }
+        fabOnClick = { model.openAddOrEditCourse(null) },
+        fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+            Text("点这里添加一门自己的课程，适合补充临时课。")
+        }
     ) {
         model.collectSideEffect {
             when (it) {
@@ -130,7 +144,15 @@ fun CourseManageListScreen() {
             Modifier.fillMaxSize().shareElementComposed(
                 sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
-            )
+            ).revealableAutoMeasured(1, surfaceArrow) {
+                Text(
+                    if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
+                        "这里是课程管理列表。左右滑动课程，可以编辑或删除。"
+                    } else {
+                        "这里是课程管理列表。点击铅笔按钮编辑课程，点击垃圾桶按钮删除课程。"
+                    }
+                )
+            }
         ) {
             CoursePageScreenContent(
                 state = state,

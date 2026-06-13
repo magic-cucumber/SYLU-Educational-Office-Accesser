@@ -148,9 +148,9 @@ internal fun App(controller: DeeplinkController = rememberDeepLinkController()) 
         Box(Modifier.fillMaxSize()) {
             //业务
             Surface(Modifier.fillMaxSize()) {
-                SharedTransitionLayout {
-                    CompositionLocalProvider(LocalShareTransitionScope provides this) {
-                        RevealCanvasContainer {
+                RevealCanvasContainer {
+                    SharedTransitionLayout {
+                        CompositionLocalProvider(LocalShareTransitionScope provides this) {
                             NavHost(
                                 modifier = Modifier.fillMaxSize(),
                                 navController = nav,

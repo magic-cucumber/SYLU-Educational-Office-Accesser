@@ -32,7 +32,9 @@ import sylu_eoa.composeapp.generated.resources.Res
 import sylu_eoa.composeapp.generated.resources.good
 import sylu_eoa.composeapp.generated.resources.icon
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.login.LoginRoute
+import top.kagg886.eoa.util.currentLayoutType
 
 
 @Serializable
@@ -64,6 +66,7 @@ fun WelcomeScreen() {
     WelcomeScreenContent(
         state = state,
         onNavigateToMain = { model.completeWelcome() },
+        onNavigateToMainWithoutTutorial = { model.completeWelcomeWithoutTutorial() },
         onShowDonationDialog = { model.showDonationDialog() },
         onHideDonationDialog = { model.hideDonationDialog() }
     )
@@ -74,11 +77,11 @@ fun WelcomeScreen() {
 private fun WelcomeScreenContent(
     state: WelcomeViewModelState = WelcomeViewModelState.Empty,
     onNavigateToMain: () -> Unit = {},
+    onNavigateToMainWithoutTutorial: () -> Unit = {},
     onShowDonationDialog: () -> Unit = {},
     onHideDonationDialog: () -> Unit = {},
 ) = when (state) {
     is WelcomeViewModelState.Welcome -> {
-        val uriHandler = LocalUriHandler.current
         val theme = MaterialTheme.colorScheme
 
         Column(
@@ -230,17 +233,42 @@ private fun WelcomeScreenContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Action button
-            Button(
-                onClick = onNavigateToMain,
-                modifier = Modifier.fillMaxWidth(0.8f).height(56.dp),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Text(
-                    text = "开始使用",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+            val isPhoneLayout = currentLayoutType() == NavigationSuiteType.NavigationBar
+            val buttonShape = RoundedCornerShape(28.dp)
+            val buttonModifier = Modifier.height(56.dp)
+            if (isPhoneLayout) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    WelcomePrimaryButton(
+                        onClick = onNavigateToMain,
+                        modifier = buttonModifier.fillMaxWidth(),
+                        shape = buttonShape,
+                    )
+                    WelcomeSkipTutorialButton(
+                        onClick = onNavigateToMainWithoutTutorial,
+                        modifier = buttonModifier.fillMaxWidth(),
+                        shape = buttonShape,
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    WelcomePrimaryButton(
+                        onClick = onNavigateToMain,
+                        modifier = buttonModifier.weight(1f),
+                        shape = buttonShape,
+                    )
+                    WelcomeSkipTutorialButton(
+                        onClick = onNavigateToMainWithoutTutorial,
+                        modifier = buttonModifier.weight(1f),
+                        shape = buttonShape,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -286,4 +314,42 @@ private fun WelcomeScreenContent(
     }
 
     WelcomeViewModelState.Empty -> Unit
+}
+
+@Composable
+private fun WelcomePrimaryButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape
+    ) {
+        Text(
+            text = "开始使用",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun WelcomeSkipTutorialButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape
+    ) {
+        Text(
+            text = "跳过教程并开始",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }

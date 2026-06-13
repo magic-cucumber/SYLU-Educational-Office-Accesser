@@ -12,7 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.More
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -30,16 +33,21 @@ import com.eygraber.compose.placeholder.material3.shimmer
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
@@ -52,8 +60,18 @@ import top.kagg886.util.toFixed
 data object SummaryRoute
 
 @Composable
-fun SummaryScreen() {
+fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
     val nav = LocalNavController.current
+
+    val suiteArrow = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+        else -> ContainerArrow.End
+    }
+
+    val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+        else -> ContainerArrow.Bottom
+    }
     HomeScreen(
         route = EOAHomeModule.SUMMARY,
         title = {
@@ -67,7 +85,28 @@ fun SummaryScreen() {
         },
         fabOnClick = {
             nav.navigate(SystemNoticeRoute)
-        }
+        },
+
+
+        suiteModifier = Modifier.revealableAutoMeasured(0, suiteArrow) {
+            Text("这里是主导航。可以在概要、课表、考试等页面之间切换。")
+        },
+        menu = {
+            val nav = LocalNavController.current
+            IconButton(
+                onClick = {
+                    nav.navigate(SettingsRoute)
+                },
+                modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Bottom) {
+                    Text("这里可以打开设置，修改账号、同步和显示相关选项。")
+                },
+            ) {
+                Icon(Icons.Default.AccountBox, contentDescription = "返回")
+            }
+        },
+        fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+            Text("点这里查看学校通知，重要消息会集中放在这里。")
+        },
     ) {
         val mainViewModel = mainViewModel()
         val syncState by mainViewModel.collectAsState()
@@ -609,7 +648,7 @@ private fun CourseItem(
     val showPlaceHolder = course == null
     val startTime = course?.date?.first?.toString() ?: "08:00"
     val endTime = course?.date?.second?.toString() ?: "09:40"
-    val courseName = when(course) {
+    val courseName = when (course) {
         is TodayClass.Conflict -> "冲突课程 (${course.data.size}门)"
         is TodayClass.Single -> course.name
         null -> "课程名称"

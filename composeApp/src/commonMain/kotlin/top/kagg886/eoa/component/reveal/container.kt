@@ -18,6 +18,7 @@ import com.svenjacobs.reveal.shapes.balloon.Arrow
 import com.svenjacobs.reveal.shapes.balloon.Balloon
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.reflect.KMutableProperty0
 
 /**
  * ================================================
@@ -65,66 +66,67 @@ enum class ContainerArrow {
 }
 
 
-fun Modifier.revealable(step: Int, arrow: ContainerArrow, content: @Composable BoxScope.() -> Unit) = composed {
-    val registry = LocalRevealKeyRegistry.current
-    val scope = LocalRevealScope.current
+fun Modifier.revealableAutoMeasured(step: Int, arrow: ContainerArrow, content: @Composable BoxScope.() -> Unit) =
+    composed {
+        val registry = LocalRevealKeyRegistry.current
+        val scope = LocalRevealScope.current
 
-    DisposableEffect(content, scope, registry, arrow) {
-        require(step >= 0) {
-            "step $step is not less than 0"
-        }
-
-        require(step < registry.size) {
-            "step $step is not less than ${registry.size}"
-        }
-
-        require(registry[step]?.content == null) {
-            "step $step is already registered revealable"
-        }
-
-        val overlayContent: RevealOverlayContentFunction = { anchorBounds ->
-            MeasuredRevealBalloon(
-                anchorBounds = anchorBounds,
-                arrow = arrow,
-                content = {
-                    Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
-                        content()
-                    }
-                },
-            )
-        }
-
-        registry[step] = registry.getValue(step).copy(content = overlayContent)
-        onDispose {
-            //此时registry[step].content不可控，如果仍为原对象就移除。
-            registry[step] = with(registry.getValue(step)) {
-                if (this.content != overlayContent) return@onDispose
-                this.copy(content = null)
+        DisposableEffect(content, scope, registry, arrow) {
+            require(step >= 0) {
+                "step $step is not less than 0"
             }
-        }
-    }
 
-    with(scope) {
-        Modifier
-            .onGloballyPositioned {
-                val position = it.positionInRoot()
-                val left = position.x.roundToInt()
-                val top = position.y.roundToInt()
-                registry[step] = registry.getValue(step).copy(
-                    anchorBounds = IntRect(
-                        left = left,
-                        top = top,
-                        right = left + it.size.width,
-                        bottom = top + it.size.height,
-                    )
+            require(step < registry.size) {
+                "step $step is not less than ${registry.size}"
+            }
+
+            require(registry[step]?.content == null) {
+                "step $step is already registered revealable"
+            }
+
+            val overlayContent: RevealOverlayContentFunction = { anchorBounds ->
+                MeasuredRevealBalloon(
+                    anchorBounds = anchorBounds,
+                    arrow = arrow,
+                    content = {
+                        Box(modifier = Modifier.padding(8.dp), contentAlignment = Alignment.Center) {
+                            content()
+                        }
+                    },
                 )
             }
-            .revealable(
-                key = step,
-                shape = RevealShape.RoundRect(8.dp)
-            )
+
+            registry[step] = registry.getValue(step).copy(content = overlayContent)
+            onDispose {
+                //此时registry[step].content不可控，如果仍为原对象就移除。
+                registry[step] = with(registry.getValue(step)) {
+                    if (this.content != overlayContent) return@onDispose
+                    this.copy(content = null)
+                }
+            }
+        }
+
+        with(scope) {
+            Modifier
+                .onGloballyPositioned {
+                    val position = it.positionInRoot()
+                    val left = position.x.roundToInt()
+                    val top = position.y.roundToInt()
+                    registry[step] = registry.getValue(step).copy(
+                        anchorBounds = IntRect(
+                            left = left,
+                            top = top,
+                            right = left + it.size.width,
+                            bottom = top + it.size.height,
+                        )
+                    )
+                }
+                .revealable(
+                    key = step,
+                    shape = RevealShape.RoundRect(8.dp)
+                )
+        }
     }
-}
 
 @Composable
 private fun ContainerArrow.toBalloonArrow(
@@ -315,6 +317,20 @@ private val IntRect.centerY: Int get() = (top + bottom) / 2
 
 private fun Int.coerceWithin(min: Int, max: Int): Int = if (max < min) min else coerceIn(min, max)
 
+@Composable
+fun RevealContainer(
+    steps: Int,
+    field: KMutableProperty0<Boolean>,
+    content: @Composable () -> Unit
+) {
+    var show by remember { mutableStateOf(field.get()) }
+    RevealContainer(
+        steps = steps,
+        show = show,
+        onShowDismissed = { field.set(false); show = false },
+        content = content,
+    )
+}
 
 @Composable
 fun RevealContainer(
