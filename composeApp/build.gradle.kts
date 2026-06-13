@@ -72,7 +72,7 @@ kotlin {
             implementation(libs.room.runtime)
             implementation(libs.room.paging)
             implementation(libs.materialKolor)
-
+            implementation(libs.kolor.picker)
 
             implementation(libs.orbit.core)
             implementation(libs.orbit.viewmodel)
@@ -96,7 +96,6 @@ kotlin {
             implementation(project(":lib:ktor-platform-engine"))
             implementation(project(":lib:ics-generator"))
             implementation(project(":lib:calender-exporter-v2"))
-            implementation(project(":lib:kolor-picker"))
             implementation(project(":second-class"))
         }
 

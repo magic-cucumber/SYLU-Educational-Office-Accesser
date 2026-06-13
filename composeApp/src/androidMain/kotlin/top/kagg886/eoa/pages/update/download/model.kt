@@ -1,8 +1,8 @@
 package top.kagg886.eoa.pages.update.download
 
 import androidx.lifecycle.ViewModel
-
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -34,6 +34,11 @@ class DownloadModel(private val url: String) : ViewModel(), ContainerHost<Downlo
     private val client = HttpClient {
         install(ContentNegotiation) {
             json()
+        }
+
+        install(Logging) {
+            logger = this@DownloadModel.logger.asKtorLogger
+            level = LogLevel.ALL
         }
     }
 

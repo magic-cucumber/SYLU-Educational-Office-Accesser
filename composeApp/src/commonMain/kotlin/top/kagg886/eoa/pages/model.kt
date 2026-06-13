@@ -9,8 +9,10 @@ import co.touchlab.kermit.Severity
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -29,6 +31,7 @@ import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
@@ -53,6 +56,18 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
                     ignoreUnknownKeys = true
                 }
             )
+
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                },
+                contentType = ContentType.Text.Plain
+            )
+        }
+
+        install(Logging) {
+            logger = this@RootViewModel.logger.asKtorLogger
+            level = LogLevel.ALL
         }
 
 

@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.Container
@@ -12,6 +14,7 @@ import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.pages.main.home.link.Link
+import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 
@@ -26,6 +29,12 @@ class LinkListModel : ViewModel(), ContainerHost<LinkListState, LinkListEffect> 
     private val client = HttpClient {
         install(ContentNegotiation) {
             json()
+            json(contentType = ContentType.Text.Plain)
+        }
+
+        install(Logging) {
+            logger = this@LinkListModel.logger.asKtorLogger
+            level = LogLevel.ALL
         }
     }
     override val container: Container<LinkListState, LinkListEffect> = container(LinkListState.Loading) {

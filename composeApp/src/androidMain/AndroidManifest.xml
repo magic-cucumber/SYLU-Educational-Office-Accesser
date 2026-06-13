@@ -1,25 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
-<!--    联网权限-->
+    <!--    联网权限-->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-sdk tools:overrideLibrary="com.mohamedrejeb.compose.dnd, top.kagg886.mkmb, top.kagg886.mkmb.android, com.dokar.sonner.core" />
+    <uses-sdk tools:overrideLibrary="
+        com.mohamedrejeb.compose.dnd,
+        top.kagg886.mkmb,
+        top.kagg886.mkmb.android,
+        com.dokar.sonner.core,
+        ai.koog.agents.core,
+        ai.koog.agents.features.event.handler,
+        ai.koog.agents.features.memory,
+        ai.koog.agents.features.opentelemetry,
+        ai.koog.agents.features.snapshot,
+        ai.koog.agents.features.tokenizer,
+        ai.koog.agents.features.trace,
+        ai.koog.agents.mcp.metadata,
+        ai.koog.agents.tools,
+        ai.koog.agents.utils,
+        ai.koog.embeddings.base,
+        ai.koog.embeddings.llm,
+        ai.koog.http.client.core,
+        ai.koog.http.client.ktor,
+        ai.koog.koog.agents,
+        ai.koog.prompt.cache.files,
+        ai.koog.prompt.cache.model,
+        ai.koog.prompt.executor.anthropic.client,
+        ai.koog.prompt.executor.bedrock.client,
+        ai.koog.prompt.executor.cached,
+        ai.koog.prompt.executor.clients,
+        ai.koog.prompt.executor.model,
+        ai.koog.prompt.executor.ollama.client,
+        ai.koog.prompt.executor.openai.client,
+        ai.koog.prompt.executor.openai.client.base,
+        ai.koog.prompt.llm,
+        ai.koog.prompt.markdown,
+        ai.koog.prompt.model,
+        ai.koog.prompt.processor,
+        ai.koog.prompt.structure,
+        ai.koog.prompt.tokenizer,
+        ai.koog.prompt.xml,
+        ai.koog.rag.base,
+        ai.koog.serialization.core,
+        ai.koog.utils
+       "
+    />
     <application
-        android:name=".EOAApplication"
-        android:icon="@mipmap/ic_launcher"
-        android:label="SYLU-EOA"
-        android:usesCleartextTraffic="true"
-        android:theme="@android:style/Theme.Material.NoActionBar">
+            android:name=".EOAApplication"
+            android:icon="@mipmap/ic_launcher"
+            android:label="SYLU-EOA"
+            android:usesCleartextTraffic="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
-            android:name=".AppActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            android:launchMode="singleInstance"
-            android:windowSoftInputMode="adjustPan"
-            android:exported="true">
+                android:name=".AppActivity"
+                android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+                android:launchMode="singleInstance"
+                android:windowSoftInputMode="adjustPan"
+                android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
@@ -49,7 +90,7 @@
 
         <meta-data
                 android:name="android.max_aspect"
-                android:value="2.4" />
+                android:value="2.4"/>
     </application>
 
 </manifest>

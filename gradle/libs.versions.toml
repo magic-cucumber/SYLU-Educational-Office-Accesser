@@ -1,39 +1,39 @@
 [versions]
 adaptive = "1.2.0"
 adaptive-suite = "1.9.0"
-aesKotlin = "1.0.1"
 agp = "8.13.2"
 androidx-activityCompose = "1.13.0"
 androidx-lifecycle = "2.10.0"
 androidx-navigation = "2.9.2"
-androidx-uiTest = "1.11.0"
-buildConfig = "6.0.9"
-coil = "3.4.0"
+androidx-uiTest = "1.11.2"
+buildConfig = "6.0.10"
+coil = "3.5.0"
 compose = "1.10.3"
 composeDnd = "0.4.0"
 composePlaceholderMaterial3 = "1.0.12"
 cryptographyCore = "0.6.0"
 desugar_jdk_libs = "2.1.5"
-filekitCore = "0.13.0"
+filekitCore = "0.14.1"
 glance = "1.1.1"
 kermit = "2.1.0"
-koogAgents = "0.8.0"
-kotlin = "2.3.21"
-kotlinx-coroutines = "1.10.2"
-kotlinx-datetime = "0.7.1"
+kolorPicker = "2.1.0"
+koogAgents = "1.0.0"
+kotlin = "2.4.0"
+kotlinx-coroutines = "1.11.0"
+kotlinx-datetime = "0.8.0"
 kotlinx-serialization = "1.11.0"
 ksoup = "0.2.6"
-ksp = "2.3.5"
-ktor = "3.4.3"
-markdown = "0.40.2"
+ksp = "2.3.8"
+ktor = "3.5.0"
+markdown = "0.41.0"
 materialIconsExtended = "1.7.3"
 materialKolor = "4.1.1"
 mkmb-core = "1.3.0"
 mkmb-platform = "1.3.0"
 okio = "3.17.0"
 orbitViewmodel = "11.0.0"
-paging = "3.4.2"
-room = "3.0.0-alpha03"
+paging = "3.5.0"
+room = "3.0.0-alpha06"
 sonner = "0.3.9"
 sqliteBundled = "2.6.2"
 sweet = "0.1.3"
@@ -69,6 +69,7 @@ desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+kolor-picker = { module = "com.kborowy:kolor-picker", version.ref = "kolorPicker" }
 koog-agents = { module = "ai.koog:koog-agents", version.ref = "koogAgents" }
 kotlin-compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -112,7 +113,7 @@ compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "
 compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose" }
 
 [plugins]
-benmanes-versions = "com.github.ben-manes.versions:0.53.0"
+benmanes-versions = "com.github.ben-manes.versions:0.54.0"
 buildConfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildConfig" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

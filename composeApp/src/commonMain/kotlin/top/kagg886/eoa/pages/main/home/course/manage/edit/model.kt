@@ -1,16 +1,17 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import ai.koog.agents.core.tools.annotations.LLMDescription
-import ai.koog.prompt.dsl.ContentPartsBuilder
+import ai.koog.http.client.ktor.KtorKoogHttpClient
+import ai.koog.prompt.dsl.RequestMessagePartsBuilder
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
-import ai.koog.prompt.message.AttachmentContent
-import ai.koog.prompt.message.ContentPart
 import ai.koog.prompt.executor.model.StructureFixingParser
 import ai.koog.prompt.executor.model.executeStructured
+import ai.koog.prompt.message.AttachmentContent
+import ai.koog.prompt.message.AttachmentSource
 import ai.koog.prompt.structure.StructuredRequest
 import ai.koog.prompt.structure.StructuredRequestConfig
 import ai.koog.prompt.structure.json.JsonStructure
@@ -21,9 +22,10 @@ import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
-import top.kagg886.util.http.HttpClient
 import io.ktor.client.plugins.logging.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -38,8 +40,9 @@ import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
+import top.kagg886.util.http.HttpClient
+import top.kagg886.util.race
 import kotlin.time.Duration.Companion.seconds
-import top.kagg886.util.logger as kermit
 
 class CourseEditModel(
     database: AppDatabase,
@@ -216,7 +219,8 @@ class CourseEditModel(
     }
 
     fun generateCourseByImage() = intent {
-        val picker = FileKit.openFilePicker(type = FileKitType.Image, dialogSettings = FileKitDialogSettings.createDefault())
+        val picker =
+            FileKit.openFilePicker(type = FileKitType.Image, dialogSettings = FileKitDialogSettings.createDefault())
 
         if (picker == null) {
             postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Warning, "请选择图片！"))
@@ -235,7 +239,7 @@ class CourseEditModel(
         val sub = generateCourseByAIInternal {
             text("请理解图片中的内容，并输出符合 CourseAddReturn 的 JSON:")
             image(
-                ContentPart.Image(
+                AttachmentSource.Image(
                     content = AttachmentContent.Binary.Bytes(byt),
                     format = "png",
                     mimeType = "image/png",
@@ -280,7 +284,7 @@ class CourseEditModel(
     )
 
     @OptIn(OrbitExperimental::class)
-    private fun generateCourseByAIInternal(build: ContentPartsBuilder.() -> Unit) = intent {
+    private fun generateCourseByAIInternal(build: RequestMessagePartsBuilder.() -> Unit) = intent {
         runOn<CourseEditState.Success> {
             reduce {
                 state.copy(
@@ -289,40 +293,31 @@ class CourseEditModel(
                 )
             }
 
-            // 按 Koog 0.8.0 文档，使用 MultiLLMPromptExecutor + executeStructured 获取结构化结果。
-            val agent = MultiLLMPromptExecutor(
+            val app = AppSyncMMKV.calender!!
+            val model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel)
+            val executor = MultiLLMPromptExecutor(
                 OpenAILLMClient(
                     apiKey = state.aiKey,
                     settings = OpenAIClientSettings(
                         baseUrl = state.aiEndpoint,
                     ),
-                    baseClient = HttpClient {
-                        install(Logging) {
-                            logger = this@CourseEditModel.logger.asKtorLogger
-                            level = LogLevel.ALL
+                    httpClientFactory = KtorKoogHttpClient.Factory(
+                        baseClient = HttpClient {
+                            install(Logging) {
+                                logger = this@CourseEditModel.logger.asKtorLogger
+                                level = LogLevel.ALL
+                            }
                         }
-                    }
+                    )
                 )
             )
 
-            val response = runCatching {
-                val app = AppSyncMMKV.calender!!
-                coroutineScope {
-                    val displayJob = launch {
-                        var cnt = 1
-                        while (true) {
-                            cnt = (cnt + 1) % 4
-                            delay(1.seconds)
-                            reduce {
-                                state.copy(
-                                    aiGenerating = (1..cnt).joinToString("") { "." }
-                                )
-                            }
-                        }
-                    }
+            addCloseable(executor)
 
+            val response = coroutineScope {
+                val pending = async {
                     try {
-                        agent.executeStructured(
+                        executor.executeStructured<CourseAddReturn>(
                             prompt = prompt("structured-data") {
                                 system(
                                     content = """
@@ -361,30 +356,47 @@ class CourseEditModel(
                                     - 无课程信息 → course = null
                                     - 无时间安排 → record = []
                                     - 输出严格符合CourseAddReturn结构，不能添加任何解释或多余字符
-                        )
                                     """.trimIndent()
                                 )
 
                                 user(build)
                             },
-                            model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                            model = model,
                             config = StructuredRequestConfig(
                                 default = StructuredRequest.Manual(
                                     JsonStructure.create(
-                                        schemaGenerator = StandardJsonSchemaGenerator,
+                                        schemaGenerator = StandardJsonSchemaGenerator.Default,
                                         examples = example
                                     )
-                                ),
+                                )
                             ),
                             fixingParser = StructureFixingParser(
-                                model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel),
+                                model = model,
                                 retries = 3
                             )
-                        ).getOrThrow().data
-                    } finally {
-                        displayJob.cancelAndJoin()
+                        )
+                    } catch (e: Throwable) {
+                        Result.failure(e)
                     }
                 }
+
+
+                race(
+                    pending,
+                    async {
+                        var cnt = 1
+                        while (true) {
+                            cnt = (cnt + 1) % 4
+                            delay(1.seconds)
+                            reduce {
+                                state.copy(
+                                    aiGenerating = (1..cnt).joinToString("") { "." }
+                                )
+                            }
+                        }
+                        error("unreachable code")
+                    }
+                )
             }
 
             reduce {
@@ -400,13 +412,13 @@ class CourseEditModel(
                 postSideEffect(
                     CourseEditSideEffect.Toast(
                         SnackBarType.Error,
-                        ex?.message ?: "生成课表数据时发生错误，请查看日志"
+                        "生成课表数据时发生错误，请查看日志\n${ex?.message?.lines()?.get(0)}",
                     )
                 )
                 return@runOn
             }
 
-            val (course, record) = response.getOrThrow()
+            val (course, record) = response.getOrThrow().data
 
             if (course == null) {
                 postSideEffect(
@@ -501,7 +513,7 @@ private data class LLMRecordReturn(
     val periodOfDay: List<List<Int>>, // 第几节课
 ) {
     fun toEntity(): List<CourseRecordEntity> = periodOfDay.withIndex().flatMap { (index, periods) ->
-        periods.map { it ->
+        periods.map {
             CourseRecordEntity(
                 weekNumber = weekNumber,
                 dayOfWeek = dayOfWeek[index],
