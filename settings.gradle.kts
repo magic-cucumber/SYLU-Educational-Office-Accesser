@@ -45,6 +45,7 @@ include(":util")
 
 include(":lib:ics-generator")
 include(":lib:calender-exporter")
+include(":lib:calender-exporter-v2")
 include(":lib:kolor-picker")
 include(":lib:rsa")
 include(":lib:ktor-platform-engine")

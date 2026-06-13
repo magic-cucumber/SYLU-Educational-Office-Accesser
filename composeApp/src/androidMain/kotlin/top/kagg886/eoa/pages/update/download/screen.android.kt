@@ -1,8 +1,5 @@
 package top.kagg886.eoa.pages.update.download
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,6 +26,7 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.absolutePath
+import top.kagg886.util.findActivity
 import kotlin.time.Clock
 
 @Composable
@@ -163,10 +161,4 @@ private fun UpdateDownloadContent(state: DownloadState, onPrepareInstall: () -> 
         }
         Text("等待安装中...")
     }
-}
-
-private fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }

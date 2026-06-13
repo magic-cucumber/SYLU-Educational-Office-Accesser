@@ -1,14 +1,8 @@
 package top.kagg886.eoa.pages.main.home.second
 
 import androidx.lifecycle.ViewModel
-import co.touchlab.kermit.Logger.Companion.w
-import io.ktor.network.sockets.SocketTimeoutException
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.withTimeout
+import io.ktor.network.sockets.*
+import kotlinx.coroutines.*
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -27,7 +21,6 @@ import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.race
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.measureTimedValue
 
 /**
  * ================================================
@@ -160,71 +153,67 @@ class SecondClassModel(
             vPassword
         ).apply { addCloseable(this) }
 
-        val (portal, time) = withTimeout(timeout) {
-            measureTimedValue {
-                vpn.login(
-                    totpHandler = {
-                        log.i("处理TOTP二次验证")
-                        val deferred = CompletableDeferred<Int?>()
-                        runOn<SecondClassState.RequireLogin<SecondClassState.TOTPAcceptable>> {
-                            reduce {
-                                state.copy(additional = SecondClassState.RequireLogin.TOTP(deferred))
-                            }
-                        }
-                        runOn<SecondClassState.Success<SecondClassState.TOTPAcceptable>> {
-                            reduce {
-                                state.copy(additional = SecondClassState.Success.TOTP(deferred))
-                            }
-                        }
-                        val code = deferred.await()
-                        log.i("TOTP二次验证处理完成")
-                        runOn<SecondClassState.RequireLogin<*>> {
-                            reduce {
-                                state.copy(additional = null)
-                            }
-                        }
-                        runOn<SecondClassState.Success<*>> {
-                            reduce {
-                                state.copy(additional = null)
-                            }
-                        }
-
-                        code
-                    },
-                    captchaHandler = { background, slider ->
-                        log.i("处理滑动验证码")
-                        val deferred = CompletableDeferred<CaptchaReturn?>()
-                        runOn<SecondClassState.RequireLogin<SecondClassState.CaptchaAcceptable>> {
-                            reduce {
-                                state.copy(additional = SecondClassState.RequireLogin.Captcha(deferred, slider, background))
-                            }
-                        }
-                        runOn<SecondClassState.Success<SecondClassState.CaptchaAcceptable>> {
-                            reduce {
-                                state.copy(additional = SecondClassState.Success.Captcha(deferred, slider, background))
-                            }
-                        }
-                        val result = deferred.await()
-                        log.i("滑动验证码处理完成: $this")
-                        runOn<SecondClassState.RequireLogin<*>> {
-                            reduce {
-                                state.copy(additional = null)
-                            }
-                        }
-                        runOn<SecondClassState.Success<*>> {
-                            reduce {
-                                state.copy(additional = null)
-                            }
-                        }
-
-                        result
+        vpn.login(
+            totpHandler = {
+                log.i("处理TOTP二次验证")
+                val deferred = CompletableDeferred<Int?>()
+                runOn<SecondClassState.RequireLogin<SecondClassState.TOTPAcceptable>> {
+                    reduce {
+                        state.copy(additional = SecondClassState.RequireLogin.TOTP(deferred))
                     }
-                )
-                vpn.portal()
-                    .first { it.name == "团委第二课堂系统" }
-                    .redirect
+                }
+                runOn<SecondClassState.Success<SecondClassState.TOTPAcceptable>> {
+                    reduce {
+                        state.copy(additional = SecondClassState.Success.TOTP(deferred))
+                    }
+                }
+                val code = deferred.await()
+                log.i("TOTP二次验证处理完成")
+                runOn<SecondClassState.RequireLogin<*>> {
+                    reduce {
+                        state.copy(additional = null)
+                    }
+                }
+                runOn<SecondClassState.Success<*>> {
+                    reduce {
+                        state.copy(additional = null)
+                    }
+                }
+
+                code
+            },
+            captchaHandler = { background, slider ->
+                log.i("处理滑动验证码")
+                val deferred = CompletableDeferred<CaptchaReturn?>()
+                runOn<SecondClassState.RequireLogin<SecondClassState.CaptchaAcceptable>> {
+                    reduce {
+                        state.copy(additional = SecondClassState.RequireLogin.Captcha(deferred, slider, background))
+                    }
+                }
+                runOn<SecondClassState.Success<SecondClassState.CaptchaAcceptable>> {
+                    reduce {
+                        state.copy(additional = SecondClassState.Success.Captcha(deferred, slider, background))
+                    }
+                }
+                val result = deferred.await()
+                log.i("滑动验证码处理完成: $this")
+                runOn<SecondClassState.RequireLogin<*>> {
+                    reduce {
+                        state.copy(additional = null)
+                    }
+                }
+                runOn<SecondClassState.Success<*>> {
+                    reduce {
+                        state.copy(additional = null)
+                    }
+                }
+
+                result
             }
-        }
+        )
+        val portal = vpn.portal()
+            .first { it.name == "团委第二课堂系统" }
+            .redirect
 
         log.d("成功登录VPN")
 

@@ -95,7 +95,7 @@ kotlin {
 
             implementation(project(":lib:ktor-platform-engine"))
             implementation(project(":lib:ics-generator"))
-            implementation(project(":lib:calender-exporter"))
+            implementation(project(":lib:calender-exporter-v2"))
             implementation(project(":lib:kolor-picker"))
             implementation(project(":second-class"))
         }

@@ -20,8 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
-import top.kagg886.calender.data.CalenderPermissionGrantType.*
-import top.kagg886.calender.rememberCalenderState
+import top.kagg886.calendar.v2.rememberCalendarManagerState
+import top.kagg886.calendar.v2.state.CalendarState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.ErrorPage
@@ -61,20 +61,17 @@ fun CourseExportCalenderScreen() {
         }
     ) {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            val manager = rememberCalenderState(name = "eoa-calender")
-
-
-            when (manager.permission) {
-                WAIT -> Loading("正在准备申请权限...")
-                PROCESSING -> Loading(msg = "正在申请权限...")
-                ALL_GRANTED -> {
+            when (val manager = rememberCalendarManagerState()) {
+                is CalendarState.Waiting -> Loading("正在准备申请权限...")
+                is CalendarState.Processing -> Loading(msg = "正在申请权限...")
+                is CalendarState.Granted -> {
                     LaunchedEffect(Unit) {
-                        model.exportCalender(manager.events)
+                        model.exportCalender(manager.manager)
                     }
                     Loading(state.message)
                 }
 
-                DENY_PERMANENT, DENY_ONCE -> ErrorPage(
+                is CalendarState.Denied -> ErrorPage(
                     title = {
                         Text("日历权限未被授予")
                     },
@@ -83,7 +80,7 @@ fun CourseExportCalenderScreen() {
                     }
                 )
 
-                NOT_SUPPORTED -> ErrorPage(
+                is CalendarState.NotSupported -> ErrorPage(
                     title = {
                         Text("错误")
                     },
