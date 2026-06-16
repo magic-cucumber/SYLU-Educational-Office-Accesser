@@ -30,7 +30,7 @@ import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.showSnackBar
 
 //新增为null，否则为id
@@ -41,7 +41,7 @@ data class CourseEditRoute(
 
 @Composable
 fun CourseEditScreen(route: CourseEditRoute) {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return
     val model = viewModel {
         CourseEditModel(mainModel.database, route.id)
     }

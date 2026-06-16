@@ -17,7 +17,7 @@ import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 
 @Serializable
 data class CourseConflictRoute(val weekNumber: Int, val dayOfWeek: Int, val periodOfDay: Int)
@@ -25,7 +25,7 @@ data class CourseConflictRoute(val weekNumber: Int, val dayOfWeek: Int, val peri
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseConflictScreen(route: CourseConflictRoute) {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return
     val model = viewModel {
         CourseConflictViewModel(
             database = mainModel.database,

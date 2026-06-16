@@ -26,7 +26,7 @@ import top.kagg886.backend.database.dao.GPASummaryEntity
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 
 @Serializable
 data object GPARoute
@@ -36,7 +36,7 @@ fun GPAScreen() = HomeScreen(
     route = EOAHomeModule.GPA,
     title = { Text(text = "绩点") },
 ) {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainModel.collectAsState()
 
     val model = viewModel<GPAViewModel>(key = syncState.toString()) {

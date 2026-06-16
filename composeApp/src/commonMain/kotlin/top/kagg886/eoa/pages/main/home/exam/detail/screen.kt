@@ -41,7 +41,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
@@ -65,7 +65,7 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     menu = null,
     back = { BackIconButton() }
 ) {
-    val mainViewModel = mainViewModel()
+    val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<ExamDetailViewModel>(key = syncState.toString()) {
         ExamDetailViewModel(route.examId, syncState, mainViewModel.database)
@@ -133,6 +133,7 @@ private fun ExamDetailPanelPhone(
         modifier = Modifier
             .fillMaxWidth()
             .verticalScroll(lazyListState)
+            .padding(horizontal = 16.dp)
             .miuiLongShotSupport(lazyListState),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

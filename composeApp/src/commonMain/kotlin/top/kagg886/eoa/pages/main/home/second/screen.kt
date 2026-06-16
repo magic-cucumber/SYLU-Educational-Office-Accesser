@@ -47,7 +47,7 @@ import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
@@ -69,7 +69,7 @@ data object SecondClassRoute
 fun SecondClassScreen() {
     val nav = LocalNavController.current
     val toast = LocalSnackBarHost.current
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return
     val model = viewModel(nav.getBackStackEntry(MainRoute)) { //持久化vm，确保切换页面时状态不丢失
         SecondClassModel(mainModel.database)
     }

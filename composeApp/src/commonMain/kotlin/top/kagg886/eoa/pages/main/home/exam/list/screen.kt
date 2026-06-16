@@ -44,7 +44,7 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
 import top.kagg886.eoa.pages.main.home.exam.export.ExamExportRoute
 import top.kagg886.eoa.pages.main.home.exam.statistic.ExamStatisticRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
@@ -60,7 +60,7 @@ data object ExamListRoute
 @OptIn(ExperimentalAnimationApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ExamListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExamList) {
-    val mainViewModel = mainViewModel()
+    val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
         ExamListViewModel(mainViewModel.database, syncState)
@@ -93,7 +93,7 @@ fun ExamListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExamList) {
             Text("考试列表")
         },
         menu = {
-            val mainViewModel = mainViewModel()
+            val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
             val syncState by mainViewModel.collectAsState()
             val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
                 ExamListViewModel(mainViewModel.database, syncState)

@@ -36,7 +36,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -51,7 +51,7 @@ fun CoursePageListScreen(
     index: Int,
     courseListState: CourseListState.Success
 ) {
-    val mainViewModel = mainViewModel()
+    val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CoursePageViewModel>(key = "${index * 31 + syncState.hashCode()}") {
         CoursePageViewModel(syncState, index + 1, mainViewModel.database)

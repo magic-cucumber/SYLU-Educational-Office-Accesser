@@ -22,7 +22,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
@@ -30,7 +30,7 @@ data object CourseExportIcsRoute
 
 @Composable
 fun CourseExportIcsScreen() {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return
     val model = viewModel { CourseExportIcsModel(mainModel.database) }
     val snack = LocalSnackBarHost.current
     val nav = LocalNavController.current

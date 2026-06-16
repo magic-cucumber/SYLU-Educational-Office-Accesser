@@ -22,7 +22,7 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.util.toFixed
 
 /**
@@ -49,7 +49,7 @@ fun ExamStatisticScreen(route: ExamStatisticRoute) = DialogPageScaffold(
         }
     }
 ) {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return@DialogPageScaffold
 
     val model = viewModel {
         ExamStatisticModel(mainModel.database,route.year,route.term)

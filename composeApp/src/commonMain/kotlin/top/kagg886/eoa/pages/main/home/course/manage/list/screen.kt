@@ -36,7 +36,7 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.export_calender.CourseExportCalenderRoute
 import top.kagg886.eoa.pages.main.home.course.export_ics.CourseExportIcsRoute
 import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -49,7 +49,7 @@ data object CourseManageListRoute
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCourseManage) {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return@RevealContainer
     val mainState by mainModel.collectAsState()
     val model = viewModel {
         CourseManageListModel(mainState, mainModel.database)

@@ -46,7 +46,8 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.currentLayoutType
@@ -108,7 +109,7 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
             Text("点这里查看学校通知，重要消息会集中放在这里。")
         },
     ) {
-        val mainViewModel = mainViewModel()
+        val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
         val syncState by mainViewModel.collectAsState()
         val rootModel = rootViewModel()
         val rootState by rootModel.collectAsState()

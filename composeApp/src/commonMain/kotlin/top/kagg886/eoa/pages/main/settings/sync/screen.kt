@@ -32,7 +32,7 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.MainScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.createMenuButtonAnim
@@ -51,7 +51,7 @@ fun SyncSettingsScreen() = MainScreen {
     val rootState by rootModel.collectAsState()
     val syncDuration by rootState.syncDuration.collectAsState()
 
-    val model = mainViewModel()
+    val model = mainViewModelOrNull() ?: return@MainScreen
     val modelState by model.collectAsState()
 
     SyncSettingsContent(

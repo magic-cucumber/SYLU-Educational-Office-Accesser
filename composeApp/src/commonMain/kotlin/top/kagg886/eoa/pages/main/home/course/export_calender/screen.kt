@@ -26,7 +26,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.showSnackBar
 
 @Serializable
@@ -34,7 +34,7 @@ data object CourseExportCalenderRoute
 
 @Composable
 fun CourseExportCalenderScreen() {
-    val mainModel = mainViewModel()
+    val mainModel = mainViewModelOrNull() ?: return
     val model = viewModel { CourseExportCalenderModel(mainModel.database) }
     val snack = LocalSnackBarHost.current
     val nav = LocalNavController.current

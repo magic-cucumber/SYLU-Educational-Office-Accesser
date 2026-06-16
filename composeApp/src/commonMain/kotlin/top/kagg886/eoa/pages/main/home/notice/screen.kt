@@ -35,7 +35,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.ExpandableText
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.login.LoginRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.ChinaDateFormater
@@ -45,7 +45,7 @@ data object SystemNoticeRoute
 
 @Composable
 fun SystemNoticeScreen() {
-    val mainViewModel = mainViewModel()
+    val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<SystemNoticeModel>(key = syncState.toString()) {
         SystemNoticeModel(syncState, mainViewModel.database)

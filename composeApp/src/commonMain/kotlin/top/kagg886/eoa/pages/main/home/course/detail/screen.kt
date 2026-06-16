@@ -30,7 +30,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -50,7 +50,7 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
         BackIconButton()
     }
 ) {
-    val mainViewModel = mainViewModel()
+    val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CourseDetailViewModel>(key = syncState.toString()) {
         CourseDetailViewModel(route.recordId, syncState, mainViewModel.database)

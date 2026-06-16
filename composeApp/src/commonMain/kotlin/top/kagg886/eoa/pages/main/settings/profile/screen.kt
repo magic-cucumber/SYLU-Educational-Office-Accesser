@@ -18,7 +18,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.MainScreen
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
 import top.kagg886.eoa.pages.main.settings.list.SettingsModel
 import top.kagg886.eoa.pages.main.settings.list.SettingsState
@@ -31,7 +31,7 @@ data object SettingsProfile
 @Composable
 fun SettingsProfileScreen() = MainScreen {
     val nav = LocalNavController.current
-    val mainRouteViewModel = mainViewModel()
+    val mainRouteViewModel = mainViewModelOrNull() ?: return@MainScreen
     val mainState by mainRouteViewModel.collectAsState()
 
     val flow = nav.currentBackStackEntryFlow.collectAsState(initial = null)

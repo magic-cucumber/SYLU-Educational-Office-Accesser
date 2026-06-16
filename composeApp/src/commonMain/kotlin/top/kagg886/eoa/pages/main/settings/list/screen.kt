@@ -26,7 +26,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.about.AboutRoute
-import top.kagg886.eoa.pages.main.mainViewModel
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
