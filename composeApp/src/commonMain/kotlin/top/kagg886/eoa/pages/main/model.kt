@@ -22,17 +22,10 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
+import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.util.asTaggedLogger
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
-
-@Deprecated(
-    "it will be throw error when main-route not attached. such as exit login.",
-    replaceWith = ReplaceWith("mainViewModelOrNull()")
-)
-@Composable
-fun mainViewModel(): MainRouteViewModel = mainViewModelOrNull()
-    ?: throw IllegalArgumentException("No destination with route MainRoute is on the NavController's back stack.")
 
 @Composable
 fun mainViewModelOrNull(): MainRouteViewModel? {
@@ -278,7 +271,10 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             }
             return@intent
         }
-        val ex = result.exceptionOrNull()
+        val ex = when(val ex = result.exceptionOrNull()!!) {
+            is RetryLimitException -> ex.cause!!
+            else -> ex
+        }
 
         if (ex is InvalidCredentialsException) {
             postSideEffect(
@@ -305,7 +301,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
         reduce {
             MainRouteViewState.SyncFailed(
                 haveDirtyData,
-                result.exceptionOrNull()!!.message ?: "未知错误"
+                ex.message ?: "未知错误"
             )
         }
     }

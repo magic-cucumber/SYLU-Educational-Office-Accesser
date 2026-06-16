@@ -94,39 +94,32 @@ internal class EOAHTMLClient : EOAClient {
                 maxRetries = 3
 
                 modifyRequest { req ->
-                    if (retryCount == 0) {
-                        return@modifyRequest
-                    }
-                    for (i in 1..maxRetries) {
-                        kermit.d("Retry request: ${req.url.build().fullPath}, $i / $maxRetries")
-                        //重新登录
-                        val cookie = runBlocking {
-                            try {
-                                internalLogin()
-                                storage.get(req.url.build())
-                            } catch (e: Exception) {
-                                //同样这里需要throw，否则未登录异常会被忽略
-                                if (e is InvalidCredentialsException) {
-                                    throw e
-                                }
-                                kermit.d("Retry request: ${req.url.build().fullPath} failed.", e)
-                                null
+                    kermit.d("Retry request: ${req.url.build().fullPath}, $retryCount / $maxRetries")
+                    //重新登录。每次 Ktor retry 只尝试一次，重试次数交给 HttpRequestRetry 控制。
+                    val cookie = runBlocking {
+                        try {
+                            internalLogin()
+                            storage.get(req.url.build())
+                        } catch (e: Exception) {
+                            //同样这里需要throw，否则未登录异常会被忽略
+                            if (e is InvalidCredentialsException) {
+                                throw e
                             }
+                            kermit.d("Retry request: ${req.url.build().fullPath} failed.", e)
+                            throw if (retryCount >= maxRetries) RetryLimitException(e) else e
                         }
-
-                        if (cookie == null) {
-                            continue
-                        }
-
-                        //清空原请求cookie
-                        req.clearCookie()
-                        //设置新cookie
-                        for (c in cookie) {
-                            req.cookie(c)
-                        }
-                        return@modifyRequest
                     }
-                    throw RetryLimitException(this.cause)
+
+                    if (cookie.isEmpty()) {
+                        throw RetryLimitException(this.cause)
+                    }
+
+                    //清空原请求cookie
+                    req.clearCookie()
+                    //设置新cookie
+                    for (c in cookie) {
+                        req.cookie(c)
+                    }
                 }
             }
 
