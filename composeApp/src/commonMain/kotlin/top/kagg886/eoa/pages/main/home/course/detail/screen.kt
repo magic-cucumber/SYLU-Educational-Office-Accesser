@@ -28,6 +28,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
@@ -52,7 +53,7 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
 ) {
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<CourseDetailViewModel>(key = syncState.toString()) {
+    val model = viewModel<CourseDetailViewModel>(key = syncState.toViewModelKey()) {
         CourseDetailViewModel(route.recordId, syncState, mainViewModel.database)
     }
     val state by model.collectAsState()

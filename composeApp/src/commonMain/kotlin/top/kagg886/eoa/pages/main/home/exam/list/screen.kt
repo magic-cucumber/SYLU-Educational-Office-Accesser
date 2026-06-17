@@ -39,6 +39,7 @@ import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuBox
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.exam.detail.ExamDetailRoute
@@ -62,7 +63,7 @@ data object ExamListRoute
 fun ExamListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExamList) {
     val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
+    val model = viewModel<ExamListViewModel>(key = syncState.toViewModelKey()) {
         ExamListViewModel(mainViewModel.database, syncState)
     }
     val nav = LocalNavController.current
@@ -95,7 +96,7 @@ fun ExamListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExamList) {
         menu = {
             val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
             val syncState by mainViewModel.collectAsState()
-            val model = viewModel<ExamListViewModel>(key = syncState.toString()) {
+            val model = viewModel<ExamListViewModel>(key = syncState.toViewModelKey()) {
                 ExamListViewModel(mainViewModel.database, syncState)
             }
             val state by model.collectAsState()

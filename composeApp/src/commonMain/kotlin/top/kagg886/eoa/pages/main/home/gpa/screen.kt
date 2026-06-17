@@ -24,6 +24,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.GPAEntity
 import top.kagg886.backend.database.dao.GPASummaryEntity
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
@@ -39,7 +40,7 @@ fun GPAScreen() = HomeScreen(
     val mainModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainModel.collectAsState()
 
-    val model = viewModel<GPAViewModel>(key = syncState.toString()) {
+    val model = viewModel<GPAViewModel>(key = syncState.toViewModelKey()) {
         GPAViewModel(syncState, mainModel.database)
     }
     model.collectSideEffect {

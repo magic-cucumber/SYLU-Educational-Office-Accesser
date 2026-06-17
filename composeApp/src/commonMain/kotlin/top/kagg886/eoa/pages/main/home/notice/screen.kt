@@ -35,6 +35,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.ExpandableText
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.login.LoginRoute
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.showSnackBar
@@ -47,7 +48,7 @@ data object SystemNoticeRoute
 fun SystemNoticeScreen() {
     val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<SystemNoticeModel>(key = syncState.toString()) {
+    val model = viewModel<SystemNoticeModel>(key = syncState.toViewModelKey()) {
         SystemNoticeModel(syncState, mainViewModel.database)
     }
     val nav = LocalNavController.current

@@ -41,6 +41,7 @@ import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
@@ -114,7 +115,7 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
         val rootModel = rootViewModel()
         val rootState by rootModel.collectAsState()
         val showExperimentClass by rootState.showExperimentClass.collectAsState()
-        val model = viewModel<SummaryModel>(key = syncState.toString()) {
+        val model = viewModel<SummaryModel>(key = syncState.toViewModelKey()) {
             SummaryModel(syncState, mainViewModel.database)
         }
         model.collectSideEffect {

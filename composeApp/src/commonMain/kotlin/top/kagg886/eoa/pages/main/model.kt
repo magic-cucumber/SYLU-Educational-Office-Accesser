@@ -406,6 +406,11 @@ sealed interface MainRouteViewState {
         data object ProcessingCourseData : SyncProcessProgress
 
     }
+
+    fun MainRouteViewState.toViewModelKey() = when(this) {
+        Empty -> toString()
+        else -> this::class.toString()
+    }
 }
 
 sealed interface MainRouteViewEffect {

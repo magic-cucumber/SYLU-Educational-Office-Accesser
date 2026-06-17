@@ -39,6 +39,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
@@ -67,7 +68,7 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
 ) {
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<ExamDetailViewModel>(key = syncState.toString()) {
+    val model = viewModel<ExamDetailViewModel>(key = syncState.toViewModelKey()) {
         ExamDetailViewModel(route.examId, syncState, mainViewModel.database)
     }
     val state by model.collectAsState()

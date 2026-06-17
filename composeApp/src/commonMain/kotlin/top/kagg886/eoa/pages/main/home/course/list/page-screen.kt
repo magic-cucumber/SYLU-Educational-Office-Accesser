@@ -34,6 +34,7 @@ import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
@@ -53,7 +54,7 @@ fun CoursePageListScreen(
 ) {
     val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<CoursePageViewModel>(key = "${index * 31 + syncState.hashCode()}") {
+    val model = viewModel<CoursePageViewModel>(key = "${index * 31 + syncState.toViewModelKey().hashCode()}") {
         CoursePageViewModel(syncState, index + 1, mainViewModel.database)
     }
     val nav = LocalNavController.current

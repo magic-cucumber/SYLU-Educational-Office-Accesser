@@ -32,6 +32,7 @@ import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.manage.list.CourseManageListRoute
@@ -52,7 +53,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
     val nav = LocalNavController.current
     val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
-    val model = viewModel<CourseListViewModel>(key = syncState.toString()) {
+    val model = viewModel<CourseListViewModel>(key = syncState.toViewModelKey()) {
         CourseListViewModel(syncState)
     }
 
