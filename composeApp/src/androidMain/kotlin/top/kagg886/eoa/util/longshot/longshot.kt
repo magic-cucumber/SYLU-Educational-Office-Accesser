@@ -19,12 +19,6 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.launch
-import top.kagg886.util.asTaggedLogger
 
 /**
  * ================================================
@@ -127,10 +121,9 @@ private class MiuiLongShotControlView(
     private val contentView: View,
 ) : ScrollView(context) {
     private val fillerView = View(context)
-    private val defaultFillerHeightDp = defaultLongShotFillerHeightDp()
 
     init {
-        logger.d("创建 MIUI 长截屏代理 View，默认 fillerHeight=${defaultFillerHeightDp}px")
+        logger.d("创建 MIUI 长截屏代理 View")
         alpha = 0f
         isFillViewport = true
         isVerticalScrollBarEnabled = false
@@ -142,7 +135,7 @@ private class MiuiLongShotControlView(
                 fillerView,
                 LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    defaultFillerHeightDp.dpToPx(context),
+                    Int.MAX_VALUE,
                 ),
             )
         }
@@ -158,7 +151,6 @@ private class MiuiLongShotControlView(
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         logger.d("MIUI 长截屏代理 View 已挂载")
-        updateFillerHeight(Int.MAX_VALUE)
     }
 
     override fun onDetachedFromWindow() {
@@ -210,11 +202,4 @@ private class MiuiLongShotControlView(
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean = false
 
     override fun onTouchEvent(ev: MotionEvent): Boolean = false
-
-    private fun updateFillerHeight(heightDp: Int) {
-        logger.d("更新长截屏代理高度：${heightDp}px")
-        val params = fillerView.layoutParams
-        params.height = heightDp.dpToPx(context)
-        fillerView.layoutParams = params
-    }
 }

@@ -2,13 +2,11 @@ package top.kagg886.eoa.util.longshot
 
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import top.kagg886.util.asTaggedLogger
 
 /**
  * ================================================
@@ -23,7 +21,6 @@ internal val LocalLongShotTargetRegistry = staticCompositionLocalOf<LongShotTarg
 
 class LongShotTargetRegistry {
     private val activeTarget = MutableStateFlow<LongShotTarget?>(null)
-    val targetFlow: StateFlow<LongShotTarget?> = activeTarget
 
     fun register(target: LongShotTarget) {
         val current = activeTarget.value

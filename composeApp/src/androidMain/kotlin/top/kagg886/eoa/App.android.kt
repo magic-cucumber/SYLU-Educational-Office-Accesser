@@ -5,21 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.init
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.withIndex
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.longshot.setContent
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
 
 class AppActivity : ComponentActivity() {
