@@ -34,8 +34,6 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.drawer.SupportRTLModalNavigationDrawer
-import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuAnchorType
-import top.kagg886.eoa.component.dropdown.ExposedDropdownMenuBox
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
