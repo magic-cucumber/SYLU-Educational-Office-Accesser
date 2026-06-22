@@ -59,6 +59,9 @@ internal val RequestMergePlugin = createClientPlugin(
             deferred.await()
         }
 
+        lock.withLock {
+            cache.remove(fingerprint)
+        }
 
         return result.getOrThrow()
     }
