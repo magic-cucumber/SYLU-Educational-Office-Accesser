@@ -38,6 +38,7 @@ kotlin {
             api(libs.compose.foundation)
             api(libs.kermit)
             api(libs.androidx.paging)
+            implementation(libs.androidx.sqlite.async)
             api(libs.room.runtime)
             api(libs.room.paging)
 

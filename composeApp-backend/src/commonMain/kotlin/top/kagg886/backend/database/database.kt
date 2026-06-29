@@ -1,34 +1,11 @@
 package top.kagg886.backend.database
 
-import androidx.room3.AutoMigration
-import androidx.room3.ConstructedBy
-import androidx.room3.Database
-import androidx.room3.RoomDatabase
-import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import top.kagg886.backend.database.dao.AppLog
-import top.kagg886.backend.database.dao.AppLogDao
-import top.kagg886.backend.database.dao.CourseDao
-import top.kagg886.backend.database.dao.CourseEntity
-import top.kagg886.backend.database.dao.CourseExtendDao
-import top.kagg886.backend.database.dao.CourseExtendEntity
-import top.kagg886.backend.database.dao.CourseRecordDao
-import top.kagg886.backend.database.dao.CourseRecordEntity
-import top.kagg886.backend.database.dao.ExamDao
-import top.kagg886.backend.database.dao.ExamEntity
-import top.kagg886.backend.database.dao.GPADao
-import top.kagg886.backend.database.dao.GPAEntity
-import top.kagg886.backend.database.dao.GPASummaryDao
-import top.kagg886.backend.database.dao.GPASummaryEntity
-import top.kagg886.backend.database.dao.SecondClassDao
-import top.kagg886.backend.database.dao.SecondClassDataEntity
-import top.kagg886.backend.database.dao.SecondClassSummaryEntity
-import top.kagg886.backend.database.dao.SyncRecordEntity
-import top.kagg886.backend.database.dao.SyncRecordDao
-import top.kagg886.backend.database.dao.SystemNoticeDao
-import top.kagg886.backend.database.dao.SystemNoticeEntity
 import top.kagg886.backend.config.BuildConfig
+import top.kagg886.backend.database.dao.*
+import top.kagg886.backend.database.migrate.MIGRATION_10_11
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
 
@@ -40,7 +17,8 @@ import top.kagg886.util.dataPath
         CourseEntity::class,
         CourseExtendEntity::class,
         CourseRecordEntity::class,
-        SyncRecordEntity::class,
+        SyncOverviewEntity::class,
+        SyncCheckpointEntity::class,
         AppLog::class,
         SystemNoticeEntity::class,
         SecondClassSummaryEntity::class,
@@ -82,7 +60,7 @@ val databasePath: String by lazy {
 expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
 
 fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
-    .fallbackToDestructiveMigrationOnDowngrade(true)
-    .fallbackToDestructiveMigration(true)
-    .fallbackToDestructiveMigrationFrom(true, 1)
+    .addMigrations(MIGRATION_10_11)
     .setQueryCoroutineContext(Dispatchers.IO)
+
+
