@@ -259,7 +259,7 @@ class CourseEditModel(
                 postSideEffect(
                     CourseEditSideEffect.Toast(
                         SnackBarType.Error,
-                        "请先在AI设置中配置模型"
+                        "请先在 '设置 / 模型管理' 中配置模型"
                     )
                 )
                 return@runOn

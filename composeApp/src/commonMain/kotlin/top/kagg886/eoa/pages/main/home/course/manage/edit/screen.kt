@@ -450,7 +450,7 @@ private fun CourseEditTime(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CourseEditAI(
     providers: List<LLMProviderEntity>,
@@ -468,7 +468,8 @@ private fun CourseEditAI(
     val providerSelectorEnabled = providers.isNotEmpty()
     val aiInputEnabled = aiGenerating == null && providerSelectorEnabled
 
-    Column(Modifier.padding(horizontal = 16.dp).verticalScroll(rememberScrollState())) {
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+        Spacer(Modifier.height(16.dp))
         ExposedDropdownMenuBox(
             expanded = providerMenuExpanded,
             onExpandedChange = {
@@ -557,7 +558,7 @@ private fun CourseEditAI(
             OutlinedButton(
                 onClick = onImageCaptchaClicked,
                 modifier = Modifier.weight(1f),
-                enabled = aiGenerating == null && selectedProvider != null
+                enabled = aiGenerating == null && selectedProvider != null && selectedProvider.supportMultimodal
             ) {
                 Text(text = aiGenerating ?: "选择图片")
             }

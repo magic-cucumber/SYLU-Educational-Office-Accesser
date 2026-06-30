@@ -48,7 +48,7 @@ fun AISettingsEditScreen(route: AISettingsEditRoute) {
         LLMProviderEditState.Loading -> {
             DialogPageScaffold(
                 title = { Text("编辑AI模型") },
-                icon = { Icon(Icons.Default.Psychology, contentDescription = "AI设置") },
+                icon = { Icon(Icons.Default.Psychology, contentDescription = "模型管理") },
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { nav.popBackStack() }) {
@@ -87,7 +87,7 @@ private fun LLMProviderEditPage(
     var modelDescription by remember(initial.uuid) { mutableStateOf(initial.modelDescription) }
 
     DialogPageScaffold(
-        icon = { Icon(Icons.Default.Psychology, contentDescription = "AI设置") },
+        icon = { Icon(Icons.Default.Psychology, contentDescription = "模型管理") },
         title = { Text(if (initial.uuid.isBlank()) "添加AI模型" else "编辑AI模型") },
         confirmButton = {
             TextButton(

@@ -67,7 +67,7 @@ private fun AISettingsContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AI设置") },
+                title = { Text("模型管理") },
                 navigationIcon = { BackIconButton() }
             )
         },
