@@ -11,10 +11,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
@@ -27,6 +24,7 @@ import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.adaptive.AdaptiveListItem
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
@@ -207,75 +205,9 @@ private fun CoursePageScreenSuccessContent(
         )
         return
     }
-    if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
-        //在安卓上不知道为什么会崩溃，先改成滑动删除/编辑先
-        LazyColumn {
-            items(state?.data ?: List(6) { null }) {
-                val swipeState = rememberSwipeToDismissBoxState()
-                LaunchedEffect(swipeState.currentValue) {
-                    when (swipeState.currentValue) {
-                        SwipeToDismissBoxValue.EndToStart -> {
-                            onCourseItemRemoveClicked(it!!)
-                            swipeState.snapTo(SwipeToDismissBoxValue.Settled)
-                        }
-
-                        SwipeToDismissBoxValue.StartToEnd -> {
-                            onCourseItemClicked(it!!)
-                            swipeState.snapTo(SwipeToDismissBoxValue.Settled)
-                        }
-
-                        else -> {}
-                    }
-                }
-                SwipeToDismissBox(
-                    state = swipeState,
-                    modifier = Modifier.placeholder(
-                        visible = visible,
-                        highlight = PlaceholderHighlight.shimmer(),
-                    ),
-                    backgroundContent = {
-                        val color = when (swipeState.dismissDirection) {
-                            SwipeToDismissBoxValue.EndToStart -> Color.Red
-                            else -> MaterialTheme.colorScheme.secondary
-                        }
-                        Surface(color = color, modifier = Modifier.fillMaxSize()) {
-                            Box(
-                                Modifier.fillMaxSize(),
-                                contentAlignment = if (swipeState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Alignment.CenterEnd else Alignment.CenterStart
-                            ) {
-                                Icon(
-                                    imageVector = if (swipeState.dismissDirection == SwipeToDismissBoxValue.EndToStart) Icons.Default.Delete else Icons.Default.Edit,
-                                    contentDescription = "",
-                                    modifier = Modifier.padding(16.dp).size(24.dp)
-                                )
-                            }
-                        }
-                    },
-                    content = {
-                        ListItem(
-                            headlineContent = {
-                                Text(text = it?.name ?: "")
-                            },
-                            overlineContent = {
-                                Text(text = it?.teacherName ?: "")
-                            },
-                            supportingContent = {
-                                Text(text = it?.classroomName ?: "")
-                            },
-                            modifier = Modifier.placeholder(
-                                visible = visible,
-                                highlight = PlaceholderHighlight.shimmer(),
-                            )
-                        )
-                    },
-                )
-            }
-        }
-        return
-    }
     LazyColumn {
         items(state?.data ?: List(6) { null }) {
-            ListItem(
+            AdaptiveListItem(
                 headlineContent = {
                     Text(text = it?.name ?: "")
                 },
@@ -285,39 +217,37 @@ private fun CoursePageScreenSuccessContent(
                 supportingContent = {
                     Text(text = it?.classroomName ?: "")
                 },
-                trailingContent = {
-                    Row {
-                        IconButton(
-                            onClick = {
-                                onCourseItemClicked(it!!)
-                            },
-                            enabled = it?.isUserAdded == true
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit"
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                onCourseItemRemoveClicked(it!!)
-//                                state.removeCourse(it!!)
-                            },
-                            enabled = it?.isUserAdded == true
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete"
-                            )
-                        }
-                    }
-                },
                 modifier = Modifier.placeholder(
                     visible = visible,
                     highlight = PlaceholderHighlight.shimmer(),
                 )
-            )
+            ) {
+                primaryAction {
+                    enable = it?.isUserAdded == true
+                    clickable {
+                        onCourseItemClicked(it!!)
+                    }
+                    icon {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit"
+                        )
+                    }
+                }
+
+                secondAction {
+                    enable = it?.isUserAdded == true
+                    clickable {
+                        onCourseItemRemoveClicked(it!!)
+                    }
+                    icon {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete"
+                        )
+                    }
+                }
+            }
         }
     }
 }

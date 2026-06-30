@@ -29,6 +29,7 @@ import top.kagg886.eoa.pages.main.about.AboutRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
+import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
@@ -68,6 +69,9 @@ fun SettingListScreen() = MainScreen {
         onSyncSettingsClicked = {
             nav.navigate(SyncSettingsRoute)
         },
+        onAISettingsClicked = {
+            nav.navigate(AISettingsRoute)
+        },
         onAdvancedSettingsClicked = {
             nav.navigate(AdvancedSettingsRoute)
         },
@@ -85,6 +89,7 @@ private fun SettingScreenContent(
     onLogoutButtonClicked: () -> Unit,
     onAppearanceSettingsClicked: () -> Unit,
     onSyncSettingsClicked: () -> Unit,
+    onAISettingsClicked: () -> Unit,
     onAdvancedSettingsClicked: () -> Unit,
     onAboutClicked: () -> Unit,
 ) {
@@ -293,6 +298,25 @@ private fun SettingScreenContent(
                 },
                 modifier = Modifier.clickable {
                     onSyncSettingsClicked()
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("AI设置") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Psychology,
+                        contentDescription = "AI设置",
+                    )
+                },
+                trailingContent = {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "进入",
+                    )
+                },
+                modifier = Modifier.clickable {
+                    onAISettingsClicked()
                 }
             )
 

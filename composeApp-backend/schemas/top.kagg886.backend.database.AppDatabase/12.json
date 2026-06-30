@@ -1,0 +1,797 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 12,
+    "identityHash": "8498fd1cae3c80eee09321726be734b0",
+    "entities": [
+      {
+        "tableName": "exams",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `year` TEXT NOT NULL, `semester` TEXT NOT NULL, `courseID` TEXT NOT NULL, `detailsID` TEXT NOT NULL, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `credit` REAL NOT NULL, `gradePoint` REAL NOT NULL, `absoluteScore` TEXT NOT NULL, `relateScore` TEXT NOT NULL, `status` TEXT NOT NULL, `degree` INTEGER NOT NULL, `detail` TEXT NOT NULL, `submitTeacherName` TEXT NOT NULL, `submitTime` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "year",
+            "columnName": "year",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semester",
+            "columnName": "semester",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "courseID",
+            "columnName": "courseID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detailsID",
+            "columnName": "detailsID",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "teacherName",
+            "columnName": "teacherName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credit",
+            "columnName": "credit",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gradePoint",
+            "columnName": "gradePoint",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "absoluteScore",
+            "columnName": "absoluteScore",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relateScore",
+            "columnName": "relateScore",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "degree",
+            "columnName": "degree",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detail",
+            "columnName": "detail",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "submitTeacherName",
+            "columnName": "submitTeacherName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "submitTime",
+            "columnName": "submitTime",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "gpa_summary",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `score` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "gpa_scores",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `summaryId` INTEGER NOT NULL, `name` TEXT NOT NULL, `score` TEXT NOT NULL, FOREIGN KEY(`summaryId`) REFERENCES `gpa_summary`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "summaryId",
+            "columnName": "summaryId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "gpa_summary",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "summaryId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "courses",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `classroomName` TEXT NOT NULL, `credits` REAL NOT NULL, `isDegreeRequired` INTEGER NOT NULL, `isExaminable` INTEGER NOT NULL, `yearCode` TEXT NOT NULL, `semesterCode` TEXT NOT NULL, `isUserAdded` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "teacherName",
+            "columnName": "teacherName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "classroomName",
+            "columnName": "classroomName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "credits",
+            "columnName": "credits",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDegreeRequired",
+            "columnName": "isDegreeRequired",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isExaminable",
+            "columnName": "isExaminable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yearCode",
+            "columnName": "yearCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterCode",
+            "columnName": "semesterCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isUserAdded",
+            "columnName": "isUserAdded",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "courses_extend",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `teacherName` TEXT NOT NULL, `weekNumber` INTEGER NOT NULL, `yearCode` TEXT NOT NULL, `semesterCode` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "teacherName",
+            "columnName": "teacherName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weekNumber",
+            "columnName": "weekNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "yearCode",
+            "columnName": "yearCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterCode",
+            "columnName": "semesterCode",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "course_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `courseId` INTEGER, `weekNumber` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `periodOfDay` INTEGER NOT NULL, `isUserAdded` INTEGER NOT NULL, FOREIGN KEY(`courseId`) REFERENCES `courses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "courseId",
+            "columnName": "courseId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "weekNumber",
+            "columnName": "weekNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dayOfWeek",
+            "columnName": "dayOfWeek",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "periodOfDay",
+            "columnName": "periodOfDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isUserAdded",
+            "columnName": "isUserAdded",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "courses",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "courseId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sync-overviews",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `updatedStamp` INTEGER NOT NULL, `success` INTEGER NOT NULL DEFAULT true)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedStamp",
+            "columnName": "updatedStamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "success",
+            "columnName": "success",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "true"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "sync-checkpoints",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `overviewId` INTEGER NOT NULL, `updatedStamp` INTEGER NOT NULL, `profileSuccess` INTEGER NOT NULL, `calendarSuccess` INTEGER NOT NULL, `examSuccess` INTEGER NOT NULL, `gpaSuccess` INTEGER NOT NULL, `noticeSuccess` INTEGER NOT NULL, `termSuccess` INTEGER NOT NULL, `courseSuccess` INTEGER NOT NULL, `examPayload` TEXT, `gpaPayload` TEXT, FOREIGN KEY(`overviewId`) REFERENCES `sync-overviews`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "overviewId",
+            "columnName": "overviewId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedStamp",
+            "columnName": "updatedStamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileSuccess",
+            "columnName": "profileSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calendarSuccess",
+            "columnName": "calendarSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "examSuccess",
+            "columnName": "examSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpaSuccess",
+            "columnName": "gpaSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noticeSuccess",
+            "columnName": "noticeSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "termSuccess",
+            "columnName": "termSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "courseSuccess",
+            "columnName": "courseSuccess",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "examPayload",
+            "columnName": "examPayload",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "gpaPayload",
+            "columnName": "gpaPayload",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sync-checkpoints_overviewId",
+            "unique": true,
+            "columnNames": [
+              "overviewId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sync-checkpoints_overviewId` ON `${TABLE_NAME}` (`overviewId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sync-overviews",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "overviewId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `tag` TEXT NOT NULL, `level` INTEGER NOT NULL, `message` TEXT NOT NULL, `time` INTEGER NOT NULL, `stacktrace` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "tag",
+            "columnName": "tag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stacktrace",
+            "columnName": "stacktrace",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_log_time",
+            "unique": false,
+            "columnNames": [
+              "time"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_log_time` ON `${TABLE_NAME}` (`time`)"
+          },
+          {
+            "name": "index_log_level_time",
+            "unique": false,
+            "columnNames": [
+              "level",
+              "time"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_log_level_time` ON `${TABLE_NAME}` (`level`, `time`)"
+          }
+        ]
+      },
+      {
+        "tableName": "system_notices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `time` TEXT NOT NULL, `isRead` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRead",
+            "columnName": "isRead",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "second_class_summary",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `max` REAL NOT NULL, `sortOrder` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "max",
+            "columnName": "max",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "second_class_data",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `summaryId` TEXT NOT NULL, `sortOrder` INTEGER NOT NULL, `name` TEXT NOT NULL, `sponsor` TEXT NOT NULL, `time` TEXT NOT NULL, `actor` TEXT NOT NULL, `people` INTEGER NOT NULL, `score` REAL NOT NULL, FOREIGN KEY(`summaryId`) REFERENCES `second_class_summary`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "summaryId",
+            "columnName": "summaryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sponsor",
+            "columnName": "sponsor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actor",
+            "columnName": "actor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "people",
+            "columnName": "people",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_second_class_data_summaryId",
+            "unique": false,
+            "columnNames": [
+              "summaryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_second_class_data_summaryId` ON `${TABLE_NAME}` (`summaryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "second_class_summary",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "summaryId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "llm-provider",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uuid` TEXT NOT NULL, `modelName` TEXT NOT NULL, `modelKey` TEXT NOT NULL, `baseUrl` TEXT NOT NULL, `supportMultimodal` INTEGER NOT NULL, `supportNativeJsonOutput` INTEGER NOT NULL, `modelRemark` TEXT NOT NULL, `modelDescription` TEXT NOT NULL, PRIMARY KEY(`uuid`))",
+        "fields": [
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelName",
+            "columnName": "modelName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelKey",
+            "columnName": "modelKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseUrl",
+            "columnName": "baseUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supportMultimodal",
+            "columnName": "supportMultimodal",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supportNativeJsonOutput",
+            "columnName": "supportNativeJsonOutput",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelRemark",
+            "columnName": "modelRemark",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelDescription",
+            "columnName": "modelDescription",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uuid"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8498fd1cae3c80eee09321726be734b0')"
+    ]
+  }
+}

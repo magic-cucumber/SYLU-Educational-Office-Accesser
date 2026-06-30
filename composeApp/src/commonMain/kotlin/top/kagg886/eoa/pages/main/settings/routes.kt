@@ -4,9 +4,13 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
+import androidx.navigation.compose.navigation
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsScreen
+import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
+import top.kagg886.eoa.pages.main.settings.ai.installAISettingsRoute
+import top.kagg886.eoa.pages.main.settings.ai.list.AISettingsListRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsScreen
 import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
@@ -24,6 +28,7 @@ data object SettingsRoute
 val installSettingsGraph: NavGraphBuilder.() -> Unit = {
     composable<SettingListRoute> { SettingListScreen() }
     composable<AppearanceSettingsRoute> { AppearanceSettingsScreen() }
+    navigation<AISettingsRoute>(startDestination = AISettingsListRoute, builder = installAISettingsRoute)
     composable<SyncSettingsRoute> { SyncSettingsScreen() }
     composable<AdvancedSettingsRoute> { AdvancedSettingsScreen() }
     dialog<SettingsProfile>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SettingsProfileScreen() }

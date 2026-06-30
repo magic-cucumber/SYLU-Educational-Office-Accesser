@@ -28,8 +28,10 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
+import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.showSnackBar
 
@@ -42,11 +44,17 @@ data class CourseEditRoute(
 @Composable
 fun CourseEditScreen(route: CourseEditRoute) {
     val mainModel = mainViewModelOrNull() ?: return
-    val model = viewModel {
-        CourseEditModel(mainModel.database, route.id)
+    val mainState by mainModel.collectAsState()
+    val llmRuntimes by mainModel.llmExecutors.collectAsState()
+
+    val model = viewModel(
+        key = (mainState.toViewModelKey().hashCode() * 31 + llmRuntimes.hashCode() + route.hashCode()).toString()
+    ) {
+        CourseEditModel(mainModel.database, route.id, llmRuntimes)
     }
     val nav = LocalNavController.current
     val state by model.collectAsState()
+
     val stack = rememberToasterState()
     model.collectSideEffect {
         when (it) {
@@ -69,10 +77,8 @@ fun CourseEditScreen(route: CourseEditRoute) {
             )
         },
         onDeleteRecord = { model.deleteRecord(it) },
-        onAiEndpointChanged = { model.setAiEndpoint(it) },
-        onAiKeyChanged = { model.setAiKey(it) },
-        onAiModelChanged = { model.setAiModel(it) },
-        onGenerateButtonClicked = { model.generateCourseByAI(it) },
+        onLLMKeySelected = { model.selectLLMKey(it) },
+        onGenerateButtonClicked = { input -> model.generateCourseByAI(input) },
         onImageCaptchaClicked = { model.generateCourseByImage() }
     )
 }
@@ -88,9 +94,7 @@ private fun CourseEditScreenContent(
     onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
     onDeleteRecord: (CourseRecordEntity) -> Unit,
 
-    onAiEndpointChanged: (String) -> Unit,
-    onAiKeyChanged: (String) -> Unit,
-    onAiModelChanged: (String) -> Unit,
+    onLLMKeySelected: (LLMProviderEntity) -> Unit,
     onGenerateButtonClicked: (String) -> Unit,
     onImageCaptchaClicked: () -> Unit,
 ) {
@@ -176,13 +180,10 @@ private fun CourseEditScreenContent(
                             )
 
                             2 -> CourseEditAI(
+                                providers = state.llmKeys,
+                                selectedProvider = state.selectLLMKey,
                                 aiGenerating = state.aiGenerating,
-                                aiEndpoint = state.aiEndpoint,
-                                aiKey = state.aiKey,
-                                aiModel = state.aiModel,
-                                onAiEndpointChanged = onAiEndpointChanged,
-                                onAiKeyChanged = onAiKeyChanged,
-                                onAiModelChanged = onAiModelChanged,
+                                onLLMKeySelected = onLLMKeySelected,
                                 onGenerateButtonClicked = onGenerateButtonClicked,
                                 onImageCaptchaClicked = onImageCaptchaClicked
                             )
@@ -448,95 +449,114 @@ private fun CourseEditTime(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseEditAI(
-    aiEndpoint: String,
-    aiKey: String,
-    aiModel: String,
+    providers: List<LLMProviderEntity>,
+    selectedProvider: LLMProviderEntity?,
     aiGenerating: String?,
-    onAiEndpointChanged: (String) -> Unit,
-    onAiKeyChanged: (String) -> Unit,
-    onAiModelChanged: (String) -> Unit,
+    onLLMKeySelected: (LLMProviderEntity) -> Unit,
     onGenerateButtonClicked: (String) -> Unit,
     onImageCaptchaClicked: () -> Unit
 ) {
-    var aiEndpoint by remember {
-        mutableStateOf(aiEndpoint)
-    }
-    var aiKey by remember {
-        mutableStateOf(aiKey)
-    }
-
-    var aiModel by remember {
-        mutableStateOf(aiModel)
-    }
-
     var inputMessage by remember {
         mutableStateOf("")
     }
 
-    Column(Modifier.verticalScroll(rememberScrollState())) {
-        OutlinedTextField(
-            value = aiEndpoint,
-            onValueChange = {
-                aiEndpoint = it
-                onAiEndpointChanged(it)
-            },
+    var providerMenuExpanded by remember { mutableStateOf(false) }
+    val providerSelectorEnabled = providers.isNotEmpty()
+    val aiInputEnabled = aiGenerating == null && providerSelectorEnabled
 
-            singleLine = true,
-            label = { Text("AI Endpoint") },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
-        )
-
-        OutlinedTextField(
-            value = aiKey,
-            onValueChange = {
-                aiKey = it
-                onAiKeyChanged(it)
+    Column(Modifier.padding(horizontal = 16.dp).verticalScroll(rememberScrollState())) {
+        ExposedDropdownMenuBox(
+            expanded = providerMenuExpanded,
+            onExpandedChange = {
+                if (providerSelectorEnabled) {
+                    providerMenuExpanded = !providerMenuExpanded
+                }
             },
-            singleLine = true,
-            label = { Text("AI Key") },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
-        )
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = selectedProvider?.displayName ?: "未配置AI模型",
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = providerMenuExpanded
+                    )
+                },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+                label = { Text("AI模型") },
+                enabled = providerSelectorEnabled
+            )
 
-        OutlinedTextField(
-            value = aiModel,
-            onValueChange = {
-                aiModel = it
-                onAiModelChanged(it)
-            },
-            singleLine = true,
-            label = { Text("AI Model") },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
-        )
+            ExposedDropdownMenu(
+                expanded = providerMenuExpanded,
+                onDismissRequest = { providerMenuExpanded = false }
+            ) {
+                providers.forEach { provider ->
+                    DropdownMenuItem(
+                        text = {
+                            ListItem(
+                                headlineContent = { Text(provider.displayName) },
+                                supportingContent = {
+                                    if (provider.modelDescription.isNotBlank()) {
+                                        Text(
+                                            provider.modelDescription,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = MenuDefaults.containerColor
+                                )
+                            )
+                        },
+                        onClick = {
+                            onLLMKeySelected(provider)
+                            providerMenuExpanded = false
+                        },
+                        enabled = aiInputEnabled
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
             value = inputMessage,
-            onValueChange = {
-                inputMessage = it
-            },
+            onValueChange = { inputMessage = it },
             label = { Text("输入课程的自然信息") },
             minLines = 3,
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            enabled = aiInputEnabled,
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(Modifier.height(16.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Button(
                 onClick = { onGenerateButtonClicked(inputMessage) },
-                modifier = Modifier.weight(1f).padding(16.dp),
-                enabled = aiGenerating == null
+                modifier = Modifier.weight(1f),
+                enabled = aiGenerating == null && selectedProvider != null
             ) {
                 Text(text = aiGenerating ?: "生成")
             }
 
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(16.dp))
             Text("或")
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(16.dp))
 
             OutlinedButton(
                 onClick = onImageCaptchaClicked,
-                modifier = Modifier.weight(1f).padding(16.dp),
-                enabled = aiGenerating == null
+                modifier = Modifier.weight(1f),
+                enabled = aiGenerating == null && selectedProvider != null
             ) {
                 Text(text = aiGenerating ?: "选择图片")
             }
@@ -544,6 +564,9 @@ private fun CourseEditAI(
     }
 
 }
+
+private val LLMProviderEntity.displayName: String
+    get() = modelRemark.ifBlank { modelName }
 
 // Helper function to convert numeric day of week to Chinese text
 private fun getDayOfWeekText(dayOfWeek: Int): String {

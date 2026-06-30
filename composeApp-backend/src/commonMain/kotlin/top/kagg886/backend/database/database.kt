@@ -22,7 +22,8 @@ import top.kagg886.util.dataPath
         AppLog::class,
         SystemNoticeEntity::class,
         SecondClassSummaryEntity::class,
-        SecondClassDataEntity::class
+        SecondClassDataEntity::class,
+        LLMProviderEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
     autoMigrations = [
@@ -30,6 +31,7 @@ import top.kagg886.util.dataPath
         AutoMigration(from = 7, to = 8),
         AutoMigration(from = 8, to = 9),
         AutoMigration(from = 9, to = 10),
+        AutoMigration(from = 11, to = 12)
     ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -42,6 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun courseRecordDao(): CourseRecordDao
     abstract fun noticeDao(): SystemNoticeDao
     abstract fun secondClassDao(): SecondClassDao
+    abstract fun llmProviderDao(): LLMProviderDao
 
     abstract fun syncRecordDao(): SyncRecordDao
     abstract fun appLogDao(): AppLogDao
@@ -62,5 +65,3 @@ expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
 fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
     .addMigrations(MIGRATION_10_11)
     .setQueryCoroutineContext(Dispatchers.IO)
-
-

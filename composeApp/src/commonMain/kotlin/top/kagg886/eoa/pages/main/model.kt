@@ -1,13 +1,24 @@
 package top.kagg886.eoa.pages.main
 
+import ai.koog.http.client.ktor.KtorKoogHttpClient
+import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
+import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
+import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.room3.withWriteTransaction
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.room3.withWriteTransaction
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlin.time.Instant
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
@@ -24,7 +35,9 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.sylu_eoa.api.v2.RetryLimitException
+import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
+import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
@@ -51,7 +64,30 @@ fun mainViewModelOrNull(): MainRouteViewModel? {
 class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
     ContainerHost<MainRouteViewState, MainRouteViewEffect> {
     private val syncDao = database.syncRecordDao()
+    private val llmProviderDao = database.llmProviderDao()
     private val logger = "MainRouteViewModel".asTaggedLogger
+
+    val llmExecutors: StateFlow<Map<LLMProviderEntity, MultiLLMPromptExecutor>> =
+        llmProviderDao.allFlow()
+            .map { providers ->
+                providers.associateWith {
+                    MultiLLMPromptExecutor(
+                        OpenAILLMClient(
+                            apiKey = it.modelKey,
+                            settings = OpenAIClientSettings(baseUrl = it.baseUrl),
+                            httpClientFactory = KtorKoogHttpClient.Factory(
+                                baseClient = HttpClient {
+                                    install(Logging) {
+                                        logger = this@MainRouteViewModel.logger.asKtorLogger
+                                        level = LogLevel.ALL
+                                    }
+                                }
+                            )
+                        )
+                    )
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     override val container: Container<MainRouteViewState, MainRouteViewEffect> =
         container(MainRouteViewState.Empty) {
@@ -378,7 +414,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             }
             return@intent
         }
-        val ex = when(val ex = result.exceptionOrNull()!!) {
+        val ex = when (val ex = result.exceptionOrNull()!!) {
             is RetryLimitException -> ex.cause!!
             else -> ex
         }
@@ -514,7 +550,7 @@ sealed interface MainRouteViewState {
 
     }
 
-    fun MainRouteViewState.toViewModelKey() = when(this) {
+    fun MainRouteViewState.toViewModelKey() = when (this) {
         Empty -> toString()
         else -> this::class.toString()
     }

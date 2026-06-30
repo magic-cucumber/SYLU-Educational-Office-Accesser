@@ -1,11 +1,8 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import ai.koog.agents.core.tools.annotations.LLMDescription
-import ai.koog.http.client.ktor.KtorKoogHttpClient
 import ai.koog.prompt.dsl.RequestMessagePartsBuilder
 import ai.koog.prompt.dsl.prompt
-import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import ai.koog.prompt.executor.model.StructureFixingParser
@@ -22,7 +19,6 @@ import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openFilePicker
 import io.github.vinceglb.filekit.readBytes
-import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -32,24 +28,22 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
-import top.kagg886.backend.config.AppAiMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
+import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.util.SnackBarType
-import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
-import top.kagg886.util.http.HttpClient
 import top.kagg886.util.race
 import kotlin.time.Duration.Companion.seconds
 
 class CourseEditModel(
     database: AppDatabase,
-    courseId: Long?
+    courseId: Long?,
+    private val llmExecutors: Map<LLMProviderEntity, MultiLLMPromptExecutor>
 ) : ViewModel(), ContainerHost<CourseEditState, CourseEditSideEffect> {
     private val logger = "CourseEditModel".asTaggedLogger
-
     private val courseDao = database.courseDao()
     private val courseRecordDao = database.courseRecordDao()
     override val container =
@@ -76,11 +70,9 @@ class CourseEditModel(
                     recordInfo = records,
                     startDate = AppSyncMMKV.calender!!.start,
                     allWeekNumber = AppSyncMMKV.calender!!.count(),
+                    llmKeys = llmExecutors.keys.toList(),
                     enableSaveButton = true,
                     aiGenerating = null,
-                    aiKey = AppAiMMKV.apiKey,
-                    aiEndpoint = AppAiMMKV.endpoint,
-                    aiModel = AppAiMMKV.model
                 )
             }
         }
@@ -167,36 +159,11 @@ class CourseEditModel(
     }
 
     @OptIn(OrbitExperimental::class)
-    fun setAiEndpoint(it: String) = intent {
+    fun selectLLMKey(it: LLMProviderEntity) = intent {
         runOn<CourseEditState.Success> {
-            AppAiMMKV.endpoint = it
             reduce {
                 state.copy(
-                    aiEndpoint = it
-                )
-            }
-        }
-    }
-
-    @OptIn(OrbitExperimental::class)
-    fun setAiKey(it: String) = intent {
-        runOn<CourseEditState.Success> {
-            AppAiMMKV.apiKey = it
-            reduce {
-                state.copy(
-                    aiKey = it
-                )
-            }
-        }
-    }
-
-    @OptIn(OrbitExperimental::class)
-    fun setAiModel(it: String) = intent {
-        runOn<CourseEditState.Success> {
-            AppAiMMKV.model = it
-            reduce {
-                state.copy(
-                    aiModel = it
+                    selectLLMKey = it
                 )
             }
         }
@@ -286,6 +253,18 @@ class CourseEditModel(
     @OptIn(OrbitExperimental::class)
     private fun generateCourseByAIInternal(build: RequestMessagePartsBuilder.() -> Unit) = intent {
         runOn<CourseEditState.Success> {
+            val config = state.selectLLMKey
+            val executor = llmExecutors[config]
+            if (executor == null || config == null) {
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Error,
+                        "请先在AI设置中配置模型"
+                    )
+                )
+                return@runOn
+            }
+
             reduce {
                 state.copy(
                     enableSaveButton = false,
@@ -294,30 +273,12 @@ class CourseEditModel(
             }
 
             val app = AppSyncMMKV.calender!!
-            val model = OpenAIModels.Chat.GPT4o.copy(id = state.aiModel)
-            val executor = MultiLLMPromptExecutor(
-                OpenAILLMClient(
-                    apiKey = state.aiKey,
-                    settings = OpenAIClientSettings(
-                        baseUrl = state.aiEndpoint,
-                    ),
-                    httpClientFactory = KtorKoogHttpClient.Factory(
-                        baseClient = HttpClient {
-                            install(Logging) {
-                                logger = this@CourseEditModel.logger.asKtorLogger
-                                level = LogLevel.ALL
-                            }
-                        }
-                    )
-                )
-            )
-
-            addCloseable(executor)
+            val model = OpenAIModels.Chat.GPT4o.copy(id = config.modelName)
 
             val response = coroutineScope {
                 val pending = async {
                     try {
-                        executor.executeStructured<CourseAddReturn>(
+                        executor.executeStructured(
                             prompt = prompt("structured-data") {
                                 system(
                                     content = """
@@ -363,12 +324,21 @@ class CourseEditModel(
                             },
                             model = model,
                             config = StructuredRequestConfig(
-                                default = StructuredRequest.Manual(
-                                    JsonStructure.create(
-                                        schemaGenerator = StandardJsonSchemaGenerator.Default,
-                                        examples = example
+                                default = when (config.supportNativeJsonOutput) {
+                                    true -> StructuredRequest.Native(
+                                        structure = JsonStructure.create(
+                                            schemaGenerator = StandardJsonSchemaGenerator.Default,
+                                            examples = example
+                                        )
                                     )
-                                )
+
+                                    false -> StructuredRequest.Manual(
+                                        structure = JsonStructure.create(
+                                            schemaGenerator = StandardJsonSchemaGenerator.Default,
+                                            examples = example
+                                        )
+                                    )
+                                }
                             ),
                             fixingParser = StructureFixingParser(
                                 model = model,
@@ -535,10 +505,10 @@ sealed interface CourseEditState {
         val allWeekNumber: Int,
         val startDate: LocalDate,
 
+        val llmKeys: List<LLMProviderEntity>,
+        val selectLLMKey: LLMProviderEntity? = llmKeys.firstOrNull(),
+
         val aiGenerating: String?,
-        val aiKey: String,
-        val aiEndpoint: String,
-        val aiModel: String
     ) : CourseEditState
 }
 
