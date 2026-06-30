@@ -210,7 +210,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 
     fun checkAIModel() = intent {
         val latest = try {
-            client.get("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/llm.md")
+            client.get("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/llm.json")
                 .body<List<LLMProviderEntity>>()
         } catch (e: Exception) {
             logger.w("无法检查内置数据资源", e)
