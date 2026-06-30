@@ -1,24 +1,13 @@
 package top.kagg886.eoa.pages.main.settings.ai.list
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -119,14 +108,11 @@ private fun AISettingsContent(
                                     supportingContent = {
                                         Text(
                                             listOfNotNull(
-                                                provider.modelDescription.ifBlank { null },
-                                                provider.baseUrl.ifBlank { null },
                                                 if (provider.supportMultimodal) "支持多模态" else null,
                                                 if (provider.supportNativeJsonOutput) "支持原生JSON" else null,
                                             ).joinToString(" / ")
                                         )
-                                    },
-                                    modifier = Modifier.clickable { nav.navigate(AISettingsEditRoute(provider.uuid)) }
+                                    }
                                 ) {
                                     primaryAction {
                                         clickable { nav.navigate(AISettingsEditRoute(provider.uuid)) }

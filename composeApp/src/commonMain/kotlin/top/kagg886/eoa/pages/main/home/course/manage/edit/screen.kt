@@ -163,7 +163,8 @@ private fun CourseEditScreenContent(
 
                     HorizontalPager(
                         state = pagerState,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.Top
                     ) {
                         when (it) {
                             0 -> CourseEditBasic(

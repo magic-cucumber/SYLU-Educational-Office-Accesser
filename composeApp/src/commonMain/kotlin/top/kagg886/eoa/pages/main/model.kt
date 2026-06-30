@@ -12,14 +12,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.room3.withWriteTransaction
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlin.time.Instant
+import kotlinx.coroutines.flow.*
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -40,6 +35,7 @@ import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 @Composable
 fun mainViewModelOrNull(): MainRouteViewModel? {
@@ -87,6 +83,14 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                     )
                 }
             }
+            //previous, current
+            .runningFold(emptyMap<LLMProviderEntity, MultiLLMPromptExecutor>() to emptyMap<LLMProviderEntity, MultiLLMPromptExecutor>()) { acc, value ->
+                acc.second.forEach { it.value.close(); }
+                acc.second to value
+            }
+            //take current
+            .map { it.second }
+            .onEach { it.onEach { (_, v) -> addCloseable(v) } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     override val container: Container<MainRouteViewState, MainRouteViewEffect> =

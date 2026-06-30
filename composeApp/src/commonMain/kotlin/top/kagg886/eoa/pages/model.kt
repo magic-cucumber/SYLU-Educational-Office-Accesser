@@ -25,6 +25,7 @@ import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
+import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.config.BuildConfig
@@ -130,6 +131,7 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
 
         checkUpdate()
         checkAnnouncement()
+        checkAIModel()
     }
 
     fun postNewColorSetting(color: Color) = intent {
@@ -203,6 +205,20 @@ class RootViewModel : ViewModel(), ContainerHost<RootState, RootEffect> {
         if (latest != exists) {
             AppInitializeMMKV.announce = latest
             postSideEffect(RootEffect.NavigateToAnnouncePage(latest))
+        }
+    }
+
+    fun checkAIModel() = intent {
+        val latest = try {
+            client.get("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/llm.md")
+                .body<List<LLMProviderEntity>>()
+        } catch (e: Exception) {
+            logger.w("无法检查内置数据资源", e)
+            return@intent
+        }
+        logger.i("初始化了 ${latest.size} 个 预设模型数据")
+        latest.forEach {
+            database.llmProviderDao().insert(it)
         }
     }
 }

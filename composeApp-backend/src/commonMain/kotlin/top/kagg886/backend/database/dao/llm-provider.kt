@@ -1,16 +1,11 @@
 package top.kagg886.backend.database.dao
 
-import androidx.room3.Dao
-import androidx.room3.Delete
-import androidx.room3.Entity
-import androidx.room3.Insert
-import androidx.room3.OnConflictStrategy
-import androidx.room3.PrimaryKey
-import androidx.room3.Query
-import androidx.room3.Update
+import androidx.room3.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
 @Entity(tableName = "llm-provider")
+@Serializable
 data class LLMProviderEntity(
     @PrimaryKey val uuid: String,
     val modelName: String,

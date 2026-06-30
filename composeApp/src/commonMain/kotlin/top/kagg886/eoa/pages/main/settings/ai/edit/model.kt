@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.LLMProviderEntity
@@ -24,12 +25,15 @@ class LLMProviderEditModel(
             } ?: emptyProvider()
 
             reduce {
-                LLMProviderEditState.Success(provider)
+                LLMProviderEditState.Success(provider, false)
             }
         }
 
-    @OptIn(ExperimentalUuidApi::class)
+    @OptIn(ExperimentalUuidApi::class, OrbitExperimental::class)
     fun save(item: LLMProviderEntity) = intent {
+        runOn<LLMProviderEditState.Success> {
+            reduce { state.copy(confirming = true) }
+        }
         val target = if (item.uuid.isBlank()) {
             item.copy(uuid = Uuid.random().toString())
         } else {
@@ -55,10 +59,10 @@ private fun emptyProvider() = LLMProviderEntity(
 
 sealed interface LLMProviderEditState {
     data object Loading : LLMProviderEditState
-    data class Success(val provider: LLMProviderEntity) : LLMProviderEditState
+    data class Success(val provider: LLMProviderEntity, val confirming: Boolean) : LLMProviderEditState
 }
 
 sealed interface LLMProviderEditSideEffect {
-    data class Toast(val message: String): LLMProviderEditSideEffect
-    data object NavigateBack: LLMProviderEditSideEffect
+    data class Toast(val message: String) : LLMProviderEditSideEffect
+    data object NavigateBack : LLMProviderEditSideEffect
 }

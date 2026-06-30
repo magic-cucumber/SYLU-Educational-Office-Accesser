@@ -1,6 +1,9 @@
 package top.kagg886.eoa.pages.main.settings.ai.edit
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -60,6 +63,7 @@ fun AISettingsEditScreen(route: AISettingsEditRoute) {
         is LLMProviderEditState.Success -> {
             LLMProviderEditPage(
                 initial = current.provider,
+                confirming = current.confirming,
                 onDismiss = { nav.popBackStack() },
                 onConfirm = { model.save(it) }
             )
@@ -70,6 +74,7 @@ fun AISettingsEditScreen(route: AISettingsEditRoute) {
 @Composable
 private fun LLMProviderEditPage(
     initial: LLMProviderEntity,
+    confirming: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (LLMProviderEntity) -> Unit,
 ) {
@@ -86,7 +91,7 @@ private fun LLMProviderEditPage(
         title = { Text(if (initial.uuid.isBlank()) "添加AI模型" else "编辑AI模型") },
         confirmButton = {
             TextButton(
-                enabled = modelName.isNotBlank() && modelKey.isNotBlank(),
+                enabled = modelName.isNotBlank() && modelKey.isNotBlank() && !confirming,
                 onClick = {
                     onConfirm(
                         initial.copy(

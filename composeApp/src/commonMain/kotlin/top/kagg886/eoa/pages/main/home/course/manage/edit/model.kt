@@ -390,43 +390,49 @@ class CourseEditModel(
 
             val (course, record) = response.getOrThrow().data
 
-            if (course == null) {
+            if (course == null && record.isNullOrEmpty()) {
                 postSideEffect(
                     CourseEditSideEffect.Toast(
-                        SnackBarType.Success,
-                        "未检索到有效的课程数据。"
+                        SnackBarType.Warning,
+                        "未检索到有效的数据。"
                     )
                 )
                 return@runOn
             }
 
-            if (record.isNullOrEmpty()) {
-                postSideEffect(
-                    CourseEditSideEffect.Toast(
-                        SnackBarType.Success,
-                        "未检索到有效的课表数据。"
+            if (course != null) {
+                reduce {
+                    state.copy(
+                        courseInfo = with(AppSyncMMKV.picker!!.default.asTerm()) {
+                            course.toEntity(xnm, xqm)
+                        }
                     )
-                )
-                return@runOn
+                }
             }
 
-            logger.i("生成数据：${course},${record}")
+            if (record.isNullOrEmpty().not()) {
+                reduce {
+                    state.copy(
+                        recordInfo = record.flatMap { it.toEntity() }
+                    )
+                }
+            }
 
             postSideEffect(
                 CourseEditSideEffect.Toast(
-                    SnackBarType.Success,
-                    "共生成了 ${record.flatMap { it.toEntity() }.size} 个课程，请查阅后点击确定。"
+                    type = SnackBarType.Success,
+                    message = when {
+                        course != null && record.isNullOrEmpty()
+                            .not() -> "成功生成课程详情和 ${record.size} 个 课程数据。请查阅后点击确定以添加课程"
+
+                        course == null && record.isNullOrEmpty()
+                            .not() -> "未生成课程详情，但成功解析出 ${record.size} 个 课程数据。请查阅后点击确定以添加课程"
+
+                        course != null && record.isNullOrEmpty() -> "成功生成课程详情，但未生成出任何课程。请查阅后点击确定以添加课程"
+                        else -> return@runOn
+                    }
                 )
             )
-
-            reduce {
-                state.copy(
-                    courseInfo = with(AppSyncMMKV.picker!!.default.asTerm()) {
-                        course.toEntity(xnm, xqm)
-                    },
-                    recordInfo = record.flatMap { it.toEntity() }
-                )
-            }
         }
     }
 }
