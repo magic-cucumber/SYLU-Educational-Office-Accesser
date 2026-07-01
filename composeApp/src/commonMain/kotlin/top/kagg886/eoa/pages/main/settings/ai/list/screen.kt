@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
@@ -67,14 +69,24 @@ private fun AISettingsContent(
         topBar = {
             TopAppBar(
                 title = { Text("模型管理") },
-                navigationIcon = { BackIconButton() }
+                navigationIcon = { BackIconButton() },
+                actions = {
+                    val uri = LocalUriHandler.current
+                    IconButton(
+                        onClick = {
+                            uri.openUri("https://eoa.kagg886.top/setting.html#ai模型配置")
+                        }
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Help, contentDescription = "帮助")
+                    }
+                }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { nav.navigate(AISettingsEditRoute()) }) {
                 Icon(Icons.Default.Add, contentDescription = "添加")
             }
-        }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier

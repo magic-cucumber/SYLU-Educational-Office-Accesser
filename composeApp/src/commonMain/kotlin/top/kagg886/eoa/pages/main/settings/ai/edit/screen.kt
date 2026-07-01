@@ -37,8 +37,8 @@ fun AISettingsEditScreen(route: AISettingsEditRoute) {
         LLMProviderEditModel(mainModel.database, route.uuid)
     }
     model.collectSideEffect {
-        when(it) {
-            is LLMProviderEditSideEffect.Toast -> mainModel.toast(SnackBarType.Success,it.message)
+        when (it) {
+            is LLMProviderEditSideEffect.Toast -> mainModel.toast(SnackBarType.Success, it.message)
             LLMProviderEditSideEffect.NavigateBack -> nav.popBackStack()
         }
     }
@@ -110,7 +110,7 @@ private fun LLMProviderEditPage(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !confirming) {
                 Text("取消")
             }
         }
