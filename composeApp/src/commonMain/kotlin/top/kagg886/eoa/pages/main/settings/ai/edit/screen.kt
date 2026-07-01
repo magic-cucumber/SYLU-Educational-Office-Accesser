@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
@@ -31,7 +30,6 @@ import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
-import top.kagg886.eoa.util.SnackBarType
 
 
 @Serializable
@@ -92,8 +90,6 @@ private fun LLMProviderEditPage(
     var modelName by remember(initial.uuid) { mutableStateOf(initial.modelName) }
     var modelKey by remember(initial.uuid) { mutableStateOf(initial.modelKey) }
     var baseUrl by remember(initial.uuid) { mutableStateOf(initial.baseUrl) }
-    var supportMultimodal by remember(initial.uuid) { mutableStateOf(initial.supportMultimodal) }
-    var supportNativeJsonOutput by remember(initial.uuid) { mutableStateOf(initial.supportNativeJsonOutput) }
     var modelRemark by remember(initial.uuid) { mutableStateOf(initial.modelRemark) }
     var modelDescription by remember(initial.uuid) { mutableStateOf(initial.modelDescription) }
 
@@ -109,8 +105,6 @@ private fun LLMProviderEditPage(
                             modelName = modelName,
                             modelKey = modelKey,
                             baseUrl = baseUrl,
-                            supportMultimodal = supportMultimodal,
-                            supportNativeJsonOutput = supportNativeJsonOutput,
                             modelRemark = modelRemark,
                             modelDescription = modelDescription,
                         )
@@ -163,10 +157,6 @@ private fun LLMProviderEditPage(
             onModelKeyChange = { modelKey = it },
             baseUrl = baseUrl,
             onBaseUrlChange = { baseUrl = it },
-            supportMultimodal = supportMultimodal,
-            onSupportMultimodalChange = { supportMultimodal = it },
-            supportNativeJsonOutput = supportNativeJsonOutput,
-            onSupportNativeJsonOutputChange = { supportNativeJsonOutput = it },
         )
     }
 }
@@ -183,10 +173,6 @@ private fun LLMProviderEditForm(
     onModelKeyChange: (String) -> Unit,
     baseUrl: String,
     onBaseUrlChange: (String) -> Unit,
-    supportMultimodal: Boolean,
-    onSupportMultimodalChange: (Boolean) -> Unit,
-    supportNativeJsonOutput: Boolean,
-    onSupportNativeJsonOutputChange: (Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -228,30 +214,6 @@ private fun LLMProviderEditForm(
             label = { Text("Base URL") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
-        )
-        ListItem(
-            headlineContent = { Text("支持多模态") },
-            trailingContent = {
-                Switch(
-                    checked = supportMultimodal,
-                    onCheckedChange = onSupportMultimodalChange
-                )
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = AlertDialogDefaults.containerColor,
-            )
-        )
-        ListItem(
-            headlineContent = { Text("支持原生JSON输出") },
-            trailingContent = {
-                Switch(
-                    checked = supportNativeJsonOutput,
-                    onCheckedChange = onSupportNativeJsonOutputChange
-                )
-            },
-            colors = ListItemDefaults.colors(
-                containerColor = AlertDialogDefaults.containerColor,
-            )
         )
     }
 }
