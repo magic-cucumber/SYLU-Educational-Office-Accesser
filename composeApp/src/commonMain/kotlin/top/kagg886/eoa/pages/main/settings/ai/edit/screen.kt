@@ -1,15 +1,26 @@
 package top.kagg886.eoa.pages.main.settings.ai.edit
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,7 +49,7 @@ fun AISettingsEditScreen(route: AISettingsEditRoute) {
     }
     model.collectSideEffect {
         when (it) {
-            is LLMProviderEditSideEffect.Toast -> mainModel.toast(SnackBarType.Success, it.message)
+            is LLMProviderEditSideEffect.Toast -> mainModel.toast(it.type, it.message)
             LLMProviderEditSideEffect.NavigateBack -> nav.popBackStack()
         }
     }
@@ -106,7 +117,33 @@ private fun LLMProviderEditPage(
                     )
                 }
             ) {
-                Text("保存")
+                AnimatedContent(
+                    targetState = confirming,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith
+                                fadeOut(animationSpec = tween(300))
+                    }
+                ) { confirming ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (confirming) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text("保存中...")
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text("保存")
+                        }
+                    }
+                }
             }
         },
         dismissButton = {

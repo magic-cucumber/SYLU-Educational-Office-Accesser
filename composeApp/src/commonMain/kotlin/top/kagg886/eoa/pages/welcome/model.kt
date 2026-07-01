@@ -30,6 +30,7 @@ class WelcomeViewModel : ViewModel(), ContainerHost<WelcomeViewModelState, Welco
         AppInitializeMMKV.tutorialCourseManage = false
         AppInitializeMMKV.tutorialExamList = false
         AppInitializeMMKV.tutorialSecondClassLogin = false
+        AppInitializeMMKV.tutorialAISettings = false
         completeWelcome().join()
     }
 

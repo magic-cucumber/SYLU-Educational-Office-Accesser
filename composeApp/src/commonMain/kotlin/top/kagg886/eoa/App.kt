@@ -16,10 +16,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
+import coil3.key.Keyer
+import coil3.memory.MemoryCache
+import coil3.request.Options
 import coil3.util.Logger
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
 import kotlinx.coroutines.flow.MutableSharedFlow
+import okio.ByteString.Companion.toByteString
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -187,16 +191,22 @@ internal fun App(controller: DeeplinkController = rememberDeepLinkController()) 
     }
 }
 
-fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this.logger(
-    object : Logger {
-        override var minLevel: Logger.Level = Logger.Level.Verbose
-        override fun log(
-            tag: String,
-            level: Logger.Level,
-            message: String?,
-            throwable: Throwable?
-        ) = logger.log(Severity.valueOf(level.name), "Coil - $tag", throwable, message ?: "")
+fun ImageLoader.Builder.installCoilConfig(): ImageLoader.Builder = this
+    .logger(
+        object : Logger {
+            override var minLevel: Logger.Level = Logger.Level.Verbose
+            override fun log(
+                tag: String,
+                level: Logger.Level,
+                message: String?,
+                throwable: Throwable?
+            ) = logger.log(Severity.valueOf(level.name), "Coil - $tag", throwable, message ?: "")
+        }
+    )
+    .components {
+        add(
+            Keyer<ByteArray> { data, _ -> data.toByteString().sha256().hex() }
+        )
     }
-)
 
 expect fun downloadResourceUrl(info: UpdateInfo): String

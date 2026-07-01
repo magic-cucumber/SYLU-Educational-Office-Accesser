@@ -17,15 +17,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.AdaptiveListItem
+import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.ai.edit.AISettingsEditRoute
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.util.currentLayoutType
 
 /**
  * ================================================
@@ -39,22 +45,24 @@ import top.kagg886.eoa.util.SnackBarType
 data object AISettingsListRoute
 
 @Composable
-fun AISettingsScreen() = MainScreen {
-    val mainModel = mainViewModelOrNull() ?: return@MainScreen
-    val model = viewModel {
-        AISettingsListModel(mainModel.database)
-    }
-    val state by model.collectAsState()
-    model.collectSideEffect {
-        when (it) {
-            is AISettingsListSideEffect.Toast -> mainModel.toast(SnackBarType.Success, it.message)
+fun AISettingsScreen() = RevealContainer(3, AppInitializeMMKV::tutorialAISettings) {
+    MainScreen {
+        val mainModel = mainViewModelOrNull() ?: return@MainScreen
+        val model = viewModel {
+            AISettingsListModel(mainModel.database)
         }
-    }
+        val state by model.collectAsState()
+        model.collectSideEffect {
+            when (it) {
+                is AISettingsListSideEffect.Toast -> mainModel.toast(SnackBarType.Success, it.message)
+            }
+        }
 
-    AISettingsContent(
-        state = state,
-        onDelete = model::delete,
-    )
+        AISettingsContent(
+            state = state,
+            onDelete = model::delete,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +72,10 @@ private fun AISettingsContent(
     onDelete: (LLMProviderEntity) -> Unit,
 ) {
     val nav = LocalNavController.current
+    val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+        else -> ContainerArrow.Bottom
+    }
 
     Scaffold(
         topBar = {
@@ -75,7 +87,10 @@ private fun AISettingsContent(
                     IconButton(
                         onClick = {
                             uri.openUri("https://eoa.kagg886.top/setting.html#ai模型配置")
-                        }
+                        },
+                        modifier = Modifier.revealableAutoMeasured(2, ContainerArrow.Bottom) {
+                            Text("如果您没有合适的模型，点击这里获取更多帮助")
+                        },
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Help, contentDescription = "帮助")
                     }
@@ -83,7 +98,12 @@ private fun AISettingsContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { nav.navigate(AISettingsEditRoute()) }) {
+            FloatingActionButton(
+                onClick = { nav.navigate(AISettingsEditRoute()) },
+                modifier = Modifier.revealableAutoMeasured(1, fabArrow) {
+                    Text("点这里添加一个 AI 模型。")
+                },
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "添加")
             }
         },
@@ -92,6 +112,15 @@ private fun AISettingsContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .revealableAutoMeasured(0, ContainerArrow.Top) {
+                    Text(
+                        if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
+                            "这里会显示已经保存的模型。左右滑动模型，可以编辑或删除配置。"
+                        } else {
+                            "这里会显示已经保存的模型。点击铅笔按钮编辑，点击垃圾桶按钮删除。"
+                        }
+                    )
+                }
         ) {
             when (state) {
                 AISettingsListState.Loading -> {

@@ -22,6 +22,7 @@ object AppInitializeMMKV : MMKV by MMKV.mmkvWithID("initialize-setting", mode = 
     override var tutorialCourseManage: Boolean by boolean("tutorial-course-manage", true)
     override var tutorialExamList: Boolean by boolean("tutorial-exam-list", true)
     override var tutorialSecondClassLogin: Boolean by boolean("tutorial-second-class-login", true)
+    override var tutorialAISettings: Boolean by boolean("tutorial-ai-settings", true)
 }
 
 sealed interface AppInitializeMMKVType {
@@ -38,6 +39,7 @@ sealed interface AppInitializeMMKVType {
     var tutorialCourseManage: Boolean
     var tutorialExamList: Boolean
     var tutorialSecondClassLogin: Boolean
+    var tutorialAISettings: Boolean
 
 
 }
