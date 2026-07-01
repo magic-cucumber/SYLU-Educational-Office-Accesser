@@ -1,3 +1,5 @@
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import androidx.compose.foundation.layout.*

@@ -346,7 +346,7 @@ class CourseEditModel(
                             )
                         )
                     } catch (e: Throwable) {
-                        Result.failure(e)
+                        Result.failure(e.cause ?: e)
                     }
                 }
 

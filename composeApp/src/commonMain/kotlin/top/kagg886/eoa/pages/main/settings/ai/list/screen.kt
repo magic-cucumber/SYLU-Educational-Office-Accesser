@@ -4,13 +4,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
@@ -104,14 +103,26 @@ private fun AISettingsContent(
                             items(state.providers, key = { it.uuid }) { provider ->
                                 AdaptiveListItem(
                                     headlineContent = { Text(provider.modelRemark.ifBlank { provider.modelName }) },
-                                    overlineContent = { Text(provider.modelName) },
                                     supportingContent = {
-                                        Text(
-                                            listOfNotNull(
-                                                if (provider.supportMultimodal) "支持多模态" else null,
-                                                if (provider.supportNativeJsonOutput) "支持原生JSON" else null,
-                                            ).joinToString(" / ")
-                                        )
+                                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            if (provider.supportMultimodal) {
+                                                Icon(
+                                                    Icons.Default.Image,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(with(LocalDensity.current) { LocalTextStyle.current.toSpanStyle().fontSize.toDp() }),
+                                                    tint = LocalTextStyle.current.toSpanStyle().color
+                                                )
+                                            }
+
+                                            if (provider.supportNativeJsonOutput) {
+                                                Icon(
+                                                    Icons.Default.Code,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(with(LocalDensity.current) { LocalTextStyle.current.toSpanStyle().fontSize.toDp() }),
+                                                    tint = LocalTextStyle.current.toSpanStyle().color
+                                                )
+                                            }
+                                        }
                                     }
                                 ) {
                                     primaryAction {
