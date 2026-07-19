@@ -1,6 +1,8 @@
 package top.kagg886.eoa.pages.main
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalUriHandler
+import com.dokar.sonner.TextToastAction
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
@@ -21,6 +23,7 @@ fun MainScreen(content: @Composable () -> Unit) {
     val model = mainViewModelOrNull()
     val nav = LocalNavController.current
     val snack = LocalSnackBarHost.current
+    val uri = LocalUriHandler.current
     model?.collectSideEffect { effect ->
         when (effect) {
             is MainRouteViewEffect.Toast -> {
@@ -33,6 +36,18 @@ fun MainScreen(content: @Composable () -> Unit) {
                         Info -> "信息"
                     },
                     description = effect.message,
+                )
+            }
+
+            is MainRouteViewEffect.SyncErrorToast -> {
+                snack.showSnackBar(
+                    type = Error,
+                    title = "错误",
+                    description = "同步失败！点按 \"帮助\"查询解决方案。",
+                    actionTitle = "帮助",
+                    action = {
+                        uri.openUri("https://eoa.kagg886.top/bug-report.html")
+                    }
                 )
             }
 

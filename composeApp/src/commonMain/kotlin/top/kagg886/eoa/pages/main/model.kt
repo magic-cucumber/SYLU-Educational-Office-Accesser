@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.room3.withWriteTransaction
+import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -438,10 +439,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             return@intent
         }
         postSideEffect(
-            MainRouteViewEffect.Toast(
-                type = SnackBarType.Error,
-                message = "同步失败！详情请参阅日志"
-            )
+            MainRouteViewEffect.SyncErrorToast
         )
         logger.e("同步失败！", ex)
         syncDao.updateOverview(overview.copy(updatedStamp = lastSyncTime ?: 0, success = false))
@@ -564,6 +562,9 @@ sealed interface MainRouteViewEffect {
     data object NavigateToLogin : MainRouteViewEffect
     data class Toast(
         val type: SnackBarType,
-        val message: String
+        val message: String,
+        val action: TextToastAction? = null,
     ) : MainRouteViewEffect
+
+    data object SyncErrorToast: MainRouteViewEffect
 }
