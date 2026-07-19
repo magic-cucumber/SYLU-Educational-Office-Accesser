@@ -12,6 +12,7 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
@@ -49,6 +50,13 @@ internal class EOAHTMLClient : EOAClient {
             install(Logging) {
                 logger = kermit.asKtorLogger
                 level = LogLevel.ALL
+                sanitizeHeader("---hidden---") { header ->
+                    when {
+                        header.equals(HttpHeaders.Cookie, ignoreCase = true) -> true
+                        header.equals(HttpHeaders.SetCookie, ignoreCase = true) -> true
+                        else -> false
+                    }
+                }
             }
 
             install(HttpCookies) {
@@ -327,11 +335,11 @@ internal class EOAHTMLClient : EOAClient {
         val resp = client.submitForm(
             url = "/cjcx/cjcx_dcListByXs.html",
             formParameters = Parameters.build {
-                append("gnmkdmKey","N305005")
+                append("gnmkdmKey", "N305005")
                 append("sessionUserKey", username)
-                append("xnm",term.xnm)
+                append("xnm", term.xnm)
                 append("xqm", term.xqm)
-                append("dcclbh","JW_N305005_XSCXCJ")
+                append("dcclbh", "JW_N305005_XSCXCJ")
                 append("exportModel.exportWjgs", config.format.toString().uppercase())
                 config.select.map { it.toFormValue() }.forEach {
                     append("exportModel.selectCol", it)
