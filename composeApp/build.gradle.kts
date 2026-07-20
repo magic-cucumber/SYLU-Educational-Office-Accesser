@@ -20,6 +20,7 @@ plugins {
 kotlin {
     library(
         module = "eoa",
+        android = { androidResources.enable = true },
         ios = {
             binaries.framework {
                 baseName = "ComposeApp"

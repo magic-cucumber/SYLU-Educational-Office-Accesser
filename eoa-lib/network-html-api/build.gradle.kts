@@ -13,9 +13,10 @@ group = "top.kagg886.sylu_eoa.api.v3"
 version = "1.0"
 
 kotlin {
-    library(module = "sylu_eoa.api.v3")
+    library(module = "sylu_eoa.api.v3", android = { androidResources.enable = true })
 
     sourceSets {
+
         commonMain.dependencies {
             implementation(libs.okio)
             implementation(libs.ksoup)
@@ -46,5 +47,10 @@ dependencies {
         add("kspJvm", this)
         add("kspIosArm64", this)
         add("kspIosSimulatorArm64", this)
+    }
+}
+tasks.withType<org.gradle.api.tasks.Sync>().configureEach {
+    if (name == "processAndroidMainJavaRes") {
+        from(layout.buildDirectory.dir("generated/ksp/android/androidMain/resources"))
     }
 }
