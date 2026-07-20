@@ -1,5 +1,4 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 import java.io.BufferedOutputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -12,7 +11,7 @@ plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
-    id("com.android.application")
+    id("com.android.kotlin.multiplatform.library")
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.buildConfig)
     id("com.google.osdetector") version "1.7.3"
@@ -20,11 +19,7 @@ plugins {
 
 kotlin {
     library(
-        android = {
-            //https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html
-            @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
-            instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
-        },
+        module = "eoa",
         ios = {
             binaries.framework {
                 baseName = "ComposeApp"
@@ -86,18 +81,18 @@ kotlin {
             implementation(libs.reveal.core)
             implementation(libs.reveal.shapes)
 
-            implementation(project(":composeApp-backend"))
-            implementation(project(":widgetApp"))
-            implementation(project(":util"))
+            implementation(project.dependencies.project(":composeApp-backend"))
+            implementation(project.dependencies.project(":widgetApp"))
+            implementation(project.dependencies.project(":util"))
             //方便切换到闭源后端
-            implementation(project(":eoa-lib:network-html-api"))
-            implementation(project(":eoa-lib:network-test-api"))
+            implementation(project.dependencies.project(":eoa-lib:network-html-api"))
+            implementation(project.dependencies.project(":eoa-lib:network-test-api"))
 
 
-            implementation(project(":lib:ktor-platform-engine"))
-            implementation(project(":lib:ics-generator"))
-            implementation(project(":lib:calender-exporter-v2"))
-            implementation(project(":second-class"))
+            implementation(project.dependencies.project(":lib:ktor-platform-engine"))
+            implementation(project.dependencies.project(":lib:ics-generator"))
+            implementation(project.dependencies.project(":lib:calender-exporter-v2"))
+            implementation(project.dependencies.project(":second-class"))
         }
 
         commonTest.dependencies {
@@ -108,14 +103,8 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation(libs.compose.ui.tooling)
             implementation(libs.androidx.activityCompose)
             implementation(libs.kotlinx.coroutines.android)
-
-            // Jetpack Glance for widgets
-            implementation(libs.androidx.glance.appwidget)
-            implementation(libs.androidx.glance.material3)
-            implementation(libs.androidx.work.runtime.ktx)
         }
 
         jvmMain.dependencies {
@@ -137,81 +126,6 @@ configurations.configureEach {
             useVersion(libs.versions.ktor.get())
             because("Kotlin/Native linking fails when ai.koog pulls older Ktor server modules than the app's Ktor client stack")
         }
-    }
-}
-
-android {
-    namespace = "top.kagg886.eoa"
-    compileSdk = 37
-
-    packaging {
-        resources {
-            excludes += "META-INF/DEPENDENCIES"
-        }
-    }
-
-    if (useDesugarApi) {
-        compileOptions {
-            isCoreLibraryDesugaringEnabled = true
-        }
-    }
-
-    defaultConfig {
-        minSdk = if (useDesugarApi) 23 else 28
-
-        applicationId = "top.kagg886.eoa.androidApp"
-        versionCode = appVersionCode
-        versionName = appVersion
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-
-        proguardFiles(
-            getDefaultProguardFile("proguard-android-optimize.txt"),
-            "proguard-rules.pro"
-        )
-    }
-
-    signingConfigs {
-        create("test") {
-            storeFile = file("key.jks")
-            storePassword = "123456"
-
-            keyAlias = "kagg886"
-            keyPassword = "123456"
-        }
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = useProguard
-            isShrinkResources = useProguard
-
-            signingConfig = signingConfigs.getByName("test")
-
-            ndk {
-                //noinspection ChromeOsAbiSupport
-                abiFilters += "arm64-v8a"
-            }
-        }
-
-        debug {
-            ndk {
-                abiFilters += listOf("arm64-v8a", "x86_64")
-            }
-
-            signingConfig = signingConfigs.getByName("test")
-        }
-    }
-}
-
-//https://developer.android.com/develop/ui/compose/testing#setup
-dependencies {
-    androidTestImplementation(libs.androidx.uitest.junit4)
-    debugImplementation(libs.androidx.uitest.testManifest)
-
-    if (useDesugarApi) {
-        coreLibraryDesugaring(libs.desugar.jdk.libs)
     }
 }
 

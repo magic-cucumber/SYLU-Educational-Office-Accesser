@@ -1,7 +1,7 @@
 
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
 
@@ -12,14 +12,8 @@ plugins {
 group = "top.kagg886.eoa.second"
 version = "1.0"
 
-android("eoa.second")
-
 kotlin {
-    library(
-        android = {
-            publishLibraryVariants("release")
-        }
-    )
+    library(module = "eoa.second")
 
     sourceSets {
         commonMain.dependencies {
@@ -31,12 +25,12 @@ kotlin {
             implementation(libs.ktor.client.encoding)
             implementation(libs.ksoup)
             implementation(libs.okio)
-            implementation(project(":lib:ktor-platform-engine"))
-            implementation(project(":lib:rsa"))
+            implementation(project.dependencies.project(":lib:ktor-platform-engine"))
+            implementation(project.dependencies.project(":lib:rsa"))
             implementation(libs.cryptography.core)
             implementation(libs.cryptography.provider.optimal)
 
-            implementation(project(":util"))
+            implementation(project.dependencies.project(":util"))
         }
 
         commonTest.dependencies {

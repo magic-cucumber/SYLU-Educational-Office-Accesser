@@ -3,43 +3,44 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
 }
 
 group = "top.kagg886.util.http"
 version = "1.0"
 
-android("util.http")
-
 kotlin {
-    applyDefaultHierarchyTemplate {
+    library(module = "util.http")
+
+    applyHierarchyTemplate {
         common {
             group("nonIos") {
-                withJvm()
-                withAndroidTarget()
+                withCompilations { compilation ->
+                    compilation.target.name == "android" || compilation.target.name == "jvm"
+                }
+            }
+            group("ios") {
+                withIos()
             }
         }
     }
-    library(
-        android = {
-            publishLibraryVariants("release")
-        },
-    )
 
     sourceSets {
-        commonMain.dependencies {
-            api(libs.ktor.client.core)
+        named("commonMain") {
+            dependencies {
+                api(libs.ktor.client.core)
+            }
         }
-        nonIosMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
+        named("nonIosMain") {
+            dependencies {
+                implementation(libs.ktor.client.okhttp)
+            }
         }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
+        named("iosMain") {
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
         }
     }
 }
-
-
-private val NamedDomainObjectContainer<org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet>.nonIosMain: NamedDomainObjectProvider<org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet>
-    get() = named<org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet>("nonIosMain")

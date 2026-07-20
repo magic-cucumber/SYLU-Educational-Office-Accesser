@@ -2,7 +2,7 @@ import java.security.MessageDigest
 
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
 
@@ -12,14 +12,8 @@ plugins {
 group = "top.kagg886.sylu_eoa.api.v3"
 version = "1.0"
 
-android("sylu_eoa.api.v3")
-
 kotlin {
-    library(
-        android = {
-            publishLibraryVariants("release")
-        },
-    )
+    library(module = "sylu_eoa.api.v3")
 
     sourceSets {
         commonMain.dependencies {
@@ -29,15 +23,15 @@ kotlin {
             implementation(libs.mkmb.core)
             implementation(libs.sweet.api.runtime)
 
-            api(project(":lib:ktor-platform-engine"))
+            api(project.dependencies.project(":lib:ktor-platform-engine"))
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.json)
             implementation(libs.ktor.client.logging)
 
-            implementation(project(":util"))
-            implementation(project(":lib:rsa"))
-            api(project(":eoa-lib:network-core"))
+            implementation(project.dependencies.project(":util"))
+            implementation(project.dependencies.project(":lib:rsa"))
+            api(project.dependencies.project(":eoa-lib:network-core"))
         }
 
         commonTest.dependencies {

@@ -47,13 +47,13 @@
        "
     />
     <application
-            android:name=".EOAApplication"
+            android:name="top.kagg886.eoa.EOAApplication"
             android:icon="@mipmap/ic_launcher"
             android:label="SYLU-EOA"
             android:usesCleartextTraffic="true"
             android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
-                android:name=".AppActivity"
+                android:name="top.kagg886.eoa.AppActivity"
                 android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
                 android:launchMode="singleInstance"
                 android:windowSoftInputMode="adjustPan"
@@ -77,7 +77,7 @@
 
         <!-- 今日课程小组件 -->
         <receiver
-                android:name=".widget.TodayCourseWidgetReceiver"
+                android:name="top.kagg886.eoa.widget.TodayCourseWidgetReceiver"
                 android:exported="true"
                 android:label="@string/today_course_widget_label">
             <intent-filter>

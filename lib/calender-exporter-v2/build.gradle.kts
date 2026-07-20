@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
 
 
@@ -10,14 +10,8 @@ plugins {
 group = "top.kagg886.calender.v2"
 version = "1.0"
 
-android("calender.v2")
-
 kotlin {
-    library(
-        android = {
-            publishLibraryVariants("release")
-        }
-    )
+    library(module = "calender.v2")
 
     sourceSets {
         commonMain.dependencies {
@@ -26,7 +20,7 @@ kotlin {
             implementation(libs.compose.foundation)
 
             implementation(libs.kotlinx.coroutines.core)
-            implementation(project(":util"))
+            implementation(project.dependencies.project(":util"))
         }
 
         androidMain.dependencies {

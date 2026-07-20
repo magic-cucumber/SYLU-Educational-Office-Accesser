@@ -77,7 +77,7 @@ fun rememberDeepLinkController(): DeeplinkController = remember {
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalComposeUiApi::class)
 @Composable
-internal fun App(controller: DeeplinkController = rememberDeepLinkController()) = CompositionLocalProvider(
+fun App(controller: DeeplinkController = rememberDeepLinkController()) = CompositionLocalProvider(
     LocalGlobalViewModelStoreOwner provides LocalViewModelStoreOwner.current!!,
     LocalNavController provides rememberNavController(),
     LocalSnackBarHost provides rememberToasterState(),

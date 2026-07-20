@@ -1,7 +1,7 @@
 val databaseVersion = (project.findProperty("database.version") as String).toInt()
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.room)
@@ -12,13 +12,9 @@ plugins {
 group = "top.kagg886.composeapp.backend"
 version = "1.0"
 
-android("composeapp.backend")
-
 kotlin {
     library(
-        android = {
-            publishLibraryVariants("release")
-        },
+        module = "composeapp.backend",
         ios = {
             binaries.framework {
                 baseName = "ComposeAppBackend"
@@ -44,9 +40,9 @@ kotlin {
 
             api(libs.mkmb.core)
 
-            api(project(":eoa-lib:network-core"))
-            api(project(":util"))
-            api(project(":second-class"))
+            api(project.dependencies.project(":eoa-lib:network-core"))
+            api(project.dependencies.project(":util"))
+            api(project.dependencies.project(":second-class"))
         }
 
         commonTest.dependencies {

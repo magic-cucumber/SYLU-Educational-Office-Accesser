@@ -1,19 +1,13 @@
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
 }
 
 group = "top.kagg886.util.security"
 version = "1.0"
 
-android("util.security")
-
 kotlin {
-    library(
-        android = {
-            publishLibraryVariants("release")
-        },
-    )
+    library(module = "util.security")
 
     sourceSets {
         commonMain.dependencies {

@@ -24,7 +24,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import top.kagg886.eoa.R
+import top.kagg886.eoa.androidApp.R
 import top.kagg886.eoa.AppActivity
 import top.kagg886.eoa.widget.LocalInnerRadius
 import top.kagg886.eoa.widget.component.RefreshButton

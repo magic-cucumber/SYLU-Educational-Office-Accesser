@@ -1,6 +1,6 @@
 
 plugins {
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.multiplatform")
     alias(libs.plugins.kotlinx.serialization)
 }
@@ -8,14 +8,8 @@ plugins {
 group = "top.kagg886.ics"
 version = "1.0"
 
-android("ics")
-
 kotlin {
-    library(
-        android = {
-            publishLibraryVariants("release")
-        }
-    )
+    library(module = "ics")
 
     sourceSets {
         commonMain {

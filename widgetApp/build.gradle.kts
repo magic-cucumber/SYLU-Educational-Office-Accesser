@@ -2,16 +2,14 @@ plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
 }
 
 group = "top.kagg886.widgetapp"
 version = "1.0"
 
-android("widgetApp")
-
 kotlin {
-    library(ios = {
+    library(module = "widgetApp", enableAndroidResources = true, ios = {
         binaries.framework {
             baseName = "WidgetApp"
             isStatic = true
@@ -30,8 +28,8 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.filekit.dialog)
 
-            implementation(project(":composeApp-backend"))
-            implementation(project(":util"))
+            implementation(project.dependencies.project(":composeApp-backend"))
+            implementation(project.dependencies.project(":util"))
         }
 
         androidMain.dependencies {

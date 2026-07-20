@@ -1,9 +1,7 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.gradle.api.Action
-import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
@@ -15,11 +13,26 @@ import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
  */
 
 fun KotlinMultiplatformExtension.library(
+    module: String,
+    enableAndroidResources: Boolean = false,
     jvm: KotlinJvmTarget.() -> Unit = {},
     ios: KotlinNativeTarget.() -> Unit = {},
-    android: KotlinAndroidTarget.() -> Unit = {},
 ) {
     jvmToolchain(22)
+
+    (this as ExtensionAware).extensions.configure(
+        "android",
+        Action<KotlinMultiplatformAndroidLibraryTarget> {
+            namespace = "top.kagg886.$module"
+            compileSdk = 37
+            minSdk = if (project.useDesugarApi) 23 else 28
+            withHostTest {}
+
+            if (enableAndroidResources) {
+                androidResources.enable = true
+            }
+        },
+    )
 
     jvm(jvm)
     iosArm64 {
@@ -31,8 +44,6 @@ fun KotlinMultiplatformExtension.library(
         ios()
     }
 
-    androidTarget(android)
-
 //    wasmJs {
 //        browser()
 //    }
@@ -42,24 +53,3 @@ fun KotlinMultiplatformExtension.library(
         optIn.addAll("kotlin.time.ExperimentalTime")
     }
 }
-
-
-fun Project.android(module: String, configure: LibraryExtension.() -> Unit = {}) =
-    (this as ExtensionAware).extensions.configure("android", Action<LibraryExtension> {
-        namespace = "top.kagg886.$module"
-
-        compileSdk = 37
-        defaultConfig {
-            minSdk = if (useDesugarApi) 23 else 28
-        }
-
-        buildTypes {
-            release {
-                isMinifyEnabled = false
-
-                proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            }
-        }
-
-        configure()
-    })
