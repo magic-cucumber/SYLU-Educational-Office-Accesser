@@ -9,13 +9,17 @@ group = "top.kagg886.widgetapp"
 version = "1.0"
 
 kotlin {
-    library(module = "widgetApp", enableAndroidResources = true, ios = {
-        binaries.framework {
-            baseName = "WidgetApp"
-            isStatic = true
-            linkerOpts += "-lsqlite3"
-        }
-    })
+    library(
+        module = "widgetApp",
+        android = { androidResources.enable = true },
+        ios = {
+            binaries.framework {
+                baseName = "WidgetApp"
+                isStatic = true
+                linkerOpts += "-lsqlite3"
+            }
+        },
+    )
 
     sourceSets {
         commonMain.dependencies {

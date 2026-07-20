@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 fun KotlinMultiplatformExtension.library(
     module: String,
-    enableAndroidResources: Boolean = false,
+    android: KotlinMultiplatformAndroidLibraryTarget.() -> Unit = {},
     jvm: KotlinJvmTarget.() -> Unit = {},
     ios: KotlinNativeTarget.() -> Unit = {},
 ) {
@@ -28,21 +28,13 @@ fun KotlinMultiplatformExtension.library(
             minSdk = if (project.useDesugarApi) 23 else 28
             withHostTest {}
 
-            if (enableAndroidResources) {
-                androidResources.enable = true
-            }
+            android()
         },
     )
 
     jvm(jvm)
-    iosArm64 {
-        compilerOptions { freeCompilerArgs.add("-Xpartial-linkage=disable") }
-        ios()
-    }
-    iosSimulatorArm64 {
-        compilerOptions { freeCompilerArgs.add("-Xpartial-linkage=disable") }
-        ios()
-    }
+    iosArm64(ios)
+    iosSimulatorArm64(ios)
 
 //    wasmJs {
 //        browser()
