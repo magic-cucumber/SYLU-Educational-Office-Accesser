@@ -142,7 +142,7 @@ configurations.configureEach {
 
 android {
     namespace = "top.kagg886.eoa"
-    compileSdk = 36
+    compileSdk = 37
 
     packaging {
         resources {
