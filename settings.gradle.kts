@@ -44,7 +44,6 @@ include(":second-class")
 include(":util")
 
 include(":lib:ics-generator")
-include(":lib:calender-exporter")
 include(":lib:calender-exporter-v2")
 include(":lib:rsa")
 include(":lib:ktor-platform-engine")
