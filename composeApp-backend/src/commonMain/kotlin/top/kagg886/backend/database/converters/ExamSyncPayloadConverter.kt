@@ -1,6 +1,6 @@
 package top.kagg886.backend.database.converters
 
-import androidx.room3.TypeConverter
+import androidx.room3.ColumnTypeConverter
 import kotlinx.serialization.json.Json
 import top.kagg886.backend.database.dao.ExamSyncPayload
 
@@ -10,9 +10,9 @@ class ExamSyncPayloadConverter {
         encodeDefaults = true
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun convertExamPayload(value: String?): ExamSyncPayload? = value?.let { json.decodeFromString(it) }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun reConvertExamPayload(value: ExamSyncPayload?): String? = value?.let { json.encodeToString(it) }
 }

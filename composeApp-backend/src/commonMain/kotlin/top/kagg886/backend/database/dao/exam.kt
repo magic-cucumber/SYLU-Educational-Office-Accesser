@@ -8,7 +8,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
 @Entity(tableName = "exams")
-@TypeConverters(ExamConverter::class, TimeConverter::class)
+@ColumnTypeConverters(ExamConverter::class, TimeConverter::class)
 data class ExamEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val year: String, //学年代号

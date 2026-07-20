@@ -1,6 +1,7 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room3.ColumnInfo
+import androidx.room3.ColumnTypeConverters
 import androidx.room3.Dao
 import androidx.room3.Entity
 import androidx.room3.ForeignKey
@@ -9,7 +10,6 @@ import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
-import androidx.room3.TypeConverters
 import androidx.room3.Update
 import kotlin.time.Clock
 import kotlinx.serialization.Serializable
@@ -54,7 +54,7 @@ data class GPASyncPayload(
         Index(value = ["overviewId"], unique = true)
     ]
 )
-@TypeConverters(ExamSyncPayloadConverter::class, GPASyncPayloadConverter::class)
+@ColumnTypeConverters(ExamSyncPayloadConverter::class, GPASyncPayloadConverter::class)
 data class SyncCheckpointEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int? = null,

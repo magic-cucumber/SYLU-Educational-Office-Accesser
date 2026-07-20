@@ -1,6 +1,6 @@
 package top.kagg886.backend.database.converters
 
-import androidx.room3.TypeConverter
+import androidx.room3.ColumnTypeConverter
 import kotlinx.serialization.json.Json
 import top.kagg886.backend.database.dao.GPASyncPayload
 
@@ -10,9 +10,9 @@ class GPASyncPayloadConverter {
         encodeDefaults = true
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun convertGPAPayload(value: String?): GPASyncPayload? = value?.let { json.decodeFromString(it) }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun reConvertGPAPayload(value: GPASyncPayload?): String? = value?.let { json.encodeToString(it) }
 }

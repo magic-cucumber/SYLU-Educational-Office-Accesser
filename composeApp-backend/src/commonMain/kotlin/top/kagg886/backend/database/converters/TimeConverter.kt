@@ -1,26 +1,26 @@
 package top.kagg886.backend.database.converters
 
-import androidx.room3.TypeConverter
+import androidx.room3.ColumnTypeConverter
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
 
 class TimeConverter {
-    @TypeConverter
+    @ColumnTypeConverter
     fun convertInstant(value: Instant): Long {
         return value.toEpochMilliseconds()
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun reConvertInstant(value: Long): Instant {
         return Instant.fromEpochMilliseconds(value)
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun convertLocalDateTime(value: LocalDateTime): String {
         return value.toString()
     }
 
-    @TypeConverter
+    @ColumnTypeConverter
     fun reConvertLocalDateTime(value: String): LocalDateTime {
         return LocalDateTime.parse(value)
     }

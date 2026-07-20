@@ -86,7 +86,7 @@ private fun AISettingsContent(
                     val uri = LocalUriHandler.current
                     IconButton(
                         onClick = {
-                            uri.openUri("https://eoa.kagg886.top/setting.html#ai模型配置")
+                            uri.openUri("https://eoa.kagg886.top/settings.html#ai%E6%A8%A1%E5%9E%8B%E9%85%8D%E7%BD%AE")
                         },
                         modifier = Modifier.revealableAutoMeasured(2, ContainerArrow.Bottom) {
                             Text("如果您没有合适的模型，点击这里获取更多帮助")

@@ -20,7 +20,7 @@ import kotlin.time.Instant
         Index(value = ["level", "time"])
     ]
 )
-@TypeConverters(TimeConverter::class, SeverityConverter::class)
+@ColumnTypeConverters(TimeConverter::class, SeverityConverter::class)
 data class AppLog(
     @PrimaryKey(autoGenerate = true)
     val id: Long? = null,

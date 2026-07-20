@@ -5,7 +5,7 @@ import kotlinx.datetime.LocalDateTime
 import top.kagg886.backend.database.converters.TimeConverter
 
 @Entity(tableName = "system_notices")
-@TypeConverters(TimeConverter::class)
+@ColumnTypeConverters(TimeConverter::class)
 data class SystemNoticeEntity(
     @PrimaryKey val id: String,
     val title: String,
