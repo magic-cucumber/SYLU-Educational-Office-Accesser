@@ -336,7 +336,10 @@ public val SuspendableHttpRequestRetry: ClientPlugin<HttpRequestRetryConfig> = c
             request.attributes.getOrNull(ShouldRetryOnExceptionPerRequestAttributeKey) ?: shouldRetryOnException
         val maxRetries = request.attributes.getOrNull(MaxRetriesPerRequestAttributeKey) ?: maxRetries
         val delayMillis = request.attributes.getOrNull(RetryDelayPerRequestAttributeKey) ?: delayMillis
-        val modifyRequest = request.attributes.getOrNull(ModifyRequestPerRequestAttributeKey) ?: modifyRequest
+        val modifyRequest = request.attributes
+            .getOrNull(ModifyRequestPerRequestAttributeKey)
+            ?.block
+            ?: modifyRequest
 
         var call: HttpClientCall
         var lastRetryData: HttpRetryEventData? = null
@@ -446,7 +449,10 @@ public fun HttpRequestBuilder.retry(block: HttpRequestRetryConfig.() -> Unit) {
     attributes.put(ShouldRetryOnExceptionPerRequestAttributeKey, configuration.shouldRetryOnException)
     attributes.put(RetryDelayPerRequestAttributeKey, configuration.delayMillis)
     attributes.put(MaxRetriesPerRequestAttributeKey, configuration.maxRetries)
-    attributes.put(ModifyRequestPerRequestAttributeKey, configuration.modifyRequest)
+    attributes.put(
+        ModifyRequestPerRequestAttributeKey,
+        ModifyRequestPerRequest(configuration.modifyRequest)
+    )
 }
 
 internal val MaxRetriesPerRequestAttributeKey = AttributeKey<Int>("MaxRetriesPerRequestAttributeKey")
@@ -461,10 +467,12 @@ private val ShouldRetryOnExceptionPerRequestAttributeKey =
         "ShouldRetryOnExceptionPerRequestAttributeKey"
     )
 
+private class ModifyRequestPerRequest(
+    val block: suspend HttpRetryModifyRequestContext.(HttpRequestBuilder) -> Unit
+)
+
 private val ModifyRequestPerRequestAttributeKey =
-    AttributeKey<suspend HttpRetryModifyRequestContext.(HttpRequestBuilder) -> Unit>(
-        "ModifyRequestPerRequestAttributeKey"
-    )
+    AttributeKey<ModifyRequestPerRequest>("ModifyRequestPerRequestAttributeKey")
 
 private val RetryDelayPerRequestAttributeKey =
     AttributeKey<HttpRetryDelayContext.(Int) -> Long>(
