@@ -12,7 +12,6 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
@@ -67,7 +66,7 @@ internal class EOAHTMLClient : EOAClient {
                 requestTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
 
-            install(HttpRequestRetry) {
+            install(SuspendableHttpRequestRetry) {
                 retryOnExceptionIf { req, cause ->
                     val url = req.url.build().fullPath
                     //登出接口不需要retry
@@ -104,18 +103,16 @@ internal class EOAHTMLClient : EOAClient {
                 modifyRequest { req ->
                     kermit.d("Retry request: ${req.url.build().fullPath}, $retryCount / $maxRetries")
                     //重新登录。每次 Ktor retry 只尝试一次，重试次数交给 HttpRequestRetry 控制。
-                    val cookie = runBlocking {
-                        try {
-                            internalLogin()
-                            storage.get(req.url.build())
-                        } catch (e: Exception) {
-                            //同样这里需要throw，否则未登录异常会被忽略
-                            if (e is InvalidCredentialsException) {
-                                throw e
-                            }
-                            kermit.d("Retry request: ${req.url.build().fullPath} failed.", e)
-                            throw if (retryCount >= maxRetries) RetryLimitException(e) else e
+                    val cookie = try {
+                        internalLogin()
+                        storage.get(req.url.build())
+                    } catch (e: Exception) {
+                        //同样这里需要throw，否则未登录异常会被忽略
+                        if (e is InvalidCredentialsException) {
+                            throw e
                         }
+                        kermit.d("Retry request: ${req.url.build().fullPath} failed.", e)
+                        throw if (retryCount >= maxRetries) RetryLimitException(e) else e
                     }
 
                     if (cookie.isEmpty()) {
