@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
 
 
+    alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.ksp)
 }
 

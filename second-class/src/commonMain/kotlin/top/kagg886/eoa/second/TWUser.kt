@@ -3,26 +3,30 @@ package top.kagg886.eoa.second
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
 import com.fleeksoft.ksoup.select.Elements
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.cookies.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.runBlocking
+import io.ktor.client.call.body
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
+import io.ktor.client.plugins.cookies.HttpCookies
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.forms.submitForm
+import io.ktor.client.request.get
+import io.ktor.http.ContentType
+import io.ktor.http.Cookie
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.Parameters
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.serialization.kotlinx.serialization
 import kotlinx.serialization.json.Json
+import top.kagg886.eoa.util.DefaultAddableCookiesStorage
 import top.kagg886.eoa.util.internal.HtmlFormat
 import top.kagg886.eoa.util.internal.HttpResponseCharset
 import top.kagg886.sylu_eoa.api.html.util.RSA
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 val TW_KEYS = arrayOf(
     "思想成长",
@@ -47,13 +51,7 @@ class TWUser(
         }
 
         install(HttpCookies) {
-            storage = AcceptAllCookiesStorage().apply {
-                ticket?.let {
-                    runBlocking {
-                        addCookie("${baseURL}UserLogin.aspx", it)
-                    }
-                }
-            }
+            storage = ticket?.let { DefaultAddableCookiesStorage(listOf(it)) } ?: AcceptAllCookiesStorage()
         }
 
         install(Logging) {
