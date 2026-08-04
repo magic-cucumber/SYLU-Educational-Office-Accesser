@@ -1,8 +1,10 @@
 package top.kagg886.eoa.pages.main.home.gpa
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
@@ -135,11 +138,13 @@ private fun GPAContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 16.dp)
     ) {
-        items(state.gpa.toList()) { (summary, scores) ->
-            GPASummaryCard(
+        items(
+            items = state.gpa.toList(),
+            key = { (summary, _) -> summary.id ?: summary.name }
+        ) { (summary, scores) ->
+            GPASummaryGroup(
                 summary = summary,
                 scores = scores
             )
@@ -148,89 +153,99 @@ private fun GPAContent(
 }
 
 @Composable
-private fun GPASummaryCard(
+private fun GPASummaryGroup(
     summary: GPASummaryEntity,
     scores: List<GPAEntity>
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column {
-            // Summary header
-            ListItem(
-                headlineContent = {
-                    Text(
-                        text = summary.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                supportingContent = {
-                    Text(
-                        text = "绩点: ${summary.score}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                },
-                trailingContent = {
-                    val rotate by animateFloatAsState(
-                        targetValue =  if (expanded) 180f else 0f
-                    )
-                    IconButton(onClick = { expanded = !expanded }) {
-                        Icon(
-                            imageVector = Icons.Default.ExpandMore,
-                            contentDescription = if (expanded) "收起" else "展开",
-                            modifier =  Modifier.rotate(rotate)
-                        )
-                    }
-                }
-            )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 汇总头部，整行可点击展开/收起
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = summary.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "绩点: ${summary.score}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
-            // Detailed scores (expandable with animation)
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(
-                    animationSpec = tween(durationMillis = 300),
-                    expandFrom = Alignment.Top
-                ) + fadeIn(animationSpec = tween(durationMillis = 200)),
-                exit = shrinkVertically(
-                    animationSpec = tween(durationMillis = 300),
-                    shrinkTowards = Alignment.Top
-                ) + fadeOut(animationSpec = tween(durationMillis = 200))
+            val rotate by animateFloatAsState(
+                targetValue = if (expanded) 180f else 0f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "expand-arrow"
+            )
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "收起" else "展开",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.rotate(rotate)
+            )
+        }
+
+        // 明细条目，展开/收起与箭头旋转使用同一弹性曲线
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                expandFrom = Alignment.Top
+            ) + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+            exit = shrinkVertically(
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                shrinkTowards = Alignment.Top
+            ) + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, bottom = 12.dp)
             ) {
                 if (scores.isEmpty()) {
                     Text(
-                        text = "没有条目",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
+                        text = "暂无条目",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 10.dp)
                     )
-                    return@AnimatedVisibility
-                }
-                Column {
+                } else {
                     scores.forEach { score ->
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = score.name,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            },
-                            trailingContent = {
-                                Text(
-                                    text = score.score,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            },
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = score.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = score.score,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
                     }
                 }
             }
         }
+
+        HorizontalDivider()
     }
 }
