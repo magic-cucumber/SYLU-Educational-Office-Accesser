@@ -1,21 +1,34 @@
 package top.kagg886.eoa.pages.main.home.exam.statistic
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
@@ -33,7 +46,7 @@ import top.kagg886.util.toFixed
  */
 
 @Serializable
-data class ExamStatisticRoute(val year: String,val term: String)
+data class ExamStatisticRoute(val year: String, val term: String)
 
 @Composable
 fun ExamStatisticScreen(route: ExamStatisticRoute) = DialogPageScaffold(
@@ -52,7 +65,7 @@ fun ExamStatisticScreen(route: ExamStatisticRoute) = DialogPageScaffold(
     val mainModel = mainViewModelOrNull() ?: return@DialogPageScaffold
 
     val model = viewModel {
-        ExamStatisticModel(mainModel.database,route.year,route.term)
+        ExamStatisticModel(mainModel.database, route.year, route.term)
     }
 
     val state by model.collectAsState()
@@ -62,167 +75,109 @@ fun ExamStatisticScreen(route: ExamStatisticRoute) = DialogPageScaffold(
 
 @Composable
 private fun ExamStatisticContent(state: ExamStatisticState) = when (state) {
-    is ExamStatisticState.Success -> {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 添加醒目的提示信息
-            CautionCard()
+    is ExamStatisticState.Success -> ExamStatisticSuccess(state)
 
-            // 当前学期统计
-            if (state.avgScore != null && state.avgPoint != null && state.avgScoreMultiPoint != null) {
-                StatisticTable(
-                    title = "当前学期统计",
-                    avgScore = state.avgScore,
-                    avgPoint = state.avgPoint,
-                    avgScoreMultiPoint = state.avgScoreMultiPoint
-                )
-            }
-
-            // 总体统计
-            StatisticTable(
-                title = "总体统计",
-                avgScore = state.allAvgScore,
-                avgPoint = state.allAvgPoint,
-                avgScoreMultiPoint = state.allAvgScoreMultiPoint
-            )
-        }
-    }
-
-    else -> {
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("加载中...")
-        }
-    }
-}
-
-@Composable
-private fun StatisticTable(
-    title: String,
-    avgScore: Double,
-    avgPoint: Double,
-    avgScoreMultiPoint: Double
-) {
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+    else -> Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            // 使用ListItem创建表格效果
-            StatisticListItem(
-                label = "平均学分",
-                value = avgScore.toFixed(2)
-            )
-
-            StatisticListItem(
-                label = "平均绩点",
-                value = avgPoint.toFixed(2)
-            )
-
-            StatisticListItem(
-                label = "学分绩点",
-                value = avgScoreMultiPoint.toFixed(2)
-            )
-        }
+        CircularProgressIndicator()
     }
 }
 
 @Composable
-private fun StatisticListItem(
+private fun ExamStatisticSuccess(state: ExamStatisticState.Success) {
+    val hasCurrentTerm = state.avgScore != null && state.avgPoint != null && state.avgScoreMultiPoint != null
+    var selection by remember { mutableIntStateOf(if (hasCurrentTerm) 0 else 1) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SegmentedButton(
+                selected = selection == 0,
+                onClick = { selection = 0 },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                enabled = hasCurrentTerm,
+                icon = {},
+                label = { Text("当前学期") }
+            )
+            SegmentedButton(
+                selected = selection == 1,
+                onClick = { selection = 1 },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                icon = {},
+                label = { Text("全部学期") }
+            )
+        }
+
+        val (avgScore, avgPoint, avgScoreMultiPoint) = if (selection == 0 && hasCurrentTerm) {
+            Triple(state.avgScore, state.avgPoint, state.avgScoreMultiPoint)
+        } else {
+            Triple(state.allAvgScore, state.allAvgPoint, state.allAvgScoreMultiPoint)
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            StatisticItem(label = "平均学分", value = avgScore.toFixed(2))
+            HorizontalDivider()
+            StatisticItem(label = "平均绩点", value = avgPoint.toFixed(2))
+            HorizontalDivider()
+            StatisticItem(label = "学分绩点", value = avgScoreMultiPoint.toFixed(2))
+        }
+
+        ReferenceText()
+    }
+}
+
+@Composable
+private fun StatisticItem(
     label: String,
     value: String
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge
-            )
-        },
-        trailingContent = {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium
-            )
-        },
-        colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent
-        ),
-        modifier = Modifier.fillMaxWidth()
-    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge
+        )
+    }
 }
 
 @Composable
-private fun CautionCard() {
+private fun ReferenceText() {
     val url = "https://jxw.sylu.edu.cn/xsxy/xsxyqk_cxXsxyqkIndex.html?gnmkdm=N105515&layout=default"
+    val linkStyle = TextLinkStyles(
+        style = SpanStyle(
+            color = MaterialTheme.colorScheme.primary,
+            textDecoration = TextDecoration.Underline
+        )
+    )
 
-    val annotatedText = buildAnnotatedString {
-        append("该数据仅做参考，真实数据请查看 ")
-
-        withLink(LinkAnnotation.Url(url)) {
-            withStyle(
-                style = SpanStyle(
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline
-                )
-            ) {
+    Text(
+        text = buildAnnotatedString {
+            append("数据仅供参考，真实数据请以 ")
+            withLink(LinkAnnotation.Url(url = url, styles = linkStyle)) {
                 append("教务系统")
             }
-        }
-    }
-
-    OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = Color(0xFFFF9800),
-                shape = RoundedCornerShape(12.dp)
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = Color(0xFFFFF8E1).copy(alpha = 0.3f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = "警告",
-                tint = Color(0xFFFF9800),
-                modifier = Modifier.size(20.dp)
-            )
-
-            Text(
-                text = annotatedText,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
+            append(" 为准")
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
