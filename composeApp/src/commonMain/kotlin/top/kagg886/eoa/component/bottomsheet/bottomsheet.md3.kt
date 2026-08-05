@@ -12,16 +12,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.internal.getString
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.paneTitle
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
@@ -45,12 +48,13 @@ fun BottomSheetPageScaffold(
     snack: ToasterState = rememberToasterState(),
     content: @Composable BottomSheetPageScaffoldScope.() -> Unit = {}
 ) = Box(Modifier.fillMaxSize()) {
-    val paneDescription = getString(Strings.BottomSheetPaneTitle)
-    val dragHandleDescription = getString(Strings.BottomSheetDragHandleDescription)
     val navigation = LocalNavController.current
     val scope = rememberCoroutineScope()
     val draggableState = remember { AnchoredDraggableState(SheetPosition.Hidden) }
     val animationSpec = tween<Float>(durationMillis = 320, easing = FastOutSlowInEasing)
+    val sheetShape = remember(draggableState) {
+        ProgressTopCornerShape { draggableState.offset }
+    }
     val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
         state = draggableState,
         positionalThreshold = { distance -> distance * 0.5f },
@@ -170,9 +174,8 @@ fun BottomSheetPageScaffold(
                         interactionSource = null,
                         indication = null,
                         onClick = {}
-                    )
-                    .semantics { paneTitle = paneDescription },
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    ),
+                shape = sheetShape,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
                 tonalElevation = 1.dp,
                 shadowElevation = 6.dp
@@ -215,7 +218,6 @@ fun BottomSheetPageScaffold(
                                     draggableState.animateTo(target, animationSpec)
                                 }
                             }
-                            .semantics { contentDescription = dragHandleDescription }
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -258,3 +260,30 @@ private enum class SheetPosition {
 
 private val SheetMaxWidth = 640.dp
 private val DragHandleContainerHeight = 24.dp
+private val SheetCornerRadius = 28.dp
+private val CornerMorphThreshold = 72.dp
+
+private class ProgressTopCornerShape(
+    private val sheetOffset: () -> Float
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val maxRadius = with(density) { SheetCornerRadius.toPx() }
+        val morphDistance = with(density) { CornerMorphThreshold.toPx() }
+        val offset = sheetOffset().takeUnless(Float::isNaN) ?: morphDistance
+        val radius = maxRadius * (offset / morphDistance).coerceIn(0f, 1f)
+        return Outline.Rounded(
+            RoundRect(
+                left = 0f,
+                top = 0f,
+                right = size.width,
+                bottom = size.height,
+                topLeftCornerRadius = CornerRadius(radius),
+                topRightCornerRadius = CornerRadius(radius)
+            )
+        )
+    }
+}
