@@ -281,7 +281,6 @@ private fun LogItem(log: AppLog) {
             ExpandableText(
                 text = log.message,
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
                 isExpanded = expand,
                 onExpandChange = { expand = it }
             )
@@ -291,7 +290,6 @@ private fun LogItem(log: AppLog) {
                 ExpandableText(
                     text = stacktrace,
                     style = MaterialTheme.typography.bodySmall,
-                    maxLines = 3,
                     color = MaterialTheme.colorScheme.error,
                     isExpanded = expand,
                     onExpandChange = { expand = it }

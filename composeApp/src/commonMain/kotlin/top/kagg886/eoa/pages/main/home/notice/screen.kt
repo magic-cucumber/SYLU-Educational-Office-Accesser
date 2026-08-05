@@ -32,6 +32,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.ExpandableText
 import top.kagg886.eoa.component.bottomsheet.BottomSheetPageScaffold
 import top.kagg886.eoa.pages.login.LoginRoute
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
@@ -84,6 +85,7 @@ fun SystemNoticeScreen() {
     SystemNoticeContent(
         state = state,
         onMarkAsRead = { notice -> model.markAsRead(notice) },
+        onExpandChange = { data, result -> model.toggleExpand(data, result) },
         onToggleIncludeAllClicked = { model.toggleIncludeAll() }
     )
 }
@@ -93,6 +95,7 @@ fun SystemNoticeScreen() {
 private fun SystemNoticeContent(
     state: SystemNoticeState,
     onMarkAsRead: (SystemNoticeEntity) -> Unit,
+    onExpandChange: (SystemNoticeEntity, Boolean) -> Unit,
     onToggleIncludeAllClicked: () -> Unit
 ) {
     BottomSheetPageScaffold {
@@ -166,9 +169,14 @@ private fun SystemNoticeContent(
                         }
 
                         items(notices) { notice ->
-                            NoticeItem(notice) {
-                                notice?.let { onMarkAsRead(it) }
-                            }
+                            NoticeItem(
+                                notice = notice,
+                                isContentExpanded = (state as? SystemNoticeState.Success)?.expandableNotices?.contains(
+                                    notice
+                                ) ?: false,
+                                onMarkAsRead = { notice?.let { onMarkAsRead(it) } },
+                                onExpandChange = { result -> notice?.let { onExpandChange(it, result) } },
+                            )
                             if (notice !== notices.lastOrNull()) {
                                 HorizontalDivider()
                             }
@@ -183,7 +191,9 @@ private fun SystemNoticeContent(
 @Composable
 private fun NoticeItem(
     notice: SystemNoticeEntity?,
-    onMarkAsRead: () -> Unit
+    isContentExpanded: Boolean = false,
+    onMarkAsRead: () -> Unit,
+    onExpandChange: (Boolean) -> Unit,
 ) {
     val showPlaceholder by remember(notice) {
         derivedStateOf { notice == null }
@@ -242,14 +252,16 @@ private fun NoticeItem(
         },
         supportingContent = {
             Column {
-                Text(
+                ExpandableText(
                     text = notice?.content ?: "正在加载通知内容...",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.placeholder(
                         visible = showPlaceholder,
                         highlight = PlaceholderHighlight.shimmer()
-                    )
+                    ),
+                    isExpanded = isContentExpanded,
+                    onExpandChange = onExpandChange
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(

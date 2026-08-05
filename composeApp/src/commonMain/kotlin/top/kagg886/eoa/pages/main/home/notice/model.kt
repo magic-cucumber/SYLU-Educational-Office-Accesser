@@ -1,11 +1,13 @@
 package top.kagg886.eoa.pages.main.home.notice
 
+import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.SystemNoticeEntity
@@ -81,6 +83,7 @@ class SystemNoticeModel(
             reduce {
                 SystemNoticeState.Success(
                     notices = notices,
+                    expandableNotices = SnapshotStateSet(),
                     includeAll = includeAll
                 )
             }
@@ -97,6 +100,19 @@ class SystemNoticeModel(
             setDataUnsafe(includeAll = !state.includeAll)
         }
     }
+
+    @OptIn(OrbitExperimental::class)
+    fun toggleExpand(data: SystemNoticeEntity, isExpand: Boolean) = intent {
+        runOn<SystemNoticeState.Success> {
+            val expand = state.expandableNotices as SnapshotStateSet
+            if (isExpand) {
+                expand.add(data)
+            } else {
+                expand.remove(data)
+            }
+        }
+    }
+
 
     @OptIn(OrbitExperimental::class)
     fun markAsRead(noticeId: SystemNoticeEntity) = intent {
@@ -166,6 +182,7 @@ sealed interface SystemNoticeState {
      */
     data class Success(
         val notices: List<SystemNoticeEntity>,
+        val expandableNotices: Set<SystemNoticeEntity>,
         override val includeAll: Boolean,
     ) : SystemNoticeState, HaveIncludeAllSettings
 
