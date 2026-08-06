@@ -51,7 +51,7 @@ fun BottomSheetPageScaffold(
     modifier: Modifier = Modifier,
     snack: ToasterState = rememberToasterState(),
     maxExpandedHeight: Dp = Dp.Unspecified,
-    initialPopupType: SheetPosition = SheetPosition.Expanded,
+    initialPopupType: SheetPosition = SheetPosition.PartiallyExpanded,
     popupTypeChangeRequest: (SheetPosition) -> Boolean = { true },
     content: @Composable BottomSheetPageScaffoldScope.() -> Unit = {}
 ) {
