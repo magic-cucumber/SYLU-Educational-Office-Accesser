@@ -65,16 +65,16 @@ fun CourseEditScreen(route: CourseEditRoute) {
     model.collectSideEffect {
         when (it) {
             is CourseEditSideEffect.Toast -> stack.showSnackBar(it.type, it.message)
-            is CourseEditSideEffect.NavigateBack -> nav.popBackStack()
+            CourseEditSideEffect.NavigateBack -> Unit
         }
     }
 
     CourseEditScreenContent(
+        model = model,
         state = state,
         snack = stack,
         onCourseModified = { model.modifyCourse(it) },
         onCourseInfoConfirmed = { model.confirmModifyCourse() },
-        onCourseInfoDismissed = { nav.popBackStack() },
         onAddRecord = { weekNumber, dayOfWeek, periodOfDay ->
             model.addRecord(
                 weekNumber,
@@ -92,11 +92,11 @@ fun CourseEditScreen(route: CourseEditRoute) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseEditScreenContent(
+    model: CourseEditModel,
     state: CourseEditState,
     snack: ToasterState,
     onCourseModified: (CourseEntity) -> Unit,
     onCourseInfoConfirmed: () -> Unit,
-    onCourseInfoDismissed: () -> Unit,
     onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
     onDeleteRecord: (CourseRecordEntity) -> Unit,
 
@@ -110,6 +110,12 @@ private fun CourseEditScreenContent(
         initialPopupType = SheetPosition.Expanded,
         popupTypeChangeRequest = { it != SheetPosition.PartiallyExpanded }
     ) {
+        model.collectSideEffect {
+            when (it) {
+                is CourseEditSideEffect.NavigateBack -> close()
+                else -> Unit
+            }
+        }
         Column(modifier = Modifier.fillMaxSize()) {
             TopAppBar(
                 windowInsets = WindowInsets(),
@@ -129,7 +135,9 @@ private fun CourseEditScreenContent(
                                 contentDescription = "Close"
                             )
                         },
-                        onBackPressed = { onCourseInfoDismissed() }
+                        onBackPressed = {
+                            close()
+                        }
                     )
                 },
                 actions = {
@@ -243,7 +251,7 @@ private fun CourseEditBasic(
                 name = it
             },
             label = { Text("课程名称") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
         )
 
         var teacherName by remember {

@@ -37,18 +37,32 @@ import kotlin.math.roundToInt
 /**
  * A bottom-sheet page which lives in the current composition instead of opening another window.
  * Its drag state is deliberately kept private so callers only provide static page content.
+ *
+ * @param initialPopupType the position the sheet animates to when first shown.
+ * Must not be [SheetPosition.Hidden]; if [SheetPosition.PartiallyExpanded] has no anchor
+ * (sheet taller than half the screen), it falls back to [SheetPosition.Expanded].
+ * @param popupTypeChangeRequest decides which positions the sheet may settle at:
+ * positions for which it returns `false` are excluded from the drag anchors,
+ * so neither gestures nor programmatic animations can reach them.
+ * It must at least allow [SheetPosition.Expanded].
  */
 @Composable
 fun BottomSheetPageScaffold(
     modifier: Modifier = Modifier,
     snack: ToasterState = rememberToasterState(),
     maxExpandedHeight: Dp = Dp.Unspecified,
-    initialPopupType: SheetPosition = SheetPosition.PartiallyExpanded,
+    initialPopupType: SheetPosition = SheetPosition.Expanded,
     popupTypeChangeRequest: (SheetPosition) -> Boolean = { true },
     content: @Composable BottomSheetPageScaffoldScope.() -> Unit = {}
 ) {
     require(maxExpandedHeight == Dp.Unspecified || maxExpandedHeight > 0.dp) {
         "maxExpandedHeight must be positive or Dp.Unspecified."
+    }
+    require(initialPopupType != SheetPosition.Hidden) {
+        "initialPopupType must not be SheetPosition.Hidden."
+    }
+    require(popupTypeChangeRequest(SheetPosition.Expanded)) {
+        "popupTypeChangeRequest must allow SheetPosition.Expanded."
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -83,15 +97,23 @@ fun BottomSheetPageScaffold(
 
         val onClose: () -> Unit = {
             val target = when (draggableState.settledValue) {
-                SheetPosition.Expanded -> {
-                    if (draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded)) {
+                SheetPosition.Expanded -> when {
+                    draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded) ->
                         SheetPosition.PartiallyExpanded
-                    } else {
+
+                    draggableState.anchors.hasPositionFor(SheetPosition.Hidden) ->
                         SheetPosition.Hidden
-                    }
+
+                    else -> null
                 }
 
-                SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
+                SheetPosition.PartiallyExpanded ->
+                    if (draggableState.anchors.hasPositionFor(SheetPosition.Hidden)) {
+                        SheetPosition.Hidden
+                    } else {
+                        null
+                    }
+
                 SheetPosition.Hidden -> null
             }
             target?.let {
@@ -185,27 +207,41 @@ fun BottomSheetPageScaffold(
                             val expandedOffset = max(0f, fullHeightPx - sheetSize.height)
                             val hasPartialAnchor = sheetSize.height > fullHeightPx / 2f
                             val anchors = DraggableAnchors {
-                                SheetPosition.Hidden at fullHeightPx
-                                if (hasPartialAnchor) {
+                                if (popupTypeChangeRequest(SheetPosition.Hidden)) {
+                                    SheetPosition.Hidden at fullHeightPx
+                                }
+                                if (hasPartialAnchor &&
+                                    popupTypeChangeRequest(SheetPosition.PartiallyExpanded)
+                                ) {
                                     SheetPosition.PartiallyExpanded at fullHeightPx / 2f
                                 }
                                 SheetPosition.Expanded at expandedOffset
                             }
-                            val target = when (draggableState.targetValue) {
-                                SheetPosition.Hidden -> SheetPosition.Hidden
-                                SheetPosition.PartiallyExpanded -> {
-                                    if (hasPartialAnchor) SheetPosition.PartiallyExpanded
-                                    else SheetPosition.Expanded
-                                }
+                            val target = when {
+                                anchors.hasPositionFor(draggableState.targetValue) ->
+                                    draggableState.targetValue
 
-                                SheetPosition.Expanded -> SheetPosition.Expanded
+                                anchors.hasPositionFor(SheetPosition.Expanded) ->
+                                    SheetPosition.Expanded
+
+                                anchors.hasPositionFor(SheetPosition.PartiallyExpanded) ->
+                                    SheetPosition.PartiallyExpanded
+
+                                else -> SheetPosition.Hidden
                             }
                             draggableState.updateAnchors(anchors, target)
                             if (initialTarget == null) {
-                                initialTarget = if (hasPartialAnchor) {
-                                    SheetPosition.PartiallyExpanded
-                                } else {
-                                    SheetPosition.Expanded
+                                initialTarget = when (initialPopupType) {
+                                    SheetPosition.Hidden -> error("unreachable")
+                                    SheetPosition.PartiallyExpanded -> {
+                                        if (anchors.hasPositionFor(SheetPosition.PartiallyExpanded)) {
+                                            SheetPosition.PartiallyExpanded
+                                        } else {
+                                            SheetPosition.Expanded
+                                        }
+                                    }
+
+                                    SheetPosition.Expanded -> SheetPosition.Expanded
                                 }
                             }
                         }
@@ -240,18 +276,29 @@ fun BottomSheetPageScaffold(
                                     indication = null
                                 ) {
                                     val target = when (draggableState.settledValue) {
-                                        SheetPosition.Expanded -> {
+                                        SheetPosition.Expanded -> when {
+                                            draggableState.anchors.hasPositionFor(
+                                                SheetPosition.PartiallyExpanded
+                                            ) -> SheetPosition.PartiallyExpanded
+
+                                            draggableState.anchors.hasPositionFor(
+                                                SheetPosition.Hidden
+                                            ) -> SheetPosition.Hidden
+
+                                            else -> return@clickable
+                                        }
+
+                                        SheetPosition.PartiallyExpanded -> {
                                             if (draggableState.anchors.hasPositionFor(
-                                                    SheetPosition.PartiallyExpanded
+                                                    SheetPosition.Hidden
                                                 )
                                             ) {
-                                                SheetPosition.PartiallyExpanded
-                                            } else {
                                                 SheetPosition.Hidden
+                                            } else {
+                                                return@clickable
                                             }
                                         }
 
-                                        SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
                                         SheetPosition.Hidden -> return@clickable
                                     }
                                     scope.launch {
