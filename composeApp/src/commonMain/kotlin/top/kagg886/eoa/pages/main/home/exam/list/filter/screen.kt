@@ -23,11 +23,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.component.drawer.DrawerSheetPageScaffold
@@ -60,14 +64,20 @@ fun ExamListFilterScreen() = ExamListScreen {
         //avoid compose
         var singleKeyword by remember { mutableStateOf(successState?.keyword ?: "") }
 
-        LaunchedEffect(key1 = singleKeyword) {
-            model.filterPassType(
-                keyword = singleKeyword,
-                type = successState?.passFilter ?: PassFilter.ALL,
-                degree = successState?.degreeFilter ?: DegreeFilter.ALL,
-                currentYearIndex = successState?.currentYearIndex,
-                currentTermIndex = successState?.currentTermIndex
-            )
+        val latestSuccessState by rememberUpdatedState(successState)
+
+        LaunchedEffect(Unit) {
+            snapshotFlow { singleKeyword }
+                .drop(1)
+                .collectLatest { keyword ->
+                    model.filterPassType(
+                        keyword = keyword,
+                        type = latestSuccessState?.passFilter ?: PassFilter.ALL,
+                        degree = latestSuccessState?.degreeFilter ?: DegreeFilter.ALL,
+                        currentYearIndex = latestSuccessState?.currentYearIndex,
+                        currentTermIndex = latestSuccessState?.currentTermIndex
+                    )
+                }
         }
 
         ExamListScreenDrawer(

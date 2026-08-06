@@ -64,6 +64,7 @@ fun AISettingsEditScreen(route: AISettingsEditRoute) {
                 Column(Modifier.matchContent()) {
                     @OptIn(ExperimentalMaterial3Api::class)
                     TopAppBar(
+                        windowInsets = WindowInsets(),
                         title = { },
                         navigationIcon = {
                             BackIconButton(
@@ -119,6 +120,7 @@ private fun LLMProviderEditPage(
     Column(modifier) {
         @OptIn(ExperimentalMaterial3Api::class)
         TopAppBar(
+            windowInsets = WindowInsets(),
             title = { Text(if (initial.uuid.isBlank()) "添加AI模型" else "编辑AI模型") },
             navigationIcon = {
                 BackIconButton(
