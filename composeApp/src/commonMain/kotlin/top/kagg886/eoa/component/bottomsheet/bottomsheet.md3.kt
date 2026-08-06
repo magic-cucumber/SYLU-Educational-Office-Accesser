@@ -15,16 +15,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
@@ -47,230 +42,247 @@ import kotlin.math.roundToInt
 fun BottomSheetPageScaffold(
     modifier: Modifier = Modifier,
     snack: ToasterState = rememberToasterState(),
+    maxExpandedHeight: Dp = Dp.Unspecified,
     content: @Composable BottomSheetPageScaffoldScope.() -> Unit = {}
-) = Box(Modifier.fillMaxSize()) {
-    val navigation = LocalNavController.current
-    val scope = rememberCoroutineScope()
-    val draggableState = remember { AnchoredDraggableState(SheetPosition.Hidden) }
-    val animationSpec = tween<Float>(durationMillis = 320, easing = FastOutSlowInEasing)
-    val sheetShape = remember(draggableState) {
-        ProgressTopCornerShape { draggableState.offset }
-    }
-    val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
-        state = draggableState,
-        positionalThreshold = { distance -> distance * 0.5f },
-        animationSpec = animationSpec
-    )
-    var initialTarget by remember { mutableStateOf<SheetPosition?>(null) }
-    var dismissingFromScrim by remember { mutableStateOf(false) }
-
-    LaunchedEffect(initialTarget) {
-        initialTarget?.let { draggableState.animateTo(it, animationSpec) }
+) {
+    require(maxExpandedHeight == Dp.Unspecified || maxExpandedHeight > 0.dp) {
+        "maxExpandedHeight must be positive or Dp.Unspecified."
     }
 
-    LaunchedEffect(draggableState) {
-        var hasBeenVisible = false
-        snapshotFlow { draggableState.settledValue }.collect { value ->
-            if (value == SheetPosition.Hidden) {
-                if (hasBeenVisible && !dismissingFromScrim) navigation.popBackStack()
-            } else {
-                hasBeenVisible = true
-            }
+    Box(Modifier.fillMaxSize()) {
+        val navigation = LocalNavController.current
+        val scope = rememberCoroutineScope()
+        val draggableState = remember { AnchoredDraggableState(SheetPosition.Hidden) }
+        val animationSpec = tween<Float>(durationMillis = 320, easing = FastOutSlowInEasing)
+        val sheetShape =
+            RoundedCornerShape(topStart = SheetCornerRadius, topEnd = SheetCornerRadius)
+        val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
+            state = draggableState,
+            positionalThreshold = { distance -> distance * 0.5f },
+            animationSpec = animationSpec
+        )
+        var initialTarget by remember { mutableStateOf<SheetPosition?>(null) }
+        var dismissingFromScrim by remember { mutableStateOf(false) }
+
+        LaunchedEffect(initialTarget) {
+            initialTarget?.let { draggableState.animateTo(it, animationSpec) }
         }
-    }
 
-    BackHandler(enabled = draggableState.settledValue != SheetPosition.Hidden) {
-        val target = when (draggableState.settledValue) {
-            SheetPosition.Expanded -> {
-                if (draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded)) {
-                    SheetPosition.PartiallyExpanded
+        LaunchedEffect(draggableState) {
+            var hasBeenVisible = false
+            snapshotFlow { draggableState.settledValue }.collect { value ->
+                if (value == SheetPosition.Hidden) {
+                    if (hasBeenVisible && !dismissingFromScrim) navigation.popBackStack()
                 } else {
-                    SheetPosition.Hidden
+                    hasBeenVisible = true
                 }
             }
-
-            SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
-            SheetPosition.Hidden -> null
         }
-        target?.let {
-            scope.launch {
-                draggableState.animateTo(it, animationSpec)
-            }
-        }
-    }
 
-    CompositionLocalProvider(LocalSnackBarHost provides snack) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    interactionSource = null,
-                    indication = null
-                ) {
-                    if (!dismissingFromScrim) {
-                        dismissingFromScrim = true
-                        scope.launch {
-                            try {
-                                if (draggableState.anchors.hasPositionFor(SheetPosition.Hidden)) {
-                                    draggableState.animateTo(SheetPosition.Hidden, animationSpec)
-                                }
-                            } finally {
-                                navigation.popBackStack()
-                            }
-                        }
+        BackHandler(enabled = draggableState.settledValue != SheetPosition.Hidden) {
+            val target = when (draggableState.settledValue) {
+                SheetPosition.Expanded -> {
+                    if (draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded)) {
+                        SheetPosition.PartiallyExpanded
+                    } else {
+                        SheetPosition.Hidden
                     }
-                },
-            contentAlignment = Alignment.TopCenter
-        ) {
-            val fullHeightPx = constraints.maxHeight.toFloat()
-            val density = LocalDensity.current
-            val dragHandleHeightPx = with(density) { DragHandleContainerHeight.toPx() }
-            val bottomInsetPx = WindowInsets.safeDrawing.getBottom(density).toFloat()
-            val initialContentHeight = (
-                    fullHeightPx / 2f - dragHandleHeightPx - bottomInsetPx
-                    ).roundToInt().coerceAtLeast(0)
-            val sheetScope = remember(
-                draggableState,
-                fullHeightPx,
-                dragHandleHeightPx,
-                bottomInsetPx,
-                initialContentHeight
-            ) {
-                BottomSheetPageScaffoldScopeImpl(
-                    minimumContentHeight = initialContentHeight
-                ) {
-                    val sheetOffset = draggableState.offset
-                        .takeUnless(Float::isNaN)
-                        ?: fullHeightPx
-                    (fullHeightPx - sheetOffset - dragHandleHeightPx - bottomInsetPx)
-                        .roundToInt()
-                        .coerceAtLeast(0)
+                }
+
+                SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
+                SheetPosition.Hidden -> null
+            }
+            target?.let {
+                scope.launch {
+                    draggableState.animateTo(it, animationSpec)
                 }
             }
+        }
 
-            Surface(
-                modifier = modifier
-                    .widthIn(max = SheetMaxWidth)
-                    .fillMaxWidth()
-                    .height(maxHeight)
-                    .offset {
-                        IntOffset(
-                            x = 0,
-                            y = draggableState.offset
-                                .takeUnless(Float::isNaN)
-                                ?.roundToInt()
-                                ?: constraints.maxHeight
-                        )
-                    }
-                    .onSizeChanged { sheetSize ->
-                        val expandedOffset = max(0f, fullHeightPx - sheetSize.height)
-                        val hasPartialAnchor = sheetSize.height > fullHeightPx / 2f
-                        val anchors = DraggableAnchors {
-                            SheetPosition.Hidden at fullHeightPx
-                            if (hasPartialAnchor) {
-                                SheetPosition.PartiallyExpanded at fullHeightPx / 2f
-                            }
-                            SheetPosition.Expanded at expandedOffset
-                        }
-                        val target = when (draggableState.targetValue) {
-                            SheetPosition.Hidden -> SheetPosition.Hidden
-                            SheetPosition.PartiallyExpanded -> {
-                                if (hasPartialAnchor) SheetPosition.PartiallyExpanded
-                                else SheetPosition.Expanded
-                            }
-
-                            SheetPosition.Expanded -> SheetPosition.Expanded
-                        }
-                        draggableState.updateAnchors(anchors, target)
-                        if (initialTarget == null) {
-                            initialTarget = if (hasPartialAnchor) {
-                                SheetPosition.PartiallyExpanded
-                            } else {
-                                SheetPosition.Expanded
-                            }
-                        }
-                    }
-                    .imePadding()
+        CompositionLocalProvider(LocalSnackBarHost provides snack) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
                     .clickable(
                         interactionSource = null,
-                        indication = null,
-                        onClick = {}
-                    ),
-                shape = sheetShape,
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                tonalElevation = 1.dp,
-                shadowElevation = 6.dp
-            ) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(
-                            WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
-                        )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .anchoredDraggable(
-                                state = draggableState,
-                                orientation = Orientation.Vertical,
-                                flingBehavior = flingBehavior
-                            )
-                            .clickable(
-                                interactionSource = null,
-                                indication = null
-                            ) {
-                                val target = when (draggableState.settledValue) {
-                                    SheetPosition.Expanded -> {
-                                        if (draggableState.anchors.hasPositionFor(
-                                                SheetPosition.PartiallyExpanded
-                                            )
-                                        ) {
-                                            SheetPosition.PartiallyExpanded
-                                        } else {
-                                            SheetPosition.Hidden
-                                        }
+                        indication = null
+                    ) {
+                        if (!dismissingFromScrim) {
+                            dismissingFromScrim = true
+                            scope.launch {
+                                try {
+                                    if (draggableState.anchors.hasPositionFor(SheetPosition.Hidden)) {
+                                        draggableState.animateTo(
+                                            SheetPosition.Hidden,
+                                            animationSpec
+                                        )
                                     }
-
-                                    SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
-                                    SheetPosition.Hidden -> return@clickable
-                                }
-                                scope.launch {
-                                    draggableState.animateTo(target, animationSpec)
+                                } finally {
+                                    navigation.popBackStack()
                                 }
                             }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                        }
+                    },
+                contentAlignment = Alignment.TopCenter
+            ) {
+                val fullHeightPx = constraints.maxHeight.toFloat()
+                val density = LocalDensity.current
+                val sheetMaxHeight =
+                    if (maxExpandedHeight != Dp.Unspecified) minOf(
+                        maxHeight,
+                        maxExpandedHeight
+                    ) else maxHeight
+                val sheetMaxHeightPx = with(density) { sheetMaxHeight.toPx() }
+                val dragHandleHeightPx = with(density) { DragHandleContainerHeight.toPx() }
+                val bottomInsetPx = WindowInsets.safeDrawing.getBottom(density).toFloat()
+                val initialContentHeight = (
+                        minOf(fullHeightPx / 2f, sheetMaxHeightPx) -
+                                dragHandleHeightPx -
+                                bottomInsetPx
+                        ).roundToInt().coerceAtLeast(0)
+                val sheetScope = remember(
+                    draggableState,
+                    fullHeightPx,
+                    dragHandleHeightPx,
+                    bottomInsetPx,
+                    initialContentHeight
+                ) {
+                    BottomSheetPageScaffoldScopeImpl(
+                        minimumContentHeight = initialContentHeight
+                    ) {
+                        val sheetOffset = draggableState.offset
+                            .takeUnless(Float::isNaN)
+                            ?: fullHeightPx
+                        (fullHeightPx - sheetOffset - dragHandleHeightPx - bottomInsetPx)
+                            .roundToInt()
+                            .coerceAtLeast(0)
+                    }
+                }
+
+                Surface(
+                    modifier = modifier
+                        .widthIn(max = SheetMaxWidth)
+                        .fillMaxWidth()
+                        .height(sheetMaxHeight)
+                        .offset {
+                            IntOffset(
+                                x = 0,
+                                y = draggableState.offset
+                                    .takeUnless(Float::isNaN)
+                                    ?.roundToInt()
+                                    ?: constraints.maxHeight
+                            )
+                        }
+                        .onSizeChanged { sheetSize ->
+                            val expandedOffset = max(0f, fullHeightPx - sheetSize.height)
+                            val hasPartialAnchor = sheetSize.height > fullHeightPx / 2f
+                            val anchors = DraggableAnchors {
+                                SheetPosition.Hidden at fullHeightPx
+                                if (hasPartialAnchor) {
+                                    SheetPosition.PartiallyExpanded at fullHeightPx / 2f
+                                }
+                                SheetPosition.Expanded at expandedOffset
+                            }
+                            val target = when (draggableState.targetValue) {
+                                SheetPosition.Hidden -> SheetPosition.Hidden
+                                SheetPosition.PartiallyExpanded -> {
+                                    if (hasPartialAnchor) SheetPosition.PartiallyExpanded
+                                    else SheetPosition.Expanded
+                                }
+
+                                SheetPosition.Expanded -> SheetPosition.Expanded
+                            }
+                            draggableState.updateAnchors(anchors, target)
+                            if (initialTarget == null) {
+                                initialTarget = if (hasPartialAnchor) {
+                                    SheetPosition.PartiallyExpanded
+                                } else {
+                                    SheetPosition.Expanded
+                                }
+                            }
+                        }
+                        .imePadding()
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                            onClick = {}
+                        ),
+                    shape = sheetShape,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    tonalElevation = 1.dp,
+                    shadowElevation = 6.dp
+                ) {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+                            )
                     ) {
                         Box(
-                            Modifier
-                                .width(32.dp)
-                                .height(4.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                        alpha = 0.4f
-                                    ),
-                                    shape = RoundedCornerShape(2.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .anchoredDraggable(
+                                    state = draggableState,
+                                    orientation = Orientation.Vertical,
+                                    flingBehavior = flingBehavior
                                 )
-                        )
+                                .clickable(
+                                    interactionSource = null,
+                                    indication = null
+                                ) {
+                                    val target = when (draggableState.settledValue) {
+                                        SheetPosition.Expanded -> {
+                                            if (draggableState.anchors.hasPositionFor(
+                                                    SheetPosition.PartiallyExpanded
+                                                )
+                                            ) {
+                                                SheetPosition.PartiallyExpanded
+                                            } else {
+                                                SheetPosition.Hidden
+                                            }
+                                        }
+
+                                        SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
+                                        SheetPosition.Hidden -> return@clickable
+                                    }
+                                    scope.launch {
+                                        draggableState.animateTo(target, animationSpec)
+                                    }
+                                }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                Modifier
+                                    .width(32.dp)
+                                    .height(4.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.4f
+                                        ),
+                                        shape = RoundedCornerShape(2.dp)
+                                    )
+                            )
+                        }
+                        sheetScope.content()
                     }
-                    sheetScope.content()
                 }
             }
         }
+
+        val model = rootViewModel()
+        val rootState by model.collectAsState()
+        val theme by rootState.theme.collectAsState()
+        val dark = theme == AppSettingsMMKVType.AppTheme.Dark ||
+                (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
+
+        EOAToaster(
+            state = snack,
+            dark = dark,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
-
-    val model = rootViewModel()
-    val rootState by model.collectAsState()
-    val theme by rootState.theme.collectAsState()
-    val dark = theme == AppSettingsMMKVType.AppTheme.Dark ||
-            (theme == AppSettingsMMKVType.AppTheme.SystemDefault && isSystemInDarkTheme())
-
-    EOAToaster(
-        state = snack,
-        dark = dark,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
 }
 
 private enum class SheetPosition {
@@ -282,29 +294,3 @@ private enum class SheetPosition {
 private val SheetMaxWidth = 640.dp
 private val DragHandleContainerHeight = 24.dp
 private val SheetCornerRadius = 28.dp
-private val CornerMorphThreshold = 72.dp
-
-private class ProgressTopCornerShape(
-    private val sheetOffset: () -> Float
-) : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density
-    ): Outline {
-        val maxRadius = with(density) { SheetCornerRadius.toPx() }
-        val morphDistance = with(density) { CornerMorphThreshold.toPx() }
-        val offset = sheetOffset().takeUnless(Float::isNaN) ?: morphDistance
-        val radius = maxRadius * (offset / morphDistance).coerceIn(0f, 1f)
-        return Outline.Rounded(
-            RoundRect(
-                left = 0f,
-                top = 0f,
-                right = size.width,
-                bottom = size.height,
-                topLeftCornerRadius = CornerRadius(radius),
-                topRightCornerRadius = CornerRadius(radius)
-            )
-        )
-    }
-}

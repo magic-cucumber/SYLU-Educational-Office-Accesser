@@ -21,6 +21,12 @@ import top.kagg886.eoa.pages.main.MainRoute
 @Composable
 fun BackIconButton(
     nav: NavHostController = LocalNavController.current,
+    icon: @Composable () -> Unit = {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = "返回"
+        )
+    },
     modifier: Modifier = Modifier
 ) {
     val entryList by nav.currentBackStack.collectAsState()
@@ -37,11 +43,7 @@ fun BackIconButton(
             nav.popBackStack()
         },
         enabled = backButtonEnabled,
-        modifier = modifier
-    ) {
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-            contentDescription = "返回"
-        )
-    }
+        modifier = modifier,
+        content = icon
+    )
 }

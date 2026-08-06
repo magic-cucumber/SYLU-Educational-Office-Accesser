@@ -1,10 +1,12 @@
 package top.kagg886.eoa.pages.main.home.notice
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
@@ -15,10 +17,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
@@ -98,11 +103,24 @@ private fun SystemNoticeContent(
     onExpandChange: (SystemNoticeEntity, Boolean) -> Unit,
     onToggleIncludeAllClicked: () -> Unit
 ) {
-    BottomSheetPageScaffold {
-        Column(modifier = Modifier.fillMaxWidth().matchContent()) {
+    BottomSheetPageScaffold(maxExpandedHeight = LocalWindowInfo.current.containerDpSize.height * 0.8f) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .matchContent()
+        ) {
             TopAppBar(
+                windowInsets = WindowInsets(),
                 title = { Text("系统通知") },
-                navigationIcon = { BackIconButton() },
+                navigationIcon = {
+                    BackIconButton(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close"
+                            )
+                        }
+                    )
+                },
                 actions = {
                     if (state is SystemNoticeState.HaveIncludeAllSettings) {
                         TextButton(onClick = onToggleIncludeAllClicked) {
@@ -175,7 +193,14 @@ private fun SystemNoticeContent(
                                     notice
                                 ) ?: false,
                                 onMarkAsRead = { notice?.let { onMarkAsRead(it) } },
-                                onExpandChange = { result -> notice?.let { onExpandChange(it, result) } },
+                                onExpandChange = { result ->
+                                    notice?.let {
+                                        onExpandChange(
+                                            it,
+                                            result
+                                        )
+                                    }
+                                },
                             )
                             if (notice !== notices.lastOrNull()) {
                                 HorizontalDivider()
@@ -188,6 +213,7 @@ private fun SystemNoticeContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NoticeItem(
     notice: SystemNoticeEntity?,
@@ -201,6 +227,9 @@ private fun NoticeItem(
 
     ListItem(
         modifier = Modifier.fillMaxWidth(),
+        colors = ListItemDefaults.colors(
+            containerColor = BottomSheetDefaults.ContainerColor
+        ),
         leadingContent = {
             Box(
                 modifier = Modifier.size(40.dp),
