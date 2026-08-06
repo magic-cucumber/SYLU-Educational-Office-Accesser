@@ -23,14 +23,15 @@ fun BackIconButton(
         )
     },
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onBackPressed: (NavHostController) -> Unit = { it.popBackStack() }
 ) {
     val entryList by nav.currentBackStack.collectAsState()
     val currentEntry by nav.currentBackStackEntryFlow.collectAsState(null)
 
-    val backButtonEnabled by remember(entryList, currentEntry) {
+    val backButtonEnabled by remember(entryList, currentEntry,enabled) {
         derivedStateOf {
-            entryList.size > 1 && currentEntry != null
+            entryList.size > 1 && currentEntry != null && enabled
         }
     }
 
@@ -38,6 +39,6 @@ fun BackIconButton(
         onClick = { onBackPressed(nav) },
         enabled = backButtonEnabled,
         modifier = modifier,
-        content = icon
+        content = icon,
     )
 }

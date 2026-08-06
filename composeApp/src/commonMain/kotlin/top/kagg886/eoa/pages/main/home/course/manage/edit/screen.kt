@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,8 +36,15 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dokar.sonner.ToasterState
@@ -52,11 +60,13 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.LLMProviderEntity
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.bottomsheet.BottomSheetPageScaffold
 import top.kagg886.eoa.component.bottomsheet.SheetPosition
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
 import top.kagg886.eoa.util.showSnackBar
 
 //新增为null，否则为id
@@ -725,6 +735,58 @@ private fun CourseEditAI(
     val aiInputEnabled = aiGenerating == null && providerSelectorEnabled
 
     Column(Modifier.verticalScroll(rememberScrollState())) {
+        Spacer(Modifier.height(16.dp))
+
+        if (!providerSelectorEnabled) {
+            val nav = LocalNavController.current
+            val theme = MaterialTheme.colorScheme
+            Card(
+                colors = CardDefaults.cardColors(containerColor = theme.errorContainer),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = theme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(SpanStyle(color = theme.onErrorContainer)) {
+                                append("当前未配置AI模型，")
+                            }
+                            withLink(
+                                link = LinkAnnotation.Clickable(
+                                    tag = "ai_settings",
+                                    styles = TextLinkStyles(
+                                        style = SpanStyle(
+                                            color = theme.error,
+                                            textDecoration = TextDecoration.Underline
+                                        ),
+                                        pressedStyle = SpanStyle(
+                                            color = theme.error.copy(alpha = 0.8f),
+                                            textDecoration = TextDecoration.Underline
+                                        )
+                                    ),
+                                    linkInteractionListener = {
+                                        nav.navigate(AISettingsRoute)
+                                    }
+                                )
+                            ) {
+                                append("点击进行配置")
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
         ExposedDropdownMenuBox(
             expanded = providerMenuExpanded,

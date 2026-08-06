@@ -36,6 +36,7 @@ import top.kagg886.util.asKtorLogger
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.io.encoding.Base64
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid

@@ -68,35 +68,15 @@ fun BottomSheetPageScaffold(
     Box(Modifier.fillMaxSize()) {
         val navigation = LocalNavController.current
         val scope = rememberCoroutineScope()
-        val draggableState = remember { AnchoredDraggableState(SheetPosition.Hidden) }
         val animationSpec = tween<Float>(durationMillis = 320, easing = FastOutSlowInEasing)
         val sheetShape =
             RoundedCornerShape(topStart = SheetCornerRadius, topEnd = SheetCornerRadius)
-        val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
-            state = draggableState,
-            positionalThreshold = { distance -> distance * 0.5f },
-            animationSpec = animationSpec
-        )
-        var initialTarget by remember { mutableStateOf<SheetPosition?>(null) }
-        var dismissingFromScrim by remember { mutableStateOf(false) }
+        val allowProgrammaticTransition = remember { mutableStateOf(false) }
+        val popupTypeChangeRequestState = rememberUpdatedState(popupTypeChangeRequest)
+        lateinit var draggableState: AnchoredDraggableState<SheetPosition>
 
-        LaunchedEffect(initialTarget) {
-            initialTarget?.let { draggableState.animateTo(it, animationSpec) }
-        }
-
-        LaunchedEffect(draggableState) {
-            var hasBeenVisible = false
-            snapshotFlow { draggableState.settledValue }.collect { value ->
-                if (value == SheetPosition.Hidden) {
-                    if (hasBeenVisible && !dismissingFromScrim) navigation.popBackStack()
-                } else {
-                    hasBeenVisible = true
-                }
-            }
-        }
-
-        val onClose: () -> Unit = {
-            val target = when (draggableState.settledValue) {
+        fun onClose(targetOverride: SheetPosition? = null): Boolean {
+            val target = targetOverride ?: when (draggableState.settledValue) {
                 SheetPosition.Expanded -> when {
                     draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded) ->
                         SheetPosition.PartiallyExpanded
@@ -116,9 +96,63 @@ fun BottomSheetPageScaffold(
 
                 SheetPosition.Hidden -> null
             }
-            target?.let {
+            target ?: return false
+            if (!popupTypeChangeRequestState.value(target)) return false
+
+            if (targetOverride == null) {
                 scope.launch {
-                    draggableState.animateTo(it, animationSpec)
+                    allowProgrammaticTransition.value = true
+                    try {
+                        draggableState.animateTo(target, animationSpec)
+                    } finally {
+                        allowProgrammaticTransition.value = false
+                    }
+                }
+            }
+            return true
+        }
+
+        @Suppress("DEPRECATION")
+        val state = remember {
+            AnchoredDraggableState(
+                initialValue = SheetPosition.Hidden,
+                confirmValueChange = { target ->
+                    if (allowProgrammaticTransition.value) {
+                        true
+                    } else {
+                        val current = draggableState.settledValue
+                        val isClosing = when (current) {
+                            SheetPosition.Expanded ->
+                                target == SheetPosition.PartiallyExpanded ||
+                                        target == SheetPosition.Hidden
+
+                            SheetPosition.PartiallyExpanded -> target == SheetPosition.Hidden
+                            SheetPosition.Hidden -> false
+                        }
+                        if (isClosing) onClose(target) else true
+                    }
+                }
+            )
+        }
+        draggableState = state
+        val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
+            state = draggableState,
+            positionalThreshold = { distance -> distance * 0.5f },
+            animationSpec = animationSpec
+        )
+        var initialTarget by remember { mutableStateOf<SheetPosition?>(null) }
+
+        LaunchedEffect(initialTarget) {
+            initialTarget?.let { draggableState.animateTo(it, animationSpec) }
+        }
+
+        LaunchedEffect(draggableState) {
+            var hasBeenVisible = false
+            snapshotFlow { draggableState.settledValue }.collect { value ->
+                if (value == SheetPosition.Hidden) {
+                    if (hasBeenVisible) navigation.popBackStack()
+                } else {
+                    hasBeenVisible = true
                 }
             }
         }
@@ -133,24 +167,9 @@ fun BottomSheetPageScaffold(
                     .fillMaxSize()
                     .clickable(
                         interactionSource = null,
-                        indication = null
-                    ) {
-                        if (!dismissingFromScrim) {
-                            dismissingFromScrim = true
-                            scope.launch {
-                                try {
-                                    if (draggableState.anchors.hasPositionFor(SheetPosition.Hidden)) {
-                                        draggableState.animateTo(
-                                            SheetPosition.Hidden,
-                                            animationSpec
-                                        )
-                                    }
-                                } finally {
-                                    navigation.popBackStack()
-                                }
-                            }
-                        }
-                    },
+                        indication = null,
+                        onClick = { onClose() }
+                    ),
                 contentAlignment = Alignment.TopCenter
             ) {
                 val fullHeightPx = constraints.maxHeight.toFloat()
@@ -185,7 +204,7 @@ fun BottomSheetPageScaffold(
                                 .roundToInt()
                                 .coerceAtLeast(0)
                         },
-                        onClose = onClose,
+                        onClose = { onClose() },
                     )
                 }
 
@@ -275,35 +294,7 @@ fun BottomSheetPageScaffold(
                                     interactionSource = null,
                                     indication = null
                                 ) {
-                                    val target = when (draggableState.settledValue) {
-                                        SheetPosition.Expanded -> when {
-                                            draggableState.anchors.hasPositionFor(
-                                                SheetPosition.PartiallyExpanded
-                                            ) -> SheetPosition.PartiallyExpanded
-
-                                            draggableState.anchors.hasPositionFor(
-                                                SheetPosition.Hidden
-                                            ) -> SheetPosition.Hidden
-
-                                            else -> return@clickable
-                                        }
-
-                                        SheetPosition.PartiallyExpanded -> {
-                                            if (draggableState.anchors.hasPositionFor(
-                                                    SheetPosition.Hidden
-                                                )
-                                            ) {
-                                                SheetPosition.Hidden
-                                            } else {
-                                                return@clickable
-                                            }
-                                        }
-
-                                        SheetPosition.Hidden -> return@clickable
-                                    }
-                                    scope.launch {
-                                        draggableState.animateTo(target, animationSpec)
-                                    }
+                                    onClose()
                                 }
                                 .padding(vertical = 10.dp),
                             contentAlignment = Alignment.Center

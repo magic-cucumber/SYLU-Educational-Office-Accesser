@@ -23,7 +23,13 @@ data object AISettingsRoute
 
 val installAISettingsRoute: NavGraphBuilder.() -> Unit = {
     composable<AISettingsListRoute> { AISettingsScreen() }
-    dialog<AISettingsEditRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false,dismissOnClickOutside = false)) {
+    dialog<AISettingsEditRoute>(
+        dialogProperties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnClickOutside = false,
+            dismissOnBackPress = false
+        )
+    ) {
         AISettingsEditScreen(
             it.toRoute()
         )
