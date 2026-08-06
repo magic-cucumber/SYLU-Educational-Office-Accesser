@@ -2,6 +2,15 @@
 
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -15,6 +24,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -22,7 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
@@ -378,9 +400,121 @@ private fun CourseEditTime(
             val weekNumber = weekNumberIndex + 1
             val weekStartDate = startDate.plus(weekNumberIndex, DateTimeUnit.WEEK)
 
+            // 扫选模式状态：长按进入，扫过自动切换，松手退出
+            var sweepMode by remember { mutableStateOf(false) }
+            val sweptCells = remember { mutableSetOf<Pair<Int, Int>>() }
+            val cellBounds = remember { mutableMapOf<Pair<Int, Int>, Rect>() }
+            var gridCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+            val latestRecords by rememberUpdatedState(records)
+
+            // iOS 桌面编辑风格的抖动动画
+            val jiggleTransition = rememberInfiniteTransition(label = "sweepJiggle")
+            val jiggleAngle by jiggleTransition.animateFloat(
+                initialValue = -1.5f,
+                targetValue = 1.5f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 140, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "jiggleAngle"
+            )
+
+            // 命中测试并切换格子状态，一次扫选中每个格子只切换一次
+            fun toggleCellAt(position: Offset): Pair<Int, Int>? {
+                val rootPosition = gridCoordinates?.localToRoot(position) ?: return null
+                val cell = cellBounds.entries.firstOrNull { it.value.contains(rootPosition) }?.key
+                    ?: return null
+                if (!sweptCells.add(cell)) return cell
+                val (dayOfWeek, periodOfDay) = cell
+                val record = latestRecords.find {
+                    it.weekNumber == weekNumber &&
+                            it.dayOfWeek == dayOfWeek &&
+                            it.periodOfDay == periodOfDay
+                }
+                if (record != null) {
+                    onDeleteRecord(record)
+                } else {
+                    onAddRecord(weekNumber, dayOfWeek, periodOfDay)
+                }
+                return cell
+            }
+
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 // Timetable grid
-                Box(Modifier.fillMaxWidth()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { gridCoordinates = it }
+                        .pointerInput(weekNumber) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown(
+                                    requireUnconsumed = false,
+                                    pass = PointerEventPass.Initial
+                                )
+
+                                val slop = viewConfiguration.touchSlop
+
+                                /*
+                                 * 超时前：
+                                 * - 抬起：取消
+                                 * - 移动超过 touchSlop：取消
+                                 * - 始终保持按下直到超时：判定为长按
+                                 */
+                                val longPressed = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val change = event.changes.firstOrNull {
+                                            it.id == down.id
+                                        } ?: return@withTimeoutOrNull false
+
+                                        if (!change.pressed || change.changedToUpIgnoreConsumed()) {
+                                            return@withTimeoutOrNull false
+                                        }
+
+                                        val offset = change.position - down.position
+                                        if (offset.getDistanceSquared() > slop * slop) {
+                                            return@withTimeoutOrNull false
+                                        }
+                                    }
+
+                                    false
+                                } ?: true // 发生超时，说明长按成功
+
+                                if (!longPressed) {
+                                    return@awaitEachGesture
+                                }
+
+                                sweepMode = true
+                                sweptCells.clear()
+                                toggleCellAt(down.position)
+
+                                try {
+                                    while (true) {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                        val change = event.changes.firstOrNull {
+                                            it.id == down.id
+                                        } ?: break
+
+                                        if (!change.pressed || change.changedToUpIgnoreConsumed()) {
+                                            // 在 Initial pass 消费抬起事件，阻止 Checkbox 再触发点击
+                                            change.consume()
+                                            break
+                                        }
+
+                                        if (change.position != change.previousPosition) {
+                                            toggleCellAt(change.position)
+                                        }
+
+                                        // 长按成功后独占拖动，避免 Checkbox 和 verticalScroll 消费事件
+                                        change.consume()
+                                    }
+                                } finally {
+                                    sweepMode = false
+                                    sweptCells.clear()
+                                }
+                            }
+                        }
+                ) {
                     // Table header row with day of week
                     Row(Modifier.fillMaxWidth()) {
                         // Empty cell for top-left corner
@@ -458,17 +592,29 @@ private fun CourseEditTime(
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(40.dp)
-                                            .padding(1.dp),
+                                            .padding(1.dp)
+                                            .onGloballyPositioned {
+                                                cellBounds[dayOfWeek to periodOfDay] =
+                                                    it.boundsInRoot()
+                                            }
+                                            .graphicsLayer {
+                                                if (sweepMode) {
+                                                    rotationZ = jiggleAngle *
+                                                            if ((dayOfWeek + periodOfDay) % 2 == 0) 1f else -1f
+                                                }
+                                            },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Checkbox(
                                             checked = hasRecord,
                                             onCheckedChange = { isChecked ->
                                                 if (isChecked) {
-                                                    // Add record
-                                                    onAddRecord(weekNumber, dayOfWeek, periodOfDay)
+                                                    onAddRecord(
+                                                        weekNumber,
+                                                        dayOfWeek,
+                                                        periodOfDay
+                                                    )
                                                 } else if (record != null) {
-                                                    // Delete record
                                                     onDeleteRecord(record)
                                                 }
                                             }
