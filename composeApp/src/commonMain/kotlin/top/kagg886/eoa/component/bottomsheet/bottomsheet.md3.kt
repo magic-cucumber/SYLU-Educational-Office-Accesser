@@ -79,7 +79,7 @@ fun BottomSheetPageScaffold(
             }
         }
 
-        BackHandler(enabled = draggableState.settledValue != SheetPosition.Hidden) {
+        val onClose: () -> Unit = {
             val target = when (draggableState.settledValue) {
                 SheetPosition.Expanded -> {
                     if (draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded)) {
@@ -97,6 +97,10 @@ fun BottomSheetPageScaffold(
                     draggableState.animateTo(it, animationSpec)
                 }
             }
+        }
+
+        BackHandler(enabled = draggableState.settledValue != SheetPosition.Hidden) {
+            onClose()
         }
 
         CompositionLocalProvider(LocalSnackBarHost provides snack) {
@@ -148,15 +152,17 @@ fun BottomSheetPageScaffold(
                     initialContentHeight
                 ) {
                     BottomSheetPageScaffoldScopeImpl(
-                        minimumContentHeight = initialContentHeight
-                    ) {
-                        val sheetOffset = draggableState.offset
-                            .takeUnless(Float::isNaN)
-                            ?: fullHeightPx
-                        (fullHeightPx - sheetOffset - dragHandleHeightPx - bottomInsetPx)
-                            .roundToInt()
-                            .coerceAtLeast(0)
-                    }
+                        minimumContentHeight = initialContentHeight,
+                        visibleContentHeight = {
+                            val sheetOffset = draggableState.offset
+                                .takeUnless(Float::isNaN)
+                                ?: fullHeightPx
+                            (fullHeightPx - sheetOffset - dragHandleHeightPx - bottomInsetPx)
+                                .roundToInt()
+                                .coerceAtLeast(0)
+                        },
+                        onClose = onClose,
+                    )
                 }
 
                 Surface(

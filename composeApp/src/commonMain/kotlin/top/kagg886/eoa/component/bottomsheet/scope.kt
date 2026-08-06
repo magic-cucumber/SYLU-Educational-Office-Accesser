@@ -15,11 +15,13 @@ import androidx.compose.ui.layout.layout
 interface BottomSheetPageScaffoldScope {
     /** Makes this layout match the part of the sheet that is currently visible. */
     fun Modifier.matchContent(): Modifier
+    fun close(): Unit
 }
 
 internal class BottomSheetPageScaffoldScopeImpl(
     private val minimumContentHeight: Int,
-    private val visibleContentHeight: () -> Int
+    private val visibleContentHeight: () -> Int,
+    private val onClose: () -> Unit
 ) : BottomSheetPageScaffoldScope {
     override fun Modifier.matchContent(): Modifier = layout { measurable, constraints ->
         val height = visibleContentHeight()
@@ -35,4 +37,6 @@ internal class BottomSheetPageScaffoldScopeImpl(
             placeable.placeRelative(0, 0)
         }
     }
+
+    override fun close() = onClose()
 }

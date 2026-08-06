@@ -118,6 +118,9 @@ private fun SystemNoticeContent(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Close"
                             )
+                        },
+                        onBackPressed = {
+                            this@BottomSheetPageScaffold.close()
                         }
                     )
                 },

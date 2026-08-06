@@ -4,15 +4,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.pages.main.MainRoute
 
 /**
  * 添加了安全检查的返回按钮。
@@ -27,7 +22,8 @@ fun BackIconButton(
             contentDescription = "返回"
         )
     },
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBackPressed: (NavHostController) -> Unit = { it.popBackStack() }
 ) {
     val entryList by nav.currentBackStack.collectAsState()
     val currentEntry by nav.currentBackStackEntryFlow.collectAsState(null)
@@ -39,9 +35,7 @@ fun BackIconButton(
     }
 
     IconButton(
-        onClick = {
-            nav.popBackStack()
-        },
+        onClick = { onBackPressed(nav) },
         enabled = backButtonEnabled,
         modifier = modifier,
         content = icon
