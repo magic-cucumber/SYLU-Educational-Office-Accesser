@@ -25,6 +25,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.about.AboutRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
@@ -45,7 +46,7 @@ fun SettingListScreen() = MainScreen {
     val mainRouteViewModel = mainViewModelOrNull() ?: return@MainScreen
 
     val mainState by mainRouteViewModel.collectAsState()
-    val model = viewModel(key = mainState.toString()) {
+    val model = viewModel(key = mainState.toViewModelKey()) {
         SettingsModel(mainState, mainRouteViewModel.database)
     }
 
