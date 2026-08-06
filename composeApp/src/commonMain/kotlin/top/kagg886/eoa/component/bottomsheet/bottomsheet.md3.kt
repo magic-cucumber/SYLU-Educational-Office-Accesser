@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -34,6 +33,7 @@ import top.kagg886.eoa.util.BackHandler
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+
 /**
  * A bottom-sheet page which lives in the current composition instead of opening another window.
  * Its drag state is deliberately kept private so callers only provide static page content.
@@ -43,6 +43,8 @@ fun BottomSheetPageScaffold(
     modifier: Modifier = Modifier,
     snack: ToasterState = rememberToasterState(),
     maxExpandedHeight: Dp = Dp.Unspecified,
+    initialPopupType: SheetPosition = SheetPosition.PartiallyExpanded,
+    popupTypeChangeRequest: (SheetPosition) -> Boolean = { true },
     content: @Composable BottomSheetPageScaffoldScope.() -> Unit = {}
 ) {
     require(maxExpandedHeight == Dp.Unspecified || maxExpandedHeight > 0.dp) {
@@ -291,7 +293,7 @@ fun BottomSheetPageScaffold(
     }
 }
 
-private enum class SheetPosition {
+enum class SheetPosition {
     Hidden,
     PartiallyExpanded,
     Expanded

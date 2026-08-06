@@ -52,7 +52,7 @@ fun mainViewModelOrNull(): MainRouteViewModel? {
     }
 
     val rootModel = rootViewModel()
-    return viewModel(parentEntry) {
+    return viewModel(parentEntry, key = rootModel.toString()) {
         MainRouteViewModel(rootModel.database)
     }
 }
@@ -566,5 +566,5 @@ sealed interface MainRouteViewEffect {
         val action: TextToastAction? = null,
     ) : MainRouteViewEffect
 
-    data object SyncErrorToast: MainRouteViewEffect
+    data object SyncErrorToast : MainRouteViewEffect
 }

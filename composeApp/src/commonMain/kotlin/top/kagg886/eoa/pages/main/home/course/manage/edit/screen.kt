@@ -9,11 +9,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -32,7 +34,9 @@ import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.component.dialog.DialogPageScaffold
+import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.component.bottomsheet.BottomSheetPageScaffold
+import top.kagg886.eoa.component.bottomsheet.SheetPosition
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.showSnackBar
@@ -100,96 +104,116 @@ private fun CourseEditScreenContent(
     onGenerateButtonClicked: (String) -> Unit,
     onImageCaptchaClicked: () -> Unit,
 ) {
-    when (state) {
-        is CourseEditState.Loading -> {
-            DialogPageScaffold(
-                title = { Text("编辑课程") },
-                snack = snack,
-                icon = { Icon(Icons.Default.Edit, "") },
-                confirmButton = {}
-            ) {
-                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.width(16.dp))
-                    Text("正在加载中，请稍等。")
-                }
-            }
-        }
-
-        is CourseEditState.Success -> {
-            val pagerState = rememberPagerState(0) { 3 }
-            val scope = rememberCoroutineScope()
-
-            DialogPageScaffold(
-                title = { Text("${if (state.courseId !== null) "编辑" else "新建"}课程") },
-                snack = snack,
-                icon = { Icon(Icons.Default.Edit, "") },
-                confirmButton = {
-                    TextButton(
-                        onClick = onCourseInfoConfirmed,
-                        enabled = state.enableSaveButton
-                    ) {
-                        Text("保存")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = onCourseInfoDismissed
-                    ) {
-                        Text("取消")
-                    }
-                }
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)) {
-                    SecondaryTabRow(
-                        selectedTabIndex = pagerState.currentPage,
-                        containerColor = AlertDialogDefaults.containerColor,
-                        tabs = {
-                            Tab(
-                                text = { Text("课程信息") },
-                                selected = pagerState.currentPage == 0,
-                                onClick = { scope.launch { pagerState.animateScrollToPage(0) } }
-                            )
-                            Tab(
-                                text = { Text("时间编辑") },
-                                selected = pagerState.currentPage == 1,
-                                onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
-                            )
-                            Tab(
-                                text = { Text("AI生成") },
-                                selected = pagerState.currentPage == 2,
-                                onClick = { scope.launch { pagerState.animateScrollToPage(2) } }
-                            )
+    BottomSheetPageScaffold(
+        snack = snack,
+        maxExpandedHeight = LocalWindowInfo.current.containerDpSize.height * 0.9f,
+        initialPopupType = SheetPosition.Expanded,
+        popupTypeChangeRequest = { it != SheetPosition.PartiallyExpanded }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                windowInsets = WindowInsets(),
+                title = {
+                    Text(
+                        when (state) {
+                            is CourseEditState.Loading -> "编辑课程"
+                            is CourseEditState.Success -> "${if (state.courseId != null) "编辑" else "新建"}课程"
                         }
                     )
+                },
+                navigationIcon = {
+                    BackIconButton(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close"
+                            )
+                        },
+                        onBackPressed = { onCourseInfoDismissed() }
+                    )
+                },
+                actions = {
+                    if (state is CourseEditState.Success) {
+                        IconButton(
+                            onClick = onCourseInfoConfirmed,
+                            enabled = state.enableSaveButton
+                        ) {
+                            Icon(Icons.Default.Save, "save")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            )
 
-                    HorizontalPager(
-                        state = pagerState,
+            when (state) {
+                is CourseEditState.Loading -> {
+                    Column(
                         modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.Top
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        when (it) {
-                            0 -> CourseEditBasic(
-                                course = state.courseInfo,
-                                onCourseModified = onCourseModified
-                            )
+                        CircularProgressIndicator()
+                        Spacer(Modifier.width(16.dp))
+                        Text("正在加载中，请稍等。")
+                    }
+                }
 
-                            1 -> CourseEditTime(
-                                startDate = state.startDate,
-                                allWeekNumber = state.allWeekNumber,
-                                records = state.recordInfo,
-                                onAddRecord = onAddRecord,
-                                onDeleteRecord = onDeleteRecord
-                            )
+                is CourseEditState.Success -> {
+                    val pagerState = rememberPagerState(0) { 3 }
+                    val scope = rememberCoroutineScope()
 
-                            2 -> CourseEditAI(
-                                providers = state.llmKeys,
-                                selectedProvider = state.selectLLMKey,
-                                aiGenerating = state.aiGenerating,
-                                onLLMKeySelected = onLLMKeySelected,
-                                onGenerateButtonClicked = onGenerateButtonClicked,
-                                onImageCaptchaClicked = onImageCaptchaClicked
-                            )
+                    Column(modifier = Modifier.weight(1f)) {
+                        SecondaryTabRow(
+                            selectedTabIndex = pagerState.currentPage,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            tabs = {
+                                Tab(
+                                    text = { Text("课程信息") },
+                                    selected = pagerState.currentPage == 0,
+                                    onClick = { scope.launch { pagerState.animateScrollToPage(0) } }
+                                )
+                                Tab(
+                                    text = { Text("时间编辑") },
+                                    selected = pagerState.currentPage == 1,
+                                    onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
+                                )
+                                Tab(
+                                    text = { Text("AI生成") },
+                                    selected = pagerState.currentPage == 2,
+                                    onClick = { scope.launch { pagerState.animateScrollToPage(2) } }
+                                )
+                            }
+                        )
+
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            when (it) {
+                                0 -> CourseEditBasic(
+                                    course = state.courseInfo,
+                                    onCourseModified = onCourseModified
+                                )
+
+                                1 -> CourseEditTime(
+                                    startDate = state.startDate,
+                                    allWeekNumber = state.allWeekNumber,
+                                    records = state.recordInfo,
+                                    onAddRecord = onAddRecord,
+                                    onDeleteRecord = onDeleteRecord
+                                )
+
+                                2 -> CourseEditAI(
+                                    providers = state.llmKeys,
+                                    selectedProvider = state.selectLLMKey,
+                                    aiGenerating = state.aiGenerating,
+                                    onLLMKeySelected = onLLMKeySelected,
+                                    onGenerateButtonClicked = onGenerateButtonClicked,
+                                    onImageCaptchaClicked = onImageCaptchaClicked
+                                )
+                            }
                         }
                     }
                 }
@@ -219,7 +243,7 @@ private fun CourseEditBasic(
                 name = it
             },
             label = { Text("课程名称") },
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
+            modifier = Modifier.fillMaxWidth()
         )
 
         var teacherName by remember {
@@ -236,7 +260,7 @@ private fun CourseEditBasic(
                 teacherName = it
             },
             label = { Text("教师姓名") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
         )
 
 
@@ -252,7 +276,7 @@ private fun CourseEditBasic(
                 classroomName = it
             },
             label = { Text("教室名称") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
         )
 
         var credits by remember {
@@ -271,12 +295,12 @@ private fun CourseEditBasic(
             },
             label = { Text("学分") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
         )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
         ) {
             Checkbox(
                 checked = course.isDegreeRequired,

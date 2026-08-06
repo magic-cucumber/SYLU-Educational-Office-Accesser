@@ -3,19 +3,59 @@ package top.kagg886.eoa.pages.main.home.exam.list
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
+import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.viewmodel.container
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.ExamEntity
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.home.exam.list.content.*
+import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
+
+/**
+ * ================================================
+ * Author:     iveou
+ * Created on: 2026/8/6 15:35
+ * ================================================
+ */
+
+@Composable
+fun examListViewModelOrNull(): ExamListViewModel? {
+    val rootModel = rootViewModel()
+    val mainViewModel = mainViewModelOrNull() ?: return null
+    val syncState by mainViewModel.collectAsState()
+
+
+    val nav = LocalNavController.current
+    val state by nav.currentBackStackEntryAsState()
+    val parentEntry = remember(state) {
+        runCatching { nav.getBackStackEntry(ExamListRoute) }.getOrNull() // 嵌套图 route
+    }
+
+    if (parentEntry == null) {
+        return null
+    }
+
+    return viewModel(parentEntry,key = syncState.toString()) {
+        ExamListViewModel(rootModel.database, syncState)
+    }
+}
+
 
 class ExamListViewModel(
     database: AppDatabase,
@@ -24,6 +64,11 @@ class ExamListViewModel(
     private val examDao = database.examDao()
 
 
+
+    fun navigateToFilter() = intent {
+        postSideEffect(ExamListSideEffect.NavigateToFilter)
+    }
+
     fun navigateToDetail(it: ExamEntity) = intent {
         postSideEffect(ExamListSideEffect.NavigateToDetail(it.id!!))
     }
@@ -31,11 +76,11 @@ class ExamListViewModel(
     @OptIn(OrbitExperimental::class)
     fun navigateToStatistic() = intent {
         runOn<ExamListState.Success> {
-            val (year,terms) = state.selector[state.currentYearIndex]
+            val (year, terms) = state.selector[state.currentYearIndex]
             val term = terms[state.currentTermIndex]
 
             postSideEffect(
-                ExamListSideEffect.NavigateToStatistic(year.yearCode,term.semesterCode)
+                ExamListSideEffect.NavigateToStatistic(year.yearCode, term.semesterCode)
             )
         }
     }
@@ -43,17 +88,17 @@ class ExamListViewModel(
     @OptIn(OrbitExperimental::class)
     fun navigateToExport() = intent {
         runOn<ExamListState.Success> {
-            val (year,terms) = state.selector[state.currentYearIndex]
+            val (year, terms) = state.selector[state.currentYearIndex]
             val term = terms[state.currentTermIndex]
 
             postSideEffect(
-                ExamListSideEffect.NavigateToExport(year.yearCode,term.semesterCode)
+                ExamListSideEffect.NavigateToExport(year.yearCode, term.semesterCode)
             )
         }
     }
 
     override val container: Container<ExamListState, ExamListSideEffect> =
-        container(ExamListState.Loading(DrawerState(DrawerValue.Closed))) {
+        container(ExamListState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
@@ -62,7 +107,7 @@ class ExamListViewModel(
                 }
                 // 否则提示同步失败
                 reduce {
-                    ExamListState.Failed(state.drawerState, syncState.message)
+                    ExamListState.Failed(syncState.message)
                 }
                 return@container
             }
@@ -76,7 +121,7 @@ class ExamListViewModel(
                 }
                 // 否则展示加载中
                 reduce {
-                    ExamListState.Loading(state.drawerState)
+                    ExamListState.Loading
                 }
                 return@container
             }
@@ -98,7 +143,7 @@ class ExamListViewModel(
         val originTerms = (state as? ExamListState.Success)?.selector
 
         reduce {
-            ExamListState.Loading(state.drawerState)
+            ExamListState.Loading
         }
 
         val picker = AppSyncMMKV.picker ?: return@intent
@@ -151,7 +196,6 @@ class ExamListViewModel(
                     selector = terms,
                     currentYearIndex = year,
                     currentTermIndex = term,
-                    drawerState = state.drawerState,
                     lazyListState = LazyListState()
                 )
             }
@@ -161,7 +205,6 @@ class ExamListViewModel(
 }
 
 sealed interface ExamListState {
-    val drawerState: DrawerState
 
     data class Success(
         val lazyListState: LazyListState,
@@ -174,22 +217,16 @@ sealed interface ExamListState {
 
         val currentYearIndex: Int,
         val currentTermIndex: Int,
-
-        override val drawerState: DrawerState
     ) : ExamListState
 
-    data class Failed(
-        override val drawerState: DrawerState,
-        val msg: String
-    ) : ExamListState
+    data class Failed(val msg: String) : ExamListState
 
-    data class Loading(
-        override val drawerState: DrawerState
-    ) : ExamListState
+    data object Loading : ExamListState
 }
 
 sealed interface ExamListSideEffect {
+    data object NavigateToFilter : ExamListSideEffect
     data class NavigateToDetail(val examId: Long) : ExamListSideEffect
-    data class NavigateToStatistic(val year: String,val term: String) : ExamListSideEffect
-    data class NavigateToExport(val year: String,val term: String) : ExamListSideEffect
+    data class NavigateToStatistic(val year: String, val term: String) : ExamListSideEffect
+    data class NavigateToExport(val year: String, val term: String) : ExamListSideEffect
 }

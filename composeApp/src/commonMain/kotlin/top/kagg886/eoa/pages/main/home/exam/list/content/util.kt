@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.home.exam.list
+package top.kagg886.eoa.pages.main.home.exam.list.content
 
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 
