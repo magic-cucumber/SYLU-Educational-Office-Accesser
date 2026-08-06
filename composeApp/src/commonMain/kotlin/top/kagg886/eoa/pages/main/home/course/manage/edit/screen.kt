@@ -10,7 +10,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -30,7 +29,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -41,10 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
@@ -404,21 +399,24 @@ private fun CourseEditTime(
             var sweepMode by remember { mutableStateOf(false) }
             val sweptCells = remember { mutableSetOf<Pair<Int, Int>>() }
             val cellBounds = remember { mutableMapOf<Pair<Int, Int>, Rect>() }
+            val rowLabelBounds = remember { mutableMapOf<Int, Rect>() }
             var gridCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
             val latestRecords by rememberUpdatedState(records)
 
             // iOS 桌面编辑风格的抖动动画
             val jiggleTransition = rememberInfiniteTransition(label = "sweepJiggle")
-            val jiggleAngle by jiggleTransition.animateFloat(
-                initialValue = -1.5f,
-                targetValue = 1.5f,
+            val jiggleAngle = jiggleTransition.animateFloat(
+                initialValue = -4f,
+                targetValue = 4f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 140, easing = LinearEasing),
+                    animation = tween(
+                        durationMillis = 110,
+                        easing = LinearEasing
+                    ),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "jiggleAngle"
             )
-
             // 命中测试并切换格子状态，一次扫选中每个格子只切换一次
             fun toggleCellAt(position: Offset): Pair<Int, Int>? {
                 val rootPosition = gridCoordinates?.localToRoot(position) ?: return null
@@ -439,6 +437,27 @@ private fun CourseEditTime(
                 return cell
             }
 
+            // 长按周/节列时，反选当前行的全部格子
+            fun toggleRowAt(position: Offset): Boolean {
+                val rootPosition = gridCoordinates?.localToRoot(position) ?: return false
+                val periodOfDay = rowLabelBounds.entries
+                    .firstOrNull { it.value.contains(rootPosition) }
+                    ?.key
+                    ?: return false
+                val rowRecords = latestRecords.filter {
+                    it.weekNumber == weekNumber && it.periodOfDay == periodOfDay
+                }
+                for (dayOfWeek in 1..7) {
+                    val record = rowRecords.find { it.dayOfWeek == dayOfWeek }
+                    if (record != null) {
+                        onDeleteRecord(record)
+                    } else {
+                        onAddRecord(weekNumber, dayOfWeek, periodOfDay)
+                    }
+                }
+                return true
+            }
+
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 // Timetable grid
                 Box(
@@ -447,7 +466,7 @@ private fun CourseEditTime(
                         .onGloballyPositioned { gridCoordinates = it }
                         .pointerInput(weekNumber) {
                             awaitEachGesture {
-                                val down = awaitFirstDown(
+                                val firstDown = awaitFirstDown(
                                     requireUnconsumed = false,
                                     pass = PointerEventPass.Initial
                                 )
@@ -464,14 +483,14 @@ private fun CourseEditTime(
                                     while (true) {
                                         val event = awaitPointerEvent(PointerEventPass.Initial)
                                         val change = event.changes.firstOrNull {
-                                            it.id == down.id
+                                            it.id == firstDown.id
                                         } ?: return@withTimeoutOrNull false
 
                                         if (!change.pressed || change.changedToUpIgnoreConsumed()) {
                                             return@withTimeoutOrNull false
                                         }
 
-                                        val offset = change.position - down.position
+                                        val offset = change.position - firstDown.position
                                         if (offset.getDistanceSquared() > slop * slop) {
                                             return@withTimeoutOrNull false
                                         }
@@ -484,29 +503,74 @@ private fun CourseEditTime(
                                     return@awaitEachGesture
                                 }
 
+                                if (toggleRowAt(firstDown.position)) {
+                                    try {
+                                        while (true) {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            val change = event.changes.firstOrNull {
+                                                it.id == firstDown.id
+                                            } ?: break
+
+                                            if (!change.pressed || change.changedToUpIgnoreConsumed()) {
+                                                change.consume()
+                                                break
+                                            }
+
+                                            change.consume()
+                                        }
+                                    } finally {
+                                        sweepMode = false
+                                        sweptCells.clear()
+                                    }
+                                    return@awaitEachGesture
+                                }
+
                                 sweepMode = true
                                 sweptCells.clear()
-                                toggleCellAt(down.position)
 
+                                toggleCellAt(firstDown.position)
+
+                                var pointerId = firstDown.id
                                 try {
-                                    while (true) {
-                                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                                        val change = event.changes.firstOrNull {
-                                            it.id == down.id
-                                        } ?: break
+                                    sweepLoop@ while (true) {
+                                        // 当前按压期间进行扫选，直到抬起
+                                        while (true) {
+                                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                                            val change = event.changes.firstOrNull {
+                                                it.id == pointerId
+                                            } ?: continue
 
-                                        if (!change.pressed || change.changedToUpIgnoreConsumed()) {
-                                            // 在 Initial pass 消费抬起事件，阻止 Checkbox 再触发点击
+                                            if (!change.pressed || change.changedToUpIgnoreConsumed()) {
+                                                // 阻止 Checkbox 在抬起时触发点击
+                                                change.consume()
+                                                break
+                                            }
+
+                                            if (change.position != change.previousPosition) {
+                                                toggleCellAt(change.position)
+                                            }
+
                                             change.consume()
-                                            break
                                         }
 
-                                        if (change.position != change.previousPosition) {
-                                            toggleCellAt(change.position)
-                                        }
+                                        /*
+                                         * 抬起后继续保持扫选模式。
+                                         * 500ms 内再次按下则继续，否则结束。
+                                         */
+                                        val nextDown = withTimeoutOrNull(500L) {
+                                            awaitFirstDown(
+                                                requireUnconsumed = false,
+                                                pass = PointerEventPass.Initial
+                                            )
+                                        } ?: break@sweepLoop
 
-                                        // 长按成功后独占拖动，避免 Checkbox 和 verticalScroll 消费事件
-                                        change.consume()
+                                        pointerId = nextDown.id
+
+                                        // 后续按下属于扫选模式，阻止 Checkbox 接收该按下事件
+                                        nextDown.consume()
+
+                                        // 再次按下时立即命中当前位置
+                                        toggleCellAt(nextDown.position)
                                     }
                                 } finally {
                                     sweepMode = false
@@ -564,7 +628,10 @@ private fun CourseEditTime(
                                     modifier = Modifier
                                         .weight(0.5f)
                                         .height(40.dp)
-                                        .padding(1.dp),
+                                        .padding(1.dp)
+                                        .onGloballyPositioned {
+                                            rowLabelBounds[periodOfDay] = it.boundsInRoot()
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -598,9 +665,13 @@ private fun CourseEditTime(
                                                     it.boundsInRoot()
                                             }
                                             .graphicsLayer {
-                                                if (sweepMode) {
-                                                    rotationZ = jiggleAngle *
-                                                            if ((dayOfWeek + periodOfDay) % 2 == 0) 1f else -1f
+                                                val direction =
+                                                    if ((dayOfWeek + periodOfDay) % 2 == 0) 1f else -1f
+
+                                                rotationZ = if (sweepMode) {
+                                                    jiggleAngle.value * direction
+                                                } else {
+                                                    0f
                                                 }
                                             },
                                         contentAlignment = Alignment.Center
