@@ -35,6 +35,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.rootViewModel
+import top.kagg886.eoa.util.BackHandler
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -74,6 +75,26 @@ fun BottomSheetPageScaffold(
                 if (hasBeenVisible && !dismissingFromScrim) navigation.popBackStack()
             } else {
                 hasBeenVisible = true
+            }
+        }
+    }
+
+    BackHandler(enabled = draggableState.settledValue != SheetPosition.Hidden) {
+        val target = when (draggableState.settledValue) {
+            SheetPosition.Expanded -> {
+                if (draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded)) {
+                    SheetPosition.PartiallyExpanded
+                } else {
+                    SheetPosition.Hidden
+                }
+            }
+
+            SheetPosition.PartiallyExpanded -> SheetPosition.Hidden
+            SheetPosition.Hidden -> null
+        }
+        target?.let {
+            scope.launch {
+                draggableState.animateTo(it, animationSpec)
             }
         }
     }
