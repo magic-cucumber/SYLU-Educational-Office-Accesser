@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
@@ -32,6 +33,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,7 +52,6 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.LLMProviderEntity
-import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.bottomsheet.BottomSheetPageScaffold
 import top.kagg886.eoa.component.bottomsheet.SheetPosition
@@ -75,7 +76,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
     ) {
         CourseEditModel(mainModel.database, route.id, llmRuntimes)
     }
-    val nav = LocalNavController.current
+    val uri = LocalUriHandler.current
     val state by model.collectAsState()
 
     val stack = rememberToasterState()
@@ -102,7 +103,8 @@ fun CourseEditScreen(route: CourseEditRoute) {
         onDeleteRecord = { model.deleteRecord(it) },
         onLLMKeySelected = { model.selectLLMKey(it) },
         onGenerateButtonClicked = { input -> model.generateCourseByAI(input) },
-        onImageCaptchaClicked = { model.generateCourseByImage() }
+        onImageCaptchaClicked = { model.generateCourseByImage() },
+        onHelpClicked = { uri.openUri("https://eoa.kagg886.top/course-overview.html#%E6%96%B0%E5%BB%BA%E8%AF%BE%E7%A8%8B") }
     )
 }
 
@@ -116,7 +118,7 @@ private fun CourseEditScreenContent(
     onCourseInfoConfirmed: () -> Unit,
     onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
     onDeleteRecord: (CourseRecordEntity) -> Unit,
-
+    onHelpClicked: () -> Unit,
     onLLMKeySelected: (LLMProviderEntity) -> Unit,
     onGenerateButtonClicked: (String) -> Unit,
     onImageCaptchaClicked: () -> Unit,
@@ -158,6 +160,9 @@ private fun CourseEditScreenContent(
                     )
                 },
                 actions = {
+                    IconButton(onClick = onHelpClicked) {
+                        Icon(Icons.AutoMirrored.Filled.Help,"help")
+                    }
                     if (state is CourseEditState.Success) {
                         IconButton(
                             onClick = onCourseInfoConfirmed,
