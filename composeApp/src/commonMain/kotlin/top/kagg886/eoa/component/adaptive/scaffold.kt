@@ -1,5 +1,6 @@
 package top.kagg886.eoa.component.adaptive
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -94,6 +95,18 @@ fun NavigationSuiteScaffold(
                     )
                 ) {
                     val scope by rememberStateOfItems(navigationSuiteItems)
+                    val contentTopPadding = when (layoutType) {
+                        NavigationRail -> NavigationRailDefaults.windowInsets
+                            .asPaddingValues()
+                            .calculateTopPadding()
+                            .plus(10.dp)
+
+                        NavigationSuiteType.NavigationDrawer -> DrawerDefaults.windowInsets
+                            .asPaddingValues()
+                            .calculateTopPadding()
+
+                        else -> 0.dp
+                    }
 
                     when (layoutType) {
                         NavigationBar -> {
@@ -148,6 +161,7 @@ fun NavigationSuiteScaffold(
                             val title by scope.title
                             val back by scope.back
                             Scaffold(
+                                modifier = Modifier.padding(top = contentTopPadding),
                                 topBar = {
                                     if (title != null) {
                                         TopAppBar(
@@ -174,7 +188,9 @@ fun NavigationSuiteScaffold(
                         }
 
                         NavigationSuiteType.NavigationDrawer -> {
-                            content()
+                            Box(Modifier.fillMaxSize().padding(top = contentTopPadding)) {
+                                content()
+                            }
                         }
                     }
                 }
