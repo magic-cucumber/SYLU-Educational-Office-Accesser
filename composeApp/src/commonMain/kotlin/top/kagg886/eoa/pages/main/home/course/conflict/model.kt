@@ -1,8 +1,8 @@
 package top.kagg886.eoa.pages.main.home.course.conflict
 
 import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.backend.database.dao.CourseRecordEntity
@@ -12,10 +12,10 @@ class CourseConflictViewModel(
     weekNumber: Int,
     dayOfWeek: Int,
     periodOfDay: Int
-) : ViewModel(), ContainerHost<CourseConflictState, CourseConflictSideEffect> {
+) : ViewModel(), OrbitContainerHost<CourseConflictState, CourseConflictState, CourseConflictSideEffect> {
     private val courseRecordDao = database.courseRecordDao()
     override val container =
-        container<CourseConflictState, CourseConflictSideEffect>(CourseConflictState.Loading) {
+        orbitContainer<CourseConflictState, CourseConflictSideEffect>(CourseConflictState.Loading) {
             val date = courseRecordDao.getCoursesWithRecordInfo(weekNumber, dayOfWeek, periodOfDay)
             reduce {
                 CourseConflictState.Success(date)

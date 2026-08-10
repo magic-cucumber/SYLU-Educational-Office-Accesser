@@ -22,10 +22,10 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.io.buffered
 import kotlinx.io.writeString
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.log
@@ -34,9 +34,9 @@ import top.kagg886.util.logger
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
-class LogcatModel(private val database: AppDatabase) : ViewModel(), ContainerHost<LogcatState, LogcatSideEffect> {
+class LogcatModel(private val database: AppDatabase) : ViewModel(), OrbitContainerHost<LogcatState, LogcatState, LogcatSideEffect> {
     private val appLogDao = database.appLogDao()
-    override val container: Container<LogcatState, LogcatSideEffect> = container(LogcatState.Loading) { all().join() }
+    override val container: OrbitContainer<LogcatState, LogcatState, LogcatSideEffect> = orbitContainer(LogcatState.Loading) { all().join() }
 
     fun all(level: Severity? = Severity.Info) = intent {
         val data = Pager(
@@ -65,7 +65,7 @@ class LogcatModel(private val database: AppDatabase) : ViewModel(), ContainerHos
     fun export() = intent {
         val file = FileKit.openFileSaver(
             suggestedName = "EOA log export - ${Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())}",
-            extension = "log",
+            defaultExtension = "log",
         )
 
         if (file == null) {

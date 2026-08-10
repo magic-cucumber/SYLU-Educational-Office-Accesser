@@ -12,11 +12,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.compose.collectAsState
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.ExamEntity
@@ -60,7 +60,7 @@ fun examListViewModelOrNull(): ExamListViewModel? {
 class ExamListViewModel(
     database: AppDatabase,
     private val syncState: MainRouteViewState
-) : ViewModel(), ContainerHost<ExamListState, ExamListSideEffect> {
+) : ViewModel(), OrbitContainerHost<ExamListState, ExamListState, ExamListSideEffect> {
     private val examDao = database.examDao()
 
 
@@ -97,19 +97,19 @@ class ExamListViewModel(
         }
     }
 
-    override val container: Container<ExamListState, ExamListSideEffect> =
-        container(ExamListState.Loading) {
+    override val container: OrbitContainer<ExamListState, ExamListState, ExamListSideEffect> =
+        orbitContainer(ExamListState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     filterPassType().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则提示同步失败
                 reduce {
                     ExamListState.Failed(syncState.message)
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 正在同步则展示加载中
@@ -117,19 +117,19 @@ class ExamListViewModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     filterPassType().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则展示加载中
                 reduce {
                     ExamListState.Loading
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 filterPassType().join()
-                return@container
+                return@orbitContainer
             }
         }
 

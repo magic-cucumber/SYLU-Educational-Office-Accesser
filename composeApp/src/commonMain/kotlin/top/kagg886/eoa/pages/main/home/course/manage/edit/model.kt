@@ -25,9 +25,9 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
@@ -42,12 +42,12 @@ class CourseEditModel(
     database: AppDatabase,
     courseId: Long?,
     private val llmExecutors: Map<LLMProviderEntity, MultiLLMPromptExecutor>
-) : ViewModel(), ContainerHost<CourseEditState, CourseEditSideEffect> {
+) : ViewModel(), OrbitContainerHost<CourseEditState, CourseEditState, CourseEditSideEffect> {
     private val logger = "CourseEditModel".asTaggedLogger
     private val courseDao = database.courseDao()
     private val courseRecordDao = database.courseRecordDao()
     override val container =
-        container<CourseEditState, CourseEditSideEffect>(CourseEditState.Loading) {
+        orbitContainer<CourseEditState, CourseEditSideEffect>(CourseEditState.Loading) {
             val (xnm, xqm) = AppSyncMMKV.picker!!.default.asTerm()
             val courseInfo = courseId?.let { courseDao.getById(it) } ?: CourseEntity(
                 name = "",

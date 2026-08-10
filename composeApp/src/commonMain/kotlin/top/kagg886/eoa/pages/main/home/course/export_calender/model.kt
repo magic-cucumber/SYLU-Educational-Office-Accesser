@@ -7,9 +7,9 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -24,10 +24,10 @@ import kotlin.uuid.Uuid
 
 class CourseExportCalenderModel(
     database: AppDatabase
-) : ViewModel(), ContainerHost<CourseExportCalenderState, CourseExportCalenderSideEffect> {
+) : ViewModel(), OrbitContainerHost<CourseExportCalenderState, CourseExportCalenderState, CourseExportCalenderSideEffect> {
     private val dao = database.courseRecordDao()
     override val container =
-        container<CourseExportCalenderState, CourseExportCalenderSideEffect>(CourseExportCalenderState("即将开始导出..."))
+        orbitContainer<CourseExportCalenderState, CourseExportCalenderSideEffect>(CourseExportCalenderState("即将开始导出..."))
 
     @OptIn(OrbitExperimental::class, ExperimentalUuidApi::class)
     fun exportCalender(manager: CalendarManager) = intent {

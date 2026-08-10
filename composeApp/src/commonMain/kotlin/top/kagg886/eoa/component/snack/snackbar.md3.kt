@@ -1,6 +1,5 @@
 @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
-
 package top.kagg886.eoa.component.snack
 
 import androidx.compose.foundation.layout.PaddingValues

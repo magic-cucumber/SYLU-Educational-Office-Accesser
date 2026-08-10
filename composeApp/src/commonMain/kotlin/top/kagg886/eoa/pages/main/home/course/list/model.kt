@@ -2,18 +2,18 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.foundation.pager.PagerState
 import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
-) : ViewModel(), ContainerHost<CourseListState, CourseListSideEffect> {
+) : ViewModel(), OrbitContainerHost<CourseListState, CourseListState, CourseListSideEffect> {
 
     override val container =
-        container<CourseListState, CourseListSideEffect>(CourseListState.Loading) {
+        orbitContainer<CourseListState, CourseListSideEffect>(CourseListState.Loading) {
             refresh().join()
         }
 

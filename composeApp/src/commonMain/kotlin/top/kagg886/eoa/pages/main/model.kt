@@ -16,10 +16,10 @@ import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -59,7 +59,7 @@ fun mainViewModelOrNull(): MainRouteViewModel? {
 
 
 class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
-    ContainerHost<MainRouteViewState, MainRouteViewEffect> {
+    OrbitContainerHost<MainRouteViewState, MainRouteViewState, MainRouteViewEffect> {
     private val syncDao = database.syncRecordDao()
     private val llmProviderDao = database.llmProviderDao()
     private val logger = "MainRouteViewModel".asTaggedLogger
@@ -94,8 +94,8 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             .onEach { it.onEach { (_, v) -> addCloseable(v) } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    override val container: Container<MainRouteViewState, MainRouteViewEffect> =
-        container(MainRouteViewState.Empty) {
+    override val container: OrbitContainer<MainRouteViewState, MainRouteViewState, MainRouteViewEffect> =
+        orbitContainer(MainRouteViewState.Empty) {
             val time = try {
                 syncDao.getLastSyncTime()
             } catch (e: Exception) {
@@ -103,7 +103,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                 reduce {
                     MainRouteViewState.SyncFailed(false, "数据库损坏，请删除数据库后重试")
                 }
-                return@container
+                return@orbitContainer
             }
             logger.i("上次同步时间：${time}")
             startSync().join()

@@ -1,9 +1,9 @@
 package top.kagg886.eoa.pages.main.home.exam.statistic
 
 import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.database.AppDatabase
 
 /**
@@ -14,10 +14,10 @@ import top.kagg886.backend.database.AppDatabase
  */
 
 class ExamStatisticModel(database: AppDatabase, year: String, term: String) : ViewModel(),
-    ContainerHost<ExamStatisticState, ExamStatisticSideEffect> {
+    OrbitContainerHost<ExamStatisticState, ExamStatisticState, ExamStatisticSideEffect> {
     private val examDao = database.examDao()
-    override val container: Container<ExamStatisticState, ExamStatisticSideEffect> =
-        container(ExamStatisticState.Loading) {
+    override val container: OrbitContainer<ExamStatisticState, ExamStatisticState, ExamStatisticSideEffect> =
+        orbitContainer(ExamStatisticState.Loading) {
             val currentTermData = examDao.all(yearCode = year, xqmCode = term)
             val allData = examDao.all()
 

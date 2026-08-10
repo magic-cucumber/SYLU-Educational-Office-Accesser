@@ -8,11 +8,11 @@ import io.github.vinceglb.filekit.write
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.compose.collectAsState
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppExportMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -32,10 +32,10 @@ import kotlin.time.Duration.Companion.seconds
  */
 
 class ExamExportViewModel(private val xnm: String,private val xqm: String) : ViewModel(),
-    ContainerHost<ExamExportState, ExamExportSideEffect> {
+    OrbitContainerHost<ExamExportState, ExamExportState, ExamExportSideEffect> {
     private val logger = "ExamExportViewModel".asTaggedLogger
 
-    override val container: Container<ExamExportState, ExamExportSideEffect> = container(
+    override val container: OrbitContainer<ExamExportState, ExamExportState, ExamExportSideEffect> = orbitContainer(
         ExamExportState.Config(
             term = Term(xnm, xqm),
             format = ExamExportOptions.Format.XLS,
@@ -129,6 +129,7 @@ class ExamExportViewModel(private val xnm: String,private val xqm: String) : Vie
                     ?: if (state.term == TERM_ALL_PICKER.asTerm()) TERM_ALL_PICKER else throw CancellationException("无法找到学年学期对应的代号")
                 val pFile = FileKit.openFileSaver(
                     suggestedName = "成绩导出 - $term.xlsx",
+                    defaultExtension = "xlsx",
                 )
 
                 if (pFile == null) {

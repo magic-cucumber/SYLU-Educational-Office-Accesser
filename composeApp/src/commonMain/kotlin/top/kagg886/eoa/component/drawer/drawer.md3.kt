@@ -1,5 +1,3 @@
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-
 package top.kagg886.eoa.component.drawer
 
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -26,11 +24,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.internal.Strings
-import androidx.compose.material3.internal.getString
-import androidx.compose.material3.tokens.NavigationDrawerTokens
-import androidx.compose.material3.value
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -113,7 +108,7 @@ fun DrawerSheetPageScaffold(
             onClose()
         }
 
-        val navigationMenu = getString(Strings.NavigationMenu)
+        val navigationMenu = "导航菜单"
         // ModalDrawerSheet rounds the corners that are not attached to the screen edge.
         // RoundedCornerShape resolves Start/End against the current LayoutDirection by itself.
         val sheetShape = when (direction) {
@@ -202,7 +197,7 @@ fun DrawerSheetPageScaffold(
                         )
                         .semantics { paneTitle = navigationMenu },
                     shape = sheetShape,
-                    color = NavigationDrawerTokens.ModalContainerColor.value,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
                     tonalElevation = ModalDrawerElevation
                 ) {
                     Column(

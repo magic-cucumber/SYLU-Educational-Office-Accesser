@@ -1,9 +1,15 @@
 package top.kagg886.eoa.util
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.backhandler.BackHandler
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-actual fun BackHandler(enabled: Boolean, onBack: () -> Unit) = BackHandler(enabled,onBack)
+actual fun BackHandler(enabled: Boolean, onBack: () -> Unit) {
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = enabled,
+        onBackCompleted = onBack,
+    )
+}

@@ -2,9 +2,9 @@ package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.lifecycle.ViewModel
 import kotlinx.datetime.*
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
@@ -16,24 +16,24 @@ class CourseDetailViewModel(
     private val recordId: Long,
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), ContainerHost<CourseDetailState, CourseDetailSideEffect> {
+) : ViewModel(), OrbitContainerHost<CourseDetailState, CourseDetailState, CourseDetailSideEffect> {
     private val courseRecordDao = database.courseRecordDao()
     private val courseDao = database.courseDao()
 
 
-    override val container: Container<CourseDetailState, CourseDetailSideEffect> =
-        container(CourseDetailState.Loading) {
+    override val container: OrbitContainer<CourseDetailState, CourseDetailState, CourseDetailSideEffect> =
+        orbitContainer(CourseDetailState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则提示同步失败
                 reduce {
                     CourseDetailState.Failed(syncState.message)
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 正在同步则展示加载中
@@ -41,19 +41,19 @@ class CourseDetailViewModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则展示加载中
                 reduce {
                     CourseDetailState.Loading
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe().join()
-                return@container
+                return@orbitContainer
             }
         }
 

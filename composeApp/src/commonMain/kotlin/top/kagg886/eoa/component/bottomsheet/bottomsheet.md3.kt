@@ -1,5 +1,3 @@
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-
 package top.kagg886.eoa.component.bottomsheet
 
 import androidx.compose.animation.core.FastOutSlowInEasing

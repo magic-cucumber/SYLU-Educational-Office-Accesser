@@ -3,10 +3,10 @@ package top.kagg886.eoa.pages.main.home.notice
 import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.delay
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -20,23 +20,23 @@ import kotlin.time.Duration.Companion.seconds
 class SystemNoticeModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), ContainerHost<SystemNoticeState, SystemNoticeSideEffect> {
+) : ViewModel(), OrbitContainerHost<SystemNoticeState, SystemNoticeState, SystemNoticeSideEffect> {
     private val noticeDao = database.noticeDao()
     private val logger = "SystemNoticeModel".asTaggedLogger
 
-    override val container: Container<SystemNoticeState, SystemNoticeSideEffect> =
-        container(SystemNoticeState.Loading) {
+    override val container: OrbitContainer<SystemNoticeState, SystemNoticeState, SystemNoticeSideEffect> =
+        orbitContainer(SystemNoticeState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则提示同步失败
                 reduce {
                     SystemNoticeState.Failed(syncState.message, false)
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 正在同步则展示加载中
@@ -44,25 +44,25 @@ class SystemNoticeModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则展示加载中
                 reduce {
                     SystemNoticeState.Loading
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe().join()
-                return@container
+                return@orbitContainer
             }
 
             // 空状态时直接设置数据
             if (syncState is MainRouteViewState.Empty) {
                 setDataUnsafe().join()
-                return@container
+                return@orbitContainer
             }
         }
 
@@ -212,4 +212,3 @@ sealed interface SystemNoticeSideEffect {
         val message: String,
     ) : SystemNoticeSideEffect
 }
-

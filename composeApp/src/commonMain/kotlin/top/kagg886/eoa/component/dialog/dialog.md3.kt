@@ -1,28 +1,16 @@
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-
 package top.kagg886.eoa.component.dialog
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeGesturesPadding
-import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.material3.AlertDialogContent
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.material3.AlertDialogDefaults.iconContentColor
 import androidx.compose.material3.AlertDialogDefaults.shape
 import androidx.compose.material3.AlertDialogDefaults.textContentColor
 import androidx.compose.material3.AlertDialogDefaults.titleContentColor
-import androidx.compose.material3.AlertDialogFlowRow
-import androidx.compose.material3.internal.Strings
-import androidx.compose.material3.internal.getString
-import androidx.compose.material3.tokens.DialogTokens
-import androidx.compose.material3.value
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -67,7 +55,7 @@ fun DialogPageScaffold(
 
 ) = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
-    val dialogPaneDescription = getString(Strings.Dialog)
+    val dialogPaneDescription = "对话框"
 
     CompositionLocalProvider(LocalSnackBarHost provides snack) {
         Box(
@@ -86,31 +74,39 @@ fun DialogPageScaffold(
                     .clickable(enabled = true, indication = null, interactionSource = null, onClick = {}),
             propagateMinConstraints = true
         ) {
-            AlertDialogContent(
-                buttons = {
-                    AlertDialogFlowRow(
-                        mainAxisSpacing = ButtonsMainAxisSpacing,
-                        crossAxisSpacing = ButtonsCrossAxisSpacing
+            Surface(
+                shape = shape,
+                color = containerColor,
+                tonalElevation = AlertDialogDefaults.TonalElevation,
+            ) {
+                Column(Modifier.padding(24.dp)) {
+                    icon?.let {
+                        CompositionLocalProvider(LocalContentColor provides iconContentColor) {
+                            Box(Modifier.align(Alignment.CenterHorizontally)) { it() }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    title?.let {
+                        CompositionLocalProvider(LocalContentColor provides titleContentColor) { it() }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    text?.let {
+                        CompositionLocalProvider(LocalContentColor provides textContentColor) { it() }
+                        Spacer(Modifier.height(24.dp))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            ButtonsMainAxisSpacing,
+                            Alignment.End,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         dismissButton?.invoke()
                         confirmButton()
                     }
-                },
-                icon = icon,
-                title = title,
-                text = text,
-                shape = shape,
-                containerColor = containerColor,
-                tonalElevation = AlertDialogDefaults.TonalElevation,
-                // Note that a button content color is provided here from the dialog's token, but in
-                // most cases, TextButtons should be used for dismiss and confirm buttons.
-                // TextButtons will not consume this provided content color value, and will used their
-                // own defined or default colors.
-                buttonContentColor = DialogTokens.ActionLabelTextColor.value,
-                iconContentColor = iconContentColor,
-                titleContentColor = titleContentColor,
-                textContentColor = textContentColor,
-            )
+                }
+            }
         }
     }
 
@@ -133,4 +129,3 @@ internal val DialogMinWidth = 280.dp
 internal val DialogMaxWidth = 560.dp
 
 private val ButtonsMainAxisSpacing = 8.dp
-private val ButtonsCrossAxisSpacing = 12.dp

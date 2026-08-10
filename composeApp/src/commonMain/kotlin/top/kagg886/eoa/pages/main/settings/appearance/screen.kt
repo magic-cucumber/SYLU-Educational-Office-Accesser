@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.kborowy.colorpicker.KolorPicker
+import com.kborowy.colorpicker.config.PickerConfig
+import com.kborowy.colorpicker.config.TrackConfig
 import com.mohamedrejeb.compose.dnd.reorder.ReorderContainer
 import com.mohamedrejeb.compose.dnd.reorder.ReorderableItem
 import com.mohamedrejeb.compose.dnd.reorder.rememberReorderState
@@ -214,6 +216,9 @@ private fun AppearanceSettingsContent(
                                         KolorPicker(
                                             initialColor = color,
                                             onColorSelected = onColorSettingsClicked,
+                                            pickerConfig = PickerConfig.Default,
+                                            alphaTrackConfig = TrackConfig.Default,
+                                            hueTrackConfig = TrackConfig.Default,
                                             modifier = Modifier.width(250.dp).height(200.dp),
                                         )
                                     }

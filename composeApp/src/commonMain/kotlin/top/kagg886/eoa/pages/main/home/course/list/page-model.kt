@@ -5,8 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.datetime.*
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseAndRecord
@@ -17,23 +17,23 @@ class CoursePageViewModel(
     private val syncState: MainRouteViewState,
     private val weekNumber: Int,
     database: AppDatabase
-) : ViewModel(), ContainerHost<CoursePageState, CoursePageSideEffect> {
+) : ViewModel(), OrbitContainerHost<CoursePageState, CoursePageState, CoursePageSideEffect> {
 
     private val courseRecordDao = database.courseRecordDao()
 
     override val container =
-        container<CoursePageState, CoursePageSideEffect>(CoursePageState.Loading) {
+        orbitContainer<CoursePageState, CoursePageSideEffect>(CoursePageState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则提示同步失败
                 reduce {
                     CoursePageState.Failed(syncState.message)
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 正在同步则展示加载中
@@ -41,19 +41,19 @@ class CoursePageViewModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则展示加载中
                 reduce {
                     CoursePageState.Loading
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe()
-                return@container
+                return@orbitContainer
             }
         }
 

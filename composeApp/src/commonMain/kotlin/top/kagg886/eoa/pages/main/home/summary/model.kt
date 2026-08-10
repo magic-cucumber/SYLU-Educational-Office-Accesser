@@ -2,9 +2,9 @@ package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.lifecycle.ViewModel
 import kotlinx.datetime.*
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseExtendEntity
@@ -18,23 +18,23 @@ import kotlin.time.ExperimentalTime
 class SummaryModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), ContainerHost<SummaryState, SummarySideEffect> {
+) : ViewModel(), OrbitContainerHost<SummaryState, SummaryState, SummarySideEffect> {
     private val courseRecordDao = database.courseRecordDao()
     private val courseExtendDao = database.courseExtendDao()
 
-    override val container: Container<SummaryState, SummarySideEffect> =
-        container(SummaryState.Loading) {
+    override val container: OrbitContainer<SummaryState, SummaryState, SummarySideEffect> =
+        orbitContainer(SummaryState.Loading) {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则提示同步失败
                 reduce {
                     SummaryState.Failed(syncState.message)
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 正在同步则展示加载中
@@ -42,19 +42,19 @@ class SummaryModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@container
+                    return@orbitContainer
                 }
                 // 否则展示加载中
                 reduce {
                     SummaryState.Loading
                 }
-                return@container
+                return@orbitContainer
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe().join()
-                return@container
+                return@orbitContainer
             }
         }
 

@@ -11,9 +11,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.util.SnackBarType
@@ -26,10 +26,10 @@ import kotlin.time.Duration.Companion.minutes
 
 class CourseExportIcsModel(
     database: AppDatabase
-) : ViewModel(), ContainerHost<CourseExportIcsState, CourseIcsExportSideEffect> {
+) : ViewModel(), OrbitContainerHost<CourseExportIcsState, CourseExportIcsState, CourseIcsExportSideEffect> {
     private val dao = database.courseRecordDao()
     override val container =
-        container<CourseExportIcsState, CourseIcsExportSideEffect>(CourseExportIcsState("正在导出...")) {
+        orbitContainer<CourseExportIcsState, CourseIcsExportSideEffect>(CourseExportIcsState("正在导出...")) {
             exportICS().join()
         }
 
@@ -111,7 +111,7 @@ class CourseExportIcsModel(
 
         val file = FileKit.openFileSaver(
             suggestedName = "课程表 - ${calendar.start} to ${calendar.end}",
-            extension = "ics",
+            defaultExtension = "ics",
         )
         if (file == null) {
             postSideEffect(CourseIcsExportSideEffect.NavigateBack("用户取消导出"))

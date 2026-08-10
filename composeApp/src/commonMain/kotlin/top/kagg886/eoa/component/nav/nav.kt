@@ -1,7 +1,6 @@
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @file:JvmName("NavHostKt")
 @file:JvmMultifileClass
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-
 
 package top.kagg886.eoa.component.nav
 
@@ -35,9 +34,11 @@ import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.DialogHost
 import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.LocalOwnersProvider
-import androidx.navigation.compose.internal.PredictiveBackHandler
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.NavigationEventTransitionState.InProgress
+import androidx.navigationevent.compose.NavigationEventHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.launch
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 import kotlin.jvm.JvmSuppressWildcards
@@ -386,41 +387,48 @@ internal fun NavHost(
 
     var progress by remember { mutableFloatStateOf(0f) }
     var inPredictiveBack by remember { mutableStateOf(false) }
-    PredictiveBackHandler(currentBackStack.size > 1) { backEvent ->
-        var currentBackStackEntry: NavBackStackEntry? = null
-        if (currentBackStack.size > 1) {
-            progress = 0f
-            currentBackStackEntry = currentBackStack.lastOrNull()
-            composeNavigator.prepareForTransition(currentBackStackEntry!!)
-            val previousEntry = currentBackStack[currentBackStack.size - 2]
-            composeNavigator.prepareForTransition(previousEntry)
-        }
-        try {
-            backEvent.collect {
-                val goodEdge =
-                    limitBackGestureSwipeEdge == null || it.swipeEdge == limitBackGestureSwipeEdge
+    var backGestureRejected by remember { mutableStateOf(false) }
+    var currentBackStackEntry by remember { mutableStateOf<NavBackStackEntry?>(null) }
+    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
+    val navigationTransitionState = navigationEventState.transitionState
 
-                if (currentBackStack.size > 1) {
-                    inPredictiveBack = true
-                    if (goodEdge) {
-                        progress = it.progress
-                    } else {
-                        throw CancellationException(
-                            "The current edge is not allowed to perform back gesture."
-                        )
-                    }
-                }
+    LaunchedEffect(navigationTransitionState, currentBackStack) {
+        val event = (navigationTransitionState as? InProgress)?.latestEvent ?: return@LaunchedEffect
+        val goodEdge =
+            limitBackGestureSwipeEdge == null || event.swipeEdge == limitBackGestureSwipeEdge
+        backGestureRejected = !goodEdge
+        if (goodEdge && currentBackStack.size > 1) {
+            if (!inPredictiveBack) {
+                currentBackStackEntry = currentBackStack.lastOrNull()
+                composeNavigator.prepareForTransition(currentBackStackEntry!!)
+                composeNavigator.prepareForTransition(currentBackStack[currentBackStack.size - 2])
             }
-            if (currentBackStack.size > 1) {
-                inPredictiveBack = false
-                composeNavigator.popBackStack(currentBackStackEntry!!, false)
-            }
-        } catch (e: CancellationException) {
-            if (currentBackStack.size > 1) {
-                inPredictiveBack = false
-            }
+            inPredictiveBack = true
+            progress = event.progress
         }
     }
+
+    NavigationEventHandler(
+        state = navigationEventState,
+        isForwardEnabled = false,
+        isBackEnabled = currentBackStack.size > 1,
+        onBackCancelled = {
+            inPredictiveBack = false
+            backGestureRejected = false
+            progress = 0f
+            currentBackStackEntry = null
+        },
+        onBackCompleted = {
+            val entry = currentBackStackEntry ?: currentBackStack.lastOrNull()
+            if (!backGestureRejected && entry != null && currentBackStack.size > 1) {
+                composeNavigator.popBackStack(entry, false)
+            }
+            inPredictiveBack = false
+            backGestureRejected = false
+            progress = 0f
+            currentBackStackEntry = null
+        },
+    )
 
     DisposableEffect(lifecycleOwner) {
         // Setup the navController with proper owners
@@ -449,7 +457,7 @@ internal fun NavHost(
         val finalEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
             val targetDestination = targetState.destination as ComposeNavigator.Destination
 
-            if (composeNavigator.isPop.value || inPredictiveBack) {
+            if (currentBackStack.none { it.id == initialState.id } || inPredictiveBack) {
                 targetDestination.hierarchy.firstNotNullOfOrNull { destination ->
                     destination.createPopEnterTransition(this)
                 } ?: popEnterTransition.invoke(this)
@@ -463,7 +471,7 @@ internal fun NavHost(
         val finalExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
             val initialDestination = initialState.destination as ComposeNavigator.Destination
 
-            if (composeNavigator.isPop.value || inPredictiveBack) {
+            if (currentBackStack.none { it.id == initialState.id } || inPredictiveBack) {
                 initialDestination.hierarchy.firstNotNullOfOrNull { destination ->
                     destination.createPopExitTransition(this)
                 } ?: popExitTransition.invoke(this)
@@ -547,7 +555,7 @@ internal fun NavHost(
                     val targetZIndex =
                         when {
                             targetState.id == initialState.id -> initialZIndex
-                            composeNavigator.isPop.value || inPredictiveBack -> initialZIndex - 1f
+                            currentBackStack.none { it.id == initialState.id } || inPredictiveBack -> initialZIndex - 1f
                             else -> initialZIndex + 1f
                         }
                     zIndices[targetState.id] = targetZIndex

@@ -3,11 +3,11 @@ package top.kagg886.eoa.pages.main.home.second
 import androidx.lifecycle.ViewModel
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.syntax.Syntax
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -31,11 +31,11 @@ import kotlin.time.Duration.Companion.seconds
 
 class SecondClassModel(
     database: AppDatabase
-) : ViewModel(), ContainerHost<SecondClassState, SecondClassSideEffect> {
+) : ViewModel(), OrbitContainerHost<SecondClassState, SecondClassState, SecondClassSideEffect> {
     private val log = "SecondClassModel".asTaggedLogger
     private val secondClassDao = database.secondClassDao()
 
-    override val container: Container<SecondClassState, SecondClassSideEffect> = container(SecondClassState.Initial) {
+    override val container: OrbitContainer<SecondClassState, SecondClassState, SecondClassSideEffect> = orbitContainer(SecondClassState.Initial) {
         val cache = secondClassDao.all()
 
         if (cache.isNotEmpty()) {
@@ -52,7 +52,7 @@ class SecondClassModel(
                     )
                 }
             }
-            return@container
+            return@orbitContainer
         }
         login().join()
     }

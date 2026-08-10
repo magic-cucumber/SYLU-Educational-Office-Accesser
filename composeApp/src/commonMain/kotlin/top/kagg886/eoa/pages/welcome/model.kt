@@ -1,18 +1,18 @@
 package top.kagg886.eoa.pages.welcome
 
 import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppInitializeMMKV
 
-class WelcomeViewModel : ViewModel(), ContainerHost<WelcomeViewModelState, WelcomeSideEffect> {
-    override val container: Container<WelcomeViewModelState, WelcomeSideEffect> =
-        container(WelcomeViewModelState.Empty) {
+class WelcomeViewModel : ViewModel(), OrbitContainerHost<WelcomeViewModelState, WelcomeViewModelState, WelcomeSideEffect> {
+    override val container: OrbitContainer<WelcomeViewModelState, WelcomeViewModelState, WelcomeSideEffect> =
+        orbitContainer(WelcomeViewModelState.Empty) {
             if (AppInitializeMMKV.initialize) {
                 completeWelcomeWithoutTutorial().join()
-                return@container
+                return@orbitContainer
             }
             reduce {
                 WelcomeViewModelState.Welcome()

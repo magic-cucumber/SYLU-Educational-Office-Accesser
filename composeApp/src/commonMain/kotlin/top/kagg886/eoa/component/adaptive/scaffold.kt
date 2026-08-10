@@ -23,8 +23,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastFirst
-import androidx.window.core.layout.WindowHeightSizeClass
-import androidx.window.core.layout.WindowWidthSizeClass
+import androidx.window.core.layout.WindowSizeClass
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType.Companion.NavigationBar
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType.Companion.NavigationRail
 import kotlin.jvm.JvmInline
@@ -633,11 +632,11 @@ object NavigationSuiteScaffoldDefaults {
     fun calculateFromAdaptiveInfo(adaptiveInfo: WindowAdaptiveInfo): NavigationSuiteType {
         return with(adaptiveInfo) {
             if (windowPosture.isTabletop ||
-                windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
+                !windowSizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
             ) {
                 NavigationBar
-            } else if (windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED ||
-                windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.MEDIUM
+            } else if (
+                windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
             ) {
                 NavigationRail
             } else {

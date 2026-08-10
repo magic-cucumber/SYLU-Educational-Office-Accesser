@@ -13,9 +13,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.io.readByteArray
 import okio.Path
 import okio.buffer
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.*
 import top.kagg886.util.http.HttpClient
@@ -26,8 +26,8 @@ import top.kagg886.util.http.HttpClient
  * Created on: 2025/7/14 14:13
  * ================================================
  */
-class DownloadModel(private val url: String) : ViewModel(), ContainerHost<DownloadState, DownloadSideEffect> {
-    override val container: Container<DownloadState, DownloadSideEffect> = container(DownloadState.Fetching) {
+class DownloadModel(private val url: String) : ViewModel(), OrbitContainerHost<DownloadState, DownloadState, DownloadSideEffect> {
+    override val container: OrbitContainer<DownloadState, DownloadState, DownloadSideEffect> = orbitContainer(DownloadState.Fetching) {
         startDownload().join()
     }
 

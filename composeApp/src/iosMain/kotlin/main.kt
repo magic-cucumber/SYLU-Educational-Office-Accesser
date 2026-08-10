@@ -72,7 +72,7 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
 fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIViewController = ComposeUIViewController {
     initializeMMKV()
     val image by produceState(Result.failure(Exception("No image"))) {
-        val providers = item.attachments as? List<NSItemProvider> ?: return@produceState
+        val providers = item.attachments?.filterIsInstance<NSItemProvider>() ?: return@produceState
         val provider = providers.firstOrNull { it.hasItemConformingToTypeIdentifier(UTTypeImage.identifier) }
             ?: return@produceState
 

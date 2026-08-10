@@ -9,9 +9,9 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.launch
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.pages.main.home.link.Link
 import top.kagg886.util.asKtorLogger
@@ -24,7 +24,7 @@ import top.kagg886.util.http.HttpClient
  * Created on: 2025/7/2 10:04
  * ================================================
  */
-class LinkListModel : ViewModel(), ContainerHost<LinkListState, LinkListEffect> {
+class LinkListModel : ViewModel(), OrbitContainerHost<LinkListState, LinkListState, LinkListEffect> {
     private val logger = "LinkModel".asTaggedLogger
     private val client = HttpClient {
         install(ContentNegotiation) {
@@ -37,7 +37,7 @@ class LinkListModel : ViewModel(), ContainerHost<LinkListState, LinkListEffect> 
             level = LogLevel.ALL
         }
     }
-    override val container: Container<LinkListState, LinkListEffect> = container(LinkListState.Loading) {
+    override val container: OrbitContainer<LinkListState, LinkListState, LinkListEffect> = orbitContainer(LinkListState.Loading) {
         val exists = AppInitializeMMKV.link
 
         viewModelScope.launch block@{

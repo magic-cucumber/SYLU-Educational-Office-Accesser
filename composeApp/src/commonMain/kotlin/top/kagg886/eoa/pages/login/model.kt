@@ -4,23 +4,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 import top.kagg886.util.logger
 
-class LoginViewModel : ViewModel(), ContainerHost<LoginViewModelState, LoginSideEffect> {
+class LoginViewModel : ViewModel(), OrbitContainerHost<LoginViewModelState, LoginViewModelState, LoginSideEffect> {
 
     private val log = logger
 
     override val container =
-        container<LoginViewModelState, LoginSideEffect>(LoginViewModelState.Empty) {
+        orbitContainer<LoginViewModelState, LoginSideEffect>(LoginViewModelState.Empty) {
             if (AppLoginPropertiesMMKV.username.isNotEmpty() && AppLoginPropertiesMMKV.password.isNotEmpty()) {
                 postSideEffect(LoginSideEffect.NavigateToMain)
-                return@container
+                return@orbitContainer
             }
             reduce {
                 LoginViewModelState.WaitLogin.Waiting(

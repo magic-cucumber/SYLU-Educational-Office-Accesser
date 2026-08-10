@@ -25,10 +25,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import okio.ByteString.Companion.decodeBase64
-import org.orbitmvi.orbit.Container
-import org.orbitmvi.orbit.ContainerHost
+import org.orbitmvi.orbit.OrbitContainer
+import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.util.SnackBarType
@@ -44,12 +44,12 @@ import kotlin.uuid.Uuid
 class LLMProviderEditModel(
     database: AppDatabase,
     uuid: String?,
-) : ViewModel(), ContainerHost<LLMProviderEditState, LLMProviderEditSideEffect> {
+) : ViewModel(), OrbitContainerHost<LLMProviderEditState, LLMProviderEditState, LLMProviderEditSideEffect> {
     private val logger = "LLMProviderEditModel".asTaggedLogger
     private val dao = database.llmProviderDao()
 
-    override val container: Container<LLMProviderEditState, LLMProviderEditSideEffect> =
-        container(LLMProviderEditState.Loading) {
+    override val container: OrbitContainer<LLMProviderEditState, LLMProviderEditState, LLMProviderEditSideEffect> =
+        orbitContainer(LLMProviderEditState.Loading) {
             val provider = uuid?.let { targetUuid ->
                 dao.all().firstOrNull { it.uuid == targetUuid }
             } ?: emptyProvider()
