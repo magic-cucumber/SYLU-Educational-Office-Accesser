@@ -99,10 +99,27 @@ fun main() {
 
     if (lastException != null) {
         logger.e(lastException) { "App exit with exception" }
-        singleWindowApplication {
-            CrashApp(
-                error = lastException!!.stackTraceToString(),
-                onRestart = {}
+        application {
+            val state = rememberWindowState(
+                width = AppInitializeMMKV.size.first.dp,
+                height = AppInitializeMMKV.size.second.dp,
+                position = when (val offset = AppInitializeMMKV.offset) {
+                    null -> WindowPosition.PlatformDefault
+                    else -> WindowPosition.Absolute(offset.first.dp, offset.second.dp)
+                }
+            )
+
+            Window(
+                title = "SYLU - EOA | Crash Report",
+                state = state,
+                icon = painterResource(Res.drawable.icon),
+                onCloseRequest = ::exitApplication,
+                content = {
+                    CrashApp(
+                        error = lastException!!.stackTraceToString(),
+                        onRestart = {}
+                    )
+                }
             )
         }
     }
