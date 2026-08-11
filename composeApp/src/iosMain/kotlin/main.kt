@@ -4,7 +4,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toComposeImageBitmap
@@ -28,26 +31,51 @@ import top.kagg886.eoa.App
 import top.kagg886.eoa.ImageProcessingApp
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.eoa.rememberDeepLinkController
+import top.kagg886.report.CrashApp
+import top.kagg886.report.CrashConfig
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 import kotlin.coroutines.resume
 import kotlin.experimental.ExperimentalNativeApi
 
+private val logger = "MainViewController".asTaggedLogger
+
+@OptIn(ExperimentalForeignApi::class)
+private fun handleObjectiveCException(exception: NSException?) {
+    if (exception == null) {
+        return
+    }
+    val error = buildString {
+        appendLine("NSException: ${exception.name}")
+        appendLine("Reason: ${exception.reason.orEmpty()}")
+        appendLine("Call stack:")
+        append(exception.callStackSymbols.joinToString("\n"))
+    }
+    logger.a { error }
+    CrashConfig.hasUnResolveCrash = true
+    CrashConfig.crashText = error
+}
+
 fun createEmptyFlow(): MutableSharedFlow<String?> = MutableSharedFlow(
     replay = 1,
     extraBufferCapacity = 16
 )
 
-@OptIn(ExperimentalNativeApi::class)
+@OptIn(ExperimentalNativeApi::class, ExperimentalForeignApi::class)
 @Suppress("unused")
 fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlow()): UIViewController {
     initializeMMKV()
+
     setUnhandledExceptionHook {
-        "MainViewController".asTaggedLogger.a(it) { "App crashed" }
+        logger.a(it) { "App crashed" }
+        CrashConfig.hasUnResolveCrash = true
+        CrashConfig.crashText = it.stackTraceToString()
     }
 
-    return ComposeUIViewController {
+    NSSetUncaughtExceptionHandler(staticCFunction(::handleObjectiveCException))
+
+    val controller = ComposeUIViewController {
         setSingletonImageLoaderFactory { context ->
             ImageLoader.Builder(context)
                 .installCoilConfig()
@@ -55,6 +83,21 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
         }
 
         val controller = rememberDeepLinkController()
+
+        var hasUnResolveCrashInfo by remember {
+            mutableStateOf(CrashConfig.hasUnResolveCrash)
+        }
+
+        if (hasUnResolveCrashInfo) {
+            CrashApp(
+                error = CrashConfig.crashText,
+                onRestart = {
+                    CrashConfig.hasUnResolveCrash = false
+                    hasUnResolveCrashInfo = false
+                }
+            )
+            return@ComposeUIViewController
+        }
 
         LaunchedEffect(deepLinkFlow) {
             deepLinkFlow.collect { v ->
@@ -65,6 +108,8 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
 
         App(controller)
     }
+
+    return controller
 }
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
@@ -97,7 +142,7 @@ fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIVi
         val imageBytes = withContext(Dispatchers.IO) {
             val data = when (unknownResult) {
                 is NSURL -> {
-                    logger.i("URL: $item")
+                    this.logger.i("URL: $item")
                     memScoped {
                         val error = alloc<ObjCObjectVar<NSError?>>()
                         val result = NSData.dataWithContentsOfURL(unknownResult, NSDataReadingMappedIfSafe, error.ptr)
@@ -112,12 +157,12 @@ fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIVi
                 }
 
                 is UIImage -> {
-                    logger.i("Image: $item")
+                    this.logger.i("Image: $item")
                     UIImagePNGRepresentation(unknownResult)
                 }
 
                 is NSData -> {
-                    logger.i("Data: $item")
+                    this.logger.i("Data: $item")
                     unknownResult
                 }
 

@@ -3,18 +3,29 @@ package top.kagg886.eoa
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
-import top.kagg886.util.asTaggedLogger
+import top.kagg886.report.CrashActivity
+import top.kagg886.util.logger
+import kotlin.concurrent.thread
+import kotlin.system.exitProcess
 
 class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.UncaughtExceptionHandler {
-    private val logger = "EOAApplication".asTaggedLogger
-    private var defaultUncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
-
     override fun onCreate() {
         super.onCreate()
-        defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(this)
+        Handler(Looper.getMainLooper()).post {
+            try {
+                while (true) {
+                    Looper.loop()
+                }
+            } catch (e: Throwable) {
+                uncaughtException(Thread.currentThread(), e)
+            }
+        }
     }
 
     override fun newImageLoader(context: Context): ImageLoader {
@@ -24,8 +35,15 @@ class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.Uncau
     }
 
     override fun uncaughtException(t: Thread, e: Throwable) {
-        logger.a(e) { "App crashed on thread ${t.name}" }
-        defaultUncaughtExceptionHandler?.uncaughtException(t, e)
+        logger.withTag("EOAApplication").e("App crashed", e)
+        thread {
+            val intent = Intent(this, CrashActivity::class.java)
+            intent.putExtra("exceptions", e.stackTraceToString())
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+            Thread.sleep(1)
+            exitProcess(0)
+        }
     }
 
     companion object {
