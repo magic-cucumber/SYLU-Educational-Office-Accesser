@@ -1,10 +1,13 @@
 package top.kagg886.eoa.pages.main.home.summary
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.LocalTime
 
 sealed interface TodayClass {
     val date: Pair<LocalTime, LocalTime>
-    val progress: Float?
+    val progress: Flow<Float?>
+
     data class Single(
         val recordId: Long,
         val courseId: Long,
@@ -15,13 +18,13 @@ sealed interface TodayClass {
         val isExamine: Boolean,
 
         override val date: Pair<LocalTime, LocalTime>,
-        override val progress: Float? = null,
-    ): TodayClass
+        override val progress: Flow<Float?> = MutableStateFlow(null),
+    ) : TodayClass
 
     data class Conflict(
         override val date: Pair<LocalTime, LocalTime>,
-        override val progress: Float? = null,
+        override val progress: Flow<Float?> = MutableStateFlow(null),
 
         val data: List<Single>
-    ): TodayClass
+    ) : TodayClass
 }

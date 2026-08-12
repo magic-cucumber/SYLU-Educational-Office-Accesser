@@ -2,19 +2,48 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.foundation.pager.PagerState
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.delay
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.calculateWeekNumber
+import kotlin.time.Clock
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
 ) : ViewModel(), OrbitContainerHost<CourseListState, CourseListState, CourseListSideEffect> {
+    private val logger = "CourseListViewModel".asTaggedLogger
 
     override val container =
         orbitContainer<CourseListState, CourseListSideEffect>(CourseListState.Loading) {
             refresh().join()
+
+            //每日0:00刷新UI。立即执行
+            intent {
+                while (true) {
+                    val timeZone = TimeZone.currentSystemDefault()
+                    val now = Clock.System.now()
+
+                    val today = now.toLocalDateTime(timeZone).date
+                    val nextMidnight = today
+                        .plus(1, DateTimeUnit.DAY)
+                        .atStartOfDayIn(timeZone)
+
+                    logger.i("we will delay ${nextMidnight - now} to refresh course UI")
+
+                    delay(nextMidnight - now)
+
+                    reduce { CourseListState.Loading }
+                    refresh().join()
+                }
+            }
         }
 
     fun setDataUnsafe() = intent {

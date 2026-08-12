@@ -679,7 +679,8 @@ private fun CourseItem(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            course?.progress?.let { progress ->
+            val progress = course?.progress?.collectAsState(null)?.value
+            progress?.let { progress ->
                 LinearProgressIndicator(
                     progress = { progress.coerceIn(0f, 1f) },
                     modifier = Modifier

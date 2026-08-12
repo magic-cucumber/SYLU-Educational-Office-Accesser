@@ -1,62 +1,118 @@
 package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.*
 import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
+@OrbitExperimental
 class SummaryModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
 ) : ViewModel(), OrbitContainerHost<SummaryState, SummaryState, SummarySideEffect> {
+    private val logger = "SummaryModel".asTaggedLogger
     private val courseRecordDao = database.courseRecordDao()
     private val courseExtendDao = database.courseExtendDao()
 
     override val container: OrbitContainer<SummaryState, SummaryState, SummarySideEffect> =
         orbitContainer(SummaryState.Loading) {
-            if (syncState is MainRouteViewState.SyncFailed) {
-                // 非首次同步则展示脏数据
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return@orbitContainer
+            init().join()
+
+
+            //进度监听。每分钟调度一次
+            intent {
+                while (true) {
+                    awaitRunOn<SummaryState.Success> {
+                        logger.i("refresh summary UI")
+                        val current = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time.toSecondOfDay()
+                        for (i in state.plan) {
+                            val start = i.date.first.toSecondOfDay()
+                            val end = i.date.second.toSecondOfDay()
+                            val progress = current.takeIf { current in start..end }?.let {
+                                val a = current - start
+                                val b = end - start
+                                a.toFloat() / b.toFloat()
+                            }
+                            val state = i.progress as MutableStateFlow<Float?>
+                            state.emit(progress)
+
+                            logger.d("summary UI refresh result: $i --> $progress")
+                        }
+                    }
+                    delay(1.minutes)
+                    logger.i("prepare for refresh summary UI")
                 }
-                // 否则提示同步失败
-                reduce {
-                    SummaryState.Failed(syncState.message)
-                }
-                return@orbitContainer
             }
 
-            // 正在同步则展示加载中
-            if (syncState is MainRouteViewState.SyncProcess) {
-                // 如果有脏数据则展示
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return@orbitContainer
-                }
-                // 否则展示加载中
-                reduce {
-                    SummaryState.Loading
-                }
-                return@orbitContainer
-            }
+            //每日0:00刷新UI。
+            intent {
+                while (true) {
+                    val timeZone = TimeZone.currentSystemDefault()
+                    val now = Clock.System.now()
 
-            // 同步成功则展示数据
-            if (syncState is MainRouteViewState.SyncSuccess) {
-                setDataUnsafe().join()
-                return@orbitContainer
+                    val today = now.toLocalDateTime(timeZone).date
+                    val nextMidnight = today
+                        .plus(1, DateTimeUnit.DAY)
+                        .atStartOfDayIn(timeZone)
+
+                    delay(nextMidnight - now)
+
+                    reduce { SummaryState.Loading }
+                    init().join()
+                }
             }
         }
+
+    private fun init() = intent {
+        if (syncState is MainRouteViewState.SyncFailed) {
+            // 非首次同步则展示脏数据
+            if (syncState.haveDirtyData) {
+                setDataUnsafe().join()
+                return@intent
+            }
+            // 否则提示同步失败
+            reduce {
+                SummaryState.Failed(syncState.message)
+            }
+            return@intent
+        }
+
+        // 正在同步则展示加载中
+        if (syncState is MainRouteViewState.SyncProcess) {
+            // 如果有脏数据则展示
+            if (syncState.haveDirtyData) {
+                setDataUnsafe().join()
+                return@intent
+            }
+            // 否则展示加载中
+            reduce {
+                SummaryState.Loading
+            }
+            return@intent
+        }
+
+        // 同步成功则展示数据
+        if (syncState is MainRouteViewState.SyncSuccess) {
+            setDataUnsafe().join()
+            return@intent
+        }
+    }
 
     @OptIn(ExperimentalTime::class)
     fun setDataUnsafe() = intent {
@@ -103,7 +159,7 @@ class SummaryModel(
                     date = getTimeByLessonNumber(record.periodOfDay),
                     recordId = record.id!!,
                     courseId = course.id!!,
-                    progress = if (period == record.periodOfDay) progress else null,
+                    progress = MutableStateFlow(if (period == record.periodOfDay) progress else null),
                     isDegreeProgram = course.isDegreeRequired,
                     isExamine = course.isExaminable,
                 )
@@ -125,7 +181,10 @@ class SummaryModel(
                 weekNumber = currentWeek,
                 dayPeriod = period,
                 progress = with(AppSyncMMKV.calender!!) {
-                    start.until(today.date, DateTimeUnit.DAY).toFloat() / start.until(end, DateTimeUnit.DAY)
+                    start.until(today.date, DateTimeUnit.DAY).toFloat() / start.until(
+                        end,
+                        DateTimeUnit.DAY
+                    )
                 },
                 plan = plans,
                 extendClass = extendClass
