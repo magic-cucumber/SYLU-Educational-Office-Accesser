@@ -18,10 +18,8 @@ import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
-@OrbitExperimental
 class SummaryModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
@@ -30,6 +28,7 @@ class SummaryModel(
     private val courseRecordDao = database.courseRecordDao()
     private val courseExtendDao = database.courseExtendDao()
 
+    @OptIn(OrbitExperimental::class)
     override val container: OrbitContainer<SummaryState, SummaryState, SummarySideEffect> =
         orbitContainer(SummaryState.Loading) {
             init().join()

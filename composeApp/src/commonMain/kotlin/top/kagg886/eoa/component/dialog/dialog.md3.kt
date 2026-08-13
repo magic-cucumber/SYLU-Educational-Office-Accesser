@@ -1,3 +1,5 @@
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 package top.kagg886.eoa.component.dialog
 
 import androidx.compose.foundation.clickable
@@ -9,8 +11,14 @@ import androidx.compose.material3.AlertDialogDefaults.iconContentColor
 import androidx.compose.material3.AlertDialogDefaults.shape
 import androidx.compose.material3.AlertDialogDefaults.textContentColor
 import androidx.compose.material3.AlertDialogDefaults.titleContentColor
+import androidx.compose.material3.AlertDialogFlowRow
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.Surface
+import androidx.compose.material3.internal.ProvideContentColorTextStyle
+import androidx.compose.material3.tokens.DialogTokens
+import androidx.compose.material3.value
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -23,6 +31,7 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
+import androidx.compose.ui.unit.takeOrElse
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
 import org.orbitmvi.orbit.compose.collectAsState
@@ -82,28 +91,68 @@ fun DialogPageScaffold(
                 Column(Modifier.padding(24.dp)) {
                     icon?.let {
                         CompositionLocalProvider(LocalContentColor provides iconContentColor) {
-                            Box(Modifier.align(Alignment.CenterHorizontally)) { it() }
+                            Box(Modifier.padding(IconPadding).align(Alignment.CenterHorizontally)) {
+                                icon()
+                            }
                         }
-                        Spacer(Modifier.height(16.dp))
                     }
                     title?.let {
-                        CompositionLocalProvider(LocalContentColor provides titleContentColor) { it() }
-                        Spacer(Modifier.height(16.dp))
+                        ProvideContentColorTextStyle(
+                            contentColor = titleContentColor,
+                            textStyle = DialogTokens.HeadlineFont.value,
+                        ) {
+                            Box(
+                                // Align the title to the center when an icon is present.
+                                Modifier.padding(TitlePadding)
+                                    .align(
+                                        if (icon == null) {
+                                            Alignment.Start
+                                        } else {
+                                            Alignment.CenterHorizontally
+                                        }
+                                    )
+                            ) {
+                                title()
+                            }
+                        }
                     }
                     text?.let {
-                        CompositionLocalProvider(LocalContentColor provides textContentColor) { it() }
-                        Spacer(Modifier.height(24.dp))
+                        val textStyle = DialogTokens.SupportingTextFont.value
+                        ProvideContentColorTextStyle(
+                            contentColor = textContentColor,
+                            textStyle = textStyle,
+                        ) {
+                            Box(
+                                Modifier.weight(weight = 1f, fill = false)
+                                    .padding(TextPadding)
+                                    .align(Alignment.Start)
+                            ) {
+                                text()
+                            }
+                        }
                     }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(
-                            ButtonsMainAxisSpacing,
-                            Alignment.End,
-                        ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        dismissButton?.invoke()
-                        confirmButton()
+                    Box(modifier = Modifier.align(Alignment.End)) {
+                        val textStyle = DialogTokens.ActionLabelTextFont.value
+                        ProvideContentColorTextStyle(
+                            contentColor = DialogTokens.ActionLabelTextColor.value,
+                            textStyle = textStyle,
+                            content = {
+                                val buttonPaddingFromMICS =
+                                    LocalMinimumInteractiveComponentSize.current.takeOrElse { 0.dp } -
+                                            ButtonDefaults.MinHeight
+                                AlertDialogFlowRow(
+                                    mainAxisSpacing = ButtonsMainAxisSpacing,
+                                    crossAxisSpacing =
+                                        (ButtonsCrossAxisSpacing - buttonPaddingFromMICS).coerceIn(
+                                            0.dp,
+                                            ButtonsCrossAxisSpacing,
+                                        ),
+                                ) {
+                                    confirmButton()
+                                    dismissButton?.invoke()
+                                }
+                            },
+                        )
                     }
                 }
             }
@@ -128,4 +177,11 @@ fun DialogPageScaffold(
 internal val DialogMinWidth = 280.dp
 internal val DialogMaxWidth = 560.dp
 
+private val IconPadding = PaddingValues(bottom = 16.dp)
+private val TitlePadding = PaddingValues(bottom = 16.dp)
+
+private val TextPaddingValue = 24.dp
+private val TextPadding = PaddingValues(bottom = TextPaddingValue)
+
 private val ButtonsMainAxisSpacing = 8.dp
+private val ButtonsCrossAxisSpacing = 8.dp

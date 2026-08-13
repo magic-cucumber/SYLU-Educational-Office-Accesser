@@ -29,7 +29,6 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.component.dialog.DialogHost
 import top.kagg886.eoa.component.nav.NavHost
-import top.kagg886.eoa.component.reveal.RevealCanvasContainer
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.RootEffect
@@ -152,19 +151,17 @@ fun App(controller: DeeplinkController = rememberDeepLinkController()) = Composi
         Box(Modifier.fillMaxSize()) {
             //业务
             Surface(Modifier.fillMaxSize()) {
-                RevealCanvasContainer {
-                    SharedTransitionLayout {
-                        CompositionLocalProvider(LocalShareTransitionScope provides this) {
-                            NavHost(
-                                modifier = Modifier.fillMaxSize(),
-                                navController = nav,
-                                startDestination = RootRoute,
-                                dialogHost = { nav ->
-                                    DialogHost(dialogNavigator = nav)
-                                },
-                                builder = installEOAGraph,
-                            )
-                        }
+                SharedTransitionLayout {
+                    CompositionLocalProvider(LocalShareTransitionScope provides this) {
+                        NavHost(
+                            modifier = Modifier.fillMaxSize(),
+                            navController = nav,
+                            startDestination = RootRoute,
+                            dialogHost = { nav ->
+                                DialogHost(dialogNavigator = nav)
+                            },
+                            builder = installEOAGraph,
+                        )
                     }
                 }
 

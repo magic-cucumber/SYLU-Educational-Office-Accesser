@@ -27,10 +27,6 @@ import kotlin.reflect.KMutableProperty0
  * ================================================
  */
 
-private val LocalRevealCanvas = staticCompositionLocalOf<RevealCanvasState> {
-    error("CompositionLocal LocalRevealCanvasState not provided")
-}
-
 private val LocalRevealScope = staticCompositionLocalOf<RevealScope> {
     error("CompositionLocal LocalRevealScope not provided")
 }
@@ -38,18 +34,6 @@ private val LocalRevealScope = staticCompositionLocalOf<RevealScope> {
 private val LocalRevealKeyRegistry = staticCompositionLocalOf<MutableMap<Int, RevealOverlayRegistration>> {
     error("CompositionLocal LocalRevealKeyRegistry not provided")
 }
-
-@Composable
-fun RevealCanvasContainer(content: @Composable () -> Unit) {
-    val state = rememberRevealCanvasState()
-    CompositionLocalProvider(LocalRevealCanvas provides state) {
-        RevealCanvas(
-            revealCanvasState = state,
-            content = content
-        )
-    }
-}
-
 
 private typealias RevealOverlayContentFunction = @Composable (anchorBounds: IntRect) -> Unit
 
@@ -358,7 +342,6 @@ fun RevealContainer(
     }
 
     Reveal(
-        revealCanvasState = LocalRevealCanvas.current,
         revealState = state,
         overlayContent = {
             val key = it as Int
