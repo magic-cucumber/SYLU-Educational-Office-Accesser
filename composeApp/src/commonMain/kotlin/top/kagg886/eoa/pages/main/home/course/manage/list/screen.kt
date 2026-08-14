@@ -93,6 +93,7 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
 
                 DropdownMenuItem(
                     onClick = {
+                        showDropdownMenu = false
                         model.startExportICS()
                     },
                     text = { Text("保存为ICS文件") }
@@ -100,6 +101,7 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
 
                 DropdownMenuItem(
                     onClick = {
+                        showDropdownMenu = false
                         model.startExportCalender()
                     },
                     text = { Text("写入系统日历") }

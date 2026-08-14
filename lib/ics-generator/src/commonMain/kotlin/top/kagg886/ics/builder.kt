@@ -147,12 +147,12 @@ class IcsBuilder internal constructor() {
         val builder = StringBuilder()
 
         // 日历开始
-        builder.appendLine("BEGIN:VCALENDAR")
-        builder.appendLine("VERSION:${calendar.version}")
-        builder.appendLine("PRODID:${calendar.prodId}")
-        builder.appendLine("CALSCALE:${calendar.calScale}")
+        builder.appendIcsLine("BEGIN:VCALENDAR")
+        builder.appendIcsLine("VERSION:${calendar.version}")
+        builder.appendIcsLine("PRODID:${calendar.prodId}")
+        builder.appendIcsLine("CALSCALE:${calendar.calScale}")
 
-        calendar.method?.let { builder.appendLine("METHOD:$it") }
+        calendar.method?.let { builder.appendIcsLine("METHOD:$it") }
 
         // 添加事件
         calendar.events.forEach { event ->
@@ -160,7 +160,7 @@ class IcsBuilder internal constructor() {
         }
 
         // 日历结束
-        builder.appendLine("END:VCALENDAR")
+        builder.appendIcsLine("END:VCALENDAR")
 
         return builder.toString()
     }
@@ -172,76 +172,58 @@ class IcsBuilder internal constructor() {
 
         val builder = StringBuilder()
 
-        builder.appendLine("BEGIN:VEVENT")
-        builder.appendLine("UID:${event.uid}")
-        builder.appendLine("DTSTAMP:${formatDateTime(event.dtStamp)}Z")
+        builder.appendIcsLine("BEGIN:VEVENT")
+        builder.appendIcsLine("UID:${event.uid}")
+        builder.appendIcsLine("DTSTAMP:${formatUtcDateTime(event.dtStamp, TimeZone.UTC)}")
 
         if (event.isAllDay) {
             // 全天事件只使用日期，不涉及时区
-            builder.appendLine("DTSTART;VALUE=DATE:${formatDateTime(event.dtStart, true)}")
+            builder.appendIcsLine("DTSTART;VALUE=DATE:${formatDateTime(event.dtStart, true)}")
             event.dtEnd?.let {
-                builder.appendLine("DTEND;VALUE=DATE:${formatDateTime(it, true)}")
+                builder.appendIcsLine("DTEND;VALUE=DATE:${formatDateTime(it, true)}")
             }
         } else {
-            // 根据时区情况格式化时间
-            val timeZoneId = event.timeZone.id
-            if (timeZoneId == "UTC" || timeZoneId == "Z") {
-                // UTC 时间使用 Z 后缀
-                builder.appendLine("DTSTART:${formatDateTime(event.dtStart)}Z")
-                event.dtEnd?.let {
-                    builder.appendLine("DTEND:${formatDateTime(it)}Z")
-                }
-            } else {
-                // 其他时区使用 TZID 参数
-                builder.appendLine("DTSTART;TZID=${timeZoneId}:${formatDateTime(event.dtStart)}")
-                event.dtEnd?.let {
-                    builder.appendLine("DTEND;TZID=${timeZoneId}:${formatDateTime(it)}")
-                }
+            // 生成器不携带 VTIMEZONE，因此统一输出 UTC，避免系统时区 ID
+            // （例如 GMT+08:00）作为 TZID 参数导致 Thunderbird 无法解析。
+            builder.appendIcsLine("DTSTART:${formatUtcDateTime(event.dtStart, event.timeZone)}")
+            event.dtEnd?.let {
+                builder.appendIcsLine("DTEND:${formatUtcDateTime(it, event.timeZone)}")
             }
         }
 
-        event.duration?.let { builder.appendLine("DURATION:$it") }
-        event.summary?.let { builder.appendLine("SUMMARY:${formatText(it)}") }
-        event.description?.let { builder.appendLine("DESCRIPTION:${formatText(it)}") }
-        event.location?.let { builder.appendLine("LOCATION:${formatText(it)}") }
-        event.organizer?.let { builder.appendLine("ORGANIZER:$it") }
-        event.status?.let { builder.appendLine("STATUS:${it.name}") }
-        event.priority?.let { builder.appendLine("PRIORITY:$it") }
-        event.url?.let { builder.appendLine("URL:$it") }
-        event.transparency?.let { builder.appendLine("TRANSP:${it.name}") }
-        event.classification?.let { builder.appendLine("CLASS:${it.name}") }
+        event.duration?.let { builder.appendIcsLine("DURATION:$it") }
+        event.summary?.let { builder.appendIcsLine("SUMMARY:${formatText(it)}") }
+        event.description?.let { builder.appendIcsLine("DESCRIPTION:${formatText(it)}") }
+        event.location?.let { builder.appendIcsLine("LOCATION:${formatText(it)}") }
+        event.organizer?.let { builder.appendIcsLine("ORGANIZER:$it") }
+        event.status?.let { builder.appendIcsLine("STATUS:${it.name}") }
+        event.priority?.let { builder.appendIcsLine("PRIORITY:$it") }
+        event.url?.let { builder.appendIcsLine("URL:$it") }
+        event.transparency?.let { builder.appendIcsLine("TRANSP:${it.name}") }
+        event.classification?.let { builder.appendIcsLine("CLASS:${it.name}") }
 
         // 添加参与者
         event.attendees.forEach { attendee ->
-            builder.appendLine("ATTENDEE:$attendee")
+            builder.appendIcsLine("ATTENDEE:$attendee")
         }
 
         // 添加分类
         if (event.categories.isNotEmpty()) {
-            builder.appendLine("CATEGORIES:${event.categories.joinToString(",") { formatText(it) }}")
+            builder.appendIcsLine("CATEGORIES:${event.categories.joinToString(",") { formatText(it) }}")
         }
 
         // 重复规则
-        event.recurrenceRule?.let { builder.appendLine("RRULE:$it") }
+        event.recurrenceRule?.let { builder.appendIcsLine("RRULE:$it") }
         event.recurrenceId?.let {
-            val timeZoneId = event.timeZone.id
-            if (timeZoneId == "UTC" || timeZoneId == "Z") {
-                builder.appendLine("RECURRENCE-ID:${formatDateTime(it)}Z")
-            } else {
-                builder.appendLine("RECURRENCE-ID;TZID=${timeZoneId}:${formatDateTime(it)}")
-            }
+            builder.appendIcsLine("RECURRENCE-ID:${formatUtcDateTime(it, event.timeZone)}")
         }
 
         // 例外日期
         if (event.exceptionDates.isNotEmpty()) {
-            val timeZoneId = event.timeZone.id
-            if (timeZoneId == "UTC" || timeZoneId == "Z") {
-                val exDates = event.exceptionDates.joinToString(",") { "${formatDateTime(it)}Z" }
-                builder.appendLine("EXDATE:$exDates")
-            } else {
-                val exDates = event.exceptionDates.joinToString(",") { formatDateTime(it) }
-                builder.appendLine("EXDATE;TZID=${timeZoneId}:$exDates")
+            val exDates = event.exceptionDates.joinToString(",") {
+                formatUtcDateTime(it, event.timeZone)
             }
+            builder.appendIcsLine("EXDATE:$exDates")
         }
 
         // 提醒
@@ -249,7 +231,7 @@ class IcsBuilder internal constructor() {
             builder.append(generateAlarmContent(alarm))
         }
 
-        builder.appendLine("END:VEVENT")
+        builder.appendIcsLine("END:VEVENT")
 
         return builder.toString()
     }
@@ -260,23 +242,27 @@ class IcsBuilder internal constructor() {
     private fun generateAlarmContent(alarm: IcsAlarm): String {
         val builder = StringBuilder()
 
-        builder.appendLine("BEGIN:VALARM")
-        builder.appendLine("ACTION:${alarm.action.name}")
-        builder.appendLine("TRIGGER:${alarm.trigger}")
+        builder.appendIcsLine("BEGIN:VALARM")
+        builder.appendIcsLine("ACTION:${alarm.action.name}")
+        builder.appendIcsLine("TRIGGER:${alarm.trigger}")
 
-        alarm.description?.let { builder.appendLine("DESCRIPTION:${formatText(it)}") }
-        alarm.summary?.let { builder.appendLine("SUMMARY:${formatText(it)}") }
-        alarm.duration?.let { builder.appendLine("DURATION:$it") }
-        alarm.repeat?.let { builder.appendLine("REPEAT:$it") }
+        alarm.description?.let { builder.appendIcsLine("DESCRIPTION:${formatText(it)}") }
+        alarm.summary?.let { builder.appendIcsLine("SUMMARY:${formatText(it)}") }
+        alarm.duration?.let { builder.appendIcsLine("DURATION:$it") }
+        alarm.repeat?.let { builder.appendIcsLine("REPEAT:$it") }
 
         alarm.attendees.forEach { attendee ->
-            builder.appendLine("ATTENDEE:$attendee")
+            builder.appendIcsLine("ATTENDEE:$attendee")
         }
 
-        builder.appendLine("END:VALARM")
+        builder.appendIcsLine("END:VALARM")
 
         return builder.toString()
     }
+}
+
+private fun StringBuilder.appendIcsLine(value: String) {
+    append(value).append("\r\n")
 }
 
 /**
@@ -311,7 +297,7 @@ class EventBuilder internal constructor() {
     private var uid: String = generateUID()
     private var timeZone: TimeZone = TimeZone.currentSystemDefault()
     @OptIn(ExperimentalTime::class)
-    private var dtStamp: LocalDateTime = Clock.System.now().toLocalDateTime(timeZone)
+    private var dtStamp: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     private var dtStart: LocalDateTime by Delegates.notNull()
     private var dtEnd: LocalDateTime? = null
     private var duration: String? = null
@@ -324,7 +310,7 @@ class EventBuilder internal constructor() {
     private var status: EventStatus? = null
     private var priority: Int? = null
     private var url: String? = null
-    private var recurrenceRule: String? = null
+    private var recurrenceRule: RecurrenceRule? = null
     private var recurrenceId: LocalDateTime? = null
     private val exceptionDates = mutableListOf<LocalDateTime>()
     private val alarms = mutableListOf<IcsAlarm>()
@@ -710,7 +696,7 @@ class EventBuilder internal constructor() {
     fun recurrence(block: RecurrenceBuilder.() -> Unit) {
         val recurrenceBuilder = RecurrenceBuilder()
         recurrenceBuilder.block()
-        this.recurrenceRule = recurrenceBuilder.build().toRRule()
+        this.recurrenceRule = recurrenceBuilder.build()
     }
 
     /**
@@ -792,7 +778,7 @@ class EventBuilder internal constructor() {
             status = status,
             priority = priority,
             url = url,
-            recurrenceRule = recurrenceRule,
+            recurrenceRule = recurrenceRule?.toRRule(timeZone),
             recurrenceId = recurrenceId,
             exceptionDates = exceptionDates,
             alarms = alarms,

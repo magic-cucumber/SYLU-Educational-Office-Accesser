@@ -92,10 +92,10 @@ class CourseManageListModel(
     }
 
     fun openAddOrEditCourse(data: CourseEntity?) = intent {
-        if (Clock.System.todayIn(TimeZone.currentSystemDefault()) !in with(AppSyncMMKV.calender!!) { start..end }) {
-            postSideEffect(CourseManageSideEffect.Toast("当前未处于学期中，不可编辑/新建课程"))
-            return@intent
-        }
+//        if (Clock.System.todayIn(TimeZone.currentSystemDefault()) !in with(AppSyncMMKV.calender!!) { start..end }) {
+//            postSideEffect(CourseManageSideEffect.Toast("当前未处于学期中，不可编辑/新建课程"))
+//            return@intent
+//        }
 
         if (data?.isUserAdded == false) {
             postSideEffect(CourseManageSideEffect.Toast("系统课程不可修改"))

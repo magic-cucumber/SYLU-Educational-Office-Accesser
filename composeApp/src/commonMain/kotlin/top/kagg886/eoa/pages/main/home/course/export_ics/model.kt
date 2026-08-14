@@ -42,13 +42,13 @@ class CourseExportIcsModel(
 
         val (isInHoliday, isBeforeInTerm, weekNumber) = calendar.calculateWeekNumber()
 
-        if (weekNumber == -1) {
-            when {
-                isInHoliday -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
-                isBeforeInTerm -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("请等待开学后再进行导出"))
-            }
-            return@intent
-        }
+//        if (weekNumber == -1) {
+//            when {
+//                isInHoliday -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
+//                isBeforeInTerm -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("请等待开学后再进行导出"))
+//            }
+//            return@intent
+//        }
 
         val map = (1..calendar.count()).map { weekNumber ->
             viewModelScope.async {

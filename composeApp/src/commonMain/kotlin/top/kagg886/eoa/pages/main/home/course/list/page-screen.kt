@@ -48,10 +48,7 @@ import top.kagg886.util.getTimeByLessonNumber
 import kotlin.random.Random
 
 @Composable
-fun CoursePageListScreen(
-    index: Int,
-    courseListState: CourseListState.Success
-) {
+fun CoursePageListScreen(index: Int, courseListState: CourseListState.DataAccessible) {
     val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CoursePageViewModel>(key = "${index * 31 + syncState.toViewModelKey().hashCode()}") {
@@ -104,7 +101,7 @@ fun CoursePageListScreen(
 private fun CoursePageScreenContent(
     index: Int,
     state: CoursePageState,
-    courseListState: CourseListState.Success,
+    courseListState: CourseListState.DataAccessible,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     onCourseItemClicked: (CourseAndRecord) -> Unit,

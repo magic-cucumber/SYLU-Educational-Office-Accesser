@@ -5,6 +5,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration
 
 /**
@@ -112,12 +114,16 @@ data class RecurrenceRule(
     val bySecond: List<Int>? = null,
     val weekStart: String? = null
 ) {
-    fun toRRule(): String {
+    fun toRRule(timeZone: TimeZone? = null): String {
         val parts = mutableListOf<String>()
         parts.add("FREQ=${frequency.name}")
         interval?.let { parts.add("INTERVAL=$it") }
         count?.let { parts.add("COUNT=$it") }
-        until?.let { parts.add("UNTIL=${formatDateTime(it)}") }
+        until?.let { untilDateTime ->
+            val value = timeZone?.let { formatUtcDateTime(untilDateTime, it) }
+                ?: formatDateTime(untilDateTime)
+            parts.add("UNTIL=$value")
+        }
         byDay?.let { if (it.isNotEmpty()) parts.add("BYDAY=${it.joinToString(",")}") }
         byMonth?.let { if (it.isNotEmpty()) parts.add("BYMONTH=${it.joinToString(",")}") }
         byMonthDay?.let { if (it.isNotEmpty()) parts.add("BYMONTHDAY=${it.joinToString(",")}") }
@@ -168,6 +174,17 @@ internal fun formatDateTime(dateTime: LocalDateTime, isAllDay: Boolean = false):
         }
     }
 )
+
+/**
+ * 将指定时区中的本地时间转换成 RFC 5545 要求的 UTC DATE-TIME。
+ *
+ * 生成器不写入 VTIMEZONE，因此事件时间统一使用 UTC，避免把固定偏移
+ * 时区 ID（例如 GMT+08:00）拼接进 TZID 参数后破坏属性边界。
+ */
+internal fun formatUtcDateTime(dateTime: LocalDateTime, timeZone: TimeZone): String {
+    val utcDateTime = dateTime.toInstant(timeZone).toLocalDateTime(TimeZone.UTC)
+    return "${formatDateTime(utcDateTime)}Z"
+}
 
 /**
  * 格式化文本，处理 ICS 格式中的特殊字符
@@ -275,4 +292,3 @@ internal fun formatDuration(duration: Duration, isNegative: Boolean = false): St
 fun triggerTime(duration: Duration, beforeEvent: Boolean = true): String {
     return formatDuration(duration, beforeEvent)
 }
-

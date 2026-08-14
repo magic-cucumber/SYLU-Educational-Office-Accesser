@@ -66,7 +66,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
         route = EOAHomeModule.COURSE,
         title = {
             when (val it = state) {
-                is CourseListState.Success -> {
+                is CourseListState.DataAccessible -> {
                     val it = it.state.currentPage
 
                     AnimatedContent(
@@ -97,7 +97,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 onClick = {
                     iconExpanded = true
                 },
-                enabled = state is CourseListState.Success,
+                enabled = state is CourseListState.DataAccessible,
                 modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
                     Text("点这里可以刷新课表、回到本周，也可以快速跳到其他周。")
                 }
@@ -116,7 +116,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 ModalBottomSheet(
                     onDismissRequest = { jumpModal = false }
                 ) {
-                    val weeks = (state as? CourseListState.Success)?.allWeek ?: -1
+                    val weeks = (state as? CourseListState.DataAccessible)?.allWeek ?: -1
                     if (weeks == -1) {
                         return@ModalBottomSheet
                     }
@@ -154,15 +154,18 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                         iconExpanded = false
                     }
                 )
-                DropdownMenuItem(
-                    text = {
-                        Text("回到本周")
-                    },
-                    onClick = {
-                        model.selectToWeek()
-                        iconExpanded = false
-                    }
-                )
+
+                if (state is CourseListState.Success) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("回到本周")
+                        },
+                        onClick = {
+                            model.selectToWeek()
+                            iconExpanded = false
+                        }
+                    )
+                }
 
                 DropdownMenuItem(
                     text = {
@@ -204,7 +207,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 is CourseListSideEffect.ScrollToCurrentWeek -> {
                     // 在 UI 层执行动画，这里已经有正确的 Compose 上下文
                     scope.launch {
-                        (state as? CourseListState.Success)?.state?.animateScrollToPage(it.page)
+                        (state as? CourseListState.DataAccessible)?.state?.animateScrollToPage(it.page)
                     }
                 }
             }
@@ -231,7 +234,7 @@ private fun CourseListScreenContent(
         }
     }
 
-    is CourseListState.Success -> {
+    is CourseListState.DataAccessible -> {
         CourseDrawerContent(state)
     }
 
@@ -247,7 +250,7 @@ private fun CourseListScreenContent(
         )
     }
 
-    is CourseListState.FailedButSuccess -> {
+    is CourseListState.AfterTerm -> {
         ErrorPage(
             icon = {
                 Icon(
@@ -261,7 +264,7 @@ private fun CourseListScreenContent(
                 Text("温馨提示")
             },
             message = {
-                Text(state.msg)
+                Text("享受假期吧!")
             },
             modifier = Modifier.fillMaxSize()
         )
@@ -269,9 +272,7 @@ private fun CourseListScreenContent(
 }
 
 @Composable
-private fun CourseDrawerContent(
-    state: CourseListState.Success
-) {
+private fun CourseDrawerContent(state: CourseListState.DataAccessible) {
     HorizontalPager(
         state = state.state,
         modifier = Modifier.fillMaxSize(),

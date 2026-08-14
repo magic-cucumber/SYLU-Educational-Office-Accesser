@@ -59,15 +59,15 @@ class CourseExportCalenderModel(
         }
         logger.i("开始解析数据库")
 
-        val (isInHoliday, isBeforeInTerm, weekNumber) = schoolCalender.calculateWeekNumber()
-
-        if (weekNumber == -1) {
-            when {
-                isInHoliday -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
-                isBeforeInTerm -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("请等待开学后再进行导出"))
-            }
-            return@intent
-        }
+//        val (isInHoliday, isBeforeInTerm, weekNumber) = schoolCalender.calculateWeekNumber()
+//
+//        if (weekNumber == -1) {
+//            when {
+//                isInHoliday -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
+//                isBeforeInTerm -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("请等待开学后再进行导出"))
+//            }
+//            return@intent
+//        }
 
         reduce {
             CourseExportCalenderState(

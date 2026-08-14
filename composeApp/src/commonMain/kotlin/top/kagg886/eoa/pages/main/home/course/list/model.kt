@@ -48,20 +48,22 @@ class CourseListViewModel(
 
     fun setDataUnsafe() = intent {
         val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
-
+        val allWeek = AppSyncMMKV.calender!!.count()
         if (currentWeek == -1) {
             when {
                 isInHoliday -> reduce {
-                    CourseListState.FailedButSuccess("享受假期吧！")
+                    CourseListState.AfterTerm
                 }
 
                 isBeforeInTerm -> reduce {
-                    CourseListState.FailedButSuccess("准备开学吧！")
+                    CourseListState.BeforeTerm(
+                        state = PagerState(currentPage = 0) { allWeek },
+                        allWeek = allWeek
+                    )
                 }
             }
             return@intent
         }
-        val allWeek = AppSyncMMKV.calender!!.count()
         reduce {
             CourseListState.Success(
                 currentWeek = currentWeek,
@@ -74,11 +76,11 @@ class CourseListViewModel(
 
     fun selectToWeek(data: Int? = null) = intent {
         val s = state
-        if (s !is CourseListState.Success) {
+        if (s !is CourseListState.DataAccessible) {
             postSideEffect(CourseListSideEffect.Toast("正在加载中，请稍等片刻"))
             return@intent
         }
-        val week = data ?: (s.currentWeek - 1)
+        val week = data ?: (((s as? CourseListState.Success)?.currentWeek ?: 1) - 1)
         if (week == s.state.currentPage) {
             postSideEffect(CourseListSideEffect.Toast("当前周数无需跳转"))
             return@intent
@@ -129,14 +131,16 @@ sealed interface CourseListState {
     data class Failed(val msg: String) : CourseListState
 
     data class Success(
-        val state: PagerState,
+        override val state: PagerState,
         val currentWeek: Int, //当前周数
-        val allWeek: Int, //总周数
-    ) : CourseListState
-
-    data class FailedButSuccess(
-        val msg: String,
-    ) : CourseListState
+        override val allWeek: Int, //总周数
+    ) : DataAccessible
+    data object AfterTerm: CourseListState
+    data class BeforeTerm(override val state: PagerState, override val allWeek: Int) : DataAccessible
+    interface DataAccessible: CourseListState {
+        val state: PagerState
+        val allWeek: Int
+    }
 }
 
 sealed interface CourseListSideEffect {
