@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -41,8 +43,9 @@ import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.rememberSharedContentState
-import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.eoa.util.shared.shareBoundsComposed
 
 @Serializable
 data object CourseListRoute
@@ -61,6 +64,10 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
     val fabArrow = when (currentLayoutType()) {
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
+    }
+    val fabShape = when (currentLayoutType()) {
+        NavigationSuiteType.NavigationDrawer -> FloatingActionButtonDefaults.extendedFabShape
+        else -> FloatingActionButtonDefaults.shape
     }
     HomeScreen(
         route = EOAHomeModule.COURSE,
@@ -190,12 +197,17 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
         fabOnClick = {
             nav.navigate(CourseManageListRoute)
         },
-        fabModifier = Modifier.shareElementComposed(
-            sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
-            animatedVisibilityScope = LocalAnimatedContentScope.current
-        ).revealableAutoMeasured(1, fabArrow) {
-            Text("点这里管理课表，可以添加、修改课程，也可以导出课表。")
-        }
+        fabModifier = Modifier
+            .shareBoundsComposed(
+                sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
+                animatedVisibilityScope = LocalAnimatedContentScope.current,
+                resizeMode = RemeasureToBounds,
+                clipInOverlayDuringTransition = OverlayClip(fabShape)
+            )
+            .clip(fabShape)
+            .revealableAutoMeasured(1, fabArrow) {
+                Text("点这里管理课表，可以添加、修改课程，也可以导出课表。")
+            }
     ) {
         val scope = rememberCoroutineScope()
         model.collectSideEffect {

@@ -36,7 +36,7 @@ import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
-import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.eoa.util.shared.shareBoundsComposed
 import top.kagg886.util.toFixed
 
 @Serializable
@@ -131,10 +131,10 @@ private fun CourseDetailPanelPhone(
     ) {
         // 课程卡片
         CourseCard(
-            state, visible, Modifier.shareElementComposed(
+            state, visible, Modifier.shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-$recordId"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
-            ).shareElementComposed(
+            ).shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(key = "list-course-to-detail-$recordId"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
             )
@@ -176,10 +176,10 @@ private fun CourseDetailPanelTablet(
             CourseCard(
                 state,
                 visible,
-                modifier = Modifier.weight(1f).fillMaxHeight().shareElementComposed(
+                modifier = Modifier.weight(1f).fillMaxHeight().shareBoundsComposed(
                     sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-$recordId"),
                     animatedVisibilityScope = LocalAnimatedContentScope.current
-                ).shareElementComposed(
+                ).shareBoundsComposed(
                     sharedContentState = rememberSharedContentState(key = "list-course-to-detail-$recordId"),
                     animatedVisibilityScope = LocalAnimatedContentScope.current
                 )

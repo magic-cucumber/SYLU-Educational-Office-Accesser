@@ -43,7 +43,7 @@ import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
-import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.eoa.util.shared.shareBoundsComposed
 import top.kagg886.util.getTimeByLessonNumber
 import kotlin.random.Random
 
@@ -285,7 +285,7 @@ private fun CoursePageScreenSuccess(
                                     .height(cardHeight)
                                     .padding(horizontal = cardPadding, vertical = cardPadding)
                                     .applyIf(!course.hasConflict) {
-                                        shareElementComposed(
+                                        shareBoundsComposed(
                                             sharedContentState = rememberSharedContentState(key = "list-course-to-detail-${course.asNoConflict.record.id}"),
                                             animatedVisibilityScope = LocalAnimatedContentScope.current
                                         )

@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
@@ -38,8 +40,9 @@ import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.rememberSharedContentState
-import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.eoa.util.shared.shareBoundsComposed
 
 @Serializable
 data object CourseManageListRoute
@@ -60,6 +63,7 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
     }
+    val surfaceShape = MaterialTheme.shapes.extraLarge
 
     HomeScreen(
         route = EOAHomeModule.COURSE,
@@ -141,18 +145,25 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
             }
         }
         Surface(
-            Modifier.fillMaxSize().shareElementComposed(
-                sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
-                animatedVisibilityScope = LocalAnimatedContentScope.current
-            ).revealableAutoMeasured(1, surfaceArrow) {
-                Text(
-                    if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
-                        "这里是课程管理列表。左右滑动课程，可以编辑或删除。"
-                    } else {
-                        "这里是课程管理列表。点击铅笔按钮编辑课程，点击垃圾桶按钮删除课程。"
-                    }
+            modifier = Modifier
+                .fillMaxSize()
+                .shareBoundsComposed(
+                    sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
+                    animatedVisibilityScope = LocalAnimatedContentScope.current,
+                    resizeMode = RemeasureToBounds,
+                    clipInOverlayDuringTransition = OverlayClip(surfaceShape)
                 )
-            }
+                .clip(surfaceShape)
+                .revealableAutoMeasured(1, surfaceArrow) {
+                    Text(
+                        if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
+                            "这里是课程管理列表。左右滑动课程，可以编辑或删除。"
+                        } else {
+                            "这里是课程管理列表。点击铅笔按钮编辑课程，点击垃圾桶按钮删除课程。"
+                        }
+                    )
+                },
+            shape = surfaceShape
         ) {
             CoursePageScreenContent(
                 state = state,

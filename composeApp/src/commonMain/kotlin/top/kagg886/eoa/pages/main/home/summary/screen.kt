@@ -55,7 +55,7 @@ import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.rememberSharedContentState
-import top.kagg886.eoa.util.shared.shareElementComposed
+import top.kagg886.eoa.util.shared.shareBoundsComposed
 import top.kagg886.util.toFixed
 
 @Serializable
@@ -659,7 +659,7 @@ private fun CourseItem(
     val cardModifier = if (course != null && course is TodayClass.Single) {
         modifier
             .fillMaxWidth()
-            .shareElementComposed(
+            .shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course.recordId}"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
             )
