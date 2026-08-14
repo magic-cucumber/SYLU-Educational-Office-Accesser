@@ -3,6 +3,7 @@ package top.kagg886.eoa.pages.main.home.exam.list.content
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,7 +41,10 @@ import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.OverlayClip
+import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
+import top.kagg886.eoa.util.shared.shareBoundsComposed
 import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 import top.kagg886.util.toFixed
@@ -65,7 +69,6 @@ fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExam
                 Text("考试列表")
             },
             menu = {
-                val scope = rememberCoroutineScope()
                 var expanded by remember { mutableStateOf(false) }
                 IconButton(
                     onClick = { expanded = !expanded },
@@ -268,11 +271,19 @@ private fun ExamItem(
 
     OutlinedCard(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .applyIf(exam != null) {
+                shareBoundsComposed(
+                    sharedContentState = rememberSharedContentState(
+                        key = "exam-card-to-detail-${exam?.id}"
+                    ),
+                    animatedVisibilityScope = LocalAnimatedContentScope.current,
+                    resizeMode = RemeasureToBounds,
+                    clipInOverlayDuringTransition = OverlayClip(CardDefaults.shape)
+                )
+            }
             .clickable(enabled = !showPlaceHolder) {
                 exam?.let { onExamItemClicked(it) }
             },
-        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         ListItem(
@@ -283,10 +294,14 @@ private fun ExamItem(
                     modifier = Modifier.placeholder(
                         visible = showPlaceHolder,
                         highlight = PlaceholderHighlight.shimmer()
-                    ).shareElementComposed(
-                        sharedContentState = rememberSharedContentState(key = "exam-to-detail-${exam?.id}"),
-                        animatedVisibilityScope = LocalAnimatedContentScope.current
-                    ),
+                    ).applyIf(exam != null) {
+                        shareElementComposed(
+                            sharedContentState = rememberSharedContentState(
+                                key = "exam-name-to-detail-${exam?.id}"
+                            ),
+                            animatedVisibilityScope = LocalAnimatedContentScope.current
+                        )
+                    },
                 )
             },
             supportingContent = {
@@ -348,7 +363,14 @@ private fun ExamItem(
                         modifier = Modifier.placeholder(
                             visible = showPlaceHolder,
                             highlight = PlaceholderHighlight.shimmer()
-                        )
+                        ).applyIf(exam?.degree == true) {
+                            shareElementComposed(
+                                sharedContentState = rememberSharedContentState(
+                                    key = "exam-degree-to-detail-${exam?.id}"
+                                ),
+                                animatedVisibilityScope = LocalAnimatedContentScope.current
+                            )
+                        }
                     )
                 }
             }

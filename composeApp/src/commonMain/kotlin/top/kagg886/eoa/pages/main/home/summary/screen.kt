@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
@@ -54,8 +56,11 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.OverlayClip
+import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
+import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
 
 @Serializable
@@ -655,23 +660,27 @@ private fun CourseItem(
         is TodayClass.Single -> course.name
         null -> "课程名称"
     }
+    val cardShape = RoundedCornerShape(8.dp)
 
-    val cardModifier = if (course != null && course is TodayClass.Single) {
-        modifier
-            .fillMaxWidth()
-            .shareBoundsComposed(
-                sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-${course.recordId}"),
-                animatedVisibilityScope = LocalAnimatedContentScope.current
+    val cardModifier = modifier
+        .fillMaxWidth()
+        .applyIf(course is TodayClass.Single) {
+            shareBoundsComposed(
+                sharedContentState = rememberSharedContentState(
+                    key = "summary-course-to-detail-${(course as TodayClass.Single).recordId}"
+                ),
+                animatedVisibilityScope = LocalAnimatedContentScope.current,
+                resizeMode = RemeasureToBounds,
+                clipInOverlayDuringTransition = OverlayClip(cardShape)
             )
-    } else {
-        modifier.fillMaxWidth()
-    }
+        }
+        .clip(cardShape)
 
     ElevatedCard(
         onClick = { course?.let { onCourseItemClicked(it) } },
         enabled = course != null,
         modifier = cardModifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = cardShape,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -692,7 +701,7 @@ private fun CourseItem(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
@@ -715,7 +724,14 @@ private fun CourseItem(
                         modifier = Modifier.placeholder(
                             visible = showPlaceHolder,
                             highlight = PlaceholderHighlight.shimmer()
-                        )
+                        ).applyIf(course is TodayClass.Single) {
+                            shareElementComposed(
+                                sharedContentState = rememberSharedContentState(
+                                    key = "summary-course-name-to-detail-${(course as TodayClass.Single).recordId}"
+                                ),
+                                animatedVisibilityScope = LocalAnimatedContentScope.current
+                            )
+                        }
                     )
 
                     when (course) {

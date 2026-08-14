@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -35,8 +37,11 @@ import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
+import top.kagg886.eoa.util.shared.OverlayClip
+import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
+import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
 
 @Serializable
@@ -71,20 +76,38 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
 
 @Composable
 private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) {
+    val rootModifier = Modifier.shareBoundsComposed(
+        sharedContentState = rememberSharedContentState(
+            key = "summary-course-to-detail-$recordId"
+        ),
+        animatedVisibilityScope = LocalAnimatedContentScope.current,
+        resizeMode = RemeasureToBounds,
+        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+    )
+        .shareBoundsComposed(
+            sharedContentState = rememberSharedContentState(
+                key = "list-course-to-detail-$recordId"
+            ),
+            animatedVisibilityScope = LocalAnimatedContentScope.current,
+            resizeMode = RemeasureToBounds,
+            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+        )
+
     when (state) {
         is CourseDetailState.Failed -> {
             ErrorPage(
                 title = { Text("课程加载失败") },
                 message = { Text(state.msg) },
+                modifier = rootModifier
             )
         }
 
         CourseDetailState.Loading -> {
-            CourseDetailScreenSuccess(null, recordId)
+            CourseDetailScreenSuccess(null,rootModifier)
         }
 
         is CourseDetailState.Success -> {
-            CourseDetailScreenSuccess(state, recordId)
+            CourseDetailScreenSuccess(state,rootModifier)
         }
     }
 }
@@ -92,30 +115,27 @@ private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) 
 @Composable
 private fun CourseDetailScreenSuccess(
     state: CourseDetailState.Success?,
-    recordId: Long
+    modifier: Modifier = Modifier
 ) {
     val design = currentLayoutType()
     when (design) {
         NavigationSuiteType.NavigationBar -> {
-            CourseDetailPanelPhone(state, recordId)
+            CourseDetailPanelPhone(state,modifier)
         }
 
         NavigationSuiteType.NavigationRail -> {
-            CourseDetailPanelTablet(state, recordId)
+            CourseDetailPanelTablet(state,modifier)
         }
 
         NavigationSuiteType.NavigationDrawer -> {
-            CourseDetailPanelTablet(state, recordId)
+            CourseDetailPanelTablet(state,modifier)
         }
     }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseDetailPanelPhone(
-    state: CourseDetailState.Success?,
-    recordId: Long
-) {
+private fun CourseDetailPanelPhone(state: CourseDetailState.Success?,modifier: Modifier = Modifier) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
@@ -123,7 +143,7 @@ private fun CourseDetailPanelPhone(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
@@ -131,13 +151,9 @@ private fun CourseDetailPanelPhone(
     ) {
         // 课程卡片
         CourseCard(
-            state, visible, Modifier.shareBoundsComposed(
-                sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-$recordId"),
-                animatedVisibilityScope = LocalAnimatedContentScope.current
-            ).shareBoundsComposed(
-                sharedContentState = rememberSharedContentState(key = "list-course-to-detail-$recordId"),
-                animatedVisibilityScope = LocalAnimatedContentScope.current
-            )
+            state = state,
+            visible = visible,
+            modifier = Modifier
         )
 
         // 课程详情
@@ -150,10 +166,7 @@ private fun CourseDetailPanelPhone(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseDetailPanelTablet(
-    state: CourseDetailState.Success?,
-    recordId: Long
-) {
+private fun CourseDetailPanelTablet(state: CourseDetailState.Success?,modifier: Modifier = Modifier) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
@@ -161,7 +174,7 @@ private fun CourseDetailPanelTablet(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
@@ -174,15 +187,9 @@ private fun CourseDetailPanelTablet(
         ) {
             // 课程卡片
             CourseCard(
-                state,
-                visible,
-                modifier = Modifier.weight(1f).fillMaxHeight().shareBoundsComposed(
-                    sharedContentState = rememberSharedContentState(key = "summary-course-to-detail-$recordId"),
-                    animatedVisibilityScope = LocalAnimatedContentScope.current
-                ).shareBoundsComposed(
-                    sharedContentState = rememberSharedContentState(key = "list-course-to-detail-$recordId"),
-                    animatedVisibilityScope = LocalAnimatedContentScope.current
-                )
+                state = state,
+                visible = visible,
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
 
             // 课程详情

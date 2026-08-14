@@ -38,8 +38,8 @@ internal class TestEOAClient : EOAClient {
 
     override suspend fun getSchoolCalender(): SchoolCalender {
         return SchoolCalender(
-            start = todayWeekMonday.plus(1, DateTimeUnit.WEEK),
-            end = todayWeekMonday.plus(8, DateTimeUnit.WEEK),
+            start = todayWeekMonday.minus(7, DateTimeUnit.WEEK),
+            end = todayWeekMonday.plus(7, DateTimeUnit.WEEK),
         )
     }
 
