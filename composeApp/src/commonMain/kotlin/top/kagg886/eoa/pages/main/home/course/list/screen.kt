@@ -204,7 +204,6 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 resizeMode = RemeasureToBounds,
                 clipInOverlayDuringTransition = OverlayClip(fabShape)
             )
-            .clip(fabShape)
             .revealableAutoMeasured(1, fabArrow) {
                 Text("点这里管理课表，可以添加、修改课程，也可以导出课表。")
             }
