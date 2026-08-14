@@ -34,11 +34,9 @@ import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.DialogHost
 import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.LocalOwnersProvider
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.NavigationEventTransitionState.InProgress
-import androidx.navigationevent.compose.NavigationEventHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.navigation.compose.internal.PredictiveBackHandler
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
 import kotlin.jvm.JvmSuppressWildcards
@@ -304,7 +302,8 @@ public fun NavHost(
             sizeTransform == DefaultNavTransitions.sizeTransform
 
     if (isDefaultTransition) {
-        val iosBlackout = @Composable fun BoxScope.(isBackAnimation: Boolean, progress: Float) {
+        val iosBlackout = @Composable
+        fun BoxScope.(isBackAnimation: Boolean, progress: Float) {
             val blackoutFraction = if (isBackAnimation) 1 - progress else progress
             Box(
                 modifier = Modifier
@@ -387,48 +386,55 @@ internal fun NavHost(
 
     var progress by remember { mutableFloatStateOf(0f) }
     var inPredictiveBack by remember { mutableStateOf(false) }
-    var backGestureRejected by remember { mutableStateOf(false) }
-    var currentBackStackEntry by remember { mutableStateOf<NavBackStackEntry?>(null) }
-    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
-    val navigationTransitionState = navigationEventState.transitionState
+    PredictiveBackHandler(currentBackStack.size > 1) { backEvent ->
+        // This block handles the three phases of a predictive back gesture:
+        // 1. OnStarted: When the gesture begins.
+        // 2. OnProgressed: As the user drags their finger.
+        // 3. OnCompleted or OnCancelled: When the gesture finishes or is cancelled.
+        //
+        // Always guard with `currentBackStack.size > 1`:
+        // If `enabled` becomes stale (set false mid-frame while a gesture is in-flight),
+        // these checks prevent IndexOutOfBounds when accessing the stack.
 
-    LaunchedEffect(navigationTransitionState, currentBackStack) {
-        val event = (navigationTransitionState as? InProgress)?.latestEvent ?: return@LaunchedEffect
-        val goodEdge =
-            limitBackGestureSwipeEdge == null || event.swipeEdge == limitBackGestureSwipeEdge
-        backGestureRejected = !goodEdge
-        if (goodEdge && currentBackStack.size > 1) {
-            if (!inPredictiveBack) {
-                currentBackStackEntry = currentBackStack.lastOrNull()
-                composeNavigator.prepareForTransition(currentBackStackEntry!!)
-                composeNavigator.prepareForTransition(currentBackStack[currentBackStack.size - 2])
+        var currentBackStackEntry: NavBackStackEntry? = null
+
+        // --- OnStarted ---
+        if (currentBackStack.size > 1) {
+            progress = 0f
+            currentBackStackEntry = currentBackStack.lastOrNull()
+            composeNavigator.prepareForTransition(currentBackStackEntry!!)
+            val previousEntry = currentBackStack[currentBackStack.size - 2]
+            composeNavigator.prepareForTransition(previousEntry)
+        }
+        try {
+            backEvent.collect {
+                val goodEdge =
+                    limitBackGestureSwipeEdge == null || it.swipeEdge == limitBackGestureSwipeEdge
+
+                // --- OnProgressed ---
+                if (currentBackStack.size > 1) {
+                    inPredictiveBack = true
+                    if (goodEdge) {
+                        progress = it.progress
+                    } else {
+                        throw CancellationException(
+                            "The current edge is not allowed to perform back gesture."
+                        )
+                    }
+                }
             }
-            inPredictiveBack = true
-            progress = event.progress
+            // --- OnCompleted ---
+            if (currentBackStack.size > 1) {
+                inPredictiveBack = false
+                composeNavigator.popBackStack(currentBackStackEntry!!, false)
+            }
+        } catch (_: CancellationException) {
+            // --- OnCancelled ---
+            if (currentBackStack.size > 1) {
+                inPredictiveBack = false
+            }
         }
     }
-
-    NavigationEventHandler(
-        state = navigationEventState,
-        isForwardEnabled = false,
-        isBackEnabled = currentBackStack.size > 1,
-        onBackCancelled = {
-            inPredictiveBack = false
-            backGestureRejected = false
-            progress = 0f
-            currentBackStackEntry = null
-        },
-        onBackCompleted = {
-            val entry = currentBackStackEntry ?: currentBackStack.lastOrNull()
-            if (!backGestureRejected && entry != null && currentBackStack.size > 1) {
-                composeNavigator.popBackStack(entry, false)
-            }
-            inPredictiveBack = false
-            backGestureRejected = false
-            progress = 0f
-            currentBackStackEntry = null
-        },
-    )
 
     DisposableEffect(lifecycleOwner) {
         // Setup the navController with proper owners
@@ -457,7 +463,7 @@ internal fun NavHost(
         val finalEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
             val targetDestination = targetState.destination as ComposeNavigator.Destination
 
-            if (currentBackStack.none { it.id == initialState.id } || inPredictiveBack) {
+            if (composeNavigator.isPop.value || inPredictiveBack) {
                 targetDestination.hierarchy.firstNotNullOfOrNull { destination ->
                     destination.createPopEnterTransition(this)
                 } ?: popEnterTransition.invoke(this)
@@ -471,7 +477,7 @@ internal fun NavHost(
         val finalExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
             val initialDestination = initialState.destination as ComposeNavigator.Destination
 
-            if (currentBackStack.none { it.id == initialState.id } || inPredictiveBack) {
+            if (composeNavigator.isPop.value || inPredictiveBack) {
                 initialDestination.hierarchy.firstNotNullOfOrNull { destination ->
                     destination.createPopExitTransition(this)
                 } ?: popExitTransition.invoke(this)
@@ -509,8 +515,11 @@ internal fun NavHost(
 
         if (inPredictiveBack) {
             LaunchedEffect(progress) {
-                val previousEntry = currentBackStack[currentBackStack.size - 2]
-                transitionState.seekTo(progress, previousEntry)
+                // Update transition progress safely (same guard against stale enabled state).
+                if (currentBackStack.size > 1) {
+                    val previousEntry = currentBackStack[currentBackStack.size - 2]
+                    transitionState.seekTo(progress, previousEntry)
+                }
             }
         } else {
             LaunchedEffect(backStackEntry) {
@@ -555,7 +564,7 @@ internal fun NavHost(
                     val targetZIndex =
                         when {
                             targetState.id == initialState.id -> initialZIndex
-                            currentBackStack.none { it.id == initialState.id } || inPredictiveBack -> initialZIndex - 1f
+                            composeNavigator.isPop.value || inPredictiveBack -> initialZIndex - 1f
                             else -> initialZIndex + 1f
                         }
                     zIndices[targetState.id] = targetZIndex
@@ -598,9 +607,7 @@ internal fun NavHost(
                     destination.content.invoke(this, currentEntry)
                 } else {
                     Box {
-                        with(this@AnimatedContent) {
-                            destination.content.invoke(this, currentEntry)
-                        }
+                        destination.content.invoke(this@AnimatedContent, currentEntry)
 
                         val currentEntryId = currentEntry.id
                         val initialEntryId = transition.segment.initialState.id
@@ -632,7 +639,7 @@ internal fun NavHost(
                 // We need to make sure we are completing only when the start is settled on the
                 // actual entry.
                 (navController.currentBackStackEntry == null ||
-                        transition.targetState == navController.currentBackStackEntry)
+                        transition.targetState == backStackEntry)
             ) {
                 visibleEntries.forEach { entry -> composeNavigator.onTransitionComplete(entry) }
                 zIndices.removeIf { key, _ -> key != transition.targetState.id }
@@ -705,7 +712,7 @@ object DefaultNavTransitions {
         ) + fadeIn()
     }
     val exitTransition:
-            AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition  = {
+            AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(
