@@ -10,6 +10,7 @@ import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppInitializeMMKV
+import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.rootViewModel
 
@@ -36,6 +37,10 @@ fun welcomeModelOrNull(): WelcomeViewModel? {
 class WelcomeViewModel : ViewModel(), OrbitContainerHost<WelcomeViewModelState, WelcomeViewModelState, WelcomeSideEffect> {
     override val container: OrbitContainer<WelcomeViewModelState, WelcomeViewModelState, WelcomeSideEffect> =
         orbitContainer(WelcomeViewModelState.Empty) {
+            if (AppLoginPropertiesMMKV.username.isNotEmpty() && AppLoginPropertiesMMKV.password.isNotEmpty() && AppInitializeMMKV.initialize) {
+                postSideEffect(WelcomeSideEffect.NavigateToMain)
+                return@orbitContainer
+            }
             if (AppInitializeMMKV.initialize) {
                 completeWelcomeWithoutTutorial().join()
                 return@orbitContainer
@@ -68,5 +73,6 @@ sealed interface WelcomeViewModelState {
 
 sealed interface WelcomeSideEffect {
     data object NavigateToLogin : WelcomeSideEffect
+    data object NavigateToMain : WelcomeSideEffect
     data class NavigateToURL(val url: String) : WelcomeSideEffect
 }
