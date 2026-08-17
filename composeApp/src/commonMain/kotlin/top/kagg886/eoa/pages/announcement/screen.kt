@@ -11,9 +11,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.mikepenz.markdown.m3.Markdown
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.Markdown
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 
 @Serializable

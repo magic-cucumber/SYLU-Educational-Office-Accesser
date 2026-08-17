@@ -20,14 +20,15 @@ import top.kagg886.eoa.pages.update.UpdateRoute
 import top.kagg886.eoa.pages.update.detail.UpdateDetailRoute
 import top.kagg886.eoa.pages.update.installUpdateGraph
 import top.kagg886.eoa.pages.welcome.WelcomeRoute
-import top.kagg886.eoa.pages.welcome.WelcomeScreen
+import top.kagg886.eoa.pages.welcome.home.WelcomeHomeRoute
+import top.kagg886.eoa.pages.welcome.installWelcomeGraph
 
 @Serializable
 data object RootRoute
 
 val installEOAGraph: (NavGraphBuilder.() -> Unit) = {
     navigation<RootRoute>(startDestination = WelcomeRoute) {
-        composable<WelcomeRoute> { WelcomeScreen() }
+        navigation<WelcomeRoute>(startDestination = WelcomeHomeRoute, builder = installWelcomeGraph)
         composable<LoginRoute> { LoginScreen() }
         navigation<UpdateRoute>(startDestination = UpdateDetailRoute("", "", ""), builder = installUpdateGraph)
         dialog<AnnouncementRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {

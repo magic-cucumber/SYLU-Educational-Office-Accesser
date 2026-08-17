@@ -25,6 +25,7 @@ import com.mohamedrejeb.compose.dnd.reorder.ReorderableItem
 import com.mohamedrejeb.compose.dnd.reorder.rememberReorderState
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
+import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
@@ -162,7 +163,7 @@ private fun AppearanceSettingsContent(
                 },
                 trailingContent = {
                     Text(
-                        BUILTIN_COLORS.entries.find { (_, value) -> value == color }?.key
+                        AppSettingsMMKV.presetsColor.entries.find { (_, value) -> value == color }?.key
                             ?: "自定义",
                         color = color
                     )
@@ -172,7 +173,7 @@ private fun AppearanceSettingsContent(
                             expanded = true,
                             onDismissRequest = { colorDialog = false }
                         ) {
-                            for ((key, builtInColor) in BUILTIN_COLORS) {
+                            for ((key, builtInColor) in AppSettingsMMKV.presetsColor) {
                                 var count by remember {
                                     mutableStateOf(0)
                                 }
@@ -411,15 +412,6 @@ private fun AppearanceSettingsContent(
         }
     }
 }
-
-private val BUILTIN_COLORS = mapOf(
-    "姨妈红" to Color(188, 1, 4),
-    "闪耀橙" to Color(255, 85, 34),
-    "贝斯黄" to Color(255, 221, 136),
-    "风祝绿" to Color(26, 240, 79),
-    "拉格蓝" to Color(118, 145, 217)
-)
-
 @Composable
 private fun ModuleListItem(
     moduleItem: EOAHomeModule,

@@ -13,9 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
-import com.mikepenz.markdown.m3.Markdown
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.Markdown
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.update.download.UpdateDownloadRoute
