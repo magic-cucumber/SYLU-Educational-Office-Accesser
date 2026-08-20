@@ -181,11 +181,11 @@ private fun GuideHeader(
         val titlePlaceable = measurables[1].measure(titleConstraints)
         val expandedTitleHeight = state.expandedTitleHeightPx.takeIf { it > 0 }
             ?: (subtitlePlaceable.height + titlePlaceable.height)
-        val expandedHeight = appBarHeight + expandedTitleHeight + bottomPadding
-        val collapsedHeight = appBarHeight + titlePlaceable.height + bottomPadding
-        val currentHeight = interpolate(expandedHeight, collapsedHeight, progress)
         val expandedSubtitleY = appBarHeight
         val expandedTitleY = expandedSubtitleY + subtitlePlaceable.height
+        val expandedHeight = appBarHeight + expandedTitleHeight + bottomPadding
+        val collapsedHeight = expandedTitleY
+        val currentHeight = interpolate(expandedHeight, collapsedHeight, progress)
         val collapsedTitleY = expandedSubtitleY
         val currentTitleY = interpolate(expandedTitleY, collapsedTitleY, progress)
 

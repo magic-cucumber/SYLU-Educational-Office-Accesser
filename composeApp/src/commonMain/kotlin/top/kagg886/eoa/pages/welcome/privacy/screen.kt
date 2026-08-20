@@ -2,6 +2,9 @@ package top.kagg886.eoa.pages.welcome.privacy
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
@@ -62,8 +65,19 @@ fun WelcomePrivacyScreen() {
         val guideState = rememberGuideScaffoldState()
 
         LaunchedEffect(selectedTab) {
-            guideState.progress = 0f
-            markdown = markdown + (selectedTab to Res.readBytes(selectedTab.resourcePath).decodeToString())
+            animate(
+                initialValue = guideState.progress,
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+            ) { value, _ ->
+                guideState.progress = value
+            }
+        }
+
+        LaunchedEffect(selectedTab) {
+            if (markdown[selectedTab] == null) {
+                markdown = markdown + (selectedTab to Res.readBytes(selectedTab.resourcePath).decodeToString())
+            }
         }
 
         GuideScaffold(
