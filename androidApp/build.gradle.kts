@@ -51,6 +51,11 @@ extensions.configure<ApplicationExtension>("android") {
             signingConfig = signingConfigs.getByName("test")
             ndk.abiFilters += "arm64-v8a"
         }
+        create("preRelease") {
+            initWith(getByName("release"))
+            ndk.abiFilters.clear()
+            ndk.abiFilters += listOf("arm64-v8a", "x86_64")
+        }
         debug {
             signingConfig = signingConfigs.getByName("test")
             ndk.abiFilters += listOf("arm64-v8a", "x86_64")

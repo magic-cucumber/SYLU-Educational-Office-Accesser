@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.lerp
@@ -21,6 +22,8 @@ import kotlin.math.roundToInt
 @Stable
 class GuideScaffoldState internal constructor() {
     private var progressState by mutableFloatStateOf(0f)
+    private var subtitleHeightPx by mutableIntStateOf(0)
+    private var titleHeightPx by mutableIntStateOf(0)
 
     var expandedTitleHeightPx by mutableIntStateOf(0)
         internal set
@@ -30,6 +33,19 @@ class GuideScaffoldState internal constructor() {
         set(value) {
             progressState = value.coerceIn(0f, 1f)
         }
+
+    internal fun updateHeaderItemHeight(isSubtitle: Boolean, height: Int) {
+        if (isSubtitle) {
+            subtitleHeightPx = height
+        } else {
+            titleHeightPx = height
+        }
+
+        val headerHeight = subtitleHeightPx + titleHeightPx
+        if (headerHeight > 0 && (progress == 0f || expandedTitleHeightPx == 0)) {
+            expandedTitleHeightPx = headerHeight
+        }
+    }
 }
 
 @Composable
@@ -112,35 +128,34 @@ private fun GuideHeader(
     val expandedSubtitleStyle = MaterialTheme.typography.titleMedium.copy(
         color = MaterialTheme.colorScheme.primary,
     )
-    val collapsedSubtitleStyle = MaterialTheme.typography.labelMedium.copy(
-        color = MaterialTheme.colorScheme.primary,
-    )
     val expandedTitleStyle = MaterialTheme.typography.headlineMedium.copy(
         color = MaterialTheme.colorScheme.onSurface,
         lineHeight = 36.sp,
     )
-    val collapsedTitleStyle = MaterialTheme.typography.titleLarge.copy(
+    val collapsedTitleStyle = expandedSubtitleStyle.copy(
         color = MaterialTheme.colorScheme.onSurface,
     )
 
     Layout(
         content = {
-            Column(
-                Modifier.onSizeChanged {
-                    if (progress == 0f || state.expandedTitleHeightPx == 0) {
-                        state.expandedTitleHeightPx = it.height
+            Box(
+                Modifier
+                    .graphicsLayer {
+                        alpha = 1f - progress
                     }
-                },
+                    .onSizeChanged {
+                        state.updateHeaderItemHeight(isSubtitle = true, height = it.height)
+                    },
             ) {
-                CompositionLocalProvider(
-                    LocalTextStyle provides lerp(
-                        expandedSubtitleStyle,
-                        collapsedSubtitleStyle,
-                        progress,
-                    ),
-                ) {
+                CompositionLocalProvider(LocalTextStyle provides expandedSubtitleStyle) {
                     subTitle()
                 }
+            }
+            Box(
+                Modifier.onSizeChanged {
+                    state.updateHeaderItemHeight(isSubtitle = false, height = it.height)
+                },
+            ) {
                 CompositionLocalProvider(
                     LocalTextStyle provides lerp(
                         expandedTitleStyle,
@@ -162,17 +177,20 @@ private fun GuideHeader(
             maxWidth = (constraints.maxWidth - horizontalPadding * 2).coerceAtLeast(0),
             minHeight = 0,
         )
-        val titlePlaceable = measurables.single().measure(titleConstraints)
-        val expandedTitleHeight = state.expandedTitleHeightPx
-            .takeIf { it > 0 }
-            ?: titlePlaceable.height
+        val subtitlePlaceable = measurables[0].measure(titleConstraints)
+        val titlePlaceable = measurables[1].measure(titleConstraints)
+        val expandedTitleHeight = state.expandedTitleHeightPx.takeIf { it > 0 }
+            ?: (subtitlePlaceable.height + titlePlaceable.height)
         val expandedHeight = appBarHeight + expandedTitleHeight + bottomPadding
-        val currentHeight = interpolate(expandedHeight, appBarHeight, progress)
-        val expandedTitleY = appBarHeight
-        val collapsedTitleY = (appBarHeight - titlePlaceable.height) / 2
+        val collapsedHeight = appBarHeight + titlePlaceable.height + bottomPadding
+        val currentHeight = interpolate(expandedHeight, collapsedHeight, progress)
+        val expandedSubtitleY = appBarHeight
+        val expandedTitleY = expandedSubtitleY + subtitlePlaceable.height
+        val collapsedTitleY = expandedSubtitleY
         val currentTitleY = interpolate(expandedTitleY, collapsedTitleY, progress)
 
         layout(constraints.maxWidth, currentHeight) {
+            subtitlePlaceable.placeRelative(horizontalPadding, expandedSubtitleY)
             titlePlaceable.placeRelative(horizontalPadding, currentTitleY)
         }
     }
