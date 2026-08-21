@@ -295,59 +295,20 @@ public fun NavHost(
         DefaultNavTransitions.sizeTransform,
     dialogHost: @Composable (DialogNavigator) -> Unit
 ) {
-    val isDefaultTransition = enterTransition == DefaultNavTransitions.enterTransition &&
-            exitTransition == DefaultNavTransitions.exitTransition &&
-            popEnterTransition == DefaultNavTransitions.enterTransition &&
-            popExitTransition == DefaultNavTransitions.exitTransition &&
-            sizeTransform == DefaultNavTransitions.sizeTransform
-
-    if (isDefaultTransition) {
-        val iosBlackout = @Composable
-        fun BoxScope.(isBackAnimation: Boolean, progress: Float) {
-            val blackoutFraction = if (isBackAnimation) 1 - progress else progress
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .drawBehind {
-                        drawRect(Color.Black, alpha = 0.106f * blackoutFraction)
-                    }
-            )
-        }
-
-        val backEventEdge = when (LocalLayoutDirection.current) {
-            LayoutDirection.Ltr -> 0
-            LayoutDirection.Rtl -> 1
-        }
-        NavHost(
-            navController,
-            graph,
-            modifier,
-            contentAlignment,
-            enterTransition,
-            exitTransition,
-            DefaultNavTransitions.popEnterTransition,
-            DefaultNavTransitions.popExitTransition,
-            sizeTransform,
-            drawOnBottomEntryDuringAnimation = iosBlackout,
-            limitBackGestureSwipeEdge = backEventEdge,
-            dialogHost
-        )
-    } else {
-        NavHost(
-            navController,
-            graph,
-            modifier,
-            contentAlignment,
-            enterTransition,
-            exitTransition,
-            popEnterTransition,
-            popExitTransition,
-            sizeTransform,
-            null,
-            null,
-            dialogHost
-        )
-    }
+    NavHost(
+        navController,
+        graph,
+        modifier,
+        contentAlignment,
+        enterTransition,
+        exitTransition,
+        popEnterTransition,
+        popExitTransition,
+        sizeTransform,
+        null,
+        null,
+        dialogHost
+    )
 }
 
 @Composable
@@ -701,22 +662,30 @@ private fun NavDestination.createSizeTransform(
 
 
 object DefaultNavTransitions {
-    // iOS 转场手感：四个方向共用同一时长与缓动曲线，保证进退场严丝合缝。
-    // 曲线 cubic-bezier(0.32, 0.72, 0, 1) 近似 iOS push 的强减速曲线，
-    // 起步快、落点柔，300ms 不拖沓。
-    private const val TRANSITION_DURATION = 300
-    private val iosEasing = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
+    private const val TRANSITION_DURATION_MS = 300
+    private const val FADE_OUT_DURATION_MS = 90
+    private const val FADE_IN_DELAY_MS = 90
+    private const val FADE_IN_DURATION_MS = 210
 
-    // iOS 不做 fade/scale：新页面全宽滑入，旧页面仅 30% 视差滑出，
-    // 下层页面的压暗由 NavHost 中的 iosBlackout 负责。
+    private const val SLIDE_DISTANCE_FRACTION = 0.3f
+
     val enterTransition:
             AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(
-                durationMillis = TRANSITION_DURATION,
-                easing = iosEasing
-            )
+                durationMillis = TRANSITION_DURATION_MS,
+                easing = FastOutSlowInEasing,
+            ),
+            initialOffset = { full ->
+                (full * SLIDE_DISTANCE_FRACTION).toInt()
+            },
+        ) + fadeIn(
+            animationSpec = tween(
+                durationMillis = FADE_IN_DURATION_MS,
+                delayMillis = FADE_IN_DELAY_MS,
+                easing = LinearOutSlowInEasing,
+            ),
         )
     }
     val exitTransition:
@@ -724,10 +693,17 @@ object DefaultNavTransitions {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(
-                durationMillis = TRANSITION_DURATION,
-                easing = iosEasing
+                durationMillis = TRANSITION_DURATION_MS,
+                easing = FastOutSlowInEasing,
             ),
-            targetOffset = { fullOffset -> (fullOffset * 0.3f).toInt() }
+            targetOffset = { full ->
+                (full * SLIDE_DISTANCE_FRACTION).toInt()
+            },
+        ) + fadeOut(
+            animationSpec = tween(
+                durationMillis = FADE_OUT_DURATION_MS,
+                easing = FastOutLinearInEasing,
+            ),
         )
     }
     val sizeTransform: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> SizeTransform?)? = {
@@ -739,10 +715,18 @@ object DefaultNavTransitions {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
             animationSpec = tween(
-                durationMillis = TRANSITION_DURATION,
-                easing = iosEasing
+                durationMillis = TRANSITION_DURATION_MS,
+                easing = FastOutSlowInEasing,
             ),
-            initialOffset = { fullOffset -> (fullOffset * 0.3f).toInt() }
+            initialOffset = { full ->
+                (full * SLIDE_DISTANCE_FRACTION).toInt()
+            },
+        ) + fadeIn(
+            animationSpec = tween(
+                durationMillis = FADE_IN_DURATION_MS,
+                delayMillis = FADE_IN_DELAY_MS,
+                easing = LinearOutSlowInEasing,
+            ),
         )
     }
     val popExitTransition:
@@ -750,9 +734,17 @@ object DefaultNavTransitions {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
             animationSpec = tween(
-                durationMillis = TRANSITION_DURATION,
-                easing = iosEasing
-            )
+                durationMillis = TRANSITION_DURATION_MS,
+                easing = FastOutSlowInEasing,
+            ),
+            targetOffset = { full ->
+                (full * SLIDE_DISTANCE_FRACTION).toInt()
+            },
+        ) + fadeOut(
+            animationSpec = tween(
+                durationMillis = FADE_OUT_DURATION_MS,
+                easing = FastOutLinearInEasing,
+            ),
         )
     }
 }

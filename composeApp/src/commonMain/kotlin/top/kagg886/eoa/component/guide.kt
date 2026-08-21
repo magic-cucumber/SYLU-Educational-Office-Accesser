@@ -2,6 +2,7 @@ package top.kagg886.eoa.component
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
@@ -100,6 +101,7 @@ fun GuideScaffold(
             }
         },
         modifier = modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             Modifier
