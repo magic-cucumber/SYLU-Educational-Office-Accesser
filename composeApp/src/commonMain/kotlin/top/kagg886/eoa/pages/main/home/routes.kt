@@ -35,14 +35,7 @@ val installHomeGraph: NavGraphBuilder.() -> Unit = {
     dialog<SystemNoticeRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SystemNoticeScreen() }
     navigation<CourseRoute>(startDestination = CourseListRoute, builder = installCourseGraph)
     navigation<ExamRoute>(startDestination = ExamListRoute, builder = installExamGraph)
-    composable<GPARoute>(
-        enterTransition = { fadeIn() },
-        exitTransition = { fadeOut() },
-        popEnterTransition = { fadeIn() },
-        popExitTransition = { fadeOut() }
-    ) {
-        GPAScreen()
-    }
+    transition<GPARoute> { GPAScreen() }
 
     navigation<LinkRoute>(startDestination = LinkListRoute, builder = installLinkGraph)
     transition<SecondClassRoute> { SecondClassScreen() }
