@@ -82,11 +82,11 @@ public fun NavHost(
     popEnterTransition:
     (@JvmSuppressWildcards
     AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
-        enterTransition,
+        DefaultNavTransitions.popEnterTransition ,
     popExitTransition:
     (@JvmSuppressWildcards
     AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
-        exitTransition,
+        DefaultNavTransitions.popExitTransition,
     sizeTransform:
     (@JvmSuppressWildcards
     AnimatedContentTransitionScope<NavBackStackEntry>.() -> SizeTransform?)? =
@@ -222,11 +222,11 @@ public fun NavHost(
     popEnterTransition:
     (@JvmSuppressWildcards
     AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) =
-        enterTransition,
+        DefaultNavTransitions.popEnterTransition,
     popExitTransition:
     (@JvmSuppressWildcards
     AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) =
-        exitTransition,
+        DefaultNavTransitions.popExitTransition,
     sizeTransform:
     (@JvmSuppressWildcards
     AnimatedContentTransitionScope<NavBackStackEntry>.() -> SizeTransform?)? =

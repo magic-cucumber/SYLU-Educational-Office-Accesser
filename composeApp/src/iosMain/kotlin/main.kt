@@ -1,7 +1,10 @@
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,8 +13,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.window.ComposeUIViewController
+import androidx.compose.ui.scene.ComposeHostingViewController
+import androidx.compose.ui.uikit.ComposeUIViewControllerConfiguration
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import kotlinx.cinterop.*
@@ -27,6 +32,7 @@ import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIViewController
 import platform.UniformTypeIdentifiers.UTTypeImage
+import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.eoa.App
 import top.kagg886.eoa.ImageProcessingApp
 import top.kagg886.eoa.installCoilConfig
@@ -114,93 +120,114 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 @Suppress("unused")
-fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIViewController = ComposeUIViewController {
-    initializeMMKV()
-    val image by produceState(Result.failure(Exception("No image"))) {
-        val providers = item.attachments?.filterIsInstance<NSItemProvider>() ?: return@produceState
-        val provider = providers.firstOrNull { it.hasItemConformingToTypeIdentifier(UTTypeImage.identifier) }
-            ?: return@produceState
+fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIViewController =
+    ComposeUIViewController {
+        initializeMMKV()
+        val image by produceState(Result.failure(Exception("No image"))) {
+            val providers =
+                item.attachments?.filterIsInstance<NSItemProvider>() ?: return@produceState
+            val provider =
+                providers.firstOrNull { it.hasItemConformingToTypeIdentifier(UTTypeImage.identifier) }
+                    ?: return@produceState
 
-        val unknownResult = withContext(Dispatchers.IO) {
-            suspendCancellableCoroutine {
-                provider.loadItemForTypeIdentifier(UTTypeImage.identifier, null) { data, err ->
-                    if (err != null) {
-                        value = Result.failure(Exception(err.localizedDescription))
-                        it.resume(null)
-                        return@loadItemForTypeIdentifier
-                    }
-
-                    it.resume(data!!)
-                }
-            }
-        }
-
-        if (unknownResult == null) {
-            return@produceState
-        }
-
-        val imageBytes = withContext(Dispatchers.IO) {
-            val data = when (unknownResult) {
-                is NSURL -> {
-                    this.logger.i("URL: $item")
-                    memScoped {
-                        val error = alloc<ObjCObjectVar<NSError?>>()
-                        val result = NSData.dataWithContentsOfURL(unknownResult, NSDataReadingMappedIfSafe, error.ptr)
-
-                        if (error.value != null) {
-                            value = Result.failure(Exception(error.value!!.localizedDescription))
-                            return@withContext null
+            val unknownResult = withContext(Dispatchers.IO) {
+                suspendCancellableCoroutine {
+                    provider.loadItemForTypeIdentifier(UTTypeImage.identifier, null) { data, err ->
+                        if (err != null) {
+                            value = Result.failure(Exception(err.localizedDescription))
+                            it.resume(null)
+                            return@loadItemForTypeIdentifier
                         }
 
-                        result
+                        it.resume(data!!)
                     }
-                }
-
-                is UIImage -> {
-                    this.logger.i("Image: $item")
-                    UIImagePNGRepresentation(unknownResult)
-                }
-
-                is NSData -> {
-                    this.logger.i("Data: $item")
-                    unknownResult
-                }
-
-                else -> {
-                    value = Result.failure(Exception("unknown data type: $unknownResult"))
-                    return@withContext null
                 }
             }
 
+            if (unknownResult == null) {
+                return@produceState
+            }
 
-            data?.toByteString()?.toByteArray()
+            val imageBytes = withContext(Dispatchers.IO) {
+                val data = when (unknownResult) {
+                    is NSURL -> {
+                        this.logger.i("URL: $item")
+                        memScoped {
+                            val error = alloc<ObjCObjectVar<NSError?>>()
+                            val result = NSData.dataWithContentsOfURL(
+                                unknownResult,
+                                NSDataReadingMappedIfSafe,
+                                error.ptr
+                            )
+
+                            if (error.value != null) {
+                                value =
+                                    Result.failure(Exception(error.value!!.localizedDescription))
+                                return@withContext null
+                            }
+
+                            result
+                        }
+                    }
+
+                    is UIImage -> {
+                        this.logger.i("Image: $item")
+                        UIImagePNGRepresentation(unknownResult)
+                    }
+
+                    is NSData -> {
+                        this.logger.i("Data: $item")
+                        unknownResult
+                    }
+
+                    else -> {
+                        value = Result.failure(Exception("unknown data type: $unknownResult"))
+                        return@withContext null
+                    }
+                }
+
+
+                data?.toByteString()?.toByteArray()
+            }
+
+            if (imageBytes == null) {
+                return@produceState
+            }
+
+            value = Result.success(
+                Image.makeFromEncoded(imageBytes).toComposeImageBitmap()
+            )
         }
 
-        if (imageBytes == null) {
-            return@produceState
+        if (image.isFailure && image.exceptionOrNull()?.message == "No image") {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
         }
 
-        value = Result.success(
-            Image.makeFromEncoded(imageBytes).toComposeImageBitmap()
+        if (image.isFailure) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("无法转换图片。${image.exceptionOrNull()?.message ?: "位置原因"}")
+            }
+            return@ComposeUIViewController
+        }
+
+        ImageProcessingApp(
+            modifier = Modifier.fillMaxSize(),
+            todo = image.getOrThrow(),
+            exit = exit
         )
     }
 
-    if (image.isFailure && image.exceptionOrNull()?.message == "No image") {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    }
+fun ComposeUIViewController(
+    configure: ComposeUIViewControllerConfiguration.() -> Unit = {},
+    content: @Composable () -> Unit
+): UIViewController = ComposeHostingViewController(
+    configuration = ComposeUIViewControllerConfiguration().apply(configure),
+    coroutineContext = Dispatchers.Main + object : MotionDurationScale {
+        override val scaleFactor: Float
+            get() = 1 / AppSettingsMMKV.animationSpeed
 
-    if (image.isFailure) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("无法转换图片。${image.exceptionOrNull()?.message ?: "位置原因"}")
-        }
-        return@ComposeUIViewController
-    }
-
-    ImageProcessingApp(
-        modifier = Modifier.fillMaxSize(),
-        todo = image.getOrThrow(),
-        exit = exit
-    )
-}
+    },
+    content = content,
+)

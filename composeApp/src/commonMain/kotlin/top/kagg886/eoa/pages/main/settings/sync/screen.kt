@@ -112,10 +112,7 @@ private fun SyncSettingsContent(
                         Slider(
                             value = syncDuration.inWholeDays.toFloat(),
                             valueRange = 1f..30f,
-                            onValueChange = {
-                                println(it)
-                                onSyncDurationChanged(it.toInt().days)
-                            },
+                            onValueChange = { onSyncDurationChanged(it.toInt().days) },
                             steps = 28
                         )
                     }

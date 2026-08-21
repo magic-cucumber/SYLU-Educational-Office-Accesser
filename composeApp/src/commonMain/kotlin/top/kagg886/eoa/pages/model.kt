@@ -129,6 +129,12 @@ class RootViewModel : ViewModel(), OrbitContainerHost<RootState, RootState, Root
             }
         }
 
+        viewModelScope.launch {
+            state.animationSpeed.collect {
+                AppSettingsMMKV.animationSpeed = it
+            }
+        }
+
         checkUpdate()
         checkAnnouncement()
     }
@@ -159,6 +165,10 @@ class RootViewModel : ViewModel(), OrbitContainerHost<RootState, RootState, Root
 
     fun postHideWeekendCourseSetting(enabled: Boolean) = intent {
         state.hideWeekendCourse.value = enabled
+    }
+
+    fun postAnimationSpeed(speed: Float) = intent {
+        state.animationSpeed.value = speed
     }
 
     fun log(severity: Severity, tag: String, message: String, throwable: Throwable?) = intent {
@@ -215,7 +225,8 @@ data class RootState(
     val syncDuration: MutableStateFlow<Duration> = MutableStateFlow(AppSettingsMMKV.syncDuration),
     val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius),
     val showExperimentClass: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showExperimentClass),
-    val hideWeekendCourse: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.hideWeekendCourse)
+    val hideWeekendCourse: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.hideWeekendCourse),
+    val animationSpeed: MutableStateFlow<Float> = MutableStateFlow(AppSettingsMMKV.animationSpeed)
 )
 
 sealed interface RootEffect {

@@ -10,6 +10,7 @@ import top.kagg886.mkmb.mmkvWithID
 import top.kagg886.util.ColorAsArgbSerializer
 import top.kagg886.util.DurationAsMillsSerializer
 import top.kagg886.util.boolean
+import top.kagg886.util.float
 import top.kagg886.util.json
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -42,6 +43,8 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings", mode = MMKVMode
 
     override var hideWeekendCourse: Boolean by boolean("hide-weekend-course", true)
 
+    override var animationSpeed: Float by float("animation-speed", 1f)
+
     override var syncDuration: Duration by json("duration", 7.days, Json {
         serializersModule = SerializersModule {
             contextual(Duration::class, DurationAsMillsSerializer)
@@ -66,6 +69,8 @@ sealed interface AppSettingsMMKVType {
     var showExperimentClass: Boolean
 
     var hideWeekendCourse: Boolean
+
+    var animationSpeed: Float
 
     var homeModule: List<EOAHomeModule>
 

@@ -1,5 +1,7 @@
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.MotionDurationScale
+import androidx.compose.ui.configureSwingGlobalsForCompose
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import coil3.ImageLoader
@@ -8,10 +10,12 @@ import io.github.vinceglb.filekit.FileKit
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.sample
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.painterResource
 import sylu_eoa.composeapp.generated.resources.Res
 import sylu_eoa.composeapp.generated.resources.icon
 import top.kagg886.backend.config.AppInitializeMMKV
+import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.eoa.App
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.report.CrashApp
@@ -125,4 +129,30 @@ fun main() {
     }
 
     exitProcess(0)
+}
+
+
+@OptIn(ExperimentalComposeUiApi::class)
+fun application(
+    exitProcessOnExit: Boolean = true,
+    content: @Composable ApplicationScope.() -> Unit
+) {
+    if (System.getProperty("compose.application.configure.swing.globals") == "true") {
+        configureSwingGlobalsForCompose()
+    }
+
+    val context = object: MotionDurationScale {
+        override val scaleFactor: Float
+            get() = 1 / AppSettingsMMKV.animationSpeed
+    }
+
+    runBlocking(context = context) {
+        awaitApplication {
+            content()
+        }
+    }
+
+    if (exitProcessOnExit) {
+        exitProcess(0)
+    }
 }
