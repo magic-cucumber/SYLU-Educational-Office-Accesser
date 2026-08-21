@@ -12,7 +12,8 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '文档', link: '/welcome' },
-      { text: '下载', link: 'https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/app-release.apk'}
+      { text: '下载', link: 'https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/app-release.apk'},
+      { text: '友情链接', link: '/links' }
     ],
 
     sidebar: [
