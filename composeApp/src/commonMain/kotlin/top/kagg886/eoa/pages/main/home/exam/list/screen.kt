@@ -17,10 +17,10 @@ import top.kagg886.eoa.pages.main.home.exam.statistic.ExamStatisticRoute
 
 @Composable
 fun ExamListScreen(content: @Composable () -> Unit) {
-    val model = examListViewModelOrNull() ?: return
+    val model = examListViewModelOrNull()
     val nav = LocalNavController.current
 
-    model.collectSideEffect {
+    model?.collectSideEffect {
         when (it) {
             is ExamListSideEffect.NavigateToDetail -> {
                 nav.navigate(ExamDetailRoute(it.examId))

@@ -56,8 +56,8 @@ data object ExamListContentRoute
 @Composable
 fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExamList) {
     ExamListScreen {
-        val model = examListViewModelOrNull() ?: return@ExamListScreen
-        val state by model.collectAsState()
+        val model = examListViewModelOrNull()
+        val state = model?.collectAsState()
         val fabArrow = when (currentLayoutType()) {
             NavigationSuiteType.NavigationBar -> ContainerArrow.Top
             else -> ContainerArrow.Bottom
@@ -100,7 +100,7 @@ fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExam
                 ) {
                     DropdownMenuItem(
                         onClick = {
-                            model.navigateToFilter()
+                            model?.navigateToFilter()
                             expanded = false
                         },
                         text = {
@@ -112,12 +112,12 @@ fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExam
                                 contentDescription = "open",
                             )
                         },
-                        enabled = state is ExamListState.Success
+                        enabled = state?.value is ExamListState.Success
                     )
 
                     DropdownMenuItem(
                         onClick = {
-                            model.navigateToExport()
+                            model?.navigateToExport()
                             expanded = false
                         },
                         text = {
@@ -129,7 +129,7 @@ fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExam
                                 contentDescription = "export"
                             )
                         },
-                        enabled = state is ExamListState.Success
+                        enabled = state?.value is ExamListState.Success
                     )
                 }
             },
@@ -142,18 +142,18 @@ fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExam
             fabText = {
                 Text("绩点统计")
             },
-            fabOnClick = model::navigateToStatistic,
+            fabOnClick = {model?.navigateToStatistic()},
             fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
                 Text("点这里查看本地统计的总绩点。")
             }
         ) {
             ExamListScreenContent(
-                state,
+                state?.value ?: ExamListState.Loading,
                 modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Top) {
                     Text("这里是考试列表。点击考试可以查看更多信息。例如历史挂科，得分组成等。")
                 },
                 onExamItemClicked = {
-                    model.navigateToDetail(it)
+                    model?.navigateToDetail(it)
                 },
             )
         }
