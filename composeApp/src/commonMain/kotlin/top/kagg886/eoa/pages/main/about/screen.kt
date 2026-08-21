@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.about
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,7 +49,7 @@ fun AboutScreen() = MainScreen {
     val clipboardManager = LocalClipboard.current
     val uriHandler = LocalUriHandler.current
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TopAppBar(
             title = { Text("关于") },
             navigationIcon = { BackIconButton() }

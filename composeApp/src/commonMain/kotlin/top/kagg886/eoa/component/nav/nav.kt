@@ -701,26 +701,34 @@ private fun NavDestination.createSizeTransform(
 
 
 object DefaultNavTransitions {
+    // iOS 转场手感：四个方向共用同一时长与缓动曲线，保证进退场严丝合缝。
+    // 曲线 cubic-bezier(0.32, 0.72, 0, 1) 近似 iOS push 的强减速曲线，
+    // 起步快、落点柔，300ms 不拖沓。
+    private const val TRANSITION_DURATION = 300
+    private val iosEasing = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
+
+    // iOS 不做 fade/scale：新页面全宽滑入，旧页面仅 30% 视差滑出，
+    // 下层页面的压暗由 NavHost 中的 iosBlackout 负责。
     val enterTransition:
             AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(
-                durationMillis = 200,
-                easing = LinearEasing
+                durationMillis = TRANSITION_DURATION,
+                easing = iosEasing
             )
-        ) + fadeIn()
+        )
     }
     val exitTransition:
             AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.Start,
             animationSpec = tween(
-                durationMillis = 200,
-                easing = LinearEasing
+                durationMillis = TRANSITION_DURATION,
+                easing = iosEasing
             ),
             targetOffset = { fullOffset -> (fullOffset * 0.3f).toInt() }
-        ) + fadeOut()
+        )
     }
     val sizeTransform: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> SizeTransform?)? = {
         null
@@ -731,20 +739,20 @@ object DefaultNavTransitions {
         slideIntoContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
             animationSpec = tween(
-                durationMillis = 200,
-                easing = LinearEasing
+                durationMillis = TRANSITION_DURATION,
+                easing = iosEasing
             ),
             initialOffset = { fullOffset -> (fullOffset * 0.3f).toInt() }
-        ) + fadeIn()
+        )
     }
     val popExitTransition:
             AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         slideOutOfContainer(
             towards = AnimatedContentTransitionScope.SlideDirection.End,
             animationSpec = tween(
-                durationMillis = 200,
-                easing = LinearEasing
+                durationMillis = TRANSITION_DURATION,
+                easing = iosEasing
             )
-        ) + fadeOut()
+        )
     }
 }
