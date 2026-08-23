@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,10 +12,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.scene.ComposeHostingViewController
-import androidx.compose.ui.uikit.ComposeUIViewControllerConfiguration
+import androidx.compose.ui.window.ComposeUIViewController
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import kotlinx.cinterop.*
@@ -28,9 +25,11 @@ import kotlinx.coroutines.withContext
 import okio.ByteString.Companion.toByteString
 import org.jetbrains.skia.Image
 import platform.Foundation.*
+import platform.UIKit.UIApplication
 import platform.UIKit.UIImage
 import platform.UIKit.UIImagePNGRepresentation
 import platform.UIKit.UIViewController
+import platform.UIKit.UIWindowScene
 import platform.UniformTypeIdentifiers.UTTypeImage
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.eoa.App
@@ -80,6 +79,13 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
     }
 
     NSSetUncaughtExceptionHandler(staticCFunction(::handleObjectiveCException))
+
+    UIApplication.sharedApplication.connectedScenes
+        .filterIsInstance<UIWindowScene>()
+        .flatMap { it.windows.filterIsInstance<platform.UIKit.UIWindow>() }
+        .firstOrNull { it.isKeyWindow() }
+        ?.layer
+        ?.speed = AppSettingsMMKV.animationSpeed
 
     val controller = ComposeUIViewController {
         setSingletonImageLoaderFactory { context ->
@@ -218,16 +224,3 @@ fun ImageProcessingViewController(item: NSExtensionItem, exit: () -> Unit): UIVi
             exit = exit
         )
     }
-
-fun ComposeUIViewController(
-    configure: ComposeUIViewControllerConfiguration.() -> Unit = {},
-    content: @Composable () -> Unit
-): UIViewController = ComposeHostingViewController(
-    configuration = ComposeUIViewControllerConfiguration().apply(configure),
-    coroutineContext = Dispatchers.Main + object : MotionDurationScale {
-        override val scaleFactor: Float
-            get() = 1 / AppSettingsMMKV.animationSpeed
-
-    },
-    content = content,
-)
