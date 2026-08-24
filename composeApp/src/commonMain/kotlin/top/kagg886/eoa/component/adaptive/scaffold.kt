@@ -113,18 +113,21 @@ fun NavigationSuiteScaffold(
                             val menu by scope.menu
                             val fab by scope.fabIcon
                             val fabClick by scope.fabOnClick
+                            val fabBadge by scope.fabBadge
                             val fabModifier by scope.fabModifier
                             val back by scope.back
                             Scaffold(
                                 floatingActionButton = {
                                     if (fab != null) {
-                                        FloatingActionButton(
-                                            modifier = fabModifier,
-                                            onClick = {
-                                                fabClick?.let { it() }
-                                            },
-                                        ) {
-                                            fab?.let { it() }
+                                        FabWithBadge(badge = fabBadge) {
+                                            FloatingActionButton(
+                                                modifier = fabModifier,
+                                                onClick = {
+                                                    fabClick?.let { it() }
+                                                },
+                                            ) {
+                                                fab?.let { it() }
+                                            }
                                         }
                                     }
                                 },
@@ -336,6 +339,7 @@ fun NavigationSuite(
                 val menu by scope.menu
                 val fab by scope.fabIcon
                 val fabClick by scope.fabOnClick
+                val fabBadge by scope.fabBadge
                 val fabModifier by scope.fabModifier
 
                 Spacer(Modifier.height(16.dp))
@@ -353,11 +357,13 @@ fun NavigationSuite(
                     )
                 ) {
                     fab?.let {
-                        FloatingActionButton(
-                            onClick = fabClick ?: {},
-                            modifier = fabModifier
-                        ) {
-                            it()
+                        FabWithBadge(badge = fabBadge) {
+                            FloatingActionButton(
+                                onClick = fabClick ?: {},
+                                modifier = fabModifier
+                            ) {
+                                it()
+                            }
                         }
                     }
                 }
@@ -392,6 +398,7 @@ fun NavigationSuite(
                 val fab by scope.fabIcon
                 val fabText by scope.fabText
                 val fabClick by scope.fabOnClick
+                val fabBadge by scope.fabBadge
                 val fabModifier by scope.fabModifier
                 val back by scope.back
 
@@ -431,20 +438,22 @@ fun NavigationSuite(
                         .padding(horizontal = 16.dp)
                 ) {
                     if (fab != null || fabText != null) {
-                        ExtendedFloatingActionButton(
-                            onClick = fabClick ?: {},
-                            text = {
-                                fabText?.let {
-                                    it()
-                                }
-                            },
-                            icon = {
-                                fab?.let {
-                                    it()
-                                }
-                            },
-                            modifier = fabModifier.fillMaxWidth().sizeIn(minWidth = 80.dp)
-                        )
+                        FabWithBadge(badge = fabBadge) {
+                            ExtendedFloatingActionButton(
+                                onClick = fabClick ?: {},
+                                text = {
+                                    fabText?.let {
+                                        it()
+                                    }
+                                },
+                                icon = {
+                                    fab?.let {
+                                        it()
+                                    }
+                                },
+                                modifier = fabModifier.fillMaxWidth().sizeIn(minWidth = 80.dp)
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.height(16.dp))
@@ -488,6 +497,21 @@ fun NavigationSuite(
 
         NavigationSuiteType.None -> { /* Do nothing. */
         }
+    }
+}
+
+@Composable
+private fun FabWithBadge(
+    badge: (@Composable () -> Unit)?,
+    content: @Composable () -> Unit,
+) {
+    if (badge == null) {
+        content()
+    } else {
+        BadgedBox(
+            badge = { badge() },
+            content = { content() },
+        )
     }
 }
 
@@ -572,6 +596,8 @@ sealed interface NavigationSuiteScope {
         onClick: () -> Unit,
         text: (@Composable () -> Unit)? = null,
         icon: (@Composable () -> Unit)? = null,
+
+        badge: @Composable (() -> Unit)? = null,
         modifier: Modifier = Modifier,
     )
 }
@@ -781,6 +807,7 @@ private interface NavigationSuiteItemProvider {
     val fabText: MutableState<@Composable (() -> Unit)?>
     val fabIcon: MutableState<@Composable (() -> Unit)?>
     val fabOnClick: MutableState<(() -> Unit)?>
+    val fabBadge: MutableState<@Composable (() -> Unit)?>
     val fabModifier: MutableState<Modifier>
 }
 
@@ -846,11 +873,13 @@ private class NavigationSuiteScopeImpl : NavigationSuiteScope,
         onClick: () -> Unit,
         text: (@Composable (() -> Unit))?,
         icon: (@Composable (() -> Unit))?,
+        badge: (@Composable (() -> Unit))?,
         modifier: Modifier
     ) {
         fabText.value = text
         fabIcon.value = icon
         fabOnClick.value = onClick
+        fabBadge.value = badge
         fabModifier.value = modifier
     }
 
@@ -858,6 +887,7 @@ private class NavigationSuiteScopeImpl : NavigationSuiteScope,
     override val fabIcon: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val fabText: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val fabOnClick: MutableState<(() -> Unit)?> = mutableStateOf(null)
+    override val fabBadge: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val fabModifier: MutableState<Modifier> = mutableStateOf(Modifier)
     override val title: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)
     override val menu: MutableState<@Composable (() -> Unit)?> = mutableStateOf(null)

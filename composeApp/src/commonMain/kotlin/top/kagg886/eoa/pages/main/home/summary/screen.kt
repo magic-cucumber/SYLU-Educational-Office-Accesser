@@ -18,6 +18,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import co.touchlab.kermit.Logger
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
@@ -52,6 +54,7 @@ import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
+import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
@@ -90,6 +93,35 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
     }
+
+
+    val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
+    val syncState by mainViewModel.collectAsState()
+    val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+    val showExperimentClass by rootState.showExperimentClass.collectAsState()
+    val model = viewModel<SummaryModel>(key = "summary-${syncState.toViewModelKey()}") {
+        SummaryModel(syncState, mainViewModel.database)
+    }
+
+    val noticeModel = viewModel<SystemNoticeModel>(key = "notice-${syncState.toViewModelKey()}") {
+        SystemNoticeModel(syncState, mainViewModel.database)
+    }
+
+    model.collectSideEffect {
+        when (it) {
+            is SummarySideEffect.NavigateToCourseInfo -> {
+                nav.navigate(CourseDetailRoute(it.courseId))
+            }
+
+            is SummarySideEffect.NavigateToConflictInfo -> {
+                nav.navigate(CourseConflictRoute(it.weekNumber, it.dayOfWeek, it.periodOfDay))
+            }
+        }
+    }
+    val state by model.collectAsState()
+    val noticeState by noticeModel.collectAsState()
+
     HomeScreen(
         route = EOAHomeModule.SUMMARY,
         title = {
@@ -104,10 +136,19 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
         fabOnClick = {
             nav.navigate(SystemNoticeRoute)
         },
-
-
         suiteModifier = Modifier.revealableAutoMeasured(0, suiteArrow) {
             Text("这里是主导航。可以在概要、课表、考试等页面之间切换。")
+        },
+        fabBadge = {
+            when (val state = noticeState) {
+                is SystemNoticeState.Success if (state.notices.count { !it.isRead } != 0) -> {
+                    Badge(containerColor = MaterialTheme.colorScheme.error) {
+                        Text("${state.notices.count { !it.isRead }}")
+                    }
+                }
+
+                else -> Unit
+            }
         },
         menu = {
             val nav = LocalNavController.current
@@ -126,84 +167,7 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
             .revealableAutoMeasured(2, fabArrow) {
                 Text("点这里查看学校通知，重要消息会集中放在这里。")
             }
-            .composed {
-                //借用 notice/screen
-                val mainViewModel = mainViewModelOrNull() ?: return@composed Modifier
-                val syncState by mainViewModel.collectAsState()
-                val model = viewModel<SystemNoticeModel>(key = syncState.toViewModelKey()) {
-                    SystemNoticeModel(syncState, mainViewModel.database)
-                }
-                val state by model.collectAsState()
-                val color = MaterialTheme.colorScheme.error
-                when(val state = state) {
-                    is SystemNoticeState.Success -> {
-                        val count = state.notices.count { !it.isRead }
-                        if (count == 0) {
-                            Modifier
-                        } else {
-                            val badgeText = count.toString()
-                            val textMeasurer = rememberTextMeasurer()
-                            val textStyle = MaterialTheme.typography.labelSmall.copy(
-                                color = MaterialTheme.colorScheme.onError,
-                            )
-                            val textLayoutResult = remember(badgeText, textStyle) {
-                                textMeasurer.measure(
-                                    text = badgeText,
-                                    style = textStyle,
-                                )
-                            }
-
-                            Modifier.drawWithContent {
-                                drawContent()
-                                val badgeHeight = 16.dp.toPx()
-                                val badgeHorizontalPadding = 4.dp.toPx()
-                                val badgeWidth = maxOf(
-                                    badgeHeight,
-                                    textLayoutResult.size.width + badgeHorizontalPadding * 2,
-                                )
-                                val badgeLeft = size.width - badgeWidth
-
-                                drawRoundRect(
-                                    color = color,
-                                    topLeft = Offset(badgeLeft, 0f),
-                                    size = Size(badgeWidth, badgeHeight),
-                                    cornerRadius = CornerRadius(badgeHeight / 2),
-                                )
-                                drawText(
-                                    textLayoutResult = textLayoutResult,
-                                    topLeft = Offset(
-                                        x = badgeLeft + (badgeWidth - textLayoutResult.size.width) / 2,
-                                        y = (badgeHeight - textLayoutResult.size.height) / 2,
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                    else -> return@composed Modifier
-                }
-            },
     ) {
-        val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
-        val syncState by mainViewModel.collectAsState()
-        val rootModel = rootViewModel()
-        val rootState by rootModel.collectAsState()
-        val showExperimentClass by rootState.showExperimentClass.collectAsState()
-        val model = viewModel<SummaryModel>(key = syncState.toViewModelKey()) {
-            SummaryModel(syncState, mainViewModel.database)
-        }
-        model.collectSideEffect {
-            when (it) {
-                is SummarySideEffect.NavigateToCourseInfo -> {
-                    nav.navigate(CourseDetailRoute(it.courseId))
-                }
-
-                is SummarySideEffect.NavigateToConflictInfo -> {
-                    nav.navigate(CourseConflictRoute(it.weekNumber, it.dayOfWeek, it.periodOfDay))
-                }
-            }
-        }
-        val state by model.collectAsState()
-
         SummaryContentV2(
             state = state,
             showExperimentClass = showExperimentClass,

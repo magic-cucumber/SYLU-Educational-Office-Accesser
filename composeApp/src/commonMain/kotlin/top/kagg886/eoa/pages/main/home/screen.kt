@@ -40,6 +40,7 @@ fun HomeScreen(
     title: @Composable (() -> Unit)? = null,
     fabIcon: @Composable (() -> Unit)? = null,
     fabText: @Composable (() -> Unit)? = null,
+    fabBadge: @Composable (() -> Unit)? = null,
     fabOnClick: () -> Unit = {},
     suiteModifier: Modifier = Modifier,
     fabModifier: Modifier = Modifier,
@@ -59,7 +60,13 @@ fun HomeScreen(
             title(title)
             back(back)
 
-            fab(onClick = fabOnClick, icon = fabIcon, text = fabText, modifier = fabModifier)
+            fab(
+                onClick = fabOnClick,
+                icon = fabIcon,
+                text = fabText,
+                badge = fabBadge,
+                modifier = fabModifier,
+            )
 
             for (navigationRoute in homeModule) {
                 item(
