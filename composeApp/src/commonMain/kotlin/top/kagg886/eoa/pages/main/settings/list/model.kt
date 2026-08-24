@@ -1,10 +1,8 @@
 package top.kagg886.eoa.pages.main.settings.list
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import kotlin.time.Instant
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -14,21 +12,20 @@ import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
 class SettingsModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<SettingsState, SettingsState, SettingsEffect> {
+) : BaseViewModel<SettingsState, SettingsEffect>(name = "SettingsModel", initial = SettingsState.Loading) {
     private val syncDao = database.syncRecordDao()
-    override val container: OrbitContainer<SettingsState, SettingsState, SettingsEffect> =
-        orbitContainer(SettingsState.Loading) {
+    override suspend fun Syntax<SettingsState, SettingsEffect>.init() {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@orbitContainer
+                    return
                 }
                 // 否则提示同步失败
                 reduce {
                     SettingsState.Failed(syncState.message)
                 }
-                return@orbitContainer
+                return
             }
 
             // 正在同步则展示加载中
@@ -36,21 +33,21 @@ class SettingsModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@orbitContainer
+                    return
                 }
                 // 否则展示加载中
                 reduce {
                     SettingsState.Loading
                 }
-                return@orbitContainer
+                return
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe().join()
-                return@orbitContainer
+                return
             }
-        }
+    }
 
     private fun setDataUnsafe() = intent {
         val profile = AppSyncMMKV.profile!!

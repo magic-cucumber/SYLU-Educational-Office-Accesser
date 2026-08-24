@@ -2,10 +2,8 @@ package top.kagg886.eoa.pages.main.home.exam.detail
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import top.kagg886.eoa.util.BaseViewModel
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.ExamEntity
@@ -15,23 +13,22 @@ class ExamDetailViewModel(
     private val recordId: Long,
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<ExamDetailState, ExamDetailState, ExamDetailSideEffect> {
+) : BaseViewModel<ExamDetailState, ExamDetailSideEffect>(name = "ExamDetailViewModel", initial = ExamDetailState.Loading) {
     private val examDao = database.examDao()
 
 
-    override val container: OrbitContainer<ExamDetailState, ExamDetailState, ExamDetailSideEffect> =
-        orbitContainer(ExamDetailState.Loading) {
+    override suspend fun Syntax<ExamDetailState, ExamDetailSideEffect>.init() {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@orbitContainer
+                    return
                 }
                 // 否则提示同步失败
                 reduce {
                     ExamDetailState.Failed(syncState.message)
                 }
-                return@orbitContainer
+                return
             }
 
             // 正在同步则展示加载中
@@ -39,21 +36,21 @@ class ExamDetailViewModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe().join()
-                    return@orbitContainer
+                    return
                 }
                 // 否则展示加载中
                 reduce {
                     ExamDetailState.Loading
                 }
-                return@orbitContainer
+                return
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe().join()
-                return@orbitContainer
+                return
             }
-        }
+    }
 
     fun setDataUnsafe() = intent {
         val exam = examDao.getById(recordId)!!

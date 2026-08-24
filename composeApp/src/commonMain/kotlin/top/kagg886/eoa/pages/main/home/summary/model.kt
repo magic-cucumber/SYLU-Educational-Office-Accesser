@@ -1,18 +1,15 @@
 package top.kagg886.eoa.pages.main.home.summary
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.*
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import top.kagg886.util.getTimeByLessonNumber
@@ -23,15 +20,13 @@ import kotlin.time.ExperimentalTime
 class SummaryModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<SummaryState, SummaryState, SummarySideEffect> {
-    private val logger = "SummaryModel".asTaggedLogger
+) : BaseViewModel<SummaryState, SummarySideEffect>(name = "SummaryModel", initial = SummaryState.Loading) {
     private val courseRecordDao = database.courseRecordDao()
     private val courseExtendDao = database.courseExtendDao()
 
     @OptIn(OrbitExperimental::class)
-    override val container: OrbitContainer<SummaryState, SummaryState, SummarySideEffect> =
-        orbitContainer(SummaryState.Loading) {
-            init().join()
+    override suspend fun Syntax<SummaryState, SummarySideEffect>.init() {
+            initData().join()
 
 
             //进度监听。每分钟调度一次
@@ -73,12 +68,12 @@ class SummaryModel(
                     delay(nextMidnight - now)
 
                     reduce { SummaryState.Loading }
-                    init().join()
+                    initData().join()
                 }
             }
-        }
+    }
 
-    private fun init() = intent {
+    private fun initData() = intent {
         if (syncState is MainRouteViewState.SyncFailed) {
             // 非首次同步则展示脏数据
             if (syncState.haveDirtyData) {

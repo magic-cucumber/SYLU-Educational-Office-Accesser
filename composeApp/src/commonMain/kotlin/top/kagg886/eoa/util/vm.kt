@@ -14,11 +14,14 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 import kotlin.uuid.Uuid
 
 
-abstract class BaseViewModel<State : Any, Effect : Any>(val name: String = "random-${Uuid.random()}") :
+abstract class BaseViewModel<State : Any, Effect : Any>(
+    val name: String = "random-${Uuid.random()}",
+    initial: State
+) :
     ViewModel(), OrbitContainerHost<State, State, Effect> {
+
     val logger = Logger.withTag(name)
 
-    abstract val initial: State
     abstract suspend fun Syntax<State, Effect>.init()
 
     @OptIn(OrbitInternal::class)

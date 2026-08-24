@@ -1,12 +1,11 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.datetime.*
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseAndRecord
@@ -17,23 +16,22 @@ class CoursePageViewModel(
     private val syncState: MainRouteViewState,
     private val weekNumber: Int,
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<CoursePageState, CoursePageState, CoursePageSideEffect> {
+) : BaseViewModel<CoursePageState, CoursePageSideEffect>(name = "CoursePageViewModel", initial = CoursePageState.Loading) {
 
     private val courseRecordDao = database.courseRecordDao()
 
-    override val container =
-        orbitContainer<CoursePageState, CoursePageSideEffect>(CoursePageState.Loading) {
+    override suspend fun Syntax<CoursePageState, CoursePageSideEffect>.init() {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe()
-                    return@orbitContainer
+                    return
                 }
                 // 否则提示同步失败
                 reduce {
                     CoursePageState.Failed(syncState.message)
                 }
-                return@orbitContainer
+                return
             }
 
             // 正在同步则展示加载中
@@ -41,21 +39,21 @@ class CoursePageViewModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe()
-                    return@orbitContainer
+                    return
                 }
                 // 否则展示加载中
                 reduce {
                     CoursePageState.Loading
                 }
-                return@orbitContainer
+                return
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe()
-                return@orbitContainer
+                return
             }
-        }
+    }
 
     fun setDataUnsafe() = intent {
         courseRecordDao

@@ -1,26 +1,24 @@
 package top.kagg886.eoa.pages.main.home.course.conflict
 
-import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import top.kagg886.eoa.util.BaseViewModel
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.backend.database.dao.CourseRecordEntity
 
 class CourseConflictViewModel(
     database: AppDatabase,
-    weekNumber: Int,
-    dayOfWeek: Int,
-    periodOfDay: Int
-) : ViewModel(), OrbitContainerHost<CourseConflictState, CourseConflictState, CourseConflictSideEffect> {
+    private val weekNumber: Int,
+    private val dayOfWeek: Int,
+    private val periodOfDay: Int
+) : BaseViewModel<CourseConflictState, CourseConflictSideEffect>(name = "CourseConflictViewModel", initial = CourseConflictState.Loading) {
     private val courseRecordDao = database.courseRecordDao()
-    override val container =
-        orbitContainer<CourseConflictState, CourseConflictSideEffect>(CourseConflictState.Loading) {
+    override suspend fun Syntax<CourseConflictState, CourseConflictSideEffect>.init() {
             val date = courseRecordDao.getCoursesWithRecordInfo(weekNumber, dayOfWeek, periodOfDay)
             reduce {
                 CourseConflictState.Success(date)
             }
-        }
+    }
 
     fun navigateTo(record:CourseRecordEntity) = intent {
         postSideEffect(CourseConflictSideEffect.NavigateToDetail(record.id!!))

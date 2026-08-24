@@ -7,7 +7,7 @@ import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -16,10 +16,8 @@ import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -32,7 +30,6 @@ import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.util.asKtorLogger
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -58,11 +55,9 @@ fun mainViewModelOrNull(): MainRouteViewModel? {
 }
 
 
-class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
-    OrbitContainerHost<MainRouteViewState, MainRouteViewState, MainRouteViewEffect> {
+class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteViewState, MainRouteViewEffect>(name = "MainRouteViewModel", initial = MainRouteViewState.Empty) {
     private val syncDao = database.syncRecordDao()
     private val llmProviderDao = database.llmProviderDao()
-    private val logger = "MainRouteViewModel".asTaggedLogger
 
     val llmExecutors: StateFlow<Map<LLMProviderEntity, MultiLLMPromptExecutor>> =
         llmProviderDao.allFlow()
@@ -94,8 +89,7 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
             .onEach { it.onEach { (_, v) -> addCloseable(v) } }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    override val container: OrbitContainer<MainRouteViewState, MainRouteViewState, MainRouteViewEffect> =
-        orbitContainer(MainRouteViewState.Empty) {
+    override suspend fun Syntax<MainRouteViewState, MainRouteViewEffect>.init() {
             val time = try {
                 syncDao.getLastSyncTime()
             } catch (e: Exception) {
@@ -103,11 +97,11 @@ class MainRouteViewModel(val database: AppDatabase) : ViewModel(),
                 reduce {
                     MainRouteViewState.SyncFailed(false, "数据库损坏，请删除数据库后重试")
                 }
-                return@orbitContainer
+                return
             }
             logger.i("上次同步时间：${time}")
             startSync().join()
-        }
+    }
 
     fun startSync() = intent {
         if (state is MainRouteViewState.SyncProcess) {

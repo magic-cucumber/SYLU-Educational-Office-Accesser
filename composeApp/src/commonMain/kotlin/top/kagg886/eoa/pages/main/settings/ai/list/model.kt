@@ -1,9 +1,7 @@
 package top.kagg886.eoa.pages.main.settings.ai.list
 
-import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import top.kagg886.eoa.util.BaseViewModel
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.LLMProviderEntity
 
@@ -14,17 +12,16 @@ import top.kagg886.backend.database.dao.LLMProviderEntity
  * ================================================
  */
 
-class AISettingsListModel(database: AppDatabase) : ViewModel(), OrbitContainerHost<AISettingsListState, AISettingsListState, AISettingsListSideEffect> {
+class AISettingsListModel(database: AppDatabase) : BaseViewModel<AISettingsListState, AISettingsListSideEffect>(name = "AISettingsListModel", initial = AISettingsListState.Loading) {
     private val dao = database.llmProviderDao()
 
-    override val container: OrbitContainer<AISettingsListState, AISettingsListState, AISettingsListSideEffect> =
-        orbitContainer(AISettingsListState.Loading) {
+    override suspend fun Syntax<AISettingsListState, AISettingsListSideEffect>.init() {
             dao.allFlow().collect { providers ->
                 reduce {
                     AISettingsListState.Success(providers)
                 }
             }
-        }
+    }
 
     fun delete(item: LLMProviderEntity) = intent {
         dao.delete(item)

@@ -1,6 +1,6 @@
 package top.kagg886.eoa.pages.main.home.exam.export
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
@@ -8,11 +8,9 @@ import io.github.vinceglb.filekit.write
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.compose.collectAsState
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppExportMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -21,7 +19,6 @@ import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions
 import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions.SelectColumn
 import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
 import top.kagg886.sylu_eoa.api.v2.bean.Term
-import top.kagg886.util.asTaggedLogger
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -31,18 +28,17 @@ import kotlin.time.Duration.Companion.seconds
  * ================================================
  */
 
-class ExamExportViewModel(private val xnm: String,private val xqm: String) : ViewModel(),
-    OrbitContainerHost<ExamExportState, ExamExportState, ExamExportSideEffect> {
-    private val logger = "ExamExportViewModel".asTaggedLogger
-
-    override val container: OrbitContainer<ExamExportState, ExamExportState, ExamExportSideEffect> = orbitContainer(
-        ExamExportState.Config(
+class ExamExportViewModel(private val xnm: String,private val xqm: String) :
+    BaseViewModel<ExamExportState, ExamExportSideEffect>(
+        name = "ExamExportViewModel",
+        initial = ExamExportState.Config(
             term = Term(xnm, xqm),
             format = ExamExportOptions.Format.XLS,
             columns = AppExportMMKV.columns,
             selectedColumns = AppExportMMKV.selected
         )
     ) {
+    override suspend fun Syntax<ExamExportState, ExamExportSideEffect>.init() {
         viewModelScope.launch {
             container.stateFlow.collect { state ->
                 AppExportMMKV.selected = state.selectedColumns

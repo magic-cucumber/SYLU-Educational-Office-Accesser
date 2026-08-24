@@ -2,7 +2,7 @@ package top.kagg886.eoa.pages
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Severity
@@ -17,9 +17,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -33,7 +31,6 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asKtorLogger
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -48,8 +45,7 @@ fun rootViewModel(): RootViewModel {
     }
 }
 
-class RootViewModel : ViewModel(), OrbitContainerHost<RootState, RootState, RootEffect> {
-    private val logger = "RootViewModel".asTaggedLogger
+class RootViewModel : BaseViewModel<RootState, RootEffect>(name = "RootViewModel", initial = RootState()) {
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(
@@ -77,15 +73,18 @@ class RootViewModel : ViewModel(), OrbitContainerHost<RootState, RootState, Root
         }
     }
 
-    override fun onCleared() = client.close()
+    override fun onCleared() {
+        super.onCleared()
+        client.close()
+    }
 
     val database: AppDatabase = databaseBuilder().build()
 
     val appLogDao = database.appLogDao()
 
-    override val container: OrbitContainer<RootState, RootState, RootEffect> = orbitContainer(RootState()) {
+    override suspend fun Syntax<RootState, RootEffect>.init() {
         val count = appLogDao.clear((Clock.System.now() - 1.days).toEpochMilliseconds())
-        "RootViewModel".asTaggedLogger.i("清理了 $count 条数据。")
+        logger.i("清理了 $count 条数据。")
 
         viewModelScope.launch {
             state.theme.collect {

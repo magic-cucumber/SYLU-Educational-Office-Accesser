@@ -1,6 +1,6 @@
 package top.kagg886.eoa.pages.main.home.link.list
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -9,13 +9,10 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.launch
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.pages.main.home.link.Link
 import top.kagg886.util.asKtorLogger
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 
 /**
@@ -24,8 +21,7 @@ import top.kagg886.util.http.HttpClient
  * Created on: 2025/7/2 10:04
  * ================================================
  */
-class LinkListModel : ViewModel(), OrbitContainerHost<LinkListState, LinkListState, LinkListEffect> {
-    private val logger = "LinkModel".asTaggedLogger
+class LinkListModel : BaseViewModel<LinkListState, LinkListEffect>(name = "LinkListModel", initial = LinkListState.Loading) {
     private val client = HttpClient {
         install(ContentNegotiation) {
             json()
@@ -37,7 +33,7 @@ class LinkListModel : ViewModel(), OrbitContainerHost<LinkListState, LinkListSta
             level = LogLevel.ALL
         }
     }
-    override val container: OrbitContainer<LinkListState, LinkListState, LinkListEffect> = orbitContainer(LinkListState.Loading) {
+    override suspend fun Syntax<LinkListState, LinkListEffect>.init() {
         val exists = AppInitializeMMKV.link
 
         viewModelScope.launch block@{
@@ -69,6 +65,7 @@ class LinkListModel : ViewModel(), OrbitContainerHost<LinkListState, LinkListSta
     }
 
     override fun onCleared() {
+        super.onCleared()
         client.close()
     }
 }

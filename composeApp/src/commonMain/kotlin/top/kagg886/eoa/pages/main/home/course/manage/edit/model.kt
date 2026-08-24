@@ -13,7 +13,7 @@ import ai.koog.prompt.structure.StructuredRequest
 import ai.koog.prompt.structure.StructuredRequestConfig
 import ai.koog.prompt.structure.json.JsonStructure
 import ai.koog.prompt.structure.json.generator.StandardJsonSchemaGenerator
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
@@ -25,29 +25,25 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.backend.database.dao.CourseRecordEntity
 import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.util.SnackBarType
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.race
 import kotlin.time.Duration.Companion.seconds
 
 class CourseEditModel(
     database: AppDatabase,
-    courseId: Long?,
+    private val courseId: Long?,
     private val llmExecutors: Map<LLMProviderEntity, MultiLLMPromptExecutor>
-) : ViewModel(), OrbitContainerHost<CourseEditState, CourseEditState, CourseEditSideEffect> {
-    private val logger = "CourseEditModel".asTaggedLogger
+) : BaseViewModel<CourseEditState, CourseEditSideEffect>(name = "CourseEditModel", initial = CourseEditState.Loading) {
     private val courseDao = database.courseDao()
     private val courseRecordDao = database.courseRecordDao()
-    override val container =
-        orbitContainer<CourseEditState, CourseEditSideEffect>(CourseEditState.Loading) {
+    override suspend fun Syntax<CourseEditState, CourseEditSideEffect>.init() {
             val (xnm, xqm) = AppSyncMMKV.picker!!.default.asTerm()
             val courseInfo = courseId?.let { courseDao.getById(it) } ?: CourseEntity(
                 name = "",
@@ -75,7 +71,7 @@ class CourseEditModel(
                     aiGenerating = null,
                 )
             }
-        }
+    }
 
 
     @OptIn(OrbitExperimental::class)

@@ -1,26 +1,21 @@
 package top.kagg886.eoa.pages.login
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
-import top.kagg886.util.logger
 
-class LoginViewModel : ViewModel(), OrbitContainerHost<LoginViewModelState, LoginViewModelState, LoginSideEffect> {
+class LoginViewModel : BaseViewModel<LoginViewModelState, LoginSideEffect>(name = "LoginViewModel", initial = LoginViewModelState.Empty) {
 
-    private val log = logger
-
-    override val container =
-        orbitContainer<LoginViewModelState, LoginSideEffect>(LoginViewModelState.Empty) {
+    override suspend fun Syntax<LoginViewModelState, LoginSideEffect>.init() {
             if (AppLoginPropertiesMMKV.username.isNotEmpty() && AppLoginPropertiesMMKV.password.isNotEmpty()) {
                 postSideEffect(LoginSideEffect.NavigateToMain)
-                return@orbitContainer
+                return
             }
             reduce {
                 LoginViewModelState.WaitLogin.Waiting(
@@ -28,7 +23,7 @@ class LoginViewModel : ViewModel(), OrbitContainerHost<LoginViewModelState, Logi
                     selected = EOAClientProvider.providers.first { it.id == AppLoginPropertiesMMKV.clientId }
                 )
             }
-        }
+    }
 
     fun startLogin(username: String, password: String) = intent {
         if (state is LoginViewModelState.WaitLogin.Waiting) {
@@ -36,12 +31,12 @@ class LoginViewModel : ViewModel(), OrbitContainerHost<LoginViewModelState, Logi
             reduce {
                 LoginViewModelState.WaitLogin.Processing("登录中...",  oldState.provider, oldState.selected)
             }
-            log.i("开始登录")
+            logger.i("开始登录")
             try {
                 AppLoginPropertiesMMKV.client.username = username
                 AppLoginPropertiesMMKV.client.password = password
                 AppLoginPropertiesMMKV.client.login {
-                    log.w("发现验证码")
+                    logger.w("发现验证码")
                     val defer = CompletableDeferred<String>(viewModelScope.coroutineContext[Job])
                     reduce {
                         LoginViewModelState.WaitLogin.VerifyCode(it, defer,  oldState.provider, oldState.selected)
@@ -50,10 +45,10 @@ class LoginViewModel : ViewModel(), OrbitContainerHost<LoginViewModelState, Logi
                 }
                 AppLoginPropertiesMMKV.username = username
                 AppLoginPropertiesMMKV.password = password
-                log.i("登录成功")
+                logger.i("登录成功")
                 postSideEffect(LoginSideEffect.NavigateToMain)
             } catch (e: Exception) {
-                log.e("登录失败", e)
+                logger.e("登录失败", e)
                 postSideEffect(LoginSideEffect.Toast(type = SnackBarType.Error, e.message!!))
                 reduce { oldState }
             }

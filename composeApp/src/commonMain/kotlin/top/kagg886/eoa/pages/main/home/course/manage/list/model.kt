@@ -1,15 +1,13 @@
 package top.kagg886.eoa.pages.main.home.course.manage.list
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
@@ -20,21 +18,20 @@ import kotlin.time.Clock
 class CourseManageListModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<CourseManageState, CourseManageState, CourseManageSideEffect> {
+) : BaseViewModel<CourseManageState, CourseManageSideEffect>(name = "CourseManageListModel", initial = CourseManageState.Loading) {
     private val courseDao = database.courseDao()
-    override val container: OrbitContainer<CourseManageState, CourseManageState, CourseManageSideEffect> =
-        orbitContainer(CourseManageState.Loading) {
+    override suspend fun Syntax<CourseManageState, CourseManageSideEffect>.init() {
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
                     setDataUnsafe()
-                    return@orbitContainer
+                    return
                 }
                 // 否则提示同步失败
                 reduce {
                     CourseManageState.Failed(syncState.message)
                 }
-                return@orbitContainer
+                return
             }
 
             // 正在同步则展示加载中
@@ -42,21 +39,21 @@ class CourseManageListModel(
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
                     setDataUnsafe()
-                    return@orbitContainer
+                    return
                 }
                 // 否则展示加载中
                 reduce {
                     CourseManageState.Loading
                 }
-                return@orbitContainer
+                    return
             }
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
                 setDataUnsafe()
-                return@orbitContainer
+                return
             }
-        }
+    }
 
     fun setDataUnsafe(onlyShowUserCourse: Boolean = false) = intent {
         val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()

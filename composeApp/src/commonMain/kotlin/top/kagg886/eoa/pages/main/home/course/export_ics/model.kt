@@ -1,6 +1,6 @@
 package top.kagg886.eoa.pages.main.home.course.export_ics
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.dialogs.openFileSaver
@@ -11,9 +11,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.util.SnackBarType
@@ -26,12 +25,11 @@ import kotlin.time.Duration.Companion.minutes
 
 class CourseExportIcsModel(
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<CourseExportIcsState, CourseExportIcsState, CourseIcsExportSideEffect> {
+) : BaseViewModel<CourseExportIcsState, CourseIcsExportSideEffect>(name = "CourseExportIcsModel", initial = CourseExportIcsState("正在导出...")) {
     private val dao = database.courseRecordDao()
-    override val container =
-        orbitContainer<CourseExportIcsState, CourseIcsExportSideEffect>(CourseExportIcsState("正在导出...")) {
+    override suspend fun Syntax<CourseExportIcsState, CourseIcsExportSideEffect>.init() {
             exportICS().join()
-        }
+    }
 
     @OptIn(OrbitExperimental::class)
     fun exportICS() = intent {

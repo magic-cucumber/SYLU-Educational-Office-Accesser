@@ -1,6 +1,6 @@
 package top.kagg886.eoa.pages.update.download
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
@@ -13,9 +13,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.io.readByteArray
 import okio.Path
 import okio.buffer
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.*
 import top.kagg886.util.http.HttpClient
@@ -26,8 +24,8 @@ import top.kagg886.util.http.HttpClient
  * Created on: 2025/7/14 14:13
  * ================================================
  */
-class DownloadModel(private val url: String) : ViewModel(), OrbitContainerHost<DownloadState, DownloadState, DownloadSideEffect> {
-    override val container: OrbitContainer<DownloadState, DownloadState, DownloadSideEffect> = orbitContainer(DownloadState.Fetching) {
+class DownloadModel(private val url: String) : BaseViewModel<DownloadState, DownloadSideEffect>(name = "DownloadModel", initial = DownloadState.Fetching) {
+    override suspend fun Syntax<DownloadState, DownloadSideEffect>.init() {
         startDownload().join()
     }
 
@@ -42,7 +40,10 @@ class DownloadModel(private val url: String) : ViewModel(), OrbitContainerHost<D
         }
     }
 
-    override fun onCleared() = client.close()
+    override fun onCleared() {
+        super.onCleared()
+        client.close()
+    }
 
     private fun startDownload() = intent {
         reduce { DownloadState.Fetching }

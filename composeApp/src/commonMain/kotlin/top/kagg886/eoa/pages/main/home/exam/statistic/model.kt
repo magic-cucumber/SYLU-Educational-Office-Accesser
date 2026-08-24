@@ -1,9 +1,7 @@
 package top.kagg886.eoa.pages.main.home.exam.statistic
 
-import androidx.lifecycle.ViewModel
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import top.kagg886.eoa.util.BaseViewModel
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.database.AppDatabase
 
 /**
@@ -13,11 +11,10 @@ import top.kagg886.backend.database.AppDatabase
  * ================================================
  */
 
-class ExamStatisticModel(database: AppDatabase, year: String, term: String) : ViewModel(),
-    OrbitContainerHost<ExamStatisticState, ExamStatisticState, ExamStatisticSideEffect> {
+class ExamStatisticModel(database: AppDatabase, private val year: String, private val term: String) :
+    BaseViewModel<ExamStatisticState, ExamStatisticSideEffect>(name = "ExamStatisticModel", initial = ExamStatisticState.Loading) {
     private val examDao = database.examDao()
-    override val container: OrbitContainer<ExamStatisticState, ExamStatisticState, ExamStatisticSideEffect> =
-        orbitContainer(ExamStatisticState.Loading) {
+    override suspend fun Syntax<ExamStatisticState, ExamStatisticSideEffect>.init() {
             val currentTermData = examDao.all(yearCode = year, xqmCode = term)
             val allData = examDao.all()
 
@@ -44,7 +41,7 @@ class ExamStatisticModel(database: AppDatabase, year: String, term: String) : Vi
                     avgScoreMultiPoint = avgScoreMultiPoint,
                 )
             }
-        }
+    }
 }
 
 

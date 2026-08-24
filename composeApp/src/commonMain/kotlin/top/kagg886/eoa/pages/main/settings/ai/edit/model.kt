@@ -15,7 +15,7 @@ import ai.koog.prompt.structure.StructuredRequestConfig
 import ai.koog.prompt.structure.json.JsonStructure
 import ai.koog.prompt.structure.json.generator.StandardJsonSchemaGenerator
 import ai.koog.prompt.text.text
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
@@ -25,15 +25,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import okio.ByteString.Companion.decodeBase64
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.LLMProviderEntity
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asKtorLogger
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.minutes
@@ -43,13 +40,11 @@ import kotlin.uuid.Uuid
 
 class LLMProviderEditModel(
     database: AppDatabase,
-    uuid: String?,
-) : ViewModel(), OrbitContainerHost<LLMProviderEditState, LLMProviderEditState, LLMProviderEditSideEffect> {
-    private val logger = "LLMProviderEditModel".asTaggedLogger
+    private val uuid: String?,
+) : BaseViewModel<LLMProviderEditState, LLMProviderEditSideEffect>(name = "LLMProviderEditModel", initial = LLMProviderEditState.Loading) {
     private val dao = database.llmProviderDao()
 
-    override val container: OrbitContainer<LLMProviderEditState, LLMProviderEditState, LLMProviderEditSideEffect> =
-        orbitContainer(LLMProviderEditState.Loading) {
+    override suspend fun Syntax<LLMProviderEditState, LLMProviderEditSideEffect>.init() {
             val provider = uuid?.let { targetUuid ->
                 dao.all().firstOrNull { it.uuid == targetUuid }
             } ?: emptyProvider()
@@ -57,7 +52,7 @@ class LLMProviderEditModel(
             reduce {
                 LLMProviderEditState.Success(provider, false)
             }
-        }
+    }
 
     @OptIn(ExperimentalUuidApi::class, OrbitExperimental::class)
     fun save(item: LLMProviderEntity) = intent {

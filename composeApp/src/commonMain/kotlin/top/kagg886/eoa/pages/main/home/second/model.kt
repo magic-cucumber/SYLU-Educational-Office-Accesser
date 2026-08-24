@@ -1,13 +1,10 @@
 package top.kagg886.eoa.pages.main.home.second
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.annotation.OrbitExperimental
 import org.orbitmvi.orbit.syntax.Syntax
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.annotation.OrbitExperimental
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -17,7 +14,6 @@ import top.kagg886.eoa.second.TWUser
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.vpn.VPNClient
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.race
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -31,11 +27,10 @@ import kotlin.time.Duration.Companion.seconds
 
 class SecondClassModel(
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<SecondClassState, SecondClassState, SecondClassSideEffect> {
-    private val log = "SecondClassModel".asTaggedLogger
+) : BaseViewModel<SecondClassState, SecondClassSideEffect>(name = "SecondClassModel", initial = SecondClassState.Initial) {
     private val secondClassDao = database.secondClassDao()
 
-    override val container: OrbitContainer<SecondClassState, SecondClassState, SecondClassSideEffect> = orbitContainer(SecondClassState.Initial) {
+    override suspend fun Syntax<SecondClassState, SecondClassSideEffect>.init() {
         val cache = secondClassDao.all()
 
         if (cache.isNotEmpty()) {
@@ -52,7 +47,7 @@ class SecondClassModel(
                     )
                 }
             }
-            return@orbitContainer
+            return
         }
         login().join()
     }
@@ -98,7 +93,7 @@ class SecondClassModel(
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
 
-            log.e("无法获取第二课堂数据", e)
+            logger.e("无法获取第二课堂数据", e)
             postSideEffect(
                 SecondClassSideEffect.Toast(
                     SnackBarType.Error,
@@ -126,7 +121,7 @@ class SecondClassModel(
         tPassword: String,
         timeout: Duration
     ): Map<SecondClassDataSummary, List<SecondClassData>> = withTimeout(timeout) {
-        log.i("开始内网登录")
+        logger.i("开始内网登录")
         val tw = TWUser(
             baseURL = "http://xg.sylu.edu.cn/SyluTW/Sys/",
             user = AppLoginPropertiesMMKV.username,
@@ -134,9 +129,9 @@ class SecondClassModel(
 
         tw.login(tPassword)
 
-        log.i("内网登录完成，开始获取信息")
+        logger.i("内网登录完成，开始获取信息")
         val data = tw.getData()
-        log.i("成功获取二课数据。来源：内网")
+        logger.i("成功获取二课数据。来源：内网")
 
         data
     }
@@ -147,7 +142,7 @@ class SecondClassModel(
         tPassword: String,
         timeout: Duration,
     ): Map<SecondClassDataSummary, List<SecondClassData>> = withTimeout(timeout) {
-        log.i("开始登录VPN")
+        logger.i("开始登录VPN")
         val vpn = VPNClient(
             AppLoginPropertiesMMKV.username,
             vPassword
@@ -155,7 +150,7 @@ class SecondClassModel(
 
         vpn.login(
             totpHandler = {
-                log.i("处理TOTP二次验证")
+                logger.i("处理TOTP二次验证")
                 val deferred = CompletableDeferred<Int?>()
                 runOn<SecondClassState.RequireLogin<SecondClassState.TOTPAcceptable>> {
                     reduce {
@@ -168,7 +163,7 @@ class SecondClassModel(
                     }
                 }
                 val code = deferred.await()
-                log.i("TOTP二次验证处理完成")
+                logger.i("TOTP二次验证处理完成")
                 runOn<SecondClassState.RequireLogin<*>> {
                     reduce {
                         state.copy(additional = null)
@@ -183,7 +178,7 @@ class SecondClassModel(
                 code
             },
             captchaHandler = { background, slider ->
-                log.i("处理滑动验证码")
+                logger.i("处理滑动验证码")
                 val deferred = CompletableDeferred<CaptchaReturn?>()
                 runOn<SecondClassState.RequireLogin<SecondClassState.CaptchaAcceptable>> {
                     reduce {
@@ -196,7 +191,7 @@ class SecondClassModel(
                     }
                 }
                 val result = deferred.await()
-                log.i("滑动验证码处理完成: $this")
+                logger.i("滑动验证码处理完成: $this")
                 runOn<SecondClassState.RequireLogin<*>> {
                     reduce {
                         state.copy(additional = null)
@@ -215,7 +210,7 @@ class SecondClassModel(
             .first { it.name == "团委第二课堂系统" }
             .redirect
 
-        log.d("成功登录VPN")
+        logger.d("成功登录VPN")
 
         if (timeout == Duration.ZERO) {
             throw SocketTimeoutException("timeout.")
@@ -228,9 +223,9 @@ class SecondClassModel(
         ).apply { addCloseable(this) }
 
         tw.login(tPassword)
-        log.i("VPN登录完成，开始获取信息")
+        logger.i("VPN登录完成，开始获取信息")
         val data = tw.getData()
-        log.i("成功获取二课数据。来源：VPN")
+        logger.i("成功获取二课数据。来源：VPN")
 
         data
     }

@@ -3,12 +3,10 @@ package top.kagg886.eoa.pages.welcome
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.LocalNavController
@@ -34,21 +32,20 @@ fun welcomeModelOrNull(): WelcomeViewModel? {
 }
 
 
-class WelcomeViewModel : ViewModel(), OrbitContainerHost<WelcomeViewModelState, WelcomeViewModelState, WelcomeSideEffect> {
-    override val container: OrbitContainer<WelcomeViewModelState, WelcomeViewModelState, WelcomeSideEffect> =
-        orbitContainer(WelcomeViewModelState.Empty) {
+class WelcomeViewModel : BaseViewModel<WelcomeViewModelState, WelcomeSideEffect>(name = "WelcomeViewModel", initial = WelcomeViewModelState.Empty) {
+    override suspend fun Syntax<WelcomeViewModelState, WelcomeSideEffect>.init() {
             if (AppLoginPropertiesMMKV.username.isNotEmpty() && AppLoginPropertiesMMKV.password.isNotEmpty() && AppInitializeMMKV.initialize) {
                 postSideEffect(WelcomeSideEffect.NavigateToMain)
-                return@orbitContainer
+                return
             }
             if (AppInitializeMMKV.initialize) {
                 completeWelcomeWithoutTutorial().join()
-                return@orbitContainer
+                return
             }
             reduce {
                 WelcomeViewModelState.Welcome
             }
-        }
+    }
 
     fun completeWelcome() = intent {
         AppInitializeMMKV.initialize = true

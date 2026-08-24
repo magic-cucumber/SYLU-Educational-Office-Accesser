@@ -1,6 +1,6 @@
 package top.kagg886.eoa.pages.logcat
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -22,21 +22,20 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.io.buffered
 import kotlinx.io.writeString
-import org.orbitmvi.orbit.OrbitContainer
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.backend.database.dao.log
 import top.kagg886.eoa.util.SnackBarType
-import top.kagg886.util.logger
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
-class LogcatModel(private val database: AppDatabase) : ViewModel(), OrbitContainerHost<LogcatState, LogcatState, LogcatSideEffect> {
+class LogcatModel(private val database: AppDatabase) : BaseViewModel<LogcatState, LogcatSideEffect>(name = "LogcatModel", initial = LogcatState.Loading) {
     private val appLogDao = database.appLogDao()
-    override val container: OrbitContainer<LogcatState, LogcatState, LogcatSideEffect> = orbitContainer(LogcatState.Loading) { all().join() }
+    override suspend fun Syntax<LogcatState, LogcatSideEffect>.init() {
+        all().join()
+    }
 
     fun all(level: Severity? = Severity.Info) = intent {
         val data = Pager(

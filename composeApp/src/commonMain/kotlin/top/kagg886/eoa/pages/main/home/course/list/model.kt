@@ -1,28 +1,23 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.foundation.pager.PagerState
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.delay
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import org.orbitmvi.orbit.OrbitContainerHost
-import org.orbitmvi.orbit.viewmodel.orbitContainer
+import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.eoa.pages.main.MainRouteViewState
-import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.calculateWeekNumber
 import kotlin.time.Clock
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
-) : ViewModel(), OrbitContainerHost<CourseListState, CourseListState, CourseListSideEffect> {
-    private val logger = "CourseListViewModel".asTaggedLogger
-
-    override val container =
-        orbitContainer<CourseListState, CourseListSideEffect>(CourseListState.Loading) {
+) : BaseViewModel<CourseListState, CourseListSideEffect>(name = "CourseListViewModel", initial = CourseListState.Loading) {
+    override suspend fun Syntax<CourseListState, CourseListSideEffect>.init() {
             refresh().join()
 
             //每日0:00刷新UI。立即执行
@@ -44,7 +39,7 @@ class CourseListViewModel(
                     refresh().join()
                 }
             }
-        }
+    }
 
     fun setDataUnsafe() = intent {
         val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()

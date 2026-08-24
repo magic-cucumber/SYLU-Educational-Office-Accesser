@@ -1,15 +1,14 @@
 package top.kagg886.eoa.pages.main.home.course.export_calender
 
-import androidx.lifecycle.ViewModel
+import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
-import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
-import org.orbitmvi.orbit.viewmodel.orbitContainer
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
@@ -18,16 +17,14 @@ import top.kagg886.calendar.v2.state.Event
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getTimeByLessonNumber
-import top.kagg886.util.logger
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class CourseExportCalenderModel(
     database: AppDatabase
-) : ViewModel(), OrbitContainerHost<CourseExportCalenderState, CourseExportCalenderState, CourseExportCalenderSideEffect> {
+) : BaseViewModel<CourseExportCalenderState, CourseExportCalenderSideEffect>(name = "CourseExportCalenderModel", initial = CourseExportCalenderState("即将开始导出...")) {
     private val dao = database.courseRecordDao()
-    override val container =
-        orbitContainer<CourseExportCalenderState, CourseExportCalenderSideEffect>(CourseExportCalenderState("即将开始导出..."))
+    override suspend fun Syntax<CourseExportCalenderState, CourseExportCalenderSideEffect>.init() = Unit
 
     @OptIn(OrbitExperimental::class, ExperimentalUuidApi::class)
     fun exportCalender(manager: CalendarManager) = intent {
