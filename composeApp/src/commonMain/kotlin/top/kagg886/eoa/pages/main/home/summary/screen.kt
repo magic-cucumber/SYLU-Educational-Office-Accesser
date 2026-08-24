@@ -15,15 +15,24 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -48,7 +57,9 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
+import top.kagg886.eoa.pages.main.home.notice.SystemNoticeModel
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
+import top.kagg886.eoa.pages.main.home.notice.SystemNoticeState
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
@@ -111,9 +122,66 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
                 Icon(Icons.Default.AccountBox, contentDescription = "返回")
             }
         },
-        fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
-            Text("点这里查看学校通知，重要消息会集中放在这里。")
-        },
+        fabModifier = Modifier
+            .revealableAutoMeasured(2, fabArrow) {
+                Text("点这里查看学校通知，重要消息会集中放在这里。")
+            }
+            .composed {
+                //借用 notice/screen
+                val mainViewModel = mainViewModelOrNull() ?: return@composed Modifier
+                val syncState by mainViewModel.collectAsState()
+                val model = viewModel<SystemNoticeModel>(key = syncState.toViewModelKey()) {
+                    SystemNoticeModel(syncState, mainViewModel.database)
+                }
+                val state by model.collectAsState()
+                val color = MaterialTheme.colorScheme.error
+                when(val state = state) {
+                    is SystemNoticeState.Success -> {
+                        val count = state.notices.count { !it.isRead }
+                        if (count == 0) {
+                            Modifier
+                        } else {
+                            val badgeText = count.toString()
+                            val textMeasurer = rememberTextMeasurer()
+                            val textStyle = MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onError,
+                            )
+                            val textLayoutResult = remember(badgeText, textStyle) {
+                                textMeasurer.measure(
+                                    text = badgeText,
+                                    style = textStyle,
+                                )
+                            }
+
+                            Modifier.drawWithContent {
+                                drawContent()
+                                val badgeHeight = 16.dp.toPx()
+                                val badgeHorizontalPadding = 4.dp.toPx()
+                                val badgeWidth = maxOf(
+                                    badgeHeight,
+                                    textLayoutResult.size.width + badgeHorizontalPadding * 2,
+                                )
+                                val badgeLeft = size.width - badgeWidth
+
+                                drawRoundRect(
+                                    color = color,
+                                    topLeft = Offset(badgeLeft, 0f),
+                                    size = Size(badgeWidth, badgeHeight),
+                                    cornerRadius = CornerRadius(badgeHeight / 2),
+                                )
+                                drawText(
+                                    textLayoutResult = textLayoutResult,
+                                    topLeft = Offset(
+                                        x = badgeLeft + (badgeWidth - textLayoutResult.size.width) / 2,
+                                        y = (badgeHeight - textLayoutResult.size.height) / 2,
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                    else -> return@composed Modifier
+                }
+            },
     ) {
         val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
         val syncState by mainViewModel.collectAsState()
