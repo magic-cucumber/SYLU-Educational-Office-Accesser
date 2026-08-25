@@ -3,6 +3,7 @@ package top.kagg886.eoa.util
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -29,7 +30,11 @@ abstract class BaseViewModel<State : Any, Effect : Any>(
         initialState = initial,
         buildSettings = {
             exceptionHandler = CoroutineExceptionHandler { context, throwable ->
-                logger.e("unhandled exception caught in ${context}.", throwable)
+                if (throwable !is CancellationException) {
+                    logger.e("unhandled exception caught in ${context}.", throwable)
+                } else {
+                    logger.d("coroutine has been cancelled. $context")
+                }
                 throw throwable
             }
         }
