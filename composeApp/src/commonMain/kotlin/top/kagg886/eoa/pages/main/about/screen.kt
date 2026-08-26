@@ -1,13 +1,21 @@
 package top.kagg886.eoa.pages.main.about
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Group
@@ -15,15 +23,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -42,211 +49,184 @@ import top.kagg886.util.setText
 @Serializable
 data object AboutRoute
 
+private const val QQ_GROUP_NUMBER = "798201505"
+private const val QQ_GROUP_URL = "https://qm.qq.com/q/heTEDas3Mk"
+private const val MAIL_URL =
+    "mailto:iveour@163.com?subject=SYLU-EOA%20%E5%8A%9F%E8%83%BD%E5%8F%8D%E9%A6%88"
+private const val SOURCE_URL =
+    "https://gitee.com/kagg886/sylu-educational-office-accesser/tree/master-4.0/"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen() = MainScreen {
     var showDonationDialog by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboard.current
     val uriHandler = LocalUriHandler.current
+    val snack = LocalSnackBarHost.current
+    val scope = rememberCoroutineScope()
+    val beatScale = remember { Animatable(1f) }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        TopAppBar(
-            title = { Text("关于") },
-            navigationIcon = { BackIconButton() }
-        )
-
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("关于") },
+                navigationIcon = { BackIconButton() }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item {
-                // 项目图标
-                Image(
-                    painter = painterResource(Res.drawable.icon),
-                    contentDescription = "App Icon",
-                    modifier = Modifier.size(120.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(32.dp))
 
-            item {
-                // 项目信息
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "SYLU-EOA",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = "制作者：kagg886",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Text(
-                        text = "版本：${BuildConfig.APP_VERSION_NAME}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            item {
-                // 赞赏我
-                ListItem(
-                    headlineContent = { Text("赞赏我") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Default.Favorite,
-                            contentDescription = null,
-                            tint = Color.Red
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            showDonationDialog = true
-                        }
-                )
-            }
-
-            item {
-                // 加入QQ群
-                ListItem(
-                    headlineContent = { Text("加入QQ群") },
-                    supportingContent = {
-                        val snack = LocalSnackBarHost.current
-                        val scope = rememberCoroutineScope()
-                        val theme = MaterialTheme.colorScheme
-                        Text(
-                            buildAnnotatedString {
-                                withLink(
-                                    link = LinkAnnotation.Clickable(
-                                        tag = "jq_number",
-                                        styles = TextLinkStyles(
-                                            style = androidx.compose.ui.text.SpanStyle(
-                                                color = theme.primary,
-                                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
-                                            ),
-                                            pressedStyle = androidx.compose.ui.text.SpanStyle(
-                                                color = theme.primary.copy(alpha = 0.8f),
-                                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
-                                            ),
-                                            hoveredStyle = androidx.compose.ui.text.SpanStyle(
-                                                color = theme.primary.copy(alpha = 0.9f),
-                                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
-                                            )
-                                        )
-                                    ) {
-                                        scope.launch {
-                                            clipboardManager.setText("798201505")
-                                            snack.showSnackBar(SnackBarType.Success, "已复制QQ群号")
+            Image(
+                painter = painterResource(Res.drawable.icon),
+                contentDescription = "应用图标",
+                modifier = Modifier
+                    .size(96.dp)
+                    .graphicsLayer {
+                        scaleX = beatScale.value
+                        scaleY = beatScale.value
+                    }
+                    .clip(MaterialTheme.shapes.large)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onPress = {
+                                scope.launch {
+                                    beatScale.animateTo(
+                                        targetValue = 1f,
+                                        animationSpec = keyframes {
+                                            durationMillis = 260
+                                            0.96f at 45 using FastOutLinearInEasing
+                                            1.28f at 105 using FastOutLinearInEasing
+                                            1.08f at 180 using LinearOutSlowInEasing
+                                            1.00f at 260 using LinearOutSlowInEasing
                                         }
-                                    },
-                                    block = {
-                                        append("点我复制QQ群号")
-                                    }
-                                )
+                                    )
+                                }
                             }
                         )
-                    },
-                    leadingContent = {
-                        Icon(
-                            Icons.Default.Group,
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            uriHandler.openUri("https://qm.qq.com/q/heTEDas3Mk")
-                        }
-                )
-            }
+                    }
+            )
 
-            item {
-                // 邮件反馈
-                ListItem(
-                    headlineContent = { Text("邮件反馈") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Default.Email,
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            uriHandler.openUri("mailto:iveour@163.com?subject=SYLU-EOA%20%E5%8A%9F%E8%83%BD%E5%8F%8D%E9%A6%88")
-                        }
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            item {
-                // 查看源代码
-                ListItem(
-                    headlineContent = { Text("查看源代码") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Default.Code,
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            uriHandler.openUri("https://gitee.com/kagg886/sylu-educational-office-accesser/tree/master-4.0/")
+            Text(
+                text = "SYLU-EOA",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "版本 ${BuildConfig.APP_VERSION_NAME} · 作者 kagg886",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            AboutActionItem(
+                icon = Icons.Default.Favorite,
+                title = "赞赏我",
+                subtitle = "请我喝一杯咖啡",
+                onClick = { showDonationDialog = true }
+            )
+
+            AboutActionItem(
+                icon = Icons.Default.Group,
+                title = "加入QQ群",
+                subtitle = QQ_GROUP_NUMBER,
+                onClick = { uriHandler.openUri(QQ_GROUP_URL) },
+                trailingContent = {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                clipboardManager.setText(QQ_GROUP_NUMBER)
+                                snack.showSnackBar(SnackBarType.Success, "已复制QQ群号")
+                            }
                         }
-                )
-            }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "复制QQ群号"
+                        )
+                    }
+                }
+            )
+
+            AboutActionItem(
+                icon = Icons.Default.Email,
+                title = "邮件反馈",
+                subtitle = "iveour@163.com",
+                onClick = { uriHandler.openUri(MAIL_URL) }
+            )
+
+            AboutActionItem(
+                icon = Icons.Default.Code,
+                title = "查看源代码",
+                subtitle = "Gitee",
+                onClick = { uriHandler.openUri(SOURCE_URL) }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
-
-    // 赞赏对话框
     if (showDonationDialog) {
-        AlertDialog(
-            onDismissRequest = { showDonationDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDonationDialog = false
-                    }
-                ) {
-                    Text("关闭")
-                }
-            },
-            icon = {
-                Icon(
-                    Icons.Default.Coffee,
-                    contentDescription = null,
-                    tint = Color.Red
-                )
-            },
-            title = { Text("请我喝1杯咖啡") },
-            text = {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Image(
-                        painter = painterResource(Res.drawable.good),
-                        contentDescription = "Donation QR Code",
-                        modifier = Modifier.fillMaxWidth().align(Alignment.CenterHorizontally),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-            }
-        )
+        DonationDialog(onDismiss = { showDonationDialog = false })
     }
+}
+
+@Composable
+private fun AboutActionItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    trailingContent: @Composable (() -> Unit)? = null
+) {
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        leadingContent = {
+            Icon(imageVector = icon, contentDescription = null)
+        },
+        trailingContent = trailingContent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    )
+}
+
+@Composable
+private fun DonationDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        },
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Coffee,
+                contentDescription = null
+            )
+        },
+        title = { Text("请我喝一杯咖啡") },
+        text = {
+            Image(
+                painter = painterResource(Res.drawable.good),
+                contentDescription = "赞赏二维码",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Fit
+            )
+        }
+    )
 }
