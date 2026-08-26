@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -70,11 +72,21 @@ fun BottomSheetPageScaffold(
         val sheetShape =
             RoundedCornerShape(topStart = SheetCornerRadius, topEnd = SheetCornerRadius)
         val allowProgrammaticTransition = remember { mutableStateOf(false) }
+        var closeRequested by remember { mutableStateOf(false) }
         val popupTypeChangeRequestState = rememberUpdatedState(popupTypeChangeRequest)
         lateinit var draggableState: AnchoredDraggableState<SheetPosition>
 
-        fun onClose(targetOverride: SheetPosition? = null): Boolean {
-            val target = targetOverride ?: when (draggableState.settledValue) {
+        fun requestRouteDismiss(): Boolean {
+            if (closeRequested) return false
+            closeRequested = true
+            navigation.popBackStack()
+            return true
+        }
+
+        fun onClose(): Boolean {
+            if (closeRequested) return false
+
+            val target = when (draggableState.settledValue) {
                 SheetPosition.Expanded -> when {
                     draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded) ->
                         SheetPosition.PartiallyExpanded
@@ -97,14 +109,16 @@ fun BottomSheetPageScaffold(
             target ?: return false
             if (!popupTypeChangeRequestState.value(target)) return false
 
-            if (targetOverride == null) {
-                scope.launch {
-                    allowProgrammaticTransition.value = true
-                    try {
-                        draggableState.animateTo(target, animationSpec)
-                    } finally {
-                        allowProgrammaticTransition.value = false
-                    }
+            if (target == SheetPosition.Hidden) {
+                requestRouteDismiss()
+            }
+
+            scope.launch {
+                allowProgrammaticTransition.value = true
+                try {
+                    draggableState.animateTo(target, animationSpec)
+                } finally {
+                    allowProgrammaticTransition.value = false
                 }
             }
             return true
@@ -127,12 +141,14 @@ fun BottomSheetPageScaffold(
                             SheetPosition.PartiallyExpanded -> target == SheetPosition.Hidden
                             SheetPosition.Hidden -> false
                         }
-                        if (isClosing) onClose(target) else true
+                        if (isClosing) popupTypeChangeRequestState.value(target) else true
                     }
                 }
             )
         }
         draggableState = state
+        val draggableInteractionSource = remember { MutableInteractionSource() }
+        val isDragging by draggableInteractionSource.collectIsDraggedAsState()
         val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
             state = draggableState,
             positionalThreshold = { distance -> distance * 0.5f },
@@ -144,13 +160,24 @@ fun BottomSheetPageScaffold(
             initialTarget?.let { draggableState.animateTo(it, animationSpec) }
         }
 
+        // targetValue can change while the pointer is still down. Only dismiss after the
+        // Do not dismiss while targetValue changes under the pointer; wait for release.
         LaunchedEffect(draggableState) {
             var hasBeenVisible = false
-            snapshotFlow { draggableState.settledValue }.collect { value ->
-                if (value == SheetPosition.Hidden) {
-                    if (hasBeenVisible) navigation.popBackStack()
-                } else {
-                    hasBeenVisible = true
+            snapshotFlow {
+                Triple(
+                    isDragging,
+                    draggableState.targetValue,
+                    draggableState.settledValue
+                )
+            }.collect { (dragging, target, settled) ->
+                if (settled != SheetPosition.Hidden) hasBeenVisible = true
+                if (
+                    !dragging &&
+                    hasBeenVisible &&
+                    target == SheetPosition.Hidden
+                ) {
+                    requestRouteDismiss()
                 }
             }
         }
@@ -286,6 +313,7 @@ fun BottomSheetPageScaffold(
                                 .anchoredDraggable(
                                     state = draggableState,
                                     orientation = Orientation.Vertical,
+                                    interactionSource = draggableInteractionSource,
                                     flingBehavior = flingBehavior
                                 )
                                 .clickable(

@@ -10,6 +10,8 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -71,7 +73,17 @@ fun DrawerSheetPageScaffold(
     Box(Modifier.fillMaxSize()) {
         val navigation = LocalNavController.current
         val scope = rememberCoroutineScope()
+        var closeRequested by remember { mutableStateOf(false) }
+        fun requestClose(): Boolean {
+            if (closeRequested) return false
+            closeRequested = true
+            navigation.popBackStack()
+            return true
+        }
+
         val draggableState = remember { AnchoredDraggableState(DrawerPosition.Closed) }
+        val draggableInteractionSource = remember { MutableInteractionSource() }
+        val isDragging by draggableInteractionSource.collectIsDraggedAsState()
         val animationSpec = tween<Float>(durationMillis = 320, easing = FastOutSlowInEasing)
         val flingBehavior = AnchoredDraggableDefaults.flingBehavior(
             state = draggableState,
@@ -79,25 +91,38 @@ fun DrawerSheetPageScaffold(
             animationSpec = animationSpec
         )
         var initialTarget by remember { mutableStateOf<DrawerPosition?>(null) }
-        var dismissingFromScrim by remember { mutableStateOf(false) }
 
         LaunchedEffect(initialTarget) {
             initialTarget?.let { draggableState.animateTo(it, animationSpec) }
         }
 
+        // targetValue can change while the pointer is still down. Only dismiss after the
+        // Do not dismiss while targetValue changes under the pointer; wait for release.
         LaunchedEffect(draggableState) {
             var hasBeenVisible = false
-            snapshotFlow { draggableState.settledValue }.collect { value ->
-                if (value == DrawerPosition.Closed) {
-                    if (hasBeenVisible && !dismissingFromScrim) navigation.popBackStack()
-                } else {
-                    hasBeenVisible = true
+            snapshotFlow {
+                Triple(
+                    isDragging,
+                    draggableState.targetValue,
+                    draggableState.settledValue
+                )
+            }.collect { (dragging, target, settled) ->
+                if (settled != DrawerPosition.Closed) hasBeenVisible = true
+                if (
+                    !dragging &&
+                    hasBeenVisible &&
+                    target == DrawerPosition.Closed
+                ) {
+                    requestClose()
                 }
             }
         }
 
         val onClose: () -> Unit = {
-            if (draggableState.settledValue != DrawerPosition.Closed) {
+            if (
+                draggableState.settledValue != DrawerPosition.Closed &&
+                requestClose()
+            ) {
                 scope.launch {
                     draggableState.animateTo(DrawerPosition.Closed, animationSpec)
                 }
@@ -136,22 +161,14 @@ fun DrawerSheetPageScaffold(
                     .anchoredDraggable(
                         state = draggableState,
                         orientation = Orientation.Horizontal,
+                        interactionSource = draggableInteractionSource,
                         flingBehavior = flingBehavior
                     )
                     .clickable(
                         interactionSource = null,
                         indication = null
                     ) {
-                        if (!dismissingFromScrim) {
-                            dismissingFromScrim = true
-                            scope.launch {
-                                try {
-                                    draggableState.animateTo(DrawerPosition.Closed, animationSpec)
-                                } finally {
-                                    navigation.popBackStack()
-                                }
-                            }
-                        }
+                        onClose()
                     },
                 contentAlignment = sheetAlignment
             ) {

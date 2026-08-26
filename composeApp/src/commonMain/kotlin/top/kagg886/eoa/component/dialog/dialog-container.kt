@@ -108,7 +108,7 @@ public fun DialogHost(
         AnimatedVisibility(
             visibleState = transitionState,
             enter = fadeIn(animationSpec = tween(durationMillis = 200)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 200))
+            exit = fadeOut(animationSpec = tween(durationMillis = 320))
         ) {
             BackHandler(destination.dialogProperties.dismissOnBackPress) {
                 dialogNavigator.dismiss(backStackEntry)
