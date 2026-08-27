@@ -109,13 +109,16 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
         }
 
         if (hasUnResolveCrashInfo) {
-            CrashApp(
-                error = CrashConfig.crashText,
-                onRestart = {
-                    CrashConfig.hasUnResolveCrash = false
-                    hasUnResolveCrashInfo = false
-                }
-            )
+            CompositionLocalProvider(LocalDatabase provides database) {
+                CrashApp(
+                    error = CrashConfig.crashText,
+                    onRestart = {
+                        CrashConfig.hasUnResolveCrash = false
+                        hasUnResolveCrashInfo = false
+                    }
+                )
+            }
+
             return@ComposeUIViewController
         }
 

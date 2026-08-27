@@ -130,10 +130,12 @@ fun main() {
                 icon = painterResource(Res.drawable.icon),
                 onCloseRequest = ::exitApplication,
                 content = {
-                    CrashApp(
-                        error = lastException!!.stackTraceToString(),
-                        onRestart = {}
-                    )
+                    CompositionLocalProvider(LocalDatabase provides database) {
+                        CrashApp(
+                            error = lastException!!.stackTraceToString(),
+                            onRestart = {}
+                        )
+                    }
                 }
             )
         }
@@ -152,7 +154,7 @@ fun application(
         configureSwingGlobalsForCompose()
     }
 
-    val context = object: MotionDurationScale {
+    val context = object : MotionDurationScale {
         override val scaleFactor: Float
             get() = 1 / AppSettingsMMKV.animationSpeed
     }
