@@ -12,7 +12,16 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.cryptography.core)
+            implementation(libs.cryptography.provider.base)
             implementation(libs.cryptography.provider.optimal)
+
+
+            implementation(libs.okio)
+            implementation(libs.kotlinx.io.okio)
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }
