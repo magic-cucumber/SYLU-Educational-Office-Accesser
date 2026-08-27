@@ -30,6 +30,7 @@ kotlin {
         named("commonMain") {
             dependencies {
                 api(libs.ktor.client.core)
+                implementation(project.dependencies.project(":util"))
             }
         }
         named("nonIosMain") {

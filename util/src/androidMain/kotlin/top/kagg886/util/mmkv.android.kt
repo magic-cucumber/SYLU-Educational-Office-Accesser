@@ -10,11 +10,11 @@ actual fun initializeMMKV() = if (!MMKV.initialized) MMKV.initialize(dataPath.re
     logFunc = { level, tag, it ->
         logger.log(
             severity = when (level) {
-                MMKVOptions.LogLevel.Debug -> Severity.Debug
-                MMKVOptions.LogLevel.Info -> Severity.Info
-                MMKVOptions.LogLevel.Warning -> Severity.Warn
-                MMKVOptions.LogLevel.Error -> Severity.Error
-                MMKVOptions.LogLevel.None -> Severity.Assert
+                MMKVOptions.LogLevel.Debug -> Severity.Verbose
+                MMKVOptions.LogLevel.Info -> Severity.Debug
+                MMKVOptions.LogLevel.Warning -> Severity.Info
+                MMKVOptions.LogLevel.Error -> Severity.Warn
+                MMKVOptions.LogLevel.None -> Severity.Error
             },
             tag = "MMKV $tag",
             message = it,
