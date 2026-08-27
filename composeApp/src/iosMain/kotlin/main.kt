@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,10 +33,14 @@ import platform.UIKit.UIViewController
 import platform.UIKit.UIWindowScene
 import platform.UniformTypeIdentifiers.UTTypeImage
 import top.kagg886.backend.config.AppSettingsMMKV
+import top.kagg886.backend.database.AppDatabase
+import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.App
 import top.kagg886.eoa.ImageProcessingApp
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.eoa.rememberDeepLinkController
+import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.report.CrashApp
 import top.kagg886.report.CrashConfig
 import top.kagg886.util.asTaggedLogger
@@ -70,6 +75,9 @@ fun createEmptyFlow(): MutableSharedFlow<String?> = MutableSharedFlow(
 @OptIn(ExperimentalNativeApi::class, ExperimentalForeignApi::class)
 @Suppress("unused")
 fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlow()): UIViewController {
+    val database: AppDatabase = databaseBuilder().build()
+    registerKermitLoggerIfExists(database.appLogDao())
+
     initializeMMKV()
 
     setUnhandledExceptionHook {
@@ -118,7 +126,9 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
         }
 
 
-        App(controller)
+        CompositionLocalProvider(LocalDatabase provides database) {
+            App(controller)
+        }
     }
 
     return controller

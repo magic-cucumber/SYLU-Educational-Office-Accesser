@@ -22,6 +22,7 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.AppLog
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
@@ -39,9 +40,9 @@ data object LogcatRoute
 @Composable
 fun LogcatScreen() = MainScreen {
     val snack = LocalSnackBarHost.current
-    val rootViewModel = rootViewModel()
+    val db = LocalDatabase.current
     val model = viewModel {
-        LogcatModel(rootViewModel.database)
+        LogcatModel(db)
     }
     model.collectSideEffect {
         when (it) {

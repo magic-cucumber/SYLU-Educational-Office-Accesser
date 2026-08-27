@@ -24,6 +24,7 @@ import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.*
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
@@ -48,9 +49,9 @@ fun mainViewModelOrNull(): MainRouteViewModel? {
         return null
     }
 
-    val rootModel = rootViewModel()
-    return viewModel(parentEntry, key = rootModel.toString()) {
-        MainRouteViewModel(rootModel.database)
+    val database = LocalDatabase.current
+    return viewModel(parentEntry) {
+        MainRouteViewModel(database)
     }
 }
 

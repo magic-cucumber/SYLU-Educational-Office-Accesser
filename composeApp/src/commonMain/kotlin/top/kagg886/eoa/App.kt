@@ -27,6 +27,7 @@ import okio.ByteString.Companion.toByteString
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
+import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.component.dialog.DialogHost
 import top.kagg886.eoa.component.nav.NavHost
 import top.kagg886.eoa.component.snack.EOAToaster
@@ -42,7 +43,6 @@ import top.kagg886.eoa.pages.update.detail.UpdateInfo
 import top.kagg886.eoa.theme.AppTheme
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.handleDeepLink
-import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.shared.LocalShareTransitionScope
 import top.kagg886.eoa.util.showSnackBar
 import top.kagg886.util.*
@@ -56,6 +56,10 @@ val LocalSnackBarHost = staticCompositionLocalOf<ToasterState> {
 }
 
 val LocalGlobalViewModelStoreOwner = staticCompositionLocalOf<ViewModelStoreOwner> {
+    error("not provided")
+}
+
+val LocalDatabase = staticCompositionLocalOf<AppDatabase> {
     error("not provided")
 }
 
@@ -116,7 +120,6 @@ fun App(controller: DeeplinkController = rememberDeepLinkController()) = Composi
     val theme by rootState.theme.collectAsState()
 
     LaunchedEffect(Unit) {
-        registerKermitLoggerIfExists(rootModel.appLogDao)
         "App.kt".asTaggedLogger.i {
             buildString {
                 appendLine("Application Info:")

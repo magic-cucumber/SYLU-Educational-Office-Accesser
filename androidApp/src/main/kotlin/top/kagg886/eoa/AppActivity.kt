@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.InternalComposeUiApi
 import androidx.compose.ui.MotionDurationScale
@@ -38,12 +39,16 @@ class AppActivity : ComponentActivity() {
             )
         }
 
+        val application = this.application as EOAApplication
+
         setContent {
             val controller = rememberDeepLinkController()
             LaunchedEffect(deepLinkFlow) {
                 deepLinkFlow.collect(controller::handleDeepLink)
             }
-            App(controller)
+            CompositionLocalProvider(LocalDatabase provides application.database) {
+                App(controller)
+            }
         }
     }
 

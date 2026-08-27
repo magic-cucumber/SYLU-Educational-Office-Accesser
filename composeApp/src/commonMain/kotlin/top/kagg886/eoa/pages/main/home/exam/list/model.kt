@@ -18,6 +18,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.ExamEntity
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.home.exam.list.content.*
@@ -34,10 +35,8 @@ import top.kagg886.sylu_eoa.api.v2.bean.TERM_ALL_PICKER
 
 @Composable
 fun examListViewModelOrNull(): ExamListViewModel? {
-    val rootModel = rootViewModel()
     val mainViewModel = mainViewModelOrNull() ?: return null
     val syncState by mainViewModel.collectAsState()
-
 
     val nav = LocalNavController.current
     val state by nav.currentBackStackEntryAsState()
@@ -49,8 +48,10 @@ fun examListViewModelOrNull(): ExamListViewModel? {
         return null
     }
 
+    val database = LocalDatabase.current
+
     return viewModel(parentEntry,key = syncState.toString()) {
-        ExamListViewModel(rootModel.database, syncState)
+        ExamListViewModel(database, syncState)
     }
 }
 

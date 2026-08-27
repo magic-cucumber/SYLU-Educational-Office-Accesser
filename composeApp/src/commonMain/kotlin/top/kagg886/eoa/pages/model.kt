@@ -2,18 +2,18 @@ package top.kagg886.eoa.pages
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import top.kagg886.eoa.util.BaseViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.touchlab.kermit.Severity
-import io.ktor.client.call.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsBytes
+import io.ktor.http.ContentType
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -23,12 +23,12 @@ import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.AppLog
-import top.kagg886.backend.database.dao.LLMProviderEntity
-import top.kagg886.backend.database.databaseBuilder
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalGlobalViewModelStoreOwner
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.update.detail.UpdateInfo
+import top.kagg886.eoa.util.BaseViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
@@ -40,12 +40,13 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun rootViewModel(): RootViewModel {
     val scope = LocalGlobalViewModelStoreOwner.current
+    val db = LocalDatabase.current
     return viewModel(scope) {
-        RootViewModel()
+        RootViewModel(db)
     }
 }
 
-class RootViewModel : BaseViewModel<RootState, RootEffect>(name = "RootViewModel", initial = RootState()) {
+class RootViewModel(database: AppDatabase) : BaseViewModel<RootState, RootEffect>(name = "RootViewModel", initial = RootState()) {
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(
@@ -77,8 +78,6 @@ class RootViewModel : BaseViewModel<RootState, RootEffect>(name = "RootViewModel
         super.onCleared()
         client.close()
     }
-
-    val database: AppDatabase = databaseBuilder().build()
 
     val appLogDao = database.appLogDao()
 

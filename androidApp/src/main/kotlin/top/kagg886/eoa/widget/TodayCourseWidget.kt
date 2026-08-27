@@ -42,7 +42,9 @@ class TodayCourseWidget : GlanceAppWidget() {
     private val logger = "TodayCourseWidget".asTaggedLogger
     private val database by lazy {
         logger.i("build database, dataPath=$dataPath, databasePath=$databasePath")
-        databaseBuilder().build()
+        val db = databaseBuilder().build()
+        registerKermitLoggerIfExists(db.appLogDao())
+        db
     }
 
     @SuppressLint("RestrictedApi")
@@ -51,7 +53,6 @@ class TodayCourseWidget : GlanceAppWidget() {
             initializeMMKV()
         }
         val repository = WidgetRepository(database)
-        registerKermitLoggerIfExists(repository.logDao)
         logger.i("小组件: $id 准备绘制")
         provideContent {
             DynamicMaterialTheme(

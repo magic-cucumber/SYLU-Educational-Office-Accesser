@@ -16,8 +16,11 @@ import sylu_eoa.composeapp.generated.resources.Res
 import sylu_eoa.composeapp.generated.resources.icon
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
+import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.App
+import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.installCoilConfig
+import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.report.CrashApp
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.initializeMMKV
@@ -27,8 +30,12 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    val database = databaseBuilder().build()
+    registerKermitLoggerIfExists(database.appLogDao())
+
     val logger = "DesktopMain".asTaggedLogger
     initializeMMKV()
+
     FileKit.init(appId = "SYLU-EOA")
 
     var lastException by mutableStateOf<Throwable?>(null)
@@ -96,7 +103,11 @@ fun main() {
                 state = state,
                 icon = painterResource(Res.drawable.icon),
                 onCloseRequest = ::exitApplication,
-                content = { App() }
+                content = {
+                    CompositionLocalProvider(LocalDatabase provides database) {
+                        App()
+                    }
+                }
             )
         }
     }

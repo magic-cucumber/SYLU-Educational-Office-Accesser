@@ -8,14 +8,26 @@ import android.os.Handler
 import android.os.Looper
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import top.kagg886.backend.database.AppDatabase
+import top.kagg886.backend.database.databaseBuilder
+import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.report.CrashActivity
+import top.kagg886.util.initializeMMKV
 import top.kagg886.util.logger
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.UncaughtExceptionHandler {
+    val database: AppDatabase by lazy {
+        val db = databaseBuilder().build()
+        registerKermitLoggerIfExists(db.appLogDao())
+        db
+    }
+
     override fun onCreate() {
         super.onCreate()
+        //init
+        database
         Thread.setDefaultUncaughtExceptionHandler(this)
         Handler(Looper.getMainLooper()).post {
             try {
