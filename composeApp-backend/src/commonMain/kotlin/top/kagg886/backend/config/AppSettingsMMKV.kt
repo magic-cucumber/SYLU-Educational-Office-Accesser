@@ -20,11 +20,11 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings", mode = MMKVMode
      * 内置的预设主题色
      */
     val presetsColor: Map<String, Color> = mapOf(
-        "姨妈红" to Color(188, 1, 4),
-        "闪耀橙" to Color(255, 85, 34),
+        "赤铁红" to Color(200, 8, 21),
+        "落叶橙" to Color(255, 85, 34),
         "贝斯黄" to Color(255, 221, 136),
         "风祝绿" to Color(26, 240, 79),
-        "拉格蓝" to Color(118, 145, 217)
+        "拉格蓝" to Color(118, 145, 217),
     )
 
     override var theme: AppSettingsMMKVType.AppTheme by json(
