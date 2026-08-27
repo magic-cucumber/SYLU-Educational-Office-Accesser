@@ -41,6 +41,7 @@ import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
@@ -100,7 +101,7 @@ fun SecondClassScreen() {
                         }
                     IconButton(
                         onClick = {
-                            uri.openUri("https://eoa.kagg886.top/second-class.html#二课登录")
+                            uri.openUri("${BuildConfig.MESSAGE_WEBSITE_URL}/second-class.html#二课登录")
                         },
                         modifier = helpModifier,
                     ) {
@@ -384,7 +385,7 @@ private fun SecondClassScreenContent(
                             append("请先确认自己还记得团委网的登录密码。如果忘记了，可以进入")
                             withLink(
                                 link = LinkAnnotation.Url(
-                                    url = "http://xg.sylu.edu.cn/SyluTW/Sys/UserLogin.aspx",
+                                    url = "http://xg.${BuildConfig.MESSAGE_API_ENDPOINT}/SyluTW/Sys/UserLogin.aspx",
                                     styles = linkStyles
                                 )
                             ) {
@@ -401,7 +402,7 @@ private fun SecondClassScreenContent(
                             append("如果您需要在校园网外使用第二课堂，请同时填写")
                             withLink(
                                 link = LinkAnnotation.Url(
-                                    url = "https://webvpn.sylu.edu.cn/login",
+                                    url = "https://webvpn.${BuildConfig.MESSAGE_API_ENDPOINT}/login",
                                     styles = linkStyles
                                 )
                             ) {

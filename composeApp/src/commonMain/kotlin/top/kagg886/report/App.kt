@@ -55,9 +55,6 @@ import kotlin.random.Random
  * ================================================
  */
 
-private const val FEEDBACK_QQ_GROUP_URL = "https://qm.qq.com/q/heTEDas3Mk"
-private const val FEEDBACK_EMAIL = "iveour@163.com"
-
 @Composable
 fun CrashApp(error: String, onRestart: () -> Unit) {
     val random = remember {
@@ -138,7 +135,7 @@ fun CrashApp(error: String, onRestart: () -> Unit) {
                         scope.launch {
                             clipboard.setText(error)
                             snack.showSnackbar("崩溃日志已复制，请在群内粘贴反馈")
-                            uriHandler.openUri(FEEDBACK_QQ_GROUP_URL)
+                            uriHandler.openUri(BuildConfig.MESSAGE_QQ_GROUP_URL)
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -175,7 +172,7 @@ private fun buildFeedbackMailUri(error: String): String {
         <pre>${error.escapeHtml()}</pre>
     """.trimIndent()
     val subject = "SYLU-EOA 崩溃反馈"
-    return "mailto:$FEEDBACK_EMAIL?subject=${subject.encodeURLParameter()}&body=${body.encodeURLParameter()}"
+    return "mailto:${BuildConfig.MESSAGE_MAIL}?subject=${subject.encodeURLParameter()}&body=${body.encodeURLParameter()}"
 }
 
 private fun String.escapeHtml(): String =

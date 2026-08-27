@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.GuideScaffold
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.welcome.WelcomeScreen
 import top.kagg886.eoa.pages.welcome.theme.WelcomeThemeRoute
 
@@ -53,7 +54,7 @@ fun WelcomeHomeScreen() {
             subTitle = { Text("沈阳理工大学教务助手") },
             title = { Text("欢迎使用 EOA") },
             skipButton = {
-                TextButton(onClick = { uri.openUri("https://qm.qq.com/q/heTEDas3Mk") }) {
+                TextButton(onClick = { uri.openUri(BuildConfig.MESSAGE_QQ_GROUP_URL) }) {
                     Text("加入用户交流群")
                 }
             },

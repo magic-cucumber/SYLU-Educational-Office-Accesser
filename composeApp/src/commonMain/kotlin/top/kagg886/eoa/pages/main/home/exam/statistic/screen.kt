@@ -35,6 +35,7 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.util.toFixed
 
@@ -161,7 +162,6 @@ private fun StatisticItem(
 
 @Composable
 private fun ReferenceText() {
-    val url = "https://jxw.sylu.edu.cn/xsxy/xsxyqk_cxXsxyqkIndex.html?gnmkdm=N105515&layout=default"
     val linkStyle = TextLinkStyles(
         style = SpanStyle(
             color = MaterialTheme.colorScheme.primary,
@@ -172,7 +172,12 @@ private fun ReferenceText() {
     Text(
         text = buildAnnotatedString {
             append("数据仅供参考，真实数据请以 ")
-            withLink(LinkAnnotation.Url(url = url, styles = linkStyle)) {
+            withLink(
+                LinkAnnotation.Url(
+                    url = "https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}/xsxy/xsxyqk_cxXsxyqkIndex.html?gnmkdm=N105515&layout=default",
+                    styles = linkStyle
+                )
+            ) {
                 append("教务系统")
             }
             append(" 为准")

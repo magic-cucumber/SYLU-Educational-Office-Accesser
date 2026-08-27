@@ -17,6 +17,7 @@ import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import top.kagg886.sylu_eoa.api.html.config.BuildConfig
 import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
@@ -38,7 +39,7 @@ internal class EOAHTMLClient : EOAClient {
     //懒加载，因为client需要在init之后才能使用
     private val client by lazy {
         HttpClient {
-            defaultRequest { url("https://jxw.sylu.edu.cn") }
+            defaultRequest { url("https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}") }
 
             install(ContentNegotiation) {
                 json(json)

@@ -170,6 +170,12 @@ buildConfig {
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
     buildConfigField("GIT_COMMIT_SHA", "123456")
+    buildConfigField("MESSAGE_MAIL", messageMail)
+    buildConfigField("MESSAGE_WEBSITE_URL", messageWebsiteUrl)
+    buildConfigField("MESSAGE_QQ_GROUP_URL", messageQQGroupUrl)
+    buildConfigField("MESSAGE_QQ_GROUP_LABEL", messageQQGroupLabel)
+    buildConfigField("MESSAGE_GITEE_HOST", messageGiteeHost)
+    buildConfigField("MESSAGE_API_ENDPOINT", messageApiEndpoint)
 }
 
 

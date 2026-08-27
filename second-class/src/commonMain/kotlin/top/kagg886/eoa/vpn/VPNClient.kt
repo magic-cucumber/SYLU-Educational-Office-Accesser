@@ -15,6 +15,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import top.kagg886.eoa.util.internal.HtmlFormat
+import top.kagg886.eoa.second.config.BuildConfig
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
 import top.kagg886.eoa.vpn.bean.PortalReturn
 import top.kagg886.eoa.vpn.bean.Resource
@@ -40,7 +41,7 @@ class VPNClient(private val username: String, private val password: String) : Au
             followRedirects = false
         }
         defaultRequest {
-            url("https://webvpn.sylu.edu.cn")
+            url("https://webvpn.${BuildConfig.MESSAGE_API_ENDPOINT}")
         }
         install(ContentNegotiation) {
             json(
@@ -68,7 +69,7 @@ class VPNClient(private val username: String, private val password: String) : Au
     }
 
     suspend fun ticket() =
-        cookie.get(Url("https://webvpn.sylu.edu.cn")).first { it.name == "wengine_vpn_ticketwebvpn_sylu_edu_cn" }
+        cookie.get(Url("https://webvpn.${BuildConfig.MESSAGE_API_ENDPOINT}")).first { it.name == "wengine_vpn_ticketwebvpn_sylu_edu_cn" }
 
     override fun close() = it.close()
 
@@ -160,7 +161,7 @@ class VPNClient(private val username: String, private val password: String) : Au
                 set("execution", form.getElementById("execution")!!.value())
             }
         ) {
-            parameter("service", "https://webvpn.sylu.edu.cn/login?cas_login=true")
+            parameter("service", "https://webvpn.${BuildConfig.MESSAGE_API_ENDPOINT}/login?cas_login=true")
         }
 
         if (loginResp.status != HttpStatusCode.Found) {
@@ -245,4 +246,3 @@ class VPNClient(private val username: String, private val password: String) : Au
         return portalReturn.body<PortalReturn>().data.flatMap { it.resource }
     }
 }
-

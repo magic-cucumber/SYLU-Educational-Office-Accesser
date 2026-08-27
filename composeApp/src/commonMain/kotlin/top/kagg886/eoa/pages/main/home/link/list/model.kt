@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppInitializeMMKV
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.home.link.Link
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
@@ -38,7 +39,7 @@ class LinkListModel : BaseViewModel<LinkListState, LinkListEffect>(name = "LinkL
 
         viewModelScope.launch block@{
             val latest = try {
-                client.get("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/link.json")
+                client.get("https://${BuildConfig.MESSAGE_GITEE_HOST}/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/link.json")
                     .body<List<Link>>()
             } catch (e: Exception) {
                 logger.e("检查友链地址失败", e)

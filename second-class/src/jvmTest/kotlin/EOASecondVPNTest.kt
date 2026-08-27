@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import top.kagg886.eoa.second.TWUser
+import top.kagg886.eoa.second.config.BuildConfig
 import top.kagg886.eoa.util.Storage
 import top.kagg886.eoa.vpn.VPNClient
 import top.kagg886.eoa.vpn.bean.CaptchaReturn
@@ -51,7 +52,7 @@ class EOASecondVPNTest {
         val portal = client.portal().first { it.name == "团委第二课堂系统" }.redirect
 
         val twClient = TWUser(
-            baseURL = "https://webvpn.sylu.edu.cn${portal.substringBefore("UserLogin.aspx")}",
+            baseURL = "https://webvpn.${BuildConfig.MESSAGE_API_ENDPOINT}${portal.substringBefore("UserLogin.aspx")}",
             user = username,
             ticket = client.ticket()
         )
@@ -67,7 +68,7 @@ class EOASecondVPNTest {
         val password = ""
 
         val twClient = TWUser(
-            baseURL = "http://xg.sylu.edu.cn/SyluTW/Sys/",
+            baseURL = "http://xg.${BuildConfig.MESSAGE_API_ENDPOINT}/SyluTW/Sys/",
             user = username
         )
 

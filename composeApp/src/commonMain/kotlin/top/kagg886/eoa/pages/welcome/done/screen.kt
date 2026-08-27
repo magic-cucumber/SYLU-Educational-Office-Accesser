@@ -57,12 +57,9 @@ import sylu_eoa.composeapp.generated.resources.Res
 import sylu_eoa.composeapp.generated.resources.good
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.GuideScaffold
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.welcome.WelcomeScreen
 import top.kagg886.eoa.pages.welcome.welcomeModelOrNull
-
-private const val EOA_WEBSITE_URL = "https://eoa.kagg886.top/"
-private const val EOA_QQ_GROUP_URL = "https://qm.qq.com/q/heTEDas3Mk"
-private const val EOA_SOURCE_CODE_URL = "https://github.com/kagg886/SYLU-Educational-Office-Accesser/"
 
 @Serializable
 data object WelcomeDoneRoute
@@ -109,7 +106,6 @@ fun WelcomeDoneScreen() {
             ) {
                 Spacer(Modifier.height(8.dp))
 
-                val url = "https://jxw.sylu.edu.cn/"
                 val linkStyle = TextLinkStyles(
                     style = SpanStyle(
                         color = MaterialTheme.colorScheme.primary,
@@ -120,7 +116,12 @@ fun WelcomeDoneScreen() {
                 Text(
                     text = buildAnnotatedString {
                         append("准备好您的")
-                        withLink(link = LinkAnnotation.Url(url,linkStyle)) {
+                        withLink(
+                            link = LinkAnnotation.Url(
+                                "https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}/",
+                                linkStyle
+                            )
+                        ) {
                             append("教务网")
                         }
                         append("账号密码，我们马上出发！")
@@ -145,19 +146,23 @@ fun WelcomeDoneScreen() {
                         icon = Icons.Default.Language,
                         title = "前往官网",
                         description = "查阅使用文档与常见问题",
-                        onClick = { uri.openUri(EOA_WEBSITE_URL) },
+                        onClick = { uri.openUri(BuildConfig.MESSAGE_WEBSITE_URL) },
                     )
                     LinkItem(
                         icon = Icons.Default.Groups,
                         title = "前往 QQ 群",
                         description = "加入用户交流群，反馈问题与建议",
-                        onClick = { uri.openUri(EOA_QQ_GROUP_URL) },
+                        onClick = { uri.openUri(BuildConfig.MESSAGE_QQ_GROUP_URL) },
                     )
                     LinkItem(
                         icon = Icons.Default.Code,
                         title = "前往源代码仓库",
                         description = "查看开源代码，参与贡献",
-                        onClick = { uri.openUri(EOA_SOURCE_CODE_URL) },
+                        onClick = {
+                            uri.openUri(
+                                "https://${BuildConfig.MESSAGE_GITEE_HOST}/kagg886/sylu-educational-office-accesser/"
+                            )
+                        },
                     )
                     LinkItem(
                         icon = Icons.Default.Favorite,

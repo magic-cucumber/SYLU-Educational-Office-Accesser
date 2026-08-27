@@ -32,6 +32,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.logcat.LogcatRoute
 import top.kagg886.eoa.util.showSnackBar
@@ -78,7 +79,7 @@ fun LoginScreen() {
             model.startLogin(username, password)
         },
         onForgetPasswordButtonClicked = {
-            uri.openUri("https://jxw.sylu.edu.cn/pwdmgr/retake/index.zf")
+            uri.openUri("https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}/pwdmgr/retake/index.zf")
         },
         onVerifyCodeInput = {
             model.processVerifyCode(it.ifBlank { null })

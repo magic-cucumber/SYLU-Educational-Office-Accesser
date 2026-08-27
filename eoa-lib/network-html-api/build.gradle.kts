@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
 
     alias(libs.plugins.ksp)
+    alias(libs.plugins.buildConfig)
 }
 
 group = "top.kagg886.sylu_eoa.api.v3"
@@ -39,6 +40,11 @@ kotlin {
             implementation(kotlin("test"))
         }
     }
+}
+
+buildConfig {
+    packageName("top.kagg886.sylu_eoa.api.html.config")
+    buildConfigField("MESSAGE_API_ENDPOINT", messageApiEndpoint)
 }
 
 dependencies {

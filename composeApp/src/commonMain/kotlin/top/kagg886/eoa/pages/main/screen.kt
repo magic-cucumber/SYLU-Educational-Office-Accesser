@@ -6,6 +6,7 @@ import com.dokar.sonner.TextToastAction
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.login.LoginRoute
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.SnackBarType.*
@@ -46,7 +47,7 @@ fun MainScreen(content: @Composable () -> Unit) {
                     description = "同步失败！点按 \"帮助\"查询解决方案。",
                     actionTitle = "帮助",
                     action = {
-                        uri.openUri("https://eoa.kagg886.top/bug-report.html")
+                        uri.openUri("${BuildConfig.MESSAGE_WEBSITE_URL}/bug-report.html")
                     }
                 )
             }

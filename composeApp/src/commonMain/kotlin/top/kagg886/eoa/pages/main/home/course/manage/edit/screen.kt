@@ -64,6 +64,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.bottomsheet.BottomSheetPageScaffold
 import top.kagg886.eoa.component.bottomsheet.SheetPosition
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
@@ -114,7 +115,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
         onLLMKeySelected = { model.selectLLMKey(it) },
         onGenerateButtonClicked = { input -> model.generateCourseByAI(input) },
         onImageCaptchaClicked = { model.generateCourseByImage() },
-        onHelpClicked = { uri.openUri("https://eoa.kagg886.top/course-overview.html#%E6%96%B0%E5%BB%BA%E8%AF%BE%E7%A8%8B") }
+        onHelpClicked = { uri.openUri("${BuildConfig.MESSAGE_WEBSITE_URL}/course-overview.html#%E6%96%B0%E5%BB%BA%E8%AF%BE%E7%A8%8B") }
     )
 }
 

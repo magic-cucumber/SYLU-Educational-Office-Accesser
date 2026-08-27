@@ -49,13 +49,6 @@ import top.kagg886.util.setText
 @Serializable
 data object AboutRoute
 
-private const val QQ_GROUP_NUMBER = "798201505"
-private const val QQ_GROUP_URL = "https://qm.qq.com/q/heTEDas3Mk"
-private const val MAIL_URL =
-    "mailto:iveour@163.com?subject=SYLU-EOA%20%E5%8A%9F%E8%83%BD%E5%8F%8D%E9%A6%88"
-private const val SOURCE_URL =
-    "https://gitee.com/kagg886/sylu-educational-office-accesser/tree/master-4.0/"
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen() = MainScreen {
@@ -141,13 +134,13 @@ fun AboutScreen() = MainScreen {
             AboutActionItem(
                 icon = Icons.Default.Group,
                 title = "加入QQ群",
-                subtitle = QQ_GROUP_NUMBER,
-                onClick = { uriHandler.openUri(QQ_GROUP_URL) },
+                subtitle = BuildConfig.MESSAGE_QQ_GROUP_LABEL,
+                onClick = { uriHandler.openUri(BuildConfig.MESSAGE_QQ_GROUP_URL) },
                 trailingContent = {
                     IconButton(
                         onClick = {
                             scope.launch {
-                                clipboardManager.setText(QQ_GROUP_NUMBER)
+                                clipboardManager.setText(BuildConfig.MESSAGE_QQ_GROUP_LABEL)
                                 snack.showSnackBar(SnackBarType.Success, "已复制QQ群号")
                             }
                         }
@@ -163,15 +156,23 @@ fun AboutScreen() = MainScreen {
             AboutActionItem(
                 icon = Icons.Default.Email,
                 title = "邮件反馈",
-                subtitle = "iveour@163.com",
-                onClick = { uriHandler.openUri(MAIL_URL) }
+                subtitle = BuildConfig.MESSAGE_MAIL,
+                onClick = {
+                    uriHandler.openUri(
+                        "mailto:${BuildConfig.MESSAGE_MAIL}?subject=SYLU-EOA%20%E5%8A%9F%E8%83%BD%E5%8F%8D%E9%A6%88"
+                    )
+                }
             )
 
             AboutActionItem(
                 icon = Icons.Default.Code,
                 title = "查看源代码",
                 subtitle = "Gitee",
-                onClick = { uriHandler.openUri(SOURCE_URL) }
+                onClick = {
+                    uriHandler.openUri(
+                        "https://${BuildConfig.MESSAGE_GITEE_HOST}/kagg886/sylu-educational-office-accesser/tree/master-4.0/"
+                    )
+                }
             )
 
             Spacer(modifier = Modifier.height(32.dp))

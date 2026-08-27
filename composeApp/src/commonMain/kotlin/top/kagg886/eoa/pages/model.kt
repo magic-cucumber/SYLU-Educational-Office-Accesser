@@ -185,7 +185,7 @@ class RootViewModel : BaseViewModel<RootState, RootEffect>(name = "RootViewModel
 
     fun checkUpdate(silent: Boolean = true) = intent {
         val info = try {
-            client.get("https://gitee.com/api/v5/repos/kagg886/sylu-educational-office-accesser/releases/latest")
+            client.get("https://${BuildConfig.MESSAGE_GITEE_HOST}/api/v5/repos/kagg886/sylu-educational-office-accesser/releases/latest")
                 .body<UpdateInfo>()
         } catch (e: Exception) {
             logger.w("检查更新失败", e)
@@ -201,7 +201,7 @@ class RootViewModel : BaseViewModel<RootState, RootEffect>(name = "RootViewModel
 
     fun checkAnnouncement() = intent {
         val latest = try {
-            client.get("https://gitee.com/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/broadcast.md")
+            client.get("https://${BuildConfig.MESSAGE_GITEE_HOST}/kagg886/sylu-educational-office-accesser/raw/master-4.0/runtime/broadcast.md")
                 .bodyAsBytes().decodeToString()
         } catch (e: Exception) {
             logger.w("检查公告失败", e)

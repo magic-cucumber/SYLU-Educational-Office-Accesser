@@ -8,6 +8,7 @@ import org.orbitmvi.orbit.annotation.OrbitExperimental
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.database.AppDatabase
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.second.SecondClassData
 import top.kagg886.eoa.second.SecondClassDataSummary
 import top.kagg886.eoa.second.TWUser
@@ -123,7 +124,7 @@ class SecondClassModel(
     ): Map<SecondClassDataSummary, List<SecondClassData>> = withTimeout(timeout) {
         logger.i("开始内网登录")
         val tw = TWUser(
-            baseURL = "http://xg.sylu.edu.cn/SyluTW/Sys/",
+            baseURL = "http://xg.${BuildConfig.MESSAGE_API_ENDPOINT}/SyluTW/Sys/",
             user = AppLoginPropertiesMMKV.username,
         ).apply { addCloseable(this) }
 
@@ -217,7 +218,7 @@ class SecondClassModel(
         }
 
         val tw = TWUser(
-            baseURL = "https://webvpn.sylu.edu.cn${portal.substringBefore("UserLogin.aspx")}",
+            baseURL = "https://webvpn.${BuildConfig.MESSAGE_API_ENDPOINT}${portal.substringBefore("UserLogin.aspx")}",
             user = AppLoginPropertiesMMKV.username,
             ticket = vpn.ticket()
         ).apply { addCloseable(this) }

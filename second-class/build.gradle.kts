@@ -8,6 +8,12 @@ plugins {
 
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.buildConfig)
+}
+
+buildConfig {
+    packageName("top.kagg886.eoa.second.config")
+    buildConfigField("MESSAGE_API_ENDPOINT", messageApiEndpoint)
 }
 
 group = "top.kagg886.eoa.second"
