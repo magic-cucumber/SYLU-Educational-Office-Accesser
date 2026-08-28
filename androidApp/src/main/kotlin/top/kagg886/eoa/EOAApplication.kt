@@ -18,8 +18,6 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
-import top.kagg886.report.CrashActivity
-import top.kagg886.util.initializeMMKV
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 import kotlin.time.Clock
@@ -75,10 +73,15 @@ class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.Uncau
         persistCrashAndCloseDatabase(t, e, stackTrace)
 
         try {
-            val intent = Intent(this, CrashActivity::class.java).apply {
+            val intent = Intent().apply {
+                setClassName(
+                    packageName,
+                    "top.kagg886.report.CrashActivity"
+                )
                 putExtra(EXTRA_EXCEPTIONS, stackTrace.take(MAX_INTENT_STACK_TRACE_LENGTH))
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
+
             startActivity(intent)
         } catch (launchError: Throwable) {
             Log.e(TAG, "Unable to launch CrashActivity", launchError)

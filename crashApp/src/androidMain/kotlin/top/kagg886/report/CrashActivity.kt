@@ -11,7 +11,9 @@ class CrashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val error = intent.getStringExtra("exceptions")!!
-        val database = application::class.java.getField("database").get(application) as AppDatabase
+        val database = application::class.java
+            .getMethod("getDatabase")
+            .invoke(application) as AppDatabase
         initializeMMKV()
         setContent {
             CrashApp(
