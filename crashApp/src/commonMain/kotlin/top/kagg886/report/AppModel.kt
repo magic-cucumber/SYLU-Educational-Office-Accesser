@@ -8,10 +8,11 @@ import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
+import top.kagg886.backend.database.AppDatabase
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-class AppModel : ViewModel(), OrbitContainerHost<AppModelState, AppModelState, Unit> {
+class AppModel(private val database: AppDatabase) : ViewModel(), OrbitContainerHost<AppModelState, AppModelState, Unit> {
     override val container: OrbitContainer<AppModelState, AppModelState, Unit> =
         orbitContainer(AppModelState.Initializing) {
             delay(3.seconds)
