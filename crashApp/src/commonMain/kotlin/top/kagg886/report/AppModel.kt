@@ -58,6 +58,7 @@ import top.kagg886.util.createNewFile
 import top.kagg886.util.current
 import top.kagg886.util.delete
 import top.kagg886.util.http.HttpClient
+import top.kagg886.util.metadata
 import top.kagg886.util.mkdirs
 import top.kagg886.util.sink
 import top.kagg886.util.source
@@ -176,7 +177,7 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                     setBody("payload" to Base64.encode(rsa.encryptor().encrypt(payload)))
                 }
 
-                if (!resp.status.isSuccess()) error("server returned unsuccessfully status code")
+                if (!resp.status.isSuccess()) error("server returned unsuccessfully status code: ${resp.status}")
 
                 val data = resp.body<BaseResponse<String>>()
                 if (!data.success) error("server can't continue handshake: ${data.message}")
@@ -203,7 +204,7 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                         )
                     )
                 }
-                if (!resp.status.isSuccess()) error("server returned unsuccessfully status code")
+                if (!resp.status.isSuccess()) error("server returned unsuccessfully status code: ${resp.status}")
 
                 val data = resp.body<BaseResponse<String>>()
                 if (!data.success) error("server can't continue generate report token: ${data.message}")
@@ -313,7 +314,7 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                 root.delete()
 
                 //加密并删除源文件
-                val dst1 = cachePath.resolve(".${id}.bin")
+                val dst1 = cachePath.resolve("${id}.bin")
                 dst1.createNewFile()
 
                 dst.source().use { i ->
@@ -340,7 +341,9 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                         append("token", token)
                         append(
                             key = "file",
-                            value = InputProvider { zip.source().asKotlinxIoRawSource().buffered() },
+                            value = InputProvider {
+                                zip.source().asKotlinxIoRawSource().buffered()
+                            },
                             Headers.build {
                                 append(
                                     HttpHeaders.ContentDisposition,
@@ -350,6 +353,10 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                                     HttpHeaders.ContentType,
                                     ContentType.Application.OctetStream.toString()
                                 )
+                                append(
+                                    HttpHeaders.ContentLength,
+                                    zip.metadata().size.toString()
+                                )
                             }
                         )
                     }
@@ -357,12 +364,13 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                     onUpload { bytesSentTotal, contentLength ->
                         if (contentLength != null) {
                             val pg = bytesSentTotal.toFloat() / contentLength
+                            logger.d("uploading... ${pg * 100}%($bytesSentTotal / $contentLength)")
                             progress.emit(pg)
                         }
                     }
                 }
 
-                if (!resp.status.isSuccess()) error("server returned unsuccessfully status code")
+                if (!resp.status.isSuccess()) error("server returned unsuccessfully status code: ${resp.status}, file size is ${zip.metadata().size}, body: ${resp.body<String>()}")
 
                 val data = resp.body<BaseResponse<String>>()
                 if (!data.success) error("server can't continue upload: ${data.message}")
@@ -371,6 +379,8 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                 logger.e("failed to upload file.", e)
                 reduce { AppModelState.CrashManually }
                 return@orbitContainer
+            } finally {
+                zip.delete()
             }
 
             success.emit(true)

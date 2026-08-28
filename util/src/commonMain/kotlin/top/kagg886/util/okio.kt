@@ -6,6 +6,8 @@ import okio.Path.Companion.toPath
 fun Path.sink(append: Boolean = false): Sink = sink0(this, append)
 fun Path.source(): Source = FileSystem.SYSTEM.source(this)
 
+fun Path.metadata(): FileMetadata = FileSystem.SYSTEM.metadata(this)
+
 internal fun sink0(path: Path, append: Boolean = false) =
     with(FileSystem.SYSTEM.openReadWrite(path)) {
         FileHandleSink(this, if (append) appendingSink() else sink(fileOffset = 0))
