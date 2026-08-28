@@ -3,7 +3,7 @@ package top.kagg886.backend.database
 import androidx.room3.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import top.kagg886.backend.config.BuildConfig
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.backend.database.dao.*
 import top.kagg886.backend.database.migrate.MIGRATION_10_11
 import top.kagg886.util.absolutePath

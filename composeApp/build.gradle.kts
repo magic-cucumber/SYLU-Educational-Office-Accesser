@@ -13,7 +13,6 @@ plugins {
     id("org.jetbrains.compose")
     id("com.android.kotlin.multiplatform.library")
     alias(libs.plugins.kotlinx.serialization)
-    alias(libs.plugins.buildConfig)
     id("com.google.osdetector") version "1.7.3"
 }
 
@@ -85,6 +84,7 @@ kotlin {
 
             implementation(project.dependencies.project(":composeApp-backend"))
             implementation(project.dependencies.project(":widgetApp"))
+            implementation(project.dependencies.project(":crashApp"))
             implementation(project.dependencies.project(":util"))
             //方便切换到闭源后端
             implementation(project.dependencies.project(":eoa-lib:network-html-api"))
@@ -160,22 +160,6 @@ compose.desktop {
             }
         }
     }
-}
-
-buildConfig {
-    // BuildConfig configuration here.
-    // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
-    packageName("top.kagg886.eoa.config")
-    buildConfigField("APP_DESUGAR_ENABLED",useDesugarApi)
-    buildConfigField("APP_VERSION_CODE", appVersionCode)
-    buildConfigField("APP_VERSION_NAME", appVersion)
-    buildConfigField("GIT_COMMIT_SHA", "123456")
-    buildConfigField("MESSAGE_MAIL", messageMail)
-    buildConfigField("MESSAGE_WEBSITE_URL", messageWebsiteUrl)
-    buildConfigField("MESSAGE_QQ_GROUP_URL", messageQQGroupUrl)
-    buildConfigField("MESSAGE_QQ_GROUP_LABEL", messageQQGroupLabel)
-    buildConfigField("MESSAGE_GITEE_HOST", messageGiteeHost)
-    buildConfigField("MESSAGE_API_ENDPOINT", messageApiEndpoint)
 }
 
 

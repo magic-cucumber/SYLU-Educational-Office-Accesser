@@ -70,12 +70,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-                android:name="top.kagg886.report.CrashActivity"
-                android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-                android:exported="false"
-                android:process=":crash"/>
-
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider"
                   android:exported="false" android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths"/>

@@ -130,12 +130,11 @@ fun main() {
                 icon = painterResource(Res.drawable.icon),
                 onCloseRequest = ::exitApplication,
                 content = {
-                    CompositionLocalProvider(LocalDatabase provides database) {
-                        CrashApp(
-                            error = lastException!!.stackTraceToString(),
-                            onRestart = {}
-                        )
-                    }
+                    CrashApp(
+                        database = database,
+                        error = lastException!!.stackTraceToString(),
+                        onRestart = {}
+                    )
                 }
             )
         }

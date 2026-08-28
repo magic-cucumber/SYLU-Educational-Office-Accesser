@@ -17,8 +17,6 @@ import androidx.navigation.compose.rememberNavController
 import co.touchlab.kermit.Severity
 import coil3.ImageLoader
 import coil3.key.Keyer
-import coil3.memory.MemoryCache
-import coil3.request.Options
 import coil3.util.Logger
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState

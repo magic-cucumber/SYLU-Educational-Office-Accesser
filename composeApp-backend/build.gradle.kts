@@ -1,4 +1,6 @@
 val databaseVersion = (project.findProperty("database.version") as String).toInt()
+val appVersion = project.findProperty("app.version") as String
+val appVersionCode = (project.findProperty("app.code") as String).toInt()
 
 plugins {
     id("com.android.kotlin.multiplatform.library")
@@ -56,8 +58,23 @@ kotlin {
 }
 
 buildConfig {
-    packageName("top.kagg886.backend.config")
+    packageName("top.kagg886.eoa.config")
+    useKotlinOutput {
+        internalVisibility = false
+    }
+
     buildConfigField("DATABASE_VERSION", databaseVersion)
+
+    buildConfigField("APP_DESUGAR_ENABLED",useDesugarApi)
+    buildConfigField("APP_VERSION_CODE", appVersionCode)
+    buildConfigField("APP_VERSION_NAME", appVersion)
+    buildConfigField("GIT_COMMIT_SHA", "123456")
+    buildConfigField("MESSAGE_MAIL", messageMail)
+    buildConfigField("MESSAGE_WEBSITE_URL", messageWebsiteUrl)
+    buildConfigField("MESSAGE_QQ_GROUP_URL", messageQQGroupUrl)
+    buildConfigField("MESSAGE_QQ_GROUP_LABEL", messageQQGroupLabel)
+    buildConfigField("MESSAGE_GITEE_HOST", messageGiteeHost)
+    buildConfigField("MESSAGE_API_ENDPOINT", messageApiEndpoint)
 }
 
 room3 {

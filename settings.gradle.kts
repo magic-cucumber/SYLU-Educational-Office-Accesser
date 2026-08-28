@@ -35,6 +35,7 @@ plugins {
 }
 
 include(":composeApp")
+include(":crashApp")
 include(":androidApp")
 include(":composeApp-backend")
 include(":widgetApp")
