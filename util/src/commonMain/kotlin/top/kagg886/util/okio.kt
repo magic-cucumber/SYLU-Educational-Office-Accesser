@@ -5,9 +5,10 @@ import okio.Path.Companion.toPath
 
 fun Path.sink(append: Boolean = false): Sink = sink0(this, append)
 
-internal fun sink0(path: Path, append: Boolean = false) = with(FileSystem.SYSTEM.openReadWrite(path)) {
-    FileHandleSink(this, if (append) appendingSink() else sink(fileOffset = 0))
-}
+internal fun sink0(path: Path, append: Boolean = false) =
+    with(FileSystem.SYSTEM.openReadWrite(path)) {
+        FileHandleSink(this, if (append) appendingSink() else sink(fileOffset = 0))
+    }
 
 fun Path.absolutePath() = FileSystem.SYSTEM.canonicalize("".toPath()).resolve(this).normalized()
 
@@ -16,9 +17,15 @@ fun Path.exists() = FileSystem.SYSTEM.exists(this)
 fun Path.delete() = FileSystem.SYSTEM.delete(this)
 
 fun Path.createNewFile() = sink().close()
-internal class FileHandleSink(private val fileHandle: FileHandle, private val sink: Sink) : Sink by sink {
+internal class FileHandleSink(private val fileHandle: FileHandle, private val sink: Sink) :
+    Sink by sink {
     override fun close() {
         sink.close()
         fileHandle.close()
     }
 }
+
+infix fun Path.zip(target: Path) =
+    zip0(this, target)
+
+internal expect fun zip0(src: Path, dst: Path)
