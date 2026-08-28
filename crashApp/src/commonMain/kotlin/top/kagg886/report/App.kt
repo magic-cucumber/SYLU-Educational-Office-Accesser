@@ -59,7 +59,7 @@ fun CrashApp(database: AppDatabase, error: String, onRestart: () -> Unit) {
         }
 
     AppTheme(color = color, nightTheme = isSystemInDarkTheme()) {
-        val model = viewModel { AppModel(database) }
+        val model = viewModel { AppModel(database,error) }
         val state by model.collectAsState()
 
         GuideScaffold(
