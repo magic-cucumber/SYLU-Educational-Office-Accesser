@@ -32,6 +32,13 @@ kotlin {
             implementation(libs.material.icons.extended)
             implementation(libs.materialKolor)
 
+            implementation(libs.androidx.lifecycle.viewmodel)
+            implementation(libs.androidx.lifecycle.runtime)
+
+            implementation(libs.orbit.core)
+            implementation(libs.orbit.viewmodel)
+            implementation(libs.orbit.compose)
+
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.filekit.dialog)
 
