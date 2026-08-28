@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import top.kagg886.report.DefaultTransform
 import kotlin.math.roundToInt
 
 /**
@@ -81,10 +82,7 @@ fun SharedTransitionScope.AutoUploadScreen(
 
         AnimatedContent(
             targetState = label,
-            transitionSpec = {
-                slideInVertically { height -> height } + fadeIn() togetherWith
-                        slideOutVertically { height -> -height } + fadeOut()
-            },
+            transitionSpec = DefaultTransform,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(

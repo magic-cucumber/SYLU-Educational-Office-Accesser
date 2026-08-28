@@ -3,6 +3,7 @@ package top.kagg886.report
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -59,37 +60,46 @@ fun CrashApp(database: AppDatabase, error: String, onRestart: () -> Unit) {
         }
 
     AppTheme(color = color, nightTheme = isSystemInDarkTheme()) {
-        val model = viewModel { AppModel(database,error) }
+        val model = viewModel { AppModel(database, error) }
         val state by model.collectAsState()
 
         GuideScaffold(
             modifier = Modifier.fillMaxSize(),
             title = {
-                AnimatedContent(
-                    targetState = state,
-                    transitionSpec = DefaultTransform,
-                ) { s ->
-                    Text(
-                        when (s) {
-                            AppModelState.Initializing -> "正在处理崩溃信息"
-                            AppModelState.CrashManually -> "应用遇到了一个错误"
-                            is AppModelState.CrashAutoUpload -> "正在上报崩溃日志"
-                        }
-                    )
+                val text = when (val state = state) {
+                    AppModelState.Initializing -> "应用异常退出"
+
+                    AppModelState.CrashManually -> "应用无法继续运行"
+
+                    is AppModelState.CrashAutoUpload -> {
+                        val success by state.success.collectAsState()
+                        if (success) "我们已知悉本次崩溃" else "正在收集相关信息"
+                    }
+                }
+
+                AnimatedContent(targetState = text, transitionSpec = DefaultTransform) { text ->
+                    Text(text)
                 }
             },
             subTitle = {
-                AnimatedContent(
-                    targetState = state,
-                    transitionSpec = DefaultTransform,
-                ) { s ->
-                    Text(
-                        when (s) {
-                            AppModelState.Initializing -> "请稍候"
-                            AppModelState.CrashManually -> "非常抱歉"
-                            is AppModelState.CrashAutoUpload -> "自动处理中"
-                        }
-                    )
+                val text = when (val s = state) {
+                    AppModelState.Initializing ->
+                        "正在准备处理本次异常，请稍候。"
+
+                    AppModelState.CrashManually ->
+                        "我们遇到了无法恢复的问题，需要重新启动才能继续使用。"
+
+                    is AppModelState.CrashAutoUpload -> {
+                        val success by s.success.collectAsState()
+                        if (success)
+                            "bug即将修复，请关注App后续更新。"
+                        else
+                            "正在整理本次问题，以帮助我们排查并改进应用。"
+
+                    }
+                }
+                AnimatedContent(targetState = text, transitionSpec = DefaultTransform) { text ->
+                    Text(text)
                 }
             },
             confirmButton = {
@@ -110,13 +120,23 @@ fun CrashApp(database: AppDatabase, error: String, onRestart: () -> Unit) {
             },
             content = {
                 SharedTransitionLayout {
-                    AnimatedContent(targetState = state, transitionSpec = DefaultTransform) { s ->
+                    AnimatedContent(
+                        targetState = state,
+                        transitionSpec = {
+                            (fadeIn() togetherWith fadeOut()).using(SizeTransform(false))
+                        }
+                    ) { s ->
                         when (s) {
                             AppModelState.Initializing -> Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                CircularProgressIndicator(modifier = Modifier.sharedElement(sharedContentState = rememberSharedContentState("progress"), animatedVisibilityScope = this@AnimatedContent))
+                                CircularProgressIndicator(
+                                    modifier = Modifier.sharedElement(
+                                        sharedContentState = rememberSharedContentState("progress"),
+                                        animatedVisibilityScope = this@AnimatedContent
+                                    )
+                                )
                             }
 
                             AppModelState.CrashManually -> ManualScreen(log = error)

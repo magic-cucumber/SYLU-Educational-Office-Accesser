@@ -5,10 +5,13 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.ui.platform.Clipboard
 
 internal val DefaultTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform =
-    { (fadeIn(initialAlpha = 0.5f) togetherWith fadeOut(targetAlpha = 0.5f)).using(SizeTransform(clip = false)) }
+    { slideInVertically { height -> height } + fadeIn() togetherWith
+            slideOutVertically { height -> -height } + fadeOut() }
 
 expect suspend fun Clipboard.setText(text: String)
