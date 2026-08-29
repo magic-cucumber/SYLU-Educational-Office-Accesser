@@ -21,9 +21,13 @@ func decryptRSA(privateKey *rsa.PrivateKey, payload encryptedPayload, expectedSi
 	if payload.First != "payload" {
 		return nil, errors.New("first must be payload")
 	}
-	ciphertext, err := base64.StdEncoding.DecodeString(payload.Second)
+	return decryptRSACipher(privateKey, payload.Second, expectedSize)
+}
+
+func decryptRSACipher(privateKey *rsa.PrivateKey, encodedCiphertext string, expectedSize int) ([]byte, error) {
+	ciphertext, err := base64.StdEncoding.DecodeString(encodedCiphertext)
 	if err != nil {
-		return nil, errors.New("second is not valid Base64")
+		return nil, errors.New("cipher is not valid Base64")
 	}
 	plaintext, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, ciphertext)
 	if err != nil {

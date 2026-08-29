@@ -16,6 +16,8 @@ func main() {
 	engine := router.New(router.Dependencies{
 		PrivateKey:       Env.PrivateKey,
 		SaveDir:          Env.SaveDir,
+		GiteeToken:       Env.GiteeToken,
+		Blacklist:        Env.Blacklist,
 		MaxTransportSize: Env.MaxTransportSize,
 		DebugMode:        Env.DebugMode,
 		Tokens:           Env.Tokens,

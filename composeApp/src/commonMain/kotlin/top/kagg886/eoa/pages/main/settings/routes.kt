@@ -13,6 +13,8 @@ import top.kagg886.eoa.pages.main.settings.ai.installAISettingsRoute
 import top.kagg886.eoa.pages.main.settings.ai.list.AISettingsListRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsScreen
+import top.kagg886.eoa.pages.main.settings.feedback.FeedbackRoute
+import top.kagg886.eoa.pages.main.settings.feedback.FeedbackScreen
 import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
 import top.kagg886.eoa.pages.main.settings.list.SettingListScreen
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
@@ -32,5 +34,6 @@ val installSettingsGraph: NavGraphBuilder.() -> Unit = {
     composable<SyncSettingsRoute> { SyncSettingsScreen() }
     composable<AdvancedSettingsRoute> { AdvancedSettingsScreen() }
     dialog<SettingsProfile>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SettingsProfileScreen() }
-    dialog<LogoutConfirmRoute>(dialogProperties =  DialogProperties(usePlatformDefaultWidth = false)) { LogoutConfirmScreen()}
+    dialog<LogoutConfirmRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { LogoutConfirmScreen() }
+    dialog<FeedbackRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { FeedbackScreen() }
 }

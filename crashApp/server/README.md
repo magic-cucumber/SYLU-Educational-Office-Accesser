@@ -5,8 +5,8 @@
 服务默认监听 `8080` 端口：
 
 ```text
-server --cert-path <RSA私钥PEM文件> [--port 8080] [--save-dir ./output]
-        [--max-transport-size 5MB] [--debug-mode]
+server --cert-path <RSA私钥PEM文件> --gitee-token <Gitee令牌> [--port 8080] [--save-dir ./output]
+        [--black-list-file ./blacklist.txt] [--max-transport-size 5MB] [--debug-mode]
 ```
 
 | 参数                     | 必填 | 默认值        | 说明                                         |
@@ -14,6 +14,8 @@ server --cert-path <RSA私钥PEM文件> [--port 8080] [--save-dir ./output]
 | `--port`               | 否  | `8080`     | HTTP 监听端口，范围 `1-65535`                     |
 | `--save-dir`           | 否  | `./output` | 解密后 ZIP 的保存目录                              |
 | `--cert-path`          | 是  | 无          | 未加密的 RSA PKCS#1 或 PKCS#8 私钥 PEM 文件         |
+| `--gitee-token`        | 是  | 无          | 用于创建软件反馈 issue 的 Gitee 个人访问令牌           |
+| `--black-list-file`    | 否  | `./blacklist.txt` | 黑名单文件，每行格式为 `匿名ID 封禁原因`                 |
 | `--max-transport-size` | 否  | `5MB`      | 加密报告文件的最大大小；支持字节数以及 `KB/KiB/MB/MiB/GB/GiB` |
 | `--debug-mode`         | 否  | `false`    | 每个请求额外延迟 3 秒                               |
 
@@ -67,7 +69,7 @@ server --cert-path <RSA私钥PEM文件> [--port 8080] [--save-dir ./output]
 
 ## `PUT /report`
 
-使用 RSA 加密 AES 密钥，申请一次性上传 token。
+使用 RSA 加密 AES 密钥和账户匿名 ID，申请一次性上传 token。
 
 请求头：`Content-Type: application/json`
 
@@ -75,8 +77,8 @@ server --cert-path <RSA私钥PEM文件> [--port 8080] [--save-dir ./output]
 
 | 字段       | 类型     | 限制                                                                |
 |----------|--------|-------------------------------------------------------------------|
-| `first`  | string | 固定为 `payload`                                                     |
-| `second` | string | RSA PKCS#1 v1.5 密文；解密后的原文必须正好是 32 字节 AES-256 RAW 密钥，再进行 Base64 编码 |
+| `cipher` | string | RSA PKCS#1 v1.5 密文；解密后的原文必须正好是 32 字节 AES-256 RAW 密钥，再进行 Base64 编码 |
+| `deviceId` | string | 账户匿名 ID；命中黑名单时返回 HTTP 200、`success: false` 和封禁原因 |
 
 成功响应中的 `data` 是上传 token：
 
@@ -89,6 +91,12 @@ server --cert-path <RSA私钥PEM文件> [--port 8080] [--save-dir ./output]
 ```
 
 token 有效期为 1 分钟，且只能使用一次。申请后应立即调用 `POST /report`。
+
+黑名单文件不存在时，服务启动会自动创建。每行一个条目，例如：
+
+```text
+xxxxxxxx 大量发布无意义内容
+```
 
 ## `POST /report`
 
@@ -121,6 +129,21 @@ token 有效期为 1 分钟，且只能使用一次。申请后应立即调用 `
   "data": null
 }
 ```
+
+## `POST /feedback`
+
+提交软件反馈并在 Gitee 仓库创建 issue。请求体为 JSON：
+
+```json
+{
+  "content": "反馈内容",
+  "token": "PUT /report 返回的一次性 token",
+  "system": "运行平台",
+  "version": "系统版本"
+}
+```
+
+服务端返回创建成功的 Gitee issue 链接。
 
 ## 常见 HTTP 状态码
 

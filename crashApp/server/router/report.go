@@ -18,18 +18,32 @@ const multipartOverheadAllowance int64 = 64 * 1024
 
 var reportFilenamePattern = regexp.MustCompile(`(?i)^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.bin$`)
 
+type reportTokenRequest struct {
+	Cipher   string `json:"cipher"`
+	DeviceID string `json:"deviceId"`
+}
+
 func (h *handlers) createReportToken(context *gin.Context) {
-	var payload encryptedPayload
-	if err := context.ShouldBindJSON(&payload); err != nil {
+	var request reportTokenRequest
+	if err := context.ShouldBindJSON(&request); err != nil {
 		fail(context, http.StatusBadRequest, errors.New("invalid JSON payload"))
 		return
 	}
-	aesKey, err := decryptRSA(h.dependencies.PrivateKey, payload, 32)
+	deviceID := strings.TrimSpace(request.DeviceID)
+	if deviceID == "" {
+		fail(context, http.StatusBadRequest, errors.New("deviceId is required"))
+		return
+	}
+	if reason, ok := h.dependencies.Blacklist[deviceID]; ok {
+		fail(context, http.StatusOK, errors.New(reason))
+		return
+	}
+	aesKey, err := decryptRSACipher(h.dependencies.PrivateKey, strings.TrimSpace(request.Cipher), 32)
 	if err != nil {
 		fail(context, http.StatusBadRequest, err)
 		return
 	}
-	token, err := h.dependencies.Tokens.Put(aesKey)
+	token, err := h.dependencies.Tokens.Put(aesKey, deviceID)
 	if err != nil {
 		fail(context, http.StatusInternalServerError, errors.New("failed to generate upload token"))
 		return
@@ -61,7 +75,7 @@ func (h *handlers) uploadReport(context *gin.Context) {
 		fail(context, http.StatusBadRequest, errors.New("token is required"))
 		return
 	}
-	aesKey, ok := h.dependencies.Tokens.Take(token)
+	aesKey, _, ok := h.dependencies.Tokens.Take(token)
 	if !ok {
 		fail(context, http.StatusBadRequest, errors.New("token is invalid, expired, or already used"))
 		return

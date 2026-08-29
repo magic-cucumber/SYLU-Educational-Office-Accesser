@@ -32,6 +32,7 @@ import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
 import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
+import top.kagg886.eoa.pages.main.settings.feedback.FeedbackRoute
 import top.kagg886.eoa.pages.main.settings.logout_confirm.LogoutConfirmRoute
 import top.kagg886.eoa.pages.main.settings.profile.SettingsProfile
 import top.kagg886.eoa.pages.main.settings.sync.SyncSettingsRoute
@@ -43,6 +44,7 @@ data object SettingListRoute
 @Composable
 fun SettingListScreen() = MainScreen {
     val nav = LocalNavController.current
+    val rootViewModel = rootViewModel()
     val mainRouteViewModel = mainViewModelOrNull() ?: return@MainScreen
 
     val mainState by mainRouteViewModel.collectAsState()
@@ -78,6 +80,12 @@ fun SettingListScreen() = MainScreen {
         },
         onAboutClicked = {
             nav.navigate(AboutRoute)
+        },
+        onFeedbackClicked = {
+            nav.navigate(FeedbackRoute)
+        },
+        onUpdateChecked = {
+            rootViewModel.checkUpdate(false)
         }
     )
 }
@@ -92,6 +100,8 @@ private fun SettingScreenContent(
     onSyncSettingsClicked: () -> Unit,
     onAISettingsClicked: () -> Unit,
     onAdvancedSettingsClicked: () -> Unit,
+    onFeedbackClicked: () -> Unit,
+    onUpdateChecked: ()-> Unit,
     onAboutClicked: () -> Unit,
 ) {
     Scaffold(
@@ -278,9 +288,7 @@ private fun SettingScreenContent(
                         contentDescription = "进入",
                     )
                 },
-                modifier = Modifier.clickable {
-                    onAppearanceSettingsClicked()
-                }
+                modifier = Modifier.clickable(onClick = onAppearanceSettingsClicked)
             )
 
             ListItem(
@@ -297,9 +305,7 @@ private fun SettingScreenContent(
                         contentDescription = "进入",
                     )
                 },
-                modifier = Modifier.clickable {
-                    onSyncSettingsClicked()
-                }
+                modifier = Modifier.clickable(onClick = onSyncSettingsClicked)
             )
 
             ListItem(
@@ -316,9 +322,7 @@ private fun SettingScreenContent(
                         contentDescription = "进入",
                     )
                 },
-                modifier = Modifier.clickable {
-                    onAISettingsClicked()
-                }
+                modifier = Modifier.clickable(onClick = onAISettingsClicked)
             )
 
             ListItem(
@@ -335,12 +339,8 @@ private fun SettingScreenContent(
                         contentDescription = "进入",
                     )
                 },
-                modifier = Modifier.clickable {
-                    onAdvancedSettingsClicked()
-                }
+                modifier = Modifier.clickable(onClick = onAdvancedSettingsClicked)
             )
-
-            val rootViewModel = rootViewModel()
             ListItem(
                 headlineContent = {
                     Text("检查更新")
@@ -351,9 +351,20 @@ private fun SettingScreenContent(
                         contentDescription = "设置",
                     )
                 },
-                modifier = Modifier.clickable {
-                    rootViewModel.checkUpdate(false)
-                }
+                modifier = Modifier.clickable(onClick = onUpdateChecked)
+            )
+
+            ListItem(
+                headlineContent = {
+                    Text("问题反馈")
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.BugReport,
+                        contentDescription = "问题反馈",
+                    )
+                },
+                modifier = Modifier.clickable(onClick = onFeedbackClicked)
             )
 
             ListItem(

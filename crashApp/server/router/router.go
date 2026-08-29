@@ -7,13 +7,15 @@ import (
 )
 
 type TokenCache interface {
-	Put(aesKey []byte) (string, error)
-	Take(token string) ([]byte, bool)
+	Put(aesKey []byte, deviceID string) (string, error)
+	Take(token string) ([]byte, string, bool)
 }
 
 type Dependencies struct {
 	PrivateKey       *rsa.PrivateKey
 	SaveDir          string
+	GiteeToken       string
+	Blacklist        map[string]string
 	MaxTransportSize int64
 	DebugMode        bool
 	Tokens           TokenCache
@@ -34,5 +36,6 @@ func New(dependencies Dependencies) *gin.Engine {
 	engine.POST("/test", h.testRSA)
 	engine.PUT("/report", h.createReportToken)
 	engine.POST("/report", h.uploadReport)
+	engine.POST("/feedback", h.createFeedback)
 	return engine
 }

@@ -15,6 +15,7 @@ const (
 
 type uploadContext struct {
 	aesKey    []byte
+	deviceID  string
 	expiresAt time.Time
 }
 
@@ -50,7 +51,7 @@ func NewTokenCache(capacity int, ttl time.Duration) *TokenCache {
 	}
 }
 
-func (c *TokenCache) Put(aesKey []byte) (string, error) {
+func (c *TokenCache) Put(aesKey []byte, deviceID string) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -69,6 +70,7 @@ func (c *TokenCache) Put(aesKey []byte) (string, error) {
 			token: token,
 			context: uploadContext{
 				aesKey:    append([]byte(nil), aesKey...),
+				deviceID:  deviceID,
 				expiresAt: c.now().Add(c.ttl),
 			},
 		}
@@ -82,20 +84,20 @@ func (c *TokenCache) Put(aesKey []byte) (string, error) {
 
 // Take atomically consumes a token, including when the subsequent upload is
 // invalid. This preserves the one-time-token contract.
-func (c *TokenCache) Take(token string) ([]byte, bool) {
+func (c *TokenCache) Take(token string) ([]byte, string, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	element, ok := c.items[token]
 	if !ok {
-		return nil, false
+		return nil, "", false
 	}
 	entry := element.Value.(cacheEntry)
 	c.removeElementLocked(element)
 	if !c.now().Before(entry.context.expiresAt) {
-		return nil, false
+		return nil, "", false
 	}
-	return append([]byte(nil), entry.context.aesKey...), true
+	return append([]byte(nil), entry.context.aesKey...), entry.context.deviceID, true
 }
 
 func (c *TokenCache) removeExpiredLocked() {

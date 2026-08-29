@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,9 @@ type Environment struct {
 	Port             uint16
 	SaveDir          string
 	CertPath         string
+	GiteeToken       string
+	BlacklistFile    string
+	Blacklist        map[string]string
 	MaxTransportSize int64
 	DebugMode        bool
 	PrivateKey       *rsa.PrivateKey
@@ -30,6 +34,8 @@ func ConfigureEnvironment(args []string) error {
 	port := flags.Int("port", 8080, "HTTP listen port")
 	saveDir := flags.String("save-dir", "./output", "directory for decrypted ZIP files")
 	certPath := flags.String("cert-path", "", "path to the PEM encoded RSA private key (required)")
+	giteeToken := flags.String("gitee-token", "", "Gitee personal access token (required)")
+	blacklistFile := flags.String("black-list-file", "./blacklist.txt", "path to the blacklist file")
 	maxTransportSize := flags.String("max-transport-size", "5MB", "maximum encrypted upload size")
 	debugMode := flags.Bool("debug-mode", false, "delay each routed request by three seconds")
 	if err := flags.Parse(args); err != nil {
@@ -43,6 +49,9 @@ func ConfigureEnvironment(args []string) error {
 	}
 	if strings.TrimSpace(*certPath) == "" {
 		return errors.New("--cert-path is required")
+	}
+	if strings.TrimSpace(*giteeToken) == "" {
+		return errors.New("--gitee-token is required")
 	}
 
 	limit, err := parseByteSize(*maxTransportSize)
@@ -60,17 +69,60 @@ func ConfigureEnvironment(args []string) error {
 	if err := os.MkdirAll(absoluteSaveDir, 0o750); err != nil {
 		return fmt.Errorf("create --save-dir: %w", err)
 	}
+	absoluteBlacklistFile, err := filepath.Abs(*blacklistFile)
+	if err != nil {
+		return fmt.Errorf("resolve --black-list-file: %w", err)
+	}
+	blacklist, err := loadBlacklist(absoluteBlacklistFile)
+	if err != nil {
+		return fmt.Errorf("load --black-list-file: %w", err)
+	}
 
 	Env = Environment{
 		Port:             uint16(*port),
 		SaveDir:          absoluteSaveDir,
 		CertPath:         *certPath,
+		GiteeToken:       *giteeToken,
+		BlacklistFile:    absoluteBlacklistFile,
+		Blacklist:        blacklist,
 		MaxTransportSize: limit,
 		DebugMode:        *debugMode,
 		PrivateKey:       privateKey,
 		Tokens:           NewTokenCache(defaultCacheCapacity, tokenTimeout),
 	}
 	return nil
+}
+
+func loadBlacklist(path string) (map[string]string, error) {
+	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0o640)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	contents, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	blacklist := make(map[string]string)
+	for lineNumber, rawLine := range strings.Split(string(contents), "\n") {
+		line := strings.TrimSpace(rawLine)
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			return nil, fmt.Errorf("line %d must contain an id and a reason", lineNumber+1)
+		}
+		id := fields[0]
+		reason := strings.TrimSpace(line[len(id):])
+		if reason == "" {
+			return nil, fmt.Errorf("line %d must contain a non-empty reason", lineNumber+1)
+		}
+		blacklist[id] = reason
+	}
+	return blacklist, nil
 }
 
 func parseByteSize(value string) (int64, error) {

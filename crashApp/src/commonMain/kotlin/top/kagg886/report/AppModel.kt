@@ -31,6 +31,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.io.buffered
@@ -38,6 +39,7 @@ import kotlinx.io.bytestring.encode
 import kotlinx.io.okio.asKotlinxIoRawSink
 import kotlinx.io.okio.asKotlinxIoRawSource
 import kotlinx.serialization.Serializable
+import okio.ByteString.Companion.toByteString
 import okio.Path.Companion.toPath
 import okio.use
 import org.orbitmvi.orbit.OrbitContainer
@@ -67,6 +69,7 @@ import top.kagg886.util.zip
 import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 class AppModel(private val database: AppDatabase, private val crash: String) : ViewModel(),
@@ -82,6 +85,13 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
     override val container: OrbitContainer<AppModelState, AppModelState, Unit> =
         orbitContainer(AppModelState.Initializing) {
             addCloseable(client)
+
+            if (AppSyncMMKV.profile == null) {
+                reduce { AppModelState.CrashManually }
+                return@orbitContainer
+            }
+
+
             @Serializable
             data class CrashConfig(
                 val server: String,
@@ -196,11 +206,22 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
             progress.emit(0f)
 
             val token = try {
+                @Serializable
+                data class ReportTokenGenerateRequest(
+                    val cipher: String,
+                    val deviceId: String,
+                )
+
+
                 val resp = report.put("/report") {
                     contentType(ContentType.Application.Json)
                     setBody(
-                        "payload" to Base64.encode(
-                            rsa.encryptor().encrypt(aes.encodeToByteString(AES.Key.Format.RAW))
+                        ReportTokenGenerateRequest(
+                            cipher = Base64.encode(
+                                rsa.encryptor()
+                                    .encrypt(aes.encodeToByteArray(AES.Key.Format.RAW))
+                            ),
+                            deviceId = AppSyncMMKV.profile!!.avatar.toByteString().sha256().base64()
                         )
                     )
                 }

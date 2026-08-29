@@ -81,6 +81,11 @@ kotlin {
             implementation(libs.koog.agents)
             implementation(libs.reveal.core)
             implementation(libs.reveal.shapes)
+            implementation(libs.richeditor)
+
+            implementation(libs.cryptography.core)
+            implementation(libs.cryptography.provider.base)
+            implementation(libs.cryptography.provider.optimal)
 
             implementation(project.dependencies.project(":composeApp-backend"))
             implementation(project.dependencies.project(":widgetApp"))
