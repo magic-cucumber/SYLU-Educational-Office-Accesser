@@ -13,6 +13,8 @@ import dev.whyoleg.cryptography.providers.base.materials.JsonWebKeys
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -34,6 +36,7 @@ import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.util.BaseViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.util.Platform
+import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
 import top.kagg886.util.current
 import kotlin.io.encoding.Base64
@@ -117,6 +120,10 @@ class FeedbackModel : BaseViewModel<FeedbackState, FeedbackSideEffect>(
             }
             defaultRequest {
                 url(config.server)
+            }
+            install(Logging) {
+                logger = this@FeedbackModel.logger.asKtorLogger
+                level = LogLevel.ALL
             }
         }
         try {
@@ -220,6 +227,11 @@ class FeedbackModel : BaseViewModel<FeedbackState, FeedbackSideEffect>(
             defaultRequest {
                 url(prepared.config.server)
             }
+
+            install(Logging) {
+                logger = this@FeedbackModel.logger.asKtorLogger
+                level = LogLevel.ALL
+            }
         }
 
         try {
@@ -236,11 +248,11 @@ class FeedbackModel : BaseViewModel<FeedbackState, FeedbackSideEffect>(
                 )
             }
             if (!tokenResponse.status.isSuccess()) {
-                error("申请反馈 token 失败：${tokenResponse.status}")
+                error("我们无法处理您的反馈：${tokenResponse.status}")
             }
             val token = tokenResponse.body<FeedbackBaseResponse<String>>().let {
-                if (!it.success) error("申请反馈 token 失败：${it.message}")
-                it.data ?: error("服务端未返回反馈 token")
+                if (!it.success) error("我们无法处理您的反馈：${it.message}")
+                it.data ?: error("我们无法处理您的反馈")
             }
 
             val response = report.post("/feedback") {
@@ -255,11 +267,11 @@ class FeedbackModel : BaseViewModel<FeedbackState, FeedbackSideEffect>(
                 )
             }
             if (!response.status.isSuccess()) {
-                error("提交反馈失败：${response.status}")
+                error("我们无法处理您的反馈：${response.status}")
             }
             return response.body<FeedbackBaseResponse<String>>().let {
-                if (!it.success) error(it.message ?: "提交反馈失败")
-                it.data ?: error("服务端未返回反馈链接")
+                if (!it.success) error(it.message ?: "当前暂时无法提交反馈，请稍后再试~")
+                it.data ?: error("当前暂时无法提交反馈，请稍后再试~")
             }
         } finally {
             report.close()

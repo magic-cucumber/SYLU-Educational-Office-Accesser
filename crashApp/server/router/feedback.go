@@ -1,30 +1,25 @@
 package router
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-const giteeIssuesURL = "https://gitee.com/api/v5/repos/kagg886/sylu-educational-office-accesser/issues"
+const giteeIssuesURL = "https://gitee.com/api/v5/repos/kagg886/issues"
 
 type feedbackRequest struct {
 	Content string `json:"content"`
 	Token   string `json:"token"`
 	System  string `json:"system"`
 	Version string `json:"version"`
-}
-
-type giteeIssueRequest struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
 }
 
 type giteeIssueResponse struct {
@@ -62,30 +57,24 @@ func (h *handlers) createFeedback(context *gin.Context) {
 		request.System,
 		request.Content,
 	)
-	payload, err := json.Marshal(giteeIssueRequest{
-		Title: "SYLU - EOA 软件反馈",
-		Body:  body,
-	})
-	if err != nil {
-		fail(context, http.StatusInternalServerError, errors.New("failed to encode Gitee issue"))
-		return
-	}
+	form := url.Values{}
+	form.Set("access_token", h.dependencies.GiteeToken)
+	form.Set("repo", "sylu-educational-office-accesser")
+	form.Set("title", "SYLU - EOA 软件反馈")
+	form.Set("body", body)
 
 	requestToGitee, err := http.NewRequestWithContext(
 		context.Request.Context(),
 		http.MethodPost,
 		giteeIssuesURL,
-		bytes.NewReader(payload),
+		strings.NewReader(form.Encode()),
 	)
 	if err != nil {
 		fail(context, http.StatusInternalServerError, errors.New("failed to create Gitee request"))
 		return
 	}
 	requestToGitee.Header.Set("Accept", "application/json")
-	requestToGitee.Header.Set("Content-Type", "application/json")
-	query := requestToGitee.URL.Query()
-	query.Set("access_token", h.dependencies.GiteeToken)
-	requestToGitee.URL.RawQuery = query.Encode()
+	requestToGitee.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	client := &http.Client{Timeout: 15 * time.Second}
 	response, err := client.Do(requestToGitee)

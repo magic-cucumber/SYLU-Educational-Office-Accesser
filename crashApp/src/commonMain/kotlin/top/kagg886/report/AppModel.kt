@@ -15,6 +15,8 @@ import dev.whyoleg.cryptography.providers.base.materials.JsonWebKeys
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.InputProvider
 import io.ktor.client.request.forms.formData
@@ -54,6 +56,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.databasePath
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.util.Platform
+import top.kagg886.util.asKtorLogger
 import top.kagg886.util.cachePath
 import top.kagg886.util.copyTo
 import top.kagg886.util.createNewFile
@@ -79,6 +82,11 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
         install(ContentNegotiation) {
             json()
             json(contentType = ContentType.Text.Plain)
+        }
+
+        install(Logging) {
+            logger = this@AppModel.logger.asKtorLogger
+            level = LogLevel.ALL
         }
     }
 
@@ -156,6 +164,11 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
 
                     defaultRequest {
                         url(config.server)
+                    }
+
+                    install(Logging) {
+                        logger = this@AppModel.logger.asKtorLogger
+                        level = LogLevel.ALL
                     }
                 }
                 addCloseable(client)
