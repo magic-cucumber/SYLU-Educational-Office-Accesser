@@ -1,6 +1,7 @@
 package top.kagg886.backend.database.dao
 
 import androidx.room3.*
+import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDateTime
 import top.kagg886.backend.database.converters.TimeConverter
 
@@ -21,6 +22,9 @@ interface SystemNoticeDao {
 
     @Query("SELECT * FROM system_notices WHERE (:includeAll = true OR isRead = false) ORDER BY time DESC")
     suspend fun all(includeAll: Boolean = false): List<SystemNoticeEntity>
+
+    @Query("SELECT * FROM system_notices WHERE (:includeAll = true OR isRead = false) ORDER BY time DESC")
+    fun allFlow(includeAll: Boolean = false): Flow<List<SystemNoticeEntity>>
 
     @Query("UPDATE system_notices SET isRead = true WHERE id = :id")
     suspend fun markAsRead(id: String)

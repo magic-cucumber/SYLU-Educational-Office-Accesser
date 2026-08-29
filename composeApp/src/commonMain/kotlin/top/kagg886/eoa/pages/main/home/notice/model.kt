@@ -23,7 +23,7 @@ class SystemNoticeModel(
             if (syncState is MainRouteViewState.SyncFailed) {
                 // 非首次同步则展示脏数据
                 if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
+                    setDataUnsafe()
                     return
                 }
                 // 否则提示同步失败
@@ -37,7 +37,7 @@ class SystemNoticeModel(
             if (syncState is MainRouteViewState.SyncProcess) {
                 // 如果有脏数据则展示
                 if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
+                    setDataUnsafe()
                     return
                 }
                 // 否则展示加载中
@@ -49,21 +49,19 @@ class SystemNoticeModel(
 
             // 同步成功则展示数据
             if (syncState is MainRouteViewState.SyncSuccess) {
-                setDataUnsafe().join()
+                setDataUnsafe()
                 return
             }
 
             // 空状态时直接设置数据
             if (syncState is MainRouteViewState.Empty) {
-                setDataUnsafe().join()
+                setDataUnsafe()
                 return
             }
         }
 
     private fun setDataUnsafe(includeAll: Boolean = false) = intent {
-        try {
-            val notices = noticeDao.all(includeAll)
-
+        noticeDao.allFlow(includeAll).collect { notices ->
             if (notices.isEmpty()) {
                 reduce {
                     SystemNoticeState.FailedButSuccess(
@@ -71,7 +69,7 @@ class SystemNoticeModel(
                         includeAll = includeAll
                     )
                 }
-                return@intent
+                return@collect
             }
 
             reduce {
@@ -80,10 +78,6 @@ class SystemNoticeModel(
                     expandableNotices = SnapshotStateSet(),
                     includeAll = includeAll
                 )
-            }
-        } catch (e: Exception) {
-            reduce {
-                SystemNoticeState.Failed("获取通知失败: ${e.message}", includeAll)
             }
         }
     }
