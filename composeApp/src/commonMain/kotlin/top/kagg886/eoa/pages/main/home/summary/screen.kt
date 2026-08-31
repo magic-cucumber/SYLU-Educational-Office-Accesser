@@ -115,7 +115,7 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
             }
 
             is SummarySideEffect.NavigateToConflictInfo -> {
-                nav.navigate(CourseConflictRoute(it.weekNumber, it.dayOfWeek, it.periodOfDay))
+                nav.navigate(CourseConflictRoute(it.startTime,it.endTime))
             }
         }
     }

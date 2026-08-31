@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -18,9 +19,15 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.util.LocalDateTimeAsLongSerializer
 
 @Serializable
-data class CourseConflictRoute(val weekNumber: Int, val dayOfWeek: Int, val periodOfDay: Int)
+data class CourseConflictRoute(
+    @Serializable(with = LocalDateTimeAsLongSerializer::class)
+    val startTime: LocalDateTime,
+    @Serializable(with = LocalDateTimeAsLongSerializer::class)
+    val endTime: LocalDateTime
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,9 +36,8 @@ fun CourseConflictScreen(route: CourseConflictRoute) {
     val model = viewModel {
         CourseConflictViewModel(
             database = mainModel.database,
-            weekNumber = route.weekNumber,
-            dayOfWeek = route.dayOfWeek,
-            periodOfDay = route.periodOfDay
+            startTime = route.startTime,
+            endTime = route.endTime
         )
     }
     val nav = LocalNavController.current
@@ -73,7 +79,8 @@ private fun CourseConflictScreenContent(
             LazyColumn(modifier) {
                 items(state.course) {
                     ListItem(
-                        modifier = Modifier.clip(CardDefaults.shape).clickable { onCourseItemClicked(it) },
+                        modifier = Modifier.clip(CardDefaults.shape)
+                            .clickable { onCourseItemClicked(it) },
                         colors = ListItemDefaults.colors(
                             containerColor = AlertDialogDefaults.containerColor
                         ),

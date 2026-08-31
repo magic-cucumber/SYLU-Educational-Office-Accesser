@@ -1,5 +1,6 @@
 package top.kagg886.backend.database.dao
 
+import androidx.room3.ColumnTypeConverters
 import androidx.room3.Dao
 import androidx.room3.Delete
 import androidx.room3.Embedded
@@ -10,6 +11,9 @@ import androidx.room3.OnConflictStrategy
 import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalDateTime
+import top.kagg886.backend.database.converters.SeverityConverter
+import top.kagg886.backend.database.converters.TimeConverter
 
 @Entity(
     tableName = "course_records",
@@ -22,12 +26,12 @@ import kotlinx.coroutines.flow.Flow
         )
     ]
 )
+@ColumnTypeConverters(TimeConverter::class)
 data class CourseRecordEntity(
     @PrimaryKey(autoGenerate = true) val id: Long? = null,
     val courseId: Long? = null, // Foreign key to CourseEntity
-    val weekNumber: Int, // Week of the semester (start At 1)
-    val dayOfWeek: Int, // Day of the week (1-7)
-    val periodOfDay: Int, // Period of the day
+    val startTime: LocalDateTime, // record start time
+    val endTime: LocalDateTime, // record end time
     val isUserAdded: Boolean = false
 )
 
@@ -39,6 +43,7 @@ data class CourseAndRecord(
 )
 
 @Dao
+@ColumnTypeConverters(TimeConverter::class)
 interface CourseRecordDao {
     @Query("DELETE FROM course_records")
     suspend fun clear()
@@ -63,26 +68,22 @@ interface CourseRecordDao {
         c.isDegreeRequired AS isDegreeRequired,
         c.isExaminable AS isExaminable,
         c.isUserAdded AS isUserAdded,
-        c.yearCode AS yearCode,
-        c.semesterCode AS semesterCode,
         
         cr.id AS record_id,
         cr.courseId AS record_courseId,
-        cr.weekNumber AS record_weekNumber,
-        cr.dayOfWeek AS record_dayOfWeek,
-        cr.periodOfDay AS record_periodOfDay,
+        cr.startTime AS record_startTime,
+        cr.endTime AS record_endTime,
         cr.isUserAdded AS record_isUserAdded
         
-    FROM courses c
-    JOIN course_records cr ON cr.courseId = c.id
-    WHERE cr.weekNumber = :weekNumber AND (:dayOfWeek IS NULL OR cr.dayOfWeek = :dayOfWeek) AND (:periodOfDay IS NULL OR cr.periodOfDay = :periodOfDay)
-    ORDER BY cr.periodOfDay
-"""
+        FROM courses c
+        JOIN course_records cr ON cr.courseId = c.id
+        WHERE cr.startTime >= :start AND cr.endTime <= :end
+        ORDER BY cr.startTime ASC
+    """
     )
     suspend fun getCoursesWithRecordInfo(
-        weekNumber: Int,
-        dayOfWeek: Int? = null,
-        periodOfDay: Int? = null
+        start: LocalDateTime,
+        end: LocalDateTime,
     ): List<CourseAndRecord>
 
     @Query(
@@ -96,26 +97,22 @@ interface CourseRecordDao {
         c.isDegreeRequired AS isDegreeRequired,
         c.isExaminable AS isExaminable,
         c.isUserAdded AS isUserAdded,
-        c.yearCode AS yearCode,
-        c.semesterCode AS semesterCode,
         
         cr.id AS record_id,
         cr.courseId AS record_courseId,
-        cr.weekNumber AS record_weekNumber,
-        cr.dayOfWeek AS record_dayOfWeek,
-        cr.periodOfDay AS record_periodOfDay,
+        cr.startTime AS record_startTime,
+        cr.endTime AS record_endTime,
         cr.isUserAdded AS record_isUserAdded
         
-    FROM courses c
-    JOIN course_records cr ON cr.courseId = c.id
-    WHERE cr.weekNumber = :weekNumber AND (:dayOfWeek IS NULL OR cr.dayOfWeek = :dayOfWeek) AND (:periodOfDay IS NULL OR cr.periodOfDay = :periodOfDay)
-    ORDER BY cr.periodOfDay
-"""
+        FROM courses c
+        JOIN course_records cr ON cr.courseId = c.id
+        WHERE cr.startTime >= :start AND cr.endTime <= :end
+        ORDER BY cr.startTime ASC
+    """
     )
     fun getCoursesWithRecordInfoFlow(
-        weekNumber: Int,
-        dayOfWeek: Int? = null,
-        periodOfDay: Int? = null
+        start: LocalDateTime,
+        end: LocalDateTime,
     ): Flow<List<CourseAndRecord>>
 
 
@@ -128,4 +125,3 @@ interface CourseRecordDao {
     @Delete
     suspend fun delete(item: CourseRecordEntity)
 }
-

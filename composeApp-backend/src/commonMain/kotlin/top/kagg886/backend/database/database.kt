@@ -6,6 +6,7 @@ import kotlinx.coroutines.IO
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.backend.database.dao.*
 import top.kagg886.backend.database.migrate.MIGRATION_10_11
+import top.kagg886.backend.database.migrate.MIGRATION_12_13
 import top.kagg886.util.absolutePath
 import top.kagg886.util.dataPath
 
@@ -31,7 +32,7 @@ import top.kagg886.util.dataPath
         AutoMigration(from = 7, to = 8),
         AutoMigration(from = 8, to = 9),
         AutoMigration(from = 9, to = 10),
-        AutoMigration(from = 11, to = 12)
+        AutoMigration(from = 11, to = 12),
     ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -64,4 +65,5 @@ expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
 
 fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
     .addMigrations(MIGRATION_10_11)
+    .addMigrations(MIGRATION_12_13)
     .setQueryCoroutineContext(Dispatchers.IO)

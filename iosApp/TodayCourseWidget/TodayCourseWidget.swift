@@ -60,10 +60,10 @@ struct Provider: TimelineProvider {
             return nextMidnight
         }
 
-        // 提取每节课在今天的开始和结束时间，后续用于判断当前课程状态。
+        // 提取扫描线分段后的实际开始和结束时间。
         let courseTimes = courses.compactMap { course -> (start: Date, end: Date)? in
-            guard let start = course.startTime.date(on: now, calendar: calendar),
-                  let end = course.endTime.date(on: now, calendar: calendar) else {
+            guard let start = course.startDate,
+                  let end = course.endDate else {
                 return nil
             }
 
@@ -78,12 +78,12 @@ struct Provider: TimelineProvider {
             return currentCourseEnd
         }
 
-        // 判断是否存在今日待上的课程，如果存在则在最近一节待上课程下课时刷新。
-        if let nextCourseEnd = courseTimes
+        // 在下一个分段开始时刷新，使 Kotlin 重新把进度赋给当前唯一条目。
+        if let nextCourseStart = courseTimes
             .filter({ now < $0.start })
-            .min(by: { $0.start < $1.start })?
-            .end {
-            return nextCourseEnd
+            .map(\.start)
+            .min() {
+            return nextCourseStart
         }
 
         // 判断今日已无待上课程，刷新时间推迟到第二天凌晨 0 点。
@@ -123,9 +123,9 @@ enum CourseState {
             return .message("今日无课程!")
         }
 
-        let now = Calendar.current.dateComponents([.hour, .minute], from: .now)
+        let now = Date.now
         let visible = courses.filter {
-            $0.endTime.minuteOfDay > now.minuteOfDay
+            ($0.endDate ?? .distantPast) > now
         }
 
         return visible.isEmpty ? .message("今日课程已结束") : .courses(visible)
@@ -133,18 +133,16 @@ enum CourseState {
 }
 
 extension TodayClass {
-    var startTime: DateComponents {
-        DateComponents(
-            hour: Int(date.first?.hour ?? 0),
-            minute: Int(date.first?.minute ?? 0)
-        )
+    var startDate: Date? {
+        date.first?.foundationDate
     }
 
-    var endTime: DateComponents {
-        DateComponents(
-            hour: Int(date.second?.hour ?? 0),
-            minute: Int(date.second?.minute ?? 0)
-        )
+    var endDate: Date? {
+        date.second?.foundationDate
+    }
+
+    var timeText: String {
+        "\(date.first?.timeText ?? "--:--")–\(date.second?.timeText ?? "--:--")"
     }
 
     static let samples = [
@@ -171,50 +169,55 @@ extension TodayClass {
         end: Int,
         progress: Float?
     ) -> TodayClass {
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+
         TodayClass(
-            weekNumber: 1,
             recordId: 1,
             courseId: 1,
             name: name,
             teacher: "",
             location: location,
             date: KotlinPair(
-                first: Kotlinx_datetimeLocalTime(
+                first: Kotlinx_datetimeLocalDateTime(
+                    year: Int32(components.year ?? 1970),
+                    monthNumber: Int32(components.month ?? 1),
+                    dayOfMonth: Int32(components.day ?? 1),
                     hour: Int32(start / 60),
                     minute: Int32(start % 60),
                     second: 0,
                     nanosecond: 0
                 ),
-                second: Kotlinx_datetimeLocalTime(
+                second: Kotlinx_datetimeLocalDateTime(
+                    year: Int32(components.year ?? 1970),
+                    monthNumber: Int32(components.month ?? 1),
+                    dayOfMonth: Int32(components.day ?? 1),
                     hour: Int32(end / 60),
                     minute: Int32(end % 60),
                     second: 0,
                     nanosecond: 0
                 )
             ),
-            period: 1,
             progress: progress.map { KotlinFloat(value: $0) },
             conflict: false
         )
     }
 }
 
-private extension DateComponents {
-
-    var minuteOfDay: Int {
-        (hour ?? 0) * 60 + (minute ?? 0)
-    }
-
+private extension Kotlinx_datetimeLocalDateTime {
     var timeText: String {
-        String(format: "%02d:%02d", hour ?? 0, minute ?? 0)
+        String(format: "%02d:%02d", hour, minute)
     }
 
-    func date(on date: Date, calendar: Calendar = .current) -> Date? {
-        var components = calendar.dateComponents([.year, .month, .day], from: date)
-        components.hour = hour
-        components.minute = minute
-        components.second = 0
-        return calendar.date(from: components)
+    var foundationDate: Date? {
+        var components = DateComponents()
+        components.year = Int(year)
+        components.month = Int(monthNumber)
+        components.day = Int(dayOfMonth)
+        components.hour = Int(hour)
+        components.minute = Int(minute)
+        components.second = Int(second)
+        components.nanosecond = Int(nanosecond)
+        return Calendar.current.date(from: components)
     }
 }
 
@@ -289,7 +292,8 @@ private struct CourseListView: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            ForEach(Array(courses.prefix(2)), id: \.recordId) { course in
+            ForEach(Array(courses.indices.prefix(2)), id: \.self) { index in
+                let course = courses[index]
                 Link(destination: course.deepLinkURL) {
                     CourseRow(course: course)
                         .frame(maxHeight: .infinity)
@@ -322,7 +326,7 @@ private struct CourseRow: View {
                     .minimumScaleFactor(0.75)
 
                 HStack(spacing: 4) {
-                    Text("#\(course.period)" + (course.conflict ? "" : " - \(course.location)"))
+                    Text(course.timeText + (course.conflict ? "" : " - \(course.location)"))
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
@@ -359,18 +363,13 @@ private struct CourseRow: View {
 
 private extension TodayClass {
     var deepLinkURL: URL {
-        if conflict {
-            return URL(string: "eoa://course/conflict/\(weekNumber)/\(Date.isoWeekdayNumber)/\(period)")!
+        if conflict, let startDate, let endDate {
+            let start = Int64(startDate.timeIntervalSince1970 * 1_000)
+            let end = Int64(endDate.timeIntervalSince1970 * 1_000)
+            return URL(string: "eoa://course/conflict/\(start)/\(end)")!
         }
 
         return URL(string: "eoa://course/profile/\(recordId)")!
-    }
-}
-
-private extension Date {
-    static var isoWeekdayNumber: Int {
-        let weekday = Calendar.current.component(.weekday, from: .now)
-        return weekday == 1 ? 7 : weekday - 1
     }
 }
 

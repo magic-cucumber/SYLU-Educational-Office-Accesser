@@ -9,8 +9,10 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import top.kagg886.eoa.AppActivity
 import top.kagg886.eoa.EOAApplication
@@ -59,14 +61,6 @@ object WidgetUtils {
     }
 
     /**
-     * 格式化时间段
-     */
-    fun formatPeriod(period: Int): String {
-        return "#$period"
-    }
-
-
-    /**
      * 创建刷新小组件的Action
      */
     fun createRefreshWidgetAction() = actionRunCallback<RefreshWidgetCallback>()
@@ -81,13 +75,12 @@ object WidgetUtils {
     )
 
     fun createCourseConflictAction(
-        weekNumber: Int,
-        dayOfWeek: Int = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).dayOfWeek.isoDayNumber,
-        periodOfDay: Int
+        startTime: LocalDateTime,
+        endTime: LocalDateTime,
     ) = actionStartActivity(
         Intent(
             Intent.ACTION_VIEW,
-            "eoa://course/conflict/$weekNumber/$dayOfWeek/$periodOfDay".toUri()
+            "eoa://course/conflict/${startTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()}/${endTime.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()}".toUri()
         ).apply {
             setClass(EOAApplication.getApp(), AppActivity::class.java)
         }

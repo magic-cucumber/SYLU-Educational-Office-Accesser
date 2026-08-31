@@ -3,11 +3,9 @@ package top.kagg886.eoa.pages.main.home.course.detail
 import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.datetime.*
 import org.orbitmvi.orbit.syntax.Syntax
-import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
-import top.kagg886.util.getTimeByLessonNumber
 import kotlin.time.Clock
 
 class CourseDetailViewModel(
@@ -62,12 +60,7 @@ class CourseDetailViewModel(
 
         //获取上课记录
         val plans = courseRecordDao.getByCourseId(course.id!!).sortedWith { a, b ->
-            when {
-                a.weekNumber != b.weekNumber -> a.weekNumber.compareTo(b.weekNumber)
-                a.dayOfWeek != b.dayOfWeek -> a.dayOfWeek.compareTo(b.dayOfWeek)
-                a.periodOfDay != b.periodOfDay -> a.periodOfDay.compareTo(b.periodOfDay)
-                else -> 0
-            }
+            return@sortedWith a.startTime.compareTo(b.startTime)
         }
 
         //获取该课程在本学期的进度
@@ -83,27 +76,17 @@ class CourseDetailViewModel(
             CourseDetailState.Success(
                 entity = course,
                 records = plans.map {
-                    val date =
-                        AppSyncMMKV.calender!!.start
-                            .plus(it.weekNumber - 1, DateTimeUnit.WEEK)
-                            .plus(it.dayOfWeek - 1, DateTimeUnit.DAY) //dayOfWeek是礼拜x，所以如果是周一的话就要dayOfWeek - 1，以此类推。
-                    val (start, end) = getTimeByLessonNumber(it.periodOfDay)
-
                     CourseRecordAndProgress(
-                        it.id!!,
-                        it.courseId!!,
-                        it.weekNumber,
-                        it.dayOfWeek,
-                        it.periodOfDay,
-                        it.isUserAdded,
-                        when {
-                            current < date.atTime(start) -> CourseRecordAndProgress.ProgressStatus.NotStarted
-                            current > date.atTime(end) -> CourseRecordAndProgress.ProgressStatus.Completed
+                        id = it.id!!,
+                        courseId = it.courseId!!,
+                        isUserAdded = it.isUserAdded,
+                        progressStatus = when {
+                            current < it.startTime -> CourseRecordAndProgress.ProgressStatus.NotStarted
+                            current > it.endTime -> CourseRecordAndProgress.ProgressStatus.Completed
                             else -> CourseRecordAndProgress.ProgressStatus.InProgress
                         },
-                        date,
-                        start,
-                        end
+                        start = it.startTime,
+                        end = it.endTime,
                     )
                 },
                 progress = progress,

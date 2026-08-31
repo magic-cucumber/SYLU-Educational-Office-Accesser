@@ -22,9 +22,13 @@ import kotlin.uuid.Uuid
 
 class CourseExportCalenderModel(
     database: AppDatabase
-) : BaseViewModel<CourseExportCalenderState, CourseExportCalenderSideEffect>(name = "CourseExportCalenderModel", initial = CourseExportCalenderState("即将开始导出...")) {
+) : BaseViewModel<CourseExportCalenderState, CourseExportCalenderSideEffect>(
+    name = "CourseExportCalenderModel",
+    initial = CourseExportCalenderState("即将开始导出...")
+) {
     private val dao = database.courseRecordDao()
-    override suspend fun Syntax<CourseExportCalenderState, CourseExportCalenderSideEffect>.init() = Unit
+    override suspend fun Syntax<CourseExportCalenderState, CourseExportCalenderSideEffect>.init() =
+        Unit
 
     @OptIn(OrbitExperimental::class, ExperimentalUuidApi::class)
     fun exportCalender(manager: CalendarManager) = intent {
@@ -44,7 +48,8 @@ class CourseExportCalenderModel(
         calendar.transaction {
             val events = calendar.getEvents(
                 start = schoolCalender.start.atTime(LocalTime.fromSecondOfDay(0)),
-                end = schoolCalender.end.plus(1, DateTimeUnit.DAY).atTime(LocalTime.fromSecondOfDay(0))
+                end = schoolCalender.end.plus(1, DateTimeUnit.DAY)
+                    .atTime(LocalTime.fromSecondOfDay(0))
             )
             events.mapNotNull { it.id }.forEach { delete(it) }
         }
@@ -87,23 +92,24 @@ class CourseExportCalenderModel(
                     .plus(weekIdx, DateTimeUnit.WEEK)
                     .plus(dayIdx, DateTimeUnit.DAY)
 
-                startDate to dao.getCoursesWithRecordInfo(
-                    weekNumber = weekIdx + 1,
-                    dayOfWeek = dayIdx + 1
+                dao.getCoursesWithRecordInfo(
+                    start = startDate.atTime(0, 0),
+                    end = startDate.plus(1, DateTimeUnit.DAY).atTime(0, 0)
                 )
             }
         }.awaitAll()
 
         val events = withContext(Dispatchers.Default) {
-            dayCourses.flatMap { (startDate, courses) ->
+            dayCourses.flatMap { courses ->
                 courses.map { course ->
-                    val (startTime, endTime) = getTimeByLessonNumber(course.record.periodOfDay)
+                    val startTime = course.record.startTime
+                    val endTime = course.record.endTime
 
                     Event(
                         id = Uuid.random().toHexString(),
                         title = course.course.name,
-                        startTime = startDate.atTime(startTime),
-                        endTime = startDate.atTime(endTime),
+                        startTime = startTime,
+                        endTime = endTime,
                         description = """
                             1. 任课教师: ${course.course.teacherName}
                             2. 课程属性: ${if (course.course.isDegreeRequired) "必修" else "选修"}
@@ -129,7 +135,12 @@ class CourseExportCalenderModel(
                 create(event)
             }
         }
-        postSideEffect(CourseExportCalenderSideEffect.NavigateBack("导出成功", SnackBarType.Success))
+        postSideEffect(
+            CourseExportCalenderSideEffect.NavigateBack(
+                "导出成功",
+                SnackBarType.Success
+            )
+        )
     }
 }
 

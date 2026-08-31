@@ -25,10 +25,13 @@ import kotlin.time.Duration.Companion.minutes
 
 class CourseExportIcsModel(
     database: AppDatabase
-) : BaseViewModel<CourseExportIcsState, CourseIcsExportSideEffect>(name = "CourseExportIcsModel", initial = CourseExportIcsState("正在导出...")) {
+) : BaseViewModel<CourseExportIcsState, CourseIcsExportSideEffect>(
+    name = "CourseExportIcsModel",
+    initial = CourseExportIcsState("正在导出...")
+) {
     private val dao = database.courseRecordDao()
     override suspend fun Syntax<CourseExportIcsState, CourseIcsExportSideEffect>.init() {
-            exportICS().join()
+        exportICS().join()
     }
 
     @OptIn(OrbitExperimental::class)
@@ -52,9 +55,13 @@ class CourseExportIcsModel(
             viewModelScope.async {
                 (1..7).map { dayOfWeek ->
                     async {
+                        val startDate = calendar.start
+                            .plus(weekNumber, DateTimeUnit.WEEK)
+                            .plus(dayOfWeek, DateTimeUnit.DAY)
+
                         dao.getCoursesWithRecordInfo(
-                            weekNumber = weekNumber,
-                            dayOfWeek = dayOfWeek
+                            start = startDate.atTime(0, 0),
+                            end = startDate.plus(1, DateTimeUnit.DAY).atTime(0, 0)
                         )
                     }
                 }.awaitAll()
@@ -67,14 +74,12 @@ class CourseExportIcsModel(
 
         val ics = suspendCancellableCoroutine { continuation ->
             ics {
-                for ((weekIdx, weekCourses) in map.withIndex()) {
-                    for ((dayOfWeek, dayCourses) in weekCourses.withIndex()) {
-                        val startDate = calendar.start
-                            .plus(weekIdx, DateTimeUnit.WEEK)
-                            .plus(dayOfWeek, DateTimeUnit.DAY)
+                for (weekCourses in map) {
+                    for (dayCourses in weekCourses) {
 
                         for (course in dayCourses) {
-                            val (startTime, endTime) = getTimeByLessonNumber(course.record.periodOfDay)
+                            val startTime = course.record.startTime
+                            val endTime = course.record.endTime
 
                             event {
                                 summary(course.course.name)
@@ -88,8 +93,8 @@ class CourseExportIcsModel(
                                     """.trimIndent()
                                 )
 
-                                startTime(startDate.atTime(startTime))
-                                endTime(startDate.atTime(endTime))
+                                startTime(startTime)
+                                endTime(endTime)
 
                                 alarm {
                                     action(AlarmAction.AUDIO)

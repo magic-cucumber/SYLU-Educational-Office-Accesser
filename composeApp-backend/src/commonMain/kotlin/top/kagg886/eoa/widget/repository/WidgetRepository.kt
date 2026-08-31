@@ -14,8 +14,6 @@ import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.util.asTaggedLogger
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.dataPath
-import top.kagg886.util.getPeriodNumber
-import top.kagg886.util.getTimeByLessonNumber
 
 /**
  * 小组件数据仓库，封装数据库访问逻辑
@@ -31,8 +29,9 @@ class WidgetRepository(private val database: AppDatabase) {
      */
     @Throws(IllegalStateException::class)
     suspend fun getTodayCourses(): List<TodayClass> = withContext(Dispatchers.IO) {
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        logger.i("getTodayCourses start, now=$today, timezone=${TimeZone.currentSystemDefault()}, dataPath=$dataPath, databasePath=$databasePath")
+        val timeZone = TimeZone.currentSystemDefault()
+        val today = Clock.System.now().toLocalDateTime(timeZone)
+        logger.i("getTodayCourses start, now=$today, timezone=$timeZone, dataPath=$dataPath, databasePath=$databasePath")
 
         val profile = AppSyncMMKV.profile
         val picker = AppSyncMMKV.picker
@@ -67,17 +66,17 @@ class WidgetRepository(private val database: AppDatabase) {
             }
         }
 
-        //获取今天的课表计划
-        logger.i("query course plan: weekNumber=$currentWeek, dayOfWeek=${today.dayOfWeek.isoDayNumber}")
+        // 查询今天零点至次日零点的全部课程，包含当前正在进行的课程。
+        val startOfDay = today.date.atTime(0, 0)
+        val endOfDay = today.date.plus(1, DateTimeUnit.DAY).atTime(0, 0)
+        logger.i("query course plan: weekNumber=$currentWeek, range=$startOfDay..$endOfDay")
         val plan = courseRecordDao.getCoursesWithRecordInfo(
-            weekNumber = currentWeek,
-            dayOfWeek = today.dayOfWeek.isoDayNumber,
+            start = startOfDay,
+            end = endOfDay,
         )
         logger.i(
             "query course plan result: count=${plan.size}, " +
-                    "records=${
-                        plan.take(5).joinToString { "${it.course.name}#${it.record.id}@period${it.record.periodOfDay}" }
-                    }"
+                    "records=${plan.take(5)}"
         )
 
         if (plan.isEmpty()) {
@@ -85,44 +84,100 @@ class WidgetRepository(private val database: AppDatabase) {
             logger.w("course plan is empty for today, totalCourseRecordCount=$allRecordCount")
             throw IllegalStateException("今日无课程!")
         }
-        //将课表计划和课表信息合并
-        val period = today.time.getPeriodNumber()
-        logger.i("current period=$period, currentTime=${today.time}")
-        val progress = period?.let {
-            val (start, end) = getTimeByLessonNumber(it)
-            val all = end.toSecondOfDay() - start.toSecondOfDay()
-            val current = today.time.toSecondOfDay() - start.toSecondOfDay()
-            current.toFloat() / all.toFloat()
-        }
 
-        plan
+        val now = today.toInstant(timeZone).toEpochMilliseconds()
+
+        val result = plan
+            // 将课程计划转换为当天课程对象
             .map { (course, record) ->
                 TodayClass(
-                    weekNumber = currentWeek,
                     name = course.name,
                     teacher = course.teacherName,
                     location = course.classroomName,
-                    date = getTimeByLessonNumber(record.periodOfDay),
+                    date = record.startTime to record.endTime,
                     recordId = record.id!!,
                     courseId = course.id!!,
-                    period = record.periodOfDay,
-                    progress = if (period == record.periodOfDay) progress else null
                 )
             }
-            .groupBy { it.date }
-            .map { (_, classes) ->
-                if (classes.size == 1) {
-                    classes.single()
-                } else {
-                    val sample = classes.first()
-                    sample.copy(
-                        name = "冲突课程 (${classes.size}) 门",
-                        teacher = "",
-                        location = "",
-                        conflict = true
-                    )
-                }
+            // 将每门课程展开为开始、结束两个扫描事件
+            .flatMap { course ->
+                listOf(
+                    course.date.first to (EventType.START to course),
+                    course.date.second to (EventType.END to course),
+                )
             }
+            // 将同一时间发生的扫描事件聚合到一起
+            .groupBy(
+                keySelector = { it.first },
+                valueTransform = { it.second },
+            )
+            // 转为惰性序列
+            .asSequence()
+            // 沿时间轴扫描，并维护当前正在进行的课程
+            .runningFold(SweepState()) { state, (time, events) ->
+                SweepState(
+                    time = time,
+                    active = buildSet {
+                        addAll(state.active)
+
+                        // 移除当前时间点结束的课程
+                        events
+                            .asSequence()
+                            .filter { it.first == EventType.END }
+                            .map { it.second }
+                            .forEach(::remove)
+
+                        // 加入当前时间点开始的课程
+                        events
+                            .asSequence()
+                            .filter { it.first == EventType.START }
+                            .map { it.second }
+                            .forEach(::add)
+                    },
+                )
+            }
+            // 将相邻扫描状态组合成时间区间
+            .zipWithNext()
+            // 转换为最终课程区间
+            .mapNotNull { (previous, current) ->
+                val start = previous.time ?: return@mapNotNull null
+                val end = current.time ?: return@mapNotNull null
+
+                previous.active
+                    .takeIf { it.isNotEmpty() && start < end }
+                    ?.let { active ->
+                        val startMillis = start.toInstant(timeZone).toEpochMilliseconds()
+                        val endMillis = end.toInstant(timeZone).toEpochMilliseconds()
+
+                        val progress = now
+                            .takeIf { it in startMillis..<endMillis }
+                            ?.let {
+                                (it - startMillis).toFloat() /
+                                        (endMillis - startMillis).toFloat()
+                            }
+
+                        active.first().let { sample ->
+                            if (active.size == 1) {
+                                sample.copy(
+                                    date = start to end,
+                                    progress = progress,
+                                )
+                            } else {
+                                sample.copy(
+                                    name = "冲突课程 (${active.size}) 门",
+                                    teacher = "",
+                                    location = "",
+                                    date = start to end,
+                                    progress = progress,
+                                    conflict = true,
+                                )
+                            }
+                        }
+                    }
+            }
+            // 收集结果
+            .toList()
+        result
     }
 
     suspend fun log(severity: Severity, tag: String, msg: String, e: Throwable? = null) = logDao.insert(
@@ -137,15 +192,22 @@ class WidgetRepository(private val database: AppDatabase) {
 }
 
 data class TodayClass(
-    val weekNumber: Int,
     val recordId: Long,
     val courseId: Long,
     val name: String,
     val teacher: String,
     val location: String,
-    val date: Pair<LocalTime, LocalTime>,
-    val period: Int,
+    val date: Pair<LocalDateTime, LocalDateTime>,
 
     val progress: Float? = null,
     val conflict: Boolean = false,
+)
+
+private enum class EventType {
+    START,END
+}
+
+private data class SweepState(
+    val time: LocalDateTime? = null,
+    val active: Set<TodayClass> = emptySet(),
 )

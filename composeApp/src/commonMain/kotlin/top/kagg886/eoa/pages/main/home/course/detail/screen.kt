@@ -103,11 +103,11 @@ private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) 
         }
 
         CourseDetailState.Loading -> {
-            CourseDetailScreenSuccess(null,rootModifier)
+            CourseDetailScreenSuccess(null, rootModifier)
         }
 
         is CourseDetailState.Success -> {
-            CourseDetailScreenSuccess(state,rootModifier)
+            CourseDetailScreenSuccess(state, rootModifier)
         }
     }
 }
@@ -120,22 +120,25 @@ private fun CourseDetailScreenSuccess(
     val design = currentLayoutType()
     when (design) {
         NavigationSuiteType.NavigationBar -> {
-            CourseDetailPanelPhone(state,modifier)
+            CourseDetailPanelPhone(state, modifier)
         }
 
         NavigationSuiteType.NavigationRail -> {
-            CourseDetailPanelTablet(state,modifier)
+            CourseDetailPanelTablet(state, modifier)
         }
 
         NavigationSuiteType.NavigationDrawer -> {
-            CourseDetailPanelTablet(state,modifier)
+            CourseDetailPanelTablet(state, modifier)
         }
     }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseDetailPanelPhone(state: CourseDetailState.Success?,modifier: Modifier = Modifier) {
+private fun CourseDetailPanelPhone(
+    state: CourseDetailState.Success?,
+    modifier: Modifier = Modifier
+) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
@@ -166,7 +169,10 @@ private fun CourseDetailPanelPhone(state: CourseDetailState.Success?,modifier: M
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseDetailPanelTablet(state: CourseDetailState.Success?,modifier: Modifier = Modifier) {
+private fun CourseDetailPanelTablet(
+    state: CourseDetailState.Success?,
+    modifier: Modifier = Modifier
+) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
@@ -329,7 +335,11 @@ private fun CourseDetails(
 
             DetailItem("教师", state?.entity?.teacherName ?: "", visible)
             DetailItem("学分", state?.entity?.credits?.toString() ?: "", visible)
-            DetailItem("自定义课程",  if (state?.entity?.isUserAdded == true) "是" else "否", visible)
+            DetailItem(
+                "自定义课程",
+                if (state?.entity?.isUserAdded == true) "是" else "否",
+                visible
+            )
 
         }
     }
@@ -444,7 +454,7 @@ private fun ClassUnitData(
         },
         headlineContent = {
             Text(
-                record?.date.toString(),
+                record?.start?.date.toString(),
                 modifier = Modifier.placeholder(
                     visible = visible,
                     highlight = PlaceholderHighlight.shimmer()
@@ -453,7 +463,7 @@ private fun ClassUnitData(
         },
         supportingContent = {
             Text(
-                "${record?.start.toString()} - ${record?.start.toString()}",
+                "${record?.start?.time.toString()} - ${record?.end?.time.toString()}",
                 modifier = Modifier.placeholder(
                     visible = visible,
                     highlight = PlaceholderHighlight.shimmer()
