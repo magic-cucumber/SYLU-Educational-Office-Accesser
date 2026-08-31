@@ -17,6 +17,7 @@ desugar_jdk_libs = "2.1.5"
 filekitCore = "0.15.0"
 glance = "1.1.1"
 kermit = "2.1.0"
+kmp-zip = "0.15.0"
 kolorPicker = "2.1.0"
 koogAgents = "1.1.1"
 kotlin = "2.4.10"
@@ -78,6 +79,8 @@ desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 filekit-dialog = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekitCore" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+kmp-zip = { module = "no.synth:kmp-zip", version.ref = "kmp-zip" }
+kmp-zip-okio = { module = "no.synth:kmp-zip-okio", version.ref = "kmp-zip" }
 kolor-picker = { module = "com.kborowy:kolor-picker", version.ref = "kolorPicker" }
 koog-agents = { module = "ai.koog:koog-agents", version.ref = "koogAgents" }
 kotlin-compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
