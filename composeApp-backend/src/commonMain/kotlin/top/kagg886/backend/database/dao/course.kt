@@ -22,13 +22,13 @@ data class CourseEntity(
 @ColumnTypeConverters(TimeConverter::class)
 interface CourseDao {
     /**
-     * 此清理函数会输入校历的起点和终点（此范围下称本学期），然后会清理非本学期的所有课程。
-     * 由于课程本身不涉及到时间信息（时间信息在course-record表中），因此需要联表来筛选 **全部** 不在本学期的course-record并删除。
-     * 换言之，只要record有一个在本学期内，就不执行删除操作。
+     * 清理校历范围外的所有课程，以及校历范围内的非自定义课程。
+     * 最终仅保留至少有一条记录位于校历范围内的自定义课程。
      */
     @Query("""
         DELETE FROM courses
-        WHERE NOT EXISTS (
+        WHERE isUserAdded = 0
+           OR NOT EXISTS (
             SELECT 1
             FROM course_records
             WHERE course_records.courseId = courses.id

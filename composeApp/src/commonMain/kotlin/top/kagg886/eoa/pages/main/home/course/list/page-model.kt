@@ -164,7 +164,7 @@ class CoursePageViewModel(
     }
 
     fun navigateToCourseDetail(it: TodayClass.Single) = intent {
-        postSideEffect(CoursePageSideEffect.NavigateToCourseDetail(it.courseId))
+        postSideEffect(CoursePageSideEffect.NavigateToCourseDetail(it.recordId))
     }
 
     fun navigateToConflictDetail(startTime: LocalDateTime,endTime: LocalDateTime) = intent {
