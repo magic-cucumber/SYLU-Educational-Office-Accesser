@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -27,8 +28,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.format
-import kotlinx.datetime.format.char
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.compose.collectAsState
@@ -39,6 +38,7 @@ import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
+import top.kagg886.eoa.pages.main.home.course.detail.sharedBoundsKey
 import top.kagg886.eoa.pages.main.home.summary.TodayClass
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
@@ -47,7 +47,6 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
-import kotlin.random.Random
 
 @Composable
 fun CoursePageListScreen(index: Int, courseListState: CourseListState.DataAccessible) {
@@ -60,7 +59,7 @@ fun CoursePageListScreen(index: Int, courseListState: CourseListState.DataAccess
     model.collectSideEffect {
         when (it) {
             is CoursePageSideEffect.NavigateToCourseDetail -> {
-                nav.navigate(CourseDetailRoute(it.recordId))
+                nav.navigate(it.route)
             }
 
             is CoursePageSideEffect.NavigateToConflictDetail -> {
@@ -124,9 +123,16 @@ private fun CoursePageScreenContent(
         is CoursePageState.Loading -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.width(16.dp))
-                    Text("正在加载课表，请稍等。")
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.dp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "正在加载课表，请稍等。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -199,7 +205,7 @@ private fun CoursePageScreenSuccess(
                 }
             }
 
-            HorizontalDivider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = DividerAlpha))
 
             Row {
                 TimeAxis(
@@ -229,18 +235,18 @@ private fun CoursePageScreenSuccess(
 
 @Composable
 private fun MonthHeader(month: Int, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.padding(4.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(8.dp),
-        tonalElevation = 1.dp
-    ) {
-        Box(contentAlignment = Alignment.Center) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            shape = RoundedCornerShape(10.dp)
+        ) {
             Text(
                 text = "${month}月",
-                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                maxLines = 1
             )
         }
     }
@@ -253,36 +259,44 @@ private fun DayHeader(
     isCurrentDay: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier.padding(4.dp),
-        color = if (isCurrentDay) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        contentColor = if (isCurrentDay) {
-            MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
-        shape = RoundedCornerShape(8.dp),
-        tonalElevation = if (isCurrentDay) 3.dp else 1.dp
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Text(
+            text = dayOfWeekName(dayOfWeek),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isCurrentDay) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            maxLines = 1
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isCurrentDay) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        Color.Transparent
+                    }
+                ),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = date.format(OnlyMonthAndDayFormat),
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = dayOfWeekName(dayOfWeek),
+                text = date.day.toString(),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (isCurrentDay) FontWeight.Bold else FontWeight.Normal,
+                color = if (isCurrentDay) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
                 maxLines = 1
             )
         }
@@ -296,12 +310,13 @@ private fun TimeAxis(range: TimelineRange, modifier: Modifier = Modifier) {
             Text(
                 text = minute.toTimeLabel(),
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = range.offsetOf(minute) + TimeLabelTopPadding),
+                    .align(Alignment.TopEnd)
+                    .offset(y = range.offsetOf(minute) + TimeLabelTopPadding)
+                    .padding(end = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 maxLines = 1,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.End
             )
         }
     }
@@ -322,7 +337,7 @@ private fun DayTimeline(
     Box(
         modifier = modifier.background(
             if (isCurrentDay) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
             } else {
                 Color.Transparent
             }
@@ -331,14 +346,15 @@ private fun DayTimeline(
         VerticalDivider(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .fillMaxHeight()
+                .fillMaxHeight(),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = DividerAlpha)
         )
         for (minute in range.hourMarks) {
             HorizontalDivider(
                 modifier = Modifier
                     .offset(y = range.offsetOf(minute))
                     .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = DividerAlpha)
             )
         }
         for (course in sortedCourses) {
@@ -373,30 +389,36 @@ private fun CourseCalendarCard(
     modifier: Modifier = Modifier
 ) {
     val single = course as? TodayClass.Single
-    val recordId = single?.recordId
-    val colorSeed = single?.name.orEmpty().hashCode()
-    val colorScheme = MaterialTheme.colorScheme
-    val containerColor = remember(course, useNightMode, colorScheme) {
-        when {
-            course is TodayClass.Conflict -> colorScheme.errorContainer
-            !useNightMode -> Color.hsv(
-                hue = Random(colorSeed).nextInt(36000) / 100f,
-                saturation = 0.1412f,
-                value = 1f
-            )
-            else -> Color.hsv(
-                hue = Random(colorSeed).nextInt(36000) / 100f,
-                saturation = 0.3038f,
-                value = 0.3039f
-            )
-        }
+    val route = single?.let {
+        CourseDetailRoute(
+            recordId = it.recordId,
+            source = "list",
+            startTime = it.date.first,
+            endTime = it.date.second,
+        )
     }
-    val shape = RoundedCornerShape(8.dp)
+    val sharedBoundsKey = route?.sharedBoundsKey
+    val colorSeed = single?.name.orEmpty().hashCode()
+    val pastel = remember(colorSeed, useNightMode) {
+        coursePastelOf(colorSeed, useNightMode)
+    }
+    val isConflict = course is TodayClass.Conflict
+    val containerColor = if (isConflict) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        pastel.container
+    }
+    val contentColor = if (isConflict) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        pastel.content
+    }
+    val shape = RoundedCornerShape(10.dp)
     val cardModifier = modifier
-        .applyIf(recordId != null) {
+        .applyIf(sharedBoundsKey) { key ->
             shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(
-                    key = "list-course-to-detail-$recordId"
+                    key = key
                 ),
                 animatedVisibilityScope = LocalAnimatedContentScope.current
             )
@@ -404,11 +426,14 @@ private fun CourseCalendarCard(
         .clip(shape)
         .clickable(onClick = onClick)
 
-    ElevatedCard(
+    Card(
         modifier = cardModifier,
         shape = shape,
-        colors = CardDefaults.elevatedCardColors(containerColor = containerColor),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         val progress = course.progress.collectAsState(null).value
         progress?.let {
@@ -416,13 +441,15 @@ private fun CourseCalendarCard(
                 progress = { it.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.dp)
+                    .height(3.dp),
+                color = contentColor,
+                trackColor = contentColor.copy(alpha = 0.15f)
             )
         }
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 4.dp, vertical = 3.dp),
+                .padding(horizontal = 5.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -432,6 +459,7 @@ private fun CourseCalendarCard(
                 },
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
+                color = contentColor,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -441,7 +469,7 @@ private fun CourseCalendarCard(
                 Text(
                     text = course.location,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = contentColor.copy(alpha = 0.75f),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -449,6 +477,35 @@ private fun CourseCalendarCard(
             }
         }
     }
+}
+
+private data class CoursePastel(val container: Color, val content: Color)
+
+private val LightCoursePalette = listOf(
+    CoursePastel(Color(0xFFFDE7E9), Color(0xFF7E4A51)), // 玫瑰
+    CoursePastel(Color(0xFFFDEEE0), Color(0xFF7A5638)), // 杏子
+    CoursePastel(Color(0xFFFAF3D7), Color(0xFF6B5E33)), // 柠檬
+    CoursePastel(Color(0xFFE3F3E6), Color(0xFF3F6B4C)), // 薄荷
+    CoursePastel(Color(0xFFE2EFFA), Color(0xFF3E5F7A)), // 天空
+    CoursePastel(Color(0xFFEDE9F9), Color(0xFF5B5286)), // 薰衣草
+    CoursePastel(Color(0xFFF9E8F2), Color(0xFF7A4A6B)), // 樱花
+    CoursePastel(Color(0xFFE0F4F1), Color(0xFF356860)), // 青碧
+)
+
+private val DarkCoursePalette = listOf(
+    CoursePastel(Color(0xFF4A3136), Color(0xFFF3C9CE)), // 玫瑰
+    CoursePastel(Color(0xFF47382B), Color(0xFFF1D3B8)), // 杏子
+    CoursePastel(Color(0xFF453F2A), Color(0xFFEDE3B4)), // 柠檬
+    CoursePastel(Color(0xFF2C4032), Color(0xFFBFDFC6)), // 薄荷
+    CoursePastel(Color(0xFF2A3A48), Color(0xFFC3D9EC)), // 天空
+    CoursePastel(Color(0xFF393550), Color(0xFFD8D1F2)), // 薰衣草
+    CoursePastel(Color(0xFF452F3D), Color(0xFFEDC9DF)), // 樱花
+    CoursePastel(Color(0xFF27403C), Color(0xFFBFE3DD)), // 青碧
+)
+
+private fun coursePastelOf(seed: Int, dark: Boolean): CoursePastel {
+    val palette = if (dark) DarkCoursePalette else LightCoursePalette
+    return palette[(seed and Int.MAX_VALUE) % palette.size]
 }
 
 private data class TimelineRange(
@@ -500,12 +557,6 @@ private fun dayOfWeekName(dayOfWeek: Int): String = when (dayOfWeek) {
     else -> error("Invalid day of week: $dayOfWeek")
 }
 
-private val OnlyMonthAndDayFormat = LocalDate.Format {
-    monthNumber()
-    char('-')
-    day()
-}
-
 private const val MinutesPerHour = 60
 private const val DefaultStartMinute = 8 * MinutesPerHour
 private const val DefaultEndMinute = 22 * MinutesPerHour
@@ -513,5 +564,6 @@ private const val DefaultEndMinute = 22 * MinutesPerHour
 private val CalendarHeaderHeight = 64.dp
 private val MinuteHeight = 1.2.dp
 private val TimeLabelTopPadding = 4.dp
-private val CourseHorizontalPadding = 2.dp
+private val CourseHorizontalPadding = 3.dp
 private val CourseVerticalPadding = 1.dp
+private const val DividerAlpha = 0.5f

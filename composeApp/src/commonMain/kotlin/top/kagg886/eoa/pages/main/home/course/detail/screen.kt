@@ -2,7 +2,6 @@ package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,12 +17,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -41,11 +40,26 @@ import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
-import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
 
 @Serializable
-data class CourseDetailRoute(val recordId: Long)
+data class CourseDetailRoute(
+    val recordId: Long,
+    val type: String? = null,
+)
+
+fun CourseDetailRoute(
+    recordId: Long,
+    source: String,
+    startTime: LocalDateTime,
+    endTime: LocalDateTime,
+) = CourseDetailRoute(
+    recordId = recordId,
+    type = "$source-$startTime-$endTime",
+)
+
+val CourseDetailRoute.sharedBoundsKey: String?
+    get() = type?.let { "$it-course-to-detail-$recordId" }
 
 
 @Composable
@@ -71,27 +85,23 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
         }
     }
 
-    CourseDetailScreenContent(state, route.recordId)
+    CourseDetailScreenContent(state, route)
 }
 
 @Composable
-private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) {
-    val rootModifier = Modifier.shareBoundsComposed(
-        sharedContentState = rememberSharedContentState(
-            key = "summary-course-to-detail-$recordId"
-        ),
-        animatedVisibilityScope = LocalAnimatedContentScope.current,
-        resizeMode = RemeasureToBounds,
-        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-    )
-        .shareBoundsComposed(
-            sharedContentState = rememberSharedContentState(
-                key = "list-course-to-detail-$recordId"
-            ),
-            animatedVisibilityScope = LocalAnimatedContentScope.current,
-            resizeMode = RemeasureToBounds,
-            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-        )
+private fun CourseDetailScreenContent(state: CourseDetailState, route: CourseDetailRoute) {
+    val sharedBoundsKey = route.sharedBoundsKey
+    val rootModifier = Modifier
+        .applyIf(sharedBoundsKey) { key ->
+            shareBoundsComposed(
+                sharedContentState = rememberSharedContentState(
+                    key = key
+                ),
+                animatedVisibilityScope = LocalAnimatedContentScope.current,
+                resizeMode = RemeasureToBounds,
+                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+            )
+        }
 
     when (state) {
         is CourseDetailState.Failed -> {

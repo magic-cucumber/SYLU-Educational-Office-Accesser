@@ -9,14 +9,14 @@ import kotlinx.datetime.*
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
-import top.kagg886.backend.database.dao.CourseAndRecord
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.summary.TodayClass
 import kotlin.time.Clock
 
 class CoursePageViewModel(
     private val syncState: MainRouteViewState,
-    private val weekNumber: Int,
+    private val weekIndex: Int,
     database: AppDatabase
 ) : BaseViewModel<CoursePageState, CoursePageSideEffect>(
     name = "CoursePageViewModel",
@@ -61,8 +61,8 @@ class CoursePageViewModel(
     }
 
     fun setDataUnsafe() = intent {
-        val weekStartDate = AppSyncMMKV.calender!!.start.plus(weekNumber, DateTimeUnit.WEEK).atTime(0,0)
-        val weekEndDate = AppSyncMMKV.calender!!.start.plus(weekNumber+1, DateTimeUnit.WEEK).atTime(0,0)
+        val weekStartDate = AppSyncMMKV.calender!!.start.plus(weekIndex - 1, DateTimeUnit.WEEK).atTime(0,0)
+        val weekEndDate = AppSyncMMKV.calender!!.start.plus(weekIndex, DateTimeUnit.WEEK).atTime(0,0)
         courseRecordDao
             .getCoursesWithRecordInfoFlow(weekStartDate,weekEndDate)
             .flowOn(Dispatchers.IO)
@@ -155,7 +155,7 @@ class CoursePageViewModel(
                 reduce {
                     CoursePageState.Success(
                         thisWeekStartDate = AppSyncMMKV.calender!!.start.plus(
-                            weekNumber - 1,
+                            weekIndex - 1,
                             DateTimeUnit.WEEK
                         ),
                         currentWeekCourse = data,
@@ -166,7 +166,16 @@ class CoursePageViewModel(
     }
 
     fun navigateToCourseDetail(it: TodayClass.Single) = intent {
-        postSideEffect(CoursePageSideEffect.NavigateToCourseDetail(it.recordId))
+        postSideEffect(
+            CoursePageSideEffect.NavigateToCourseDetail(
+                CourseDetailRoute(
+                    recordId = it.recordId,
+                    source = "list",
+                    startTime = it.date.first,
+                    endTime = it.date.second,
+                )
+            )
+        )
     }
 
     fun navigateToConflictDetail(startTime: LocalDateTime,endTime: LocalDateTime) = intent {
@@ -188,7 +197,7 @@ sealed interface CoursePageState {
 }
 
 sealed interface CoursePageSideEffect {
-    data class NavigateToCourseDetail(val recordId: Long) : CoursePageSideEffect
+    data class NavigateToCourseDetail(val route: CourseDetailRoute) : CoursePageSideEffect
     data class NavigateToConflictDetail(val startTime: LocalDateTime, val endTime: LocalDateTime) :
         CoursePageSideEffect
 }

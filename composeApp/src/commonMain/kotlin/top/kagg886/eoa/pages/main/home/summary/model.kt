@@ -10,6 +10,7 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
 import kotlin.time.Clock
@@ -238,7 +239,16 @@ class SummaryModel(
     fun redirectToCourse(it: TodayClass) = intent {
         when (it) {
             is TodayClass.Single -> {
-                postSideEffect(SummarySideEffect.NavigateToCourseInfo(it.recordId))
+                postSideEffect(
+                    SummarySideEffect.NavigateToCourseInfo(
+                        CourseDetailRoute(
+                            recordId = it.recordId,
+                            source = "summary",
+                            startTime = it.date.first,
+                            endTime = it.date.second,
+                        )
+                    )
+                )
             }
 
             is TodayClass.Conflict -> {
@@ -288,7 +298,7 @@ sealed interface SummaryState {
 
 sealed interface SummarySideEffect {
     data class NavigateToCourseInfo(
-        val courseId: Long,
+        val route: CourseDetailRoute,
     ) : SummarySideEffect
 
     data class NavigateToConflictInfo(val startTime: LocalDateTime, val endTime: LocalDateTime) :
