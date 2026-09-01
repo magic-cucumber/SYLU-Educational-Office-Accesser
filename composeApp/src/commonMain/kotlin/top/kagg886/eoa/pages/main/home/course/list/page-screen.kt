@@ -189,7 +189,7 @@ private fun CoursePageScreenSuccess(
     modifier: Modifier = Modifier
 ) {
     var timelineScale by remember {
-        mutableFloatStateOf(MinTimelineScale)
+        mutableFloatStateOf(HalfHourScale)
     }
 
     val transformableState = rememberTransformableState {
@@ -253,6 +253,8 @@ private fun CoursePageScreenSuccess(
                     }
                 }
             }
+
+            .verticalScroll(scrollState)
             // 移动端双指捏合。
             //
             // canPan = false 很重要：
@@ -262,8 +264,6 @@ private fun CoursePageScreenSuccess(
                 canPan = { false },
                 lockRotationOnZoomPan = true
             )
-
-            .verticalScroll(scrollState)
 
             .miuiLongShotSupport(
                 enabled = longShotEnabled,
@@ -905,13 +905,13 @@ private const val DefaultEndMinute =
 /*
  * 时间轴缩放：
  *
- * 1x -> 60 分钟刻度
- * 2x -> 30 分钟刻度
- * 3x -> 15 分钟刻度
+ * 0.5x -> 60 分钟刻度
+ * 1x -> 30 分钟刻度
+ * 2x -> 15 分钟刻度
  */
-private const val MinTimelineScale = 1f
-private const val HalfHourScale = 2f
-private const val MaxTimelineScale = 3f
+private const val MinTimelineScale = 0.5f
+private const val HalfHourScale = 1f
+private const val MaxTimelineScale = 2f
 
 /*
  * 避免浮点数刚好为 2.999999 时
@@ -920,9 +920,9 @@ private const val MaxTimelineScale = 3f
 private const val ScaleThresholdEpsilon = 0.001f
 
 /*
- * Shift + 每个滚轮事件缩放约 10%。
+ * Shift + 每个滚轮事件缩放约 5%。
  */
-private const val MouseWheelZoomStep = 1.1f
+private const val MouseWheelZoomStep = 1.05f
 
 private val CalendarHeaderHeight = 64.dp
 
@@ -933,7 +933,7 @@ private val CalendarHeaderHeight = 64.dp
  * 2x = 2.4dp/min
  * 3x = 3.6dp/min
  */
-private val BaseMinuteHeight = 1.2.dp
+private val BaseMinuteHeight = 2.4.dp
 
 private val TimeLabelTopPadding = 4.dp
 private val CourseHorizontalPadding = 3.dp
