@@ -42,6 +42,7 @@ include(":widgetApp")
 include(":eoa-lib:network-core")
 include(":eoa-lib:network-html-api")
 include(":eoa-lib:network-test-api")
+include(":eoa-lib:network-graduate-api")
 include(":second-class")
 include(":util")
 
