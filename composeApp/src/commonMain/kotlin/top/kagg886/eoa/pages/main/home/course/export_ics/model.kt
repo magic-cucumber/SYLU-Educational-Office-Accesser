@@ -41,32 +41,10 @@ class CourseExportIcsModel(
         }
         val calendar = AppSyncMMKV.calender!!
 
-        val (isInHoliday, isBeforeInTerm, weekNumber) = calendar.calculateWeekNumber()
-
-//        if (weekNumber == -1) {
-//            when {
-//                isInHoliday -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
-//                isBeforeInTerm -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("请等待开学后再进行导出"))
-//            }
-//            return@intent
-//        }
-
-        val map = (1..calendar.count()).map { weekNumber ->
-            viewModelScope.async {
-                (1..7).map { dayOfWeek ->
-                    async {
-                        val startDate = calendar.start
-                            .plus(weekNumber, DateTimeUnit.WEEK)
-                            .plus(dayOfWeek, DateTimeUnit.DAY)
-
-                        dao.getCoursesWithRecordInfo(
-                            start = startDate.atTime(0, 0),
-                            end = startDate.plus(1, DateTimeUnit.DAY).atTime(0, 0)
-                        )
-                    }
-                }.awaitAll()
-            }
-        }.awaitAll()
+        val map =  dao.getCoursesWithRecordInfo(
+            start = calendar.start.atTime(0, 0),
+            end = calendar.end.plus(1, DateTimeUnit.DAY).atTime(0, 0)
+        )
 
         reduce {
             CourseExportIcsState("正在构建ICS文件...")
@@ -74,34 +52,29 @@ class CourseExportIcsModel(
 
         val ics = suspendCancellableCoroutine { continuation ->
             ics {
-                for (weekCourses in map) {
-                    for (dayCourses in weekCourses) {
+                for (course in map) {
+                    val startTime = course.record.startTime
+                    val endTime = course.record.endTime
 
-                        for (course in dayCourses) {
-                            val startTime = course.record.startTime
-                            val endTime = course.record.endTime
-
-                            event {
-                                summary(course.course.name)
-                                location(course.course.classroomName)
-                                description(
-                                    """
+                    event {
+                        summary(course.course.name)
+                        location(course.course.classroomName)
+                        description(
+                            """
                                         1. 任课教师: ${course.course.teacherName}
                                         2. 课程属性: ${if (course.course.isDegreeRequired) "必修" else "选修"}
                                         3. 学分: ${course.course.credits}
                                         4. 属于系统课程: ${if (course.course.isUserAdded) "是" else "否"}
                                     """.trimIndent()
-                                )
+                        )
 
-                                startTime(startTime)
-                                endTime(endTime)
+                        startTime(startTime)
+                        endTime(endTime)
 
-                                alarm {
-                                    action(AlarmAction.AUDIO)
-                                    trigger(30.minutes)
-                                    description("${course.course.name} 即将开始")
-                                }
-                            }
+                        alarm {
+                            action(AlarmAction.AUDIO)
+                            trigger(30.minutes)
+                            description("${course.course.name} 即将开始")
                         }
                     }
                 }

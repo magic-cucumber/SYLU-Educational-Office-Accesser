@@ -61,16 +61,6 @@ class CourseExportCalenderModel(
         }
         logger.i("开始解析数据库")
 
-//        val (isInHoliday, isBeforeInTerm, weekNumber) = schoolCalender.calculateWeekNumber()
-//
-//        if (weekNumber == -1) {
-//            when {
-//                isInHoliday -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
-//                isBeforeInTerm -> postSideEffect(CourseExportCalenderSideEffect.NavigateBack("请等待开学后再进行导出"))
-//            }
-//            return@intent
-//        }
-
         reduce {
             CourseExportCalenderState(
                 message = "准备课程..."
@@ -78,47 +68,29 @@ class CourseExportCalenderModel(
         }
         logger.i("准备生成日历事件")
 
-        val days = (0 until schoolCalender.count()).flatMap { weekIdx ->
-            (0 until 7).map { dayIdx ->
-                weekIdx to dayIdx
-            }
-        }
-
-
-        //异步计算减少主线程压力
-        val dayCourses = days.map { (weekIdx, dayIdx) ->
-            viewModelScope.async(Dispatchers.IO) {
-                val startDate = schoolCalender.start
-                    .plus(weekIdx, DateTimeUnit.WEEK)
-                    .plus(dayIdx, DateTimeUnit.DAY)
-
-                dao.getCoursesWithRecordInfo(
-                    start = startDate.atTime(0, 0),
-                    end = startDate.plus(1, DateTimeUnit.DAY).atTime(0, 0)
-                )
-            }
-        }.awaitAll()
+        val courses = dao.getCoursesWithRecordInfo(
+            start = schoolCalender.start.atTime(0, 0),
+            end = schoolCalender.end.plus(1, DateTimeUnit.DAY).atTime(0, 0)
+        )
 
         val events = withContext(Dispatchers.Default) {
-            dayCourses.flatMap { courses ->
-                courses.map { course ->
-                    val startTime = course.record.startTime
-                    val endTime = course.record.endTime
+            courses.map { course ->
+                val startTime = course.record.startTime
+                val endTime = course.record.endTime
 
-                    Event(
-                        id = Uuid.random().toHexString(),
-                        title = course.course.name,
-                        startTime = startTime,
-                        endTime = endTime,
-                        description = """
+                Event(
+                    id = Uuid.random().toHexString(),
+                    title = course.course.name,
+                    startTime = startTime,
+                    endTime = endTime,
+                    description = """
                             1. 任课教师: ${course.course.teacherName}
                             2. 课程属性: ${if (course.course.isDegreeRequired) "必修" else "选修"}
                             3. 学分: ${course.course.credits}
                             4. 属于系统课程: ${if (course.course.isUserAdded) "是" else "否"}
                         """.trimIndent(),
-                        location = course.course.classroomName,
-                    )
-                }
+                    location = course.course.classroomName,
+                )
             }
         }
 

@@ -157,78 +157,297 @@ internal class TestEOAClient : EOAClient {
         config: ExamExportOptions
     ): ByteArray = byteArrayOf()
 
-    override suspend fun getClassTable(picker: TermPicker): ClassReturn {
-        return ClassReturn(
-            extend = listOf(),
-            tables = listOf(
-                ClassTable(
-                    name = "高等数学",
-                    teacher = "张教授",
-                    room = "教学楼A101",
-                    weekEachLesson = "1-16周",
-                    lesson = "1-2",
-                    dayInWeek = "1",
-                    score = "4.0",
-                    classType = "考试",
-                    _degreeProgram = "是"
-                ),
-                ClassTable(
-                    name = "线性代数",
-                    teacher = "李教授",
-                    room = "教学楼A102",
-                    weekEachLesson = "1-16周",
-                    lesson = "3-4",
-                    dayInWeek = "1",
-                    score = "3.0",
-                    classType = "考试",
-                    _degreeProgram = "是"
-                ),
-                ClassTable(
-                    name = "程序设计基础",
-                    teacher = "王教授",
-                    room = "计算机楼B201",
-                    weekEachLesson = "1-16周",
-                    lesson = "5-6",
-                    dayInWeek = "2",
-                    score = "3.5",
-                    classType = "考试",
-                    _degreeProgram = "是"
-                ),
-                ClassTable(
-                    name = "大学英语",
-                    teacher = "刘教授",
-                    room = "外语楼C301",
-                    weekEachLesson = "1-16周",
-                    lesson = "1-2",
-                    dayInWeek = "3",
-                    score = "2.0",
-                    classType = "考查",
-                    _degreeProgram = "否"
-                ),
-                ClassTable(
-                    name = "体育",
-                    teacher = "赵教练",
-                    room = "体育馆",
-                    weekEachLesson = "1-16周",
-                    lesson = "7-8",
-                    dayInWeek = "4",
-                    score = "1.0",
-                    classType = "考查",
-                    _degreeProgram = "否"
-                ),
-                ClassTable(
-                    name = "数据结构",
-                    teacher = "陈教授",
-                    room = "计算机楼B202",
-                    weekEachLesson = "1-16周",
-                    lesson = "3-4",
-                    dayInWeek = "5",
-                    score = "4.0",
-                    classType = "考试",
-                    _degreeProgram = "是"
-                )
-            )
+    override suspend fun getClassTable(picker: TermPicker, firstDay: LocalDate): ClassReturn {
+        data class Template(
+            val name: String,
+            val teacher: String,
+            val room: String,
+            val score: String,
+            val classType: String,
+            val isDegreeProgram: Boolean,
+            val dayOfWeek: Int,
+            val weeks: IntRange,
+            val periods: IntRange,
+        )
 
+        fun getTimeByLessonNumber(lessonNumber: Int): Pair<LocalTime, LocalTime> {
+            return when (lessonNumber) {
+                1 -> LocalTime.parse("08:00") to LocalTime.parse("08:45")
+                2 -> LocalTime.parse("08:55") to LocalTime.parse("09:40")
+                3 -> LocalTime.parse("10:00") to LocalTime.parse("10:45")
+                4 -> LocalTime.parse("10:55") to LocalTime.parse("11:40")
+                5 -> LocalTime.parse("13:00") to LocalTime.parse("13:45")
+                6 -> LocalTime.parse("13:55") to LocalTime.parse("14:40")
+                7 -> LocalTime.parse("14:50") to LocalTime.parse("15:35")
+                8 -> LocalTime.parse("15:45") to LocalTime.parse("16:30")
+                9 -> LocalTime.parse("16:40") to LocalTime.parse("17:25")
+                10 -> LocalTime.parse("17:35") to LocalTime.parse("18:20")
+                11 -> LocalTime.parse("19:30") to LocalTime.parse("20:15")
+                12 -> LocalTime.parse("20:25") to LocalTime.parse("21:10")
+                else -> error("no this class")
+            }
+        }
+
+        val templates = listOf(
+            // 星期一：一上午长课 + 多层嵌套冲突
+            Template(
+                name = "高等数学专题",
+                teacher = "张教授",
+                room = "教学楼A101",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                periods = 1..4,
+            ),
+            Template(
+                name = "学术讲座",
+                teacher = "王教授",
+                room = "报告厅",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                periods = 1..2,
+            ),
+            Template(
+                name = "线性代数",
+                teacher = "陈教授",
+                room = "教学楼A103",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                periods = 2..3,
+            ),
+            Template(
+                name = "数学建模",
+                teacher = "李教授",
+                room = "实验楼A202",
+                score = "2.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                periods = 3..4,
+            ),
+
+            // 星期二：一下午长课 + 复杂嵌套
+            Template(
+                name = "程序设计实践",
+                teacher = "王教授",
+                room = "计算机楼B201",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                periods = 5..10,
+            ),
+            Template(
+                name = "算法设计",
+                teacher = "刘教授",
+                room = "计算机楼B202",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                periods = 5..6,
+            ),
+            Template(
+                name = "数据结构实验",
+                teacher = "陈教授",
+                room = "实验室B301",
+                score = "2.0",
+                classType = "考查",
+                isDegreeProgram = true,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                periods = 6..8,
+            ),
+            Template(
+                name = "ACM训练",
+                teacher = "赵老师",
+                room = "机房B401",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                periods = 7..10,
+            ),
+            Template(
+                name = "软件工程讨论",
+                teacher = "孙教授",
+                room = "教学楼D102",
+                score = "2.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                periods = 8..9,
+            ),
+
+            // 星期三：完全重合
+            Template(
+                name = "大学英语",
+                teacher = "刘教授",
+                room = "外语楼C301",
+                score = "2.0",
+                classType = "考试",
+                isDegreeProgram = false,
+                dayOfWeek = 3,
+                weeks = 1..16,
+                periods = 1..2,
+            ),
+            Template(
+                name = "大学物理",
+                teacher = "周教授",
+                room = "理科楼C201",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 3,
+                weeks = 1..16,
+                periods = 1..2,
+            ),
+            Template(
+                name = "创新创业",
+                teacher = "杨老师",
+                room = "教学楼C105",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 3,
+                weeks = 1..16,
+                periods = 1..2,
+            ),
+
+            // 星期四：跨上午和下午的超长课程
+            Template(
+                name = "电子技术综合实验",
+                teacher = "吴教授",
+                room = "实验楼E301",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 4,
+                weeks = 1..16,
+                periods = 1..10,
+            ),
+            Template(
+                name = "体育",
+                teacher = "赵教练",
+                room = "体育馆",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 4,
+                weeks = 1..16,
+                periods = 3..4,
+            ),
+            Template(
+                name = "工程训练",
+                teacher = "郑老师",
+                room = "工程中心",
+                score = "2.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 4,
+                weeks = 1..16,
+                periods = 5..8,
+            ),
+            Template(
+                name = "就业指导",
+                teacher = "钱老师",
+                room = "教学楼E102",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 4,
+                weeks = 1..16,
+                periods = 9..10,
+            ),
+
+            // 星期五：错位交叉
+            Template(
+                name = "操作系统",
+                teacher = "徐教授",
+                room = "计算机楼F201",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                periods = 1..3,
+            ),
+            Template(
+                name = "数据库原理",
+                teacher = "高教授",
+                room = "计算机楼F203",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                periods = 2..4,
+            ),
+            Template(
+                name = "计算机网络",
+                teacher = "胡教授",
+                room = "计算机楼F202",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                periods = 3..5,
+            ),
+            Template(
+                name = "人工智能导论",
+                teacher = "林教授",
+                room = "计算机楼F301",
+                score = "2.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                periods = 11..12,
+            ),
+        )
+
+        val tables = templates.flatMap { template ->
+            template.weeks.map { weekNumber ->
+                val date = firstDay
+                    .plus(weekNumber - 1, DateTimeUnit.WEEK)
+                    .plus(template.dayOfWeek - 1, DateTimeUnit.DAY)
+
+                val startTime =
+                    getTimeByLessonNumber(template.periods.first).first
+
+                val endTime =
+                    getTimeByLessonNumber(template.periods.last).second
+
+                ClassTable(
+                    name = template.name,
+                    teacher = template.teacher,
+                    room = template.room,
+                    score = template.score,
+                    classType = template.classType,
+                    isDegreeProgram = template.isDegreeProgram,
+                    startTime = date.atTime(startTime),
+                    endTime = date.atTime(endTime),
+                )
+            }
+        }
+
+        return ClassReturn(
+            extend = emptyList(),
+            tables = tables,
         )
     }
 
