@@ -77,7 +77,7 @@ interface CourseRecordDao {
         
         FROM courses c
         JOIN course_records cr ON cr.courseId = c.id
-        WHERE cr.startTime >= :start AND cr.endTime <= :end
+        WHERE cr.startTime < :end AND cr.endTime > :start
         ORDER BY cr.startTime ASC
     """
     )
@@ -106,7 +106,7 @@ interface CourseRecordDao {
         
         FROM courses c
         JOIN course_records cr ON cr.courseId = c.id
-        WHERE cr.startTime >= :start AND cr.endTime <= :end
+        WHERE cr.startTime < :end AND cr.endTime > :start
         ORDER BY cr.startTime ASC
     """
     )

@@ -163,7 +163,8 @@ class SummaryModel(
                 keySelector = { it.first },
                 valueTransform = { it.second },
             )
-            .toSortedMap()
+            .entries
+            .sortedBy { it.key }
             .asSequence()
             .runningFold(SweepState()) { state, (time, events) ->
                 SweepState(

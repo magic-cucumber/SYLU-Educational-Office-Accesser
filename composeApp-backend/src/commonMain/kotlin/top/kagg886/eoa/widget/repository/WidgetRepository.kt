@@ -111,6 +111,8 @@ class WidgetRepository(private val database: AppDatabase) {
                 keySelector = { it.first },
                 valueTransform = { it.second },
             )
+            .entries
+            .sortedBy { it.key }
             // 转为惰性序列
             .asSequence()
             // 沿时间轴扫描，并维护当前正在进行的课程

@@ -95,6 +95,8 @@ class CoursePageViewModel(
                                 keySelector = { it.first },
                                 valueTransform = { it.second },
                             )
+                            .entries
+                            .sortedBy { it.key }
                             .asSequence()
                             .runningFold(SweepState()) { state, (time, events) ->
                                 SweepState(
