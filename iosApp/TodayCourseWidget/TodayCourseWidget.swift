@@ -218,7 +218,7 @@ private extension Kotlinx_datetimeLocalDateTime {
     var foundationDate: Date? {
         var components = DateComponents()
         components.year = Int(year)
-        components.month = Int(month.number)
+        components.month = Int(month.ordinal) + 1
         components.day = Int(day)
         components.hour = Int(hour)
         components.minute = Int(minute)
