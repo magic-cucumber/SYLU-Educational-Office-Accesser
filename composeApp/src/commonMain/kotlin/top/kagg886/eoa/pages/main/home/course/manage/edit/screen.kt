@@ -2,15 +2,18 @@
 
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -18,24 +21,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -52,6 +50,9 @@ import com.dokar.sonner.rememberToasterState
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.atTime
 import kotlinx.datetime.number
 import kotlinx.datetime.plus
 import kotlinx.serialization.Serializable
@@ -104,12 +105,9 @@ fun CourseEditScreen(route: CourseEditRoute) {
         snack = stack,
         onCourseModified = { model.modifyCourse(it) },
         onCourseInfoConfirmed = { model.confirmModifyCourse() },
-        onAddRecord = { weekNumber, dayOfWeek, periodOfDay ->
-            model.addRecord(
-                weekNumber,
-                dayOfWeek,
-                periodOfDay
-            )
+        onAddRecord = { model.addRecord(it) },
+        onUpdateRecord = { record, startTime, endTime ->
+            model.updateRecord(record, startTime, endTime)
         },
         onDeleteRecord = { model.deleteRecord(it) },
         onLLMKeySelected = { model.selectLLMKey(it) },
@@ -127,7 +125,8 @@ private fun CourseEditScreenContent(
     snack: ToasterState,
     onCourseModified: (CourseEntity) -> Unit,
     onCourseInfoConfirmed: () -> Unit,
-    onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
+    onAddRecord: (LocalDate) -> Unit,
+    onUpdateRecord: (CourseRecordEntity, LocalDateTime, LocalDateTime) -> Unit,
     onDeleteRecord: (CourseRecordEntity) -> Unit,
     onHelpClicked: () -> Unit,
     onLLMKeySelected: (LLMProviderEntity) -> Unit,
@@ -177,7 +176,7 @@ private fun CourseEditScreenContent(
                     if (state is CourseEditState.Success) {
                         IconButton(
                             onClick = onCourseInfoConfirmed,
-                            enabled = state.enableSaveButton
+                            enabled = state.canSave
                         ) {
                             Icon(Icons.Default.Save, "save")
                         }
@@ -242,7 +241,9 @@ private fun CourseEditScreenContent(
                                     startDate = state.startDate,
                                     allWeekNumber = state.allWeekNumber,
                                     records = state.recordInfo,
+                                    invalidRecordIds = state.invalidRecordIds,
                                     onAddRecord = onAddRecord,
+                                    onUpdateRecord = onUpdateRecord,
                                     onDeleteRecord = onDeleteRecord
                                 )
 
@@ -354,19 +355,27 @@ private fun CourseEditBasic(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseEditTime(
     startDate: LocalDate,
     allWeekNumber: Int,
     records: List<CourseRecordEntity>,
-    onAddRecord: (weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) -> Unit,
+    invalidRecordIds: Set<Long>,
+    onAddRecord: (LocalDate) -> Unit,
+    onUpdateRecord: (CourseRecordEntity, LocalDateTime, LocalDateTime) -> Unit,
     onDeleteRecord: (CourseRecordEntity) -> Unit,
 ) {
     val pageState = rememberPagerState(0) { allWeekNumber }
     val scope = rememberCoroutineScope()
+    var expandedDayOfWeek by remember { mutableStateOf<Int?>(null) }
+    var pickerRequest by remember { mutableStateOf<TimePickerRequest?>(null) }
 
-    Column {
-        // Week selector
+    LaunchedEffect(pageState.currentPage) {
+        expandedDayOfWeek = null
+    }
+
+    Column(Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -404,317 +413,299 @@ private fun CourseEditTime(
             }
         }
 
-        // Course timetable
+        if (invalidRecordIds.isNotEmpty()) {
+            Text(
+                text = "课程时间不能重叠，且结束时间必须晚于开始时间。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+
         HorizontalPager(
             state = pageState,
+            modifier = Modifier.weight(1f),
         ) { weekNumberIndex ->
-            val weekNumber = weekNumberIndex + 1
             val weekStartDate = startDate.plus(weekNumberIndex, DateTimeUnit.WEEK)
 
-            // 扫选模式状态：长按进入，扫过自动切换，松手退出
-            var sweepMode by remember { mutableStateOf(false) }
-            val sweptCells = remember { mutableSetOf<Pair<Int, Int>>() }
-            val cellBounds = remember { mutableMapOf<Pair<Int, Int>, Rect>() }
-            val rowLabelBounds = remember { mutableMapOf<Int, Rect>() }
-            var gridCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
-            val latestRecords by rememberUpdatedState(records)
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(
+                    items = (1..7).toList(),
+                    key = { it }
+                ) { dayOfWeek ->
+                    val date = weekStartDate.plus(dayOfWeek - 1, DateTimeUnit.DAY)
+                    val dayRecords = records
+                        .filter { it.startTime.date == date }
+                        .sortedBy { it.startTime }
 
-            // iOS 桌面编辑风格的抖动动画
-            val jiggleTransition = rememberInfiniteTransition(label = "sweepJiggle")
-            val jiggleAngle = jiggleTransition.animateFloat(
-                initialValue = -4f,
-                targetValue = 4f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(
-                        durationMillis = 110,
-                        easing = LinearEasing
-                    ),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "jiggleAngle"
-            )
-            // 命中测试并切换格子状态，一次扫选中每个格子只切换一次
-            fun toggleCellAt(position: Offset): Pair<Int, Int>? {
-                val rootPosition = gridCoordinates?.localToRoot(position) ?: return null
-                val cell = cellBounds.entries.firstOrNull { it.value.contains(rootPosition) }?.key
-                    ?: return null
-                if (!sweptCells.add(cell)) return cell
-                val (dayOfWeek, periodOfDay) = cell
-                val record = latestRecords.find {
-                    it.weekNumber == weekNumber &&
-                            it.dayOfWeek == dayOfWeek &&
-                            it.periodOfDay == periodOfDay
-                }
-                if (record != null) {
-                    onDeleteRecord(record)
-                } else {
-                    onAddRecord(weekNumber, dayOfWeek, periodOfDay)
-                }
-                return cell
-            }
-
-            // 长按周/节列时，反选当前行的全部格子
-            fun toggleRowAt(position: Offset): Boolean {
-                val rootPosition = gridCoordinates?.localToRoot(position) ?: return false
-                val periodOfDay = rowLabelBounds.entries
-                    .firstOrNull { it.value.contains(rootPosition) }
-                    ?.key
-                    ?: return false
-                val rowRecords = latestRecords.filter {
-                    it.weekNumber == weekNumber && it.periodOfDay == periodOfDay
-                }
-                for (dayOfWeek in 1..7) {
-                    val record = rowRecords.find { it.dayOfWeek == dayOfWeek }
-                    if (record != null) {
-                        onDeleteRecord(record)
-                    } else {
-                        onAddRecord(weekNumber, dayOfWeek, periodOfDay)
-                    }
-                }
-                return true
-            }
-
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                // Timetable grid
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .onGloballyPositioned { gridCoordinates = it }
-                        .pointerInput(weekNumber) {
-                            awaitEachGesture {
-                                val firstDown = awaitFirstDown(
-                                    requireUnconsumed = false,
-                                    pass = PointerEventPass.Initial
-                                )
-
-                                val slop = viewConfiguration.touchSlop
-
-                                /*
-                                 * 超时前：
-                                 * - 抬起：取消
-                                 * - 移动超过 touchSlop：取消
-                                 * - 始终保持按下直到超时：判定为长按
-                                 */
-                                val longPressed = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                    while (true) {
-                                        val event = awaitPointerEvent(PointerEventPass.Initial)
-                                        val change = event.changes.firstOrNull {
-                                            it.id == firstDown.id
-                                        } ?: return@withTimeoutOrNull false
-
-                                        if (!change.pressed || change.changedToUpIgnoreConsumed()) {
-                                            return@withTimeoutOrNull false
-                                        }
-
-                                        val offset = change.position - firstDown.position
-                                        if (offset.getDistanceSquared() > slop * slop) {
-                                            return@withTimeoutOrNull false
-                                        }
-                                    }
-
-                                    false
-                                } ?: true // 发生超时，说明长按成功
-
-                                if (!longPressed) {
-                                    return@awaitEachGesture
-                                }
-
-                                if (toggleRowAt(firstDown.position)) {
-                                    try {
-                                        while (true) {
-                                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                                            val change = event.changes.firstOrNull {
-                                                it.id == firstDown.id
-                                            } ?: break
-
-                                            if (!change.pressed || change.changedToUpIgnoreConsumed()) {
-                                                change.consume()
-                                                break
-                                            }
-
-                                            change.consume()
-                                        }
-                                    } finally {
-                                        sweepMode = false
-                                        sweptCells.clear()
-                                    }
-                                    return@awaitEachGesture
-                                }
-
-                                sweepMode = true
-                                sweptCells.clear()
-
-                                toggleCellAt(firstDown.position)
-
-                                var pointerId = firstDown.id
-                                try {
-                                    sweepLoop@ while (true) {
-                                        // 当前按压期间进行扫选，直到抬起
-                                        while (true) {
-                                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                                            val change = event.changes.firstOrNull {
-                                                it.id == pointerId
-                                            } ?: continue
-
-                                            if (!change.pressed || change.changedToUpIgnoreConsumed()) {
-                                                // 阻止 Checkbox 在抬起时触发点击
-                                                change.consume()
-                                                break
-                                            }
-
-                                            if (change.position != change.previousPosition) {
-                                                toggleCellAt(change.position)
-                                            }
-
-                                            change.consume()
-                                        }
-
-                                        /*
-                                         * 抬起后继续保持扫选模式。
-                                         * 500ms 内再次按下则继续，否则结束。
-                                         */
-                                        val nextDown = withTimeoutOrNull(500L) {
-                                            awaitFirstDown(
-                                                requireUnconsumed = false,
-                                                pass = PointerEventPass.Initial
-                                            )
-                                        } ?: break@sweepLoop
-
-                                        pointerId = nextDown.id
-
-                                        // 后续按下属于扫选模式，阻止 Checkbox 接收该按下事件
-                                        nextDown.consume()
-
-                                        // 再次按下时立即命中当前位置
-                                        toggleCellAt(nextDown.position)
-                                    }
-                                } finally {
-                                    sweepMode = false
-                                    sweptCells.clear()
-                                }
+                    CourseDayGroup(
+                        dayOfWeek = dayOfWeek,
+                        date = date,
+                        records = dayRecords,
+                        invalidRecordIds = invalidRecordIds,
+                        expanded = expandedDayOfWeek == dayOfWeek,
+                        onExpandedChange = {
+                            expandedDayOfWeek = if (expandedDayOfWeek == dayOfWeek) {
+                                null
+                            } else {
+                                dayOfWeek
                             }
-                        }
-                ) {
-                    // Table header row with day of week
-                    Row(Modifier.fillMaxWidth()) {
-                        // Empty cell for top-left corner
-                        Box(
-                            modifier = Modifier
-                                .weight(0.5f)
-                                .height(40.dp)
-                                .padding(1.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("周/节", style = MaterialTheme.typography.bodySmall)
-                        }
-
-                        // Day headers
-                        for (dayOfWeek in 1..7) {
-                            val currentDate = weekStartDate.plus(dayOfWeek - 1, DateTimeUnit.DAY)
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(40.dp)
-                                    .padding(1.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        "周${getDayOfWeekText(dayOfWeek)}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    Text(
-                                        "${currentDate.month.number}/${currentDate.day}",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Timetable rows
-                    Column(Modifier.fillMaxWidth().padding(top = 40.dp)) {
-                        for (periodOfDay in 1..12) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Period number
-                                Box(
-                                    modifier = Modifier
-                                        .weight(0.5f)
-                                        .height(40.dp)
-                                        .padding(1.dp)
-                                        .onGloballyPositioned {
-                                            rowLabelBounds[periodOfDay] = it.boundsInRoot()
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        "$periodOfDay",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-
-                                // Checkboxes for each day
-                                for (dayOfWeek in 1..7) {
-                                    // Check if this slot has a record
-                                    val hasRecord = records.any {
-                                        it.weekNumber == weekNumber &&
-                                                it.dayOfWeek == dayOfWeek &&
-                                                it.periodOfDay == periodOfDay
-                                    }
-
-                                    val record = records.find {
-                                        it.weekNumber == weekNumber &&
-                                                it.dayOfWeek == dayOfWeek &&
-                                                it.periodOfDay == periodOfDay
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(40.dp)
-                                            .padding(1.dp)
-                                            .onGloballyPositioned {
-                                                cellBounds[dayOfWeek to periodOfDay] =
-                                                    it.boundsInRoot()
-                                            }
-                                            .graphicsLayer {
-                                                val direction =
-                                                    if ((dayOfWeek + periodOfDay) % 2 == 0) 1f else -1f
-
-                                                rotationZ = if (sweepMode) {
-                                                    jiggleAngle.value * direction
-                                                } else {
-                                                    0f
-                                                }
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Checkbox(
-                                            checked = hasRecord,
-                                            onCheckedChange = { isChecked ->
-                                                if (isChecked) {
-                                                    onAddRecord(
-                                                        weekNumber,
-                                                        dayOfWeek,
-                                                        periodOfDay
-                                                    )
-                                                } else if (record != null) {
-                                                    onDeleteRecord(record)
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                        },
+                        onAddRecord = {
+                            expandedDayOfWeek = dayOfWeek
+                            onAddRecord(date)
+                        },
+                        onStartTimeClicked = {
+                            pickerRequest = TimePickerRequest(it, TimeField.Start)
+                        },
+                        onEndTimeClicked = {
+                            pickerRequest = TimePickerRequest(it, TimeField.End)
+                        },
+                        onDeleteRecord = onDeleteRecord,
+                    )
                 }
             }
         }
     }
+
+    pickerRequest?.let { request ->
+        val initialTime = when (request.field) {
+            TimeField.Start -> request.record.startTime.time
+            TimeField.End -> request.record.endTime.time
+        }
+        CourseTimePickerDialog(
+            title = if (request.field == TimeField.Start) "选择开始时间" else "选择结束时间",
+            initialTime = initialTime,
+            onDismissRequest = { pickerRequest = null },
+            onConfirm = { time ->
+                val date = request.record.startTime.date
+                when (request.field) {
+                    TimeField.Start -> onUpdateRecord(
+                        request.record,
+                        date.atTime(time),
+                        request.record.endTime,
+                    )
+
+                    TimeField.End -> onUpdateRecord(
+                        request.record,
+                        request.record.startTime,
+                        date.atTime(time),
+                    )
+                }
+                pickerRequest = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun CourseDayGroup(
+    dayOfWeek: Int,
+    date: LocalDate,
+    records: List<CourseRecordEntity>,
+    invalidRecordIds: Set<Long>,
+    expanded: Boolean,
+    onExpandedChange: () -> Unit,
+    onAddRecord: () -> Unit,
+    onStartTimeClicked: (CourseRecordEntity) -> Unit,
+    onEndTimeClicked: (CourseRecordEntity) -> Unit,
+    onDeleteRecord: (CourseRecordEntity) -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onExpandedChange)
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "周${getDayOfWeekText(dayOfWeek)}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "${date.month.number}月${date.day}日 · ${records.size} 条",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            IconButton(onClick = onAddRecord) {
+                Icon(Icons.Default.Add, contentDescription = "新增上课时间")
+            }
+
+            val rotation by animateFloatAsState(
+                targetValue = if (expanded) 180f else 0f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "course-time-expand-arrow"
+            )
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "收起" else "展开",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.rotate(rotation)
+            )
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                expandFrom = Alignment.Top
+            ) + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
+            exit = shrinkVertically(
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                shrinkTowards = Alignment.Top
+            ) + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, bottom = 12.dp)
+            ) {
+                if (records.isEmpty()) {
+                    Text(
+                        text = "暂无上课时间",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 10.dp)
+                    )
+                } else {
+                    records.forEach { record ->
+                        CourseTimeRecordItem(
+                            record = record,
+                            isError = record.id?.let { it in invalidRecordIds } == true,
+                            onStartTimeClicked = { onStartTimeClicked(record) },
+                            onEndTimeClicked = { onEndTimeClicked(record) },
+                            onDeleteRecord = { onDeleteRecord(record) },
+                        )
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider()
+    }
+}
+
+@Composable
+private fun CourseTimeRecordItem(
+    record: CourseRecordEntity,
+    isError: Boolean,
+    onStartTimeClicked: () -> Unit,
+    onEndTimeClicked: () -> Unit,
+    onDeleteRecord: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ReadOnlyTimeField(
+                label = "开始时间",
+                value = record.startTime.time.toDisplayText(),
+                isError = isError,
+                onClick = onStartTimeClicked,
+                modifier = Modifier.weight(1f),
+            )
+            ReadOnlyTimeField(
+                label = "结束时间",
+                value = record.endTime.time.toDisplayText(),
+                isError = isError,
+                onClick = onEndTimeClicked,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onDeleteRecord) {
+                Icon(Icons.Default.Delete, contentDescription = "删除上课时间")
+            }
+        }
+
+        if (isError) {
+            Text(
+                text = "该时间段无效或与其他条目重叠",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadOnlyTimeField(
+    label: String,
+    value: String,
+    isError: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            isError = isError,
+            label = { Text(label) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Box(
+            Modifier
+                .matchParentSize()
+                .clickable(onClick = onClick)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CourseTimePickerDialog(
+    title: String,
+    initialTime: LocalTime,
+    onDismissRequest: () -> Unit,
+    onConfirm: (LocalTime) -> Unit,
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialTime.hour,
+        initialMinute = initialTime.minute,
+        is24Hour = true,
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(title) },
+        text = {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TimePicker(state = state)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(LocalTime(state.hour, state.minute)) }) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+private data class TimePickerRequest(
+    val record: CourseRecordEntity,
+    val field: TimeField,
+)
+
+private enum class TimeField {
+    Start,
+    End,
+}
+
+private fun LocalTime.toDisplayText(): String {
+    return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

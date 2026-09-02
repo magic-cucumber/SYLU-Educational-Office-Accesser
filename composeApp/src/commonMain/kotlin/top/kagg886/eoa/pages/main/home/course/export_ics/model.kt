@@ -25,10 +25,13 @@ import kotlin.time.Duration.Companion.minutes
 
 class CourseExportIcsModel(
     database: AppDatabase
-) : BaseViewModel<CourseExportIcsState, CourseIcsExportSideEffect>(name = "CourseExportIcsModel", initial = CourseExportIcsState("正在导出...")) {
+) : BaseViewModel<CourseExportIcsState, CourseIcsExportSideEffect>(
+    name = "CourseExportIcsModel",
+    initial = CourseExportIcsState("正在导出...")
+) {
     private val dao = database.courseRecordDao()
     override suspend fun Syntax<CourseExportIcsState, CourseIcsExportSideEffect>.init() {
-            exportICS().join()
+        exportICS().join()
     }
 
     @OptIn(OrbitExperimental::class)
@@ -38,28 +41,10 @@ class CourseExportIcsModel(
         }
         val calendar = AppSyncMMKV.calender!!
 
-        val (isInHoliday, isBeforeInTerm, weekNumber) = calendar.calculateWeekNumber()
-
-//        if (weekNumber == -1) {
-//            when {
-//                isInHoliday -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("当前正在放假，不需要导出数据"))
-//                isBeforeInTerm -> postSideEffect(CourseIcsExportSideEffect.NavigateBack("请等待开学后再进行导出"))
-//            }
-//            return@intent
-//        }
-
-        val map = (1..calendar.count()).map { weekNumber ->
-            viewModelScope.async {
-                (1..7).map { dayOfWeek ->
-                    async {
-                        dao.getCoursesWithRecordInfo(
-                            weekNumber = weekNumber,
-                            dayOfWeek = dayOfWeek
-                        )
-                    }
-                }.awaitAll()
-            }
-        }.awaitAll()
+        val map =  dao.getCoursesWithRecordInfo(
+            start = calendar.start.atTime(0, 0),
+            end = calendar.end.plus(1, DateTimeUnit.DAY).atTime(0, 0)
+        )
 
         reduce {
             CourseExportIcsState("正在构建ICS文件...")
@@ -67,36 +52,29 @@ class CourseExportIcsModel(
 
         val ics = suspendCancellableCoroutine { continuation ->
             ics {
-                for ((weekIdx, weekCourses) in map.withIndex()) {
-                    for ((dayOfWeek, dayCourses) in weekCourses.withIndex()) {
-                        val startDate = calendar.start
-                            .plus(weekIdx, DateTimeUnit.WEEK)
-                            .plus(dayOfWeek, DateTimeUnit.DAY)
+                for (course in map) {
+                    val startTime = course.record.startTime
+                    val endTime = course.record.endTime
 
-                        for (course in dayCourses) {
-                            val (startTime, endTime) = getTimeByLessonNumber(course.record.periodOfDay)
-
-                            event {
-                                summary(course.course.name)
-                                location(course.course.classroomName)
-                                description(
-                                    """
+                    event {
+                        summary(course.course.name)
+                        location(course.course.classroomName)
+                        description(
+                            """
                                         1. 任课教师: ${course.course.teacherName}
                                         2. 课程属性: ${if (course.course.isDegreeRequired) "必修" else "选修"}
                                         3. 学分: ${course.course.credits}
                                         4. 属于系统课程: ${if (course.course.isUserAdded) "是" else "否"}
                                     """.trimIndent()
-                                )
+                        )
 
-                                startTime(startDate.atTime(startTime))
-                                endTime(startDate.atTime(endTime))
+                        startTime(startTime)
+                        endTime(endTime)
 
-                                alarm {
-                                    action(AlarmAction.AUDIO)
-                                    trigger(30.minutes)
-                                    description("${course.course.name} 即将开始")
-                                }
-                            }
+                        alarm {
+                            action(AlarmAction.AUDIO)
+                            trigger(30.minutes)
+                            description("${course.course.name} 即将开始")
                         }
                     }
                 }

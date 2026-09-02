@@ -32,6 +32,8 @@ kotlin {
                 api(libs.compose.foundation)
                 api(libs.kermit)
                 api(libs.okio)
+                implementation(libs.kmp.zip)
+                implementation(libs.kmp.zip.okio)
                 api(libs.ktor.client.logging)
                 api(libs.kotlinx.serialization.json)
                 api(libs.mkmb.core)

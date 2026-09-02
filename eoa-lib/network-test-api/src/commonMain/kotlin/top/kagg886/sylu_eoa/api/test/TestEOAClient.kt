@@ -152,86 +152,424 @@ internal class TestEOAClient : EOAClient {
         )
     }
 
+    private sealed interface Schedule {
+        data class Fixed(
+            val periods: IntRange,
+        ) : Schedule
+
+        /**
+         * 临时调课、讲座、实验等不遵循标准节次的课程。
+         */
+        data class Floating(
+            val startTime: LocalTime,
+            val endTime: LocalTime,
+        ) : Schedule
+    }
+
     override suspend fun getExamExportSink(
         term: Term,
         config: ExamExportOptions
     ): ByteArray = byteArrayOf()
+    override suspend fun getClassTable(
+        picker: TermPicker,
+        firstDay: LocalDate,
+    ): ClassReturn {
+        data class Template(
+            val name: String,
+            val teacher: String,
+            val room: String,
+            val score: String,
+            val classType: String,
+            val isDegreeProgram: Boolean,
+            val dayOfWeek: Int,
+            val weeks: IntRange,
+            val schedule: Schedule,
+        )
 
-    override suspend fun getClassTable(picker: TermPicker): ClassReturn {
-        return ClassReturn(
-            extend = listOf(),
-            tables = listOf(
-                ClassTable(
-                    name = "高等数学",
-                    teacher = "张教授",
-                    room = "教学楼A101",
-                    weekEachLesson = "1-16周",
-                    lesson = "1-2",
-                    dayInWeek = "1",
-                    score = "4.0",
-                    classType = "考试",
-                    _degreeProgram = "是"
+        fun getTimeByLessonNumber(
+            lessonNumber: Int,
+        ): Pair<LocalTime, LocalTime> =
+            when (lessonNumber) {
+                1 -> LocalTime.parse("08:00") to LocalTime.parse("08:45")
+                2 -> LocalTime.parse("08:55") to LocalTime.parse("09:40")
+                3 -> LocalTime.parse("10:00") to LocalTime.parse("10:45")
+                4 -> LocalTime.parse("10:55") to LocalTime.parse("11:40")
+
+                5 -> LocalTime.parse("13:00") to LocalTime.parse("13:45")
+                6 -> LocalTime.parse("13:55") to LocalTime.parse("14:40")
+                7 -> LocalTime.parse("14:50") to LocalTime.parse("15:35")
+                8 -> LocalTime.parse("15:45") to LocalTime.parse("16:30")
+                9 -> LocalTime.parse("16:40") to LocalTime.parse("17:25")
+                10 -> LocalTime.parse("17:35") to LocalTime.parse("18:20")
+
+                11 -> LocalTime.parse("19:30") to LocalTime.parse("20:15")
+                12 -> LocalTime.parse("20:25") to LocalTime.parse("21:10")
+
+                else -> error("No such lesson: $lessonNumber")
+            }
+
+        val templates = listOf(
+            /*
+             * 星期一
+             *
+             * 08:00 ───── 高数 ───── 09:40
+             *
+             *          10:00 ── 线代 ── 11:40
+             *
+             * 13:55 ─ 数据结构 ─ 15:35
+             *
+             *                16:10 ─ 学术讲座 ─ 17:30
+             */
+
+            Template(
+                name = "高等数学",
+                teacher = "张教授",
+                room = "教学楼A101",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(1..2),
+            ),
+            Template(
+                name = "线性代数",
+                teacher = "陈教授",
+                room = "教学楼A103",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(3..4),
+            ),
+            Template(
+                name = "数据结构",
+                teacher = "刘教授",
+                room = "计算机楼B202",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 1,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(6..7),
+            ),
+
+            // 隔周讲座，故意使用非标准节次。
+            Template(
+                name = "学术前沿讲座",
+                teacher = "王教授",
+                room = "报告厅",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 1,
+                weeks = 2..15,
+                schedule = Schedule.Floating(
+                    startTime = LocalTime.parse("16:10"),
+                    endTime = LocalTime.parse("17:30"),
                 ),
-                ClassTable(
-                    name = "线性代数",
-                    teacher = "李教授",
-                    room = "教学楼A102",
-                    weekEachLesson = "1-16周",
-                    lesson = "3-4",
-                    dayInWeek = "1",
-                    score = "3.0",
-                    classType = "考试",
-                    _degreeProgram = "是"
+            ),
+
+            /*
+             * 星期二
+             *
+             * 08:55 ─ 程序设计 ─ 10:45
+             *
+             *              10:30 ─ 软件工程讨论 ─ 11:50
+             *
+             * 13:00 ─ 算法设计 ─ 14:40
+             *
+             *                 15:45 ─ 实验 ─ 17:25
+             */
+
+            Template(
+                name = "程序设计",
+                teacher = "王教授",
+                room = "计算机楼B201",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(2..3),
+            ),
+
+            // 与程序设计末尾产生一点真实的调课冲突。
+            Template(
+                name = "软件工程讨论",
+                teacher = "孙教授",
+                room = "教学楼D102",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 2,
+                weeks = 4..12,
+                schedule = Schedule.Floating(
+                    startTime = LocalTime.parse("10:30"),
+                    endTime = LocalTime.parse("11:50"),
                 ),
-                ClassTable(
-                    name = "程序设计基础",
-                    teacher = "王教授",
-                    room = "计算机楼B201",
-                    weekEachLesson = "1-16周",
-                    lesson = "5-6",
-                    dayInWeek = "2",
-                    score = "3.5",
-                    classType = "考试",
-                    _degreeProgram = "是"
+            ),
+
+            Template(
+                name = "算法设计",
+                teacher = "刘教授",
+                room = "计算机楼B202",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 2,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(5..6),
+            ),
+            Template(
+                name = "数据结构实验",
+                teacher = "陈教授",
+                room = "实验室B301",
+                score = "2.0",
+                classType = "考查",
+                isDegreeProgram = true,
+                dayOfWeek = 2,
+                weeks = 1..14,
+                schedule = Schedule.Fixed(8..9),
+            ),
+
+            /*
+             * 星期三
+             *
+             * 上午稍微轻一些。
+             *
+             * 08:00 ─ 大学英语 ─ 09:40
+             *
+             *             10:55 ─ 大学物理 ─ 13:45
+             *
+             *                       14:50 ─ 创新创业 ─ 16:10
+             *
+             * 19:30 ─ ACM训练 ─ 21:10
+             */
+
+            Template(
+                name = "大学英语",
+                teacher = "周老师",
+                room = "外语楼C301",
+                score = "2.0",
+                classType = "考试",
+                isDegreeProgram = false,
+                dayOfWeek = 3,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(1..2),
+            ),
+
+            // 从上午后段延续到下午第一节，制造更明显的时间错落。
+            Template(
+                name = "大学物理",
+                teacher = "周教授",
+                room = "理科楼C201",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 3,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(4..5),
+            ),
+
+            Template(
+                name = "创新创业",
+                teacher = "杨老师",
+                room = "教学楼C105",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 3,
+                weeks = 3..12,
+                schedule = Schedule.Floating(
+                    startTime = LocalTime.parse("14:50"),
+                    endTime = LocalTime.parse("16:10"),
                 ),
-                ClassTable(
-                    name = "大学英语",
-                    teacher = "刘教授",
-                    room = "外语楼C301",
-                    weekEachLesson = "1-16周",
-                    lesson = "1-2",
-                    dayInWeek = "3",
-                    score = "2.0",
-                    classType = "考查",
-                    _degreeProgram = "否"
+            ),
+
+            Template(
+                name = "ACM训练",
+                teacher = "赵老师",
+                room = "机房B401",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 3,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(11..12),
+            ),
+
+            /*
+             * 星期四
+             *
+             * 不再出现 1~10 节这种不真实超长课程。
+             *
+             * 08:00 ─ 电子技术 ─ 10:45
+             *
+             *              10:30 ─ 体育 ─ 11:50
+             *
+             * 13:55 ─ 工程训练 ─ 16:30
+             *
+             *                       17:00 ─ 就业指导 ─ 18:10
+             */
+
+            Template(
+                name = "电子技术",
+                teacher = "吴教授",
+                room = "教学楼E201",
+                score = "3.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 4,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(1..3),
+            ),
+
+            // 体育课时间通常比普通理论课更自由。
+            Template(
+                name = "体育",
+                teacher = "赵教练",
+                room = "体育馆",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 4,
+                weeks = 1..16,
+                schedule = Schedule.Floating(
+                    startTime = LocalTime.parse("10:30"),
+                    endTime = LocalTime.parse("11:50"),
                 ),
-                ClassTable(
-                    name = "体育",
-                    teacher = "赵教练",
-                    room = "体育馆",
-                    weekEachLesson = "1-16周",
-                    lesson = "7-8",
-                    dayInWeek = "4",
-                    score = "1.0",
-                    classType = "考查",
-                    _degreeProgram = "否"
+            ),
+
+            Template(
+                name = "工程训练",
+                teacher = "郑老师",
+                room = "工程中心",
+                score = "2.0",
+                classType = "考查",
+                isDegreeProgram = true,
+                dayOfWeek = 4,
+                weeks = 1..12,
+                schedule = Schedule.Fixed(6..8),
+            ),
+
+            Template(
+                name = "就业指导",
+                teacher = "钱老师",
+                room = "教学楼E102",
+                score = "1.0",
+                classType = "考查",
+                isDegreeProgram = false,
+                dayOfWeek = 4,
+                weeks = 6..14,
+                schedule = Schedule.Floating(
+                    startTime = LocalTime.parse("17:00"),
+                    endTime = LocalTime.parse("18:10"),
                 ),
+            ),
+
+            /*
+             * 星期五
+             *
+             * 08:55 ─ 操作系统 ─ 10:45
+             *
+             *                10:55 ─ 数据库 ─ 13:45
+             *
+             * 14:50 ─ 计算机网络 ─ 16:30
+             *
+             *                    17:20 ─ AI导论 ─ 18:35
+             */
+
+            Template(
+                name = "操作系统",
+                teacher = "徐教授",
+                room = "计算机楼F201",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(2..3),
+            ),
+
+            // 午前到午后的错落。
+            Template(
+                name = "数据库原理",
+                teacher = "高教授",
+                room = "计算机楼F203",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(4..5),
+            ),
+
+            Template(
+                name = "计算机网络",
+                teacher = "胡教授",
+                room = "计算机楼F202",
+                score = "4.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 1..16,
+                schedule = Schedule.Fixed(7..8),
+            ),
+
+            Template(
+                name = "人工智能导论",
+                teacher = "林教授",
+                room = "计算机楼F301",
+                score = "2.0",
+                classType = "考试",
+                isDegreeProgram = true,
+                dayOfWeek = 5,
+                weeks = 5..16,
+                schedule = Schedule.Floating(
+                    startTime = LocalTime.parse("17:20"),
+                    endTime = LocalTime.parse("18:35"),
+                ),
+            ),
+        )
+
+        val tables = templates.flatMap { template ->
+            template.weeks.map { weekNumber ->
+                val date = firstDay
+                    .plus(weekNumber - 1, DateTimeUnit.WEEK)
+                    .plus(template.dayOfWeek - 1, DateTimeUnit.DAY)
+
+                val (startTime, endTime) =
+                    when (val schedule = template.schedule) {
+                        is Schedule.Fixed -> {
+                            getTimeByLessonNumber(schedule.periods.first).first to
+                                    getTimeByLessonNumber(schedule.periods.last).second
+                        }
+
+                        is Schedule.Floating -> {
+                            schedule.startTime to schedule.endTime
+                        }
+                    }
+
                 ClassTable(
-                    name = "数据结构",
-                    teacher = "陈教授",
-                    room = "计算机楼B202",
-                    weekEachLesson = "1-16周",
-                    lesson = "3-4",
-                    dayInWeek = "5",
-                    score = "4.0",
-                    classType = "考试",
-                    _degreeProgram = "是"
+                    name = template.name,
+                    teacher = template.teacher,
+                    room = template.room,
+                    score = template.score,
+                    classType = template.classType,
+                    isDegreeProgram = template.isDegreeProgram,
+                    startTime = date.atTime(startTime),
+                    endTime = date.atTime(endTime),
                 )
-            )
+            }
+        }
 
+        return ClassReturn(
+            extend = emptyList(),
+            tables = tables,
         )
     }
-
     override suspend fun getGPAScores(): List<GPAScoreSummary> {
         return listOf(
             GPAScoreSummary(

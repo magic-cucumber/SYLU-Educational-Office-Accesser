@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Info
@@ -61,6 +62,11 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
     }
 
     val state by model.collectAsState()
+    val dataAccessibleState = state as? CourseListState.DataAccessible
+    val pagerState = dataAccessibleState?.state
+    val currentPage = pagerState?.currentPage
+    val allWeek = dataAccessibleState?.allWeek
+    val isCurrentTerm = state is CourseListState.Success
     val fabArrow = when (currentLayoutType()) {
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
@@ -72,27 +78,21 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
     HomeScreen(
         route = EOAHomeModule.COURSE,
         title = {
-            when (val it = state) {
-                is CourseListState.DataAccessible -> {
-                    val it = it.state.currentPage
-
-                    AnimatedContent(
-                        targetState = it,
-                        transitionSpec = createMenuButtonAnim { initialState > targetState }
-                    ) {
-                        Text(
-                            text = "第 ${it + 1} 周",
-                            modifier = Modifier.placeholder(
-                                visible = it == -1,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
+            if (currentPage != null) {
+                AnimatedContent(
+                    targetState = currentPage,
+                    transitionSpec = createMenuButtonAnim { initialState > targetState }
+                ) {
+                    Text(
+                        text = "第 ${it + 1} 周",
+                        modifier = Modifier.placeholder(
+                            visible = it == -1,
+                            highlight = PlaceholderHighlight.shimmer()
                         )
-                    }
+                    )
                 }
-
-                else -> {
-                    Text("课程表")
-                }
+            } else {
+                Text("课程表")
             }
         },
         menu = {
@@ -104,7 +104,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 onClick = {
                     iconExpanded = true
                 },
-                enabled = state is CourseListState.DataAccessible,
+                enabled = pagerState != null,
                 modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
                     Text("点这里可以刷新课表、回到本周，也可以快速跳到其他周。")
                 }
@@ -123,7 +123,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 ModalBottomSheet(
                     onDismissRequest = { jumpModal = false }
                 ) {
-                    val weeks = (state as? CourseListState.DataAccessible)?.allWeek ?: -1
+                    val weeks = allWeek ?: -1
                     if (weeks == -1) {
                         return@ModalBottomSheet
                     }
@@ -162,7 +162,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                     }
                 )
 
-                if (state is CourseListState.Success) {
+                if (isCurrentTerm) {
                     DropdownMenuItem(
                         text = {
                             Text("回到本周")
@@ -218,7 +218,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 is CourseListSideEffect.ScrollToCurrentWeek -> {
                     // 在 UI 层执行动画，这里已经有正确的 Compose 上下文
                     scope.launch {
-                        (state as? CourseListState.DataAccessible)?.state?.animateScrollToPage(it.page)
+                        pagerState?.animateScrollToPage(it.page)
                     }
                 }
             }
@@ -226,6 +226,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
 
         CourseListScreenContent(
             state = state,
+            onZoomChange = model::scaleBy,
         )
     }
 
@@ -234,6 +235,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
 @Composable
 private fun CourseListScreenContent(
     state: CourseListState,
+    onZoomChange: (Float) -> Unit,
 ) = when (state) {
     is CourseListState.Loading -> {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -246,7 +248,13 @@ private fun CourseListScreenContent(
     }
 
     is CourseListState.DataAccessible -> {
-        CourseDrawerContent(state)
+        val scale by state.scale.collectAsState()
+
+        CourseDrawerContent(
+            pagerState = state.state,
+            scale = scale,
+            onZoomChange = onZoomChange,
+        )
     }
 
     is CourseListState.Failed -> {
@@ -283,14 +291,20 @@ private fun CourseListScreenContent(
 }
 
 @Composable
-private fun CourseDrawerContent(state: CourseListState.DataAccessible) {
+private fun CourseDrawerContent(
+    pagerState: PagerState,
+    scale: Float,
+    onZoomChange: (Float) -> Unit,
+) {
     HorizontalPager(
-        state = state.state,
+        state = pagerState,
         modifier = Modifier.fillMaxSize(),
     ) {
         CoursePageListScreen(
             index = it,
-            courseListState = state,
+            isCurrentPage = pagerState.currentPage == it,
+            scale = scale,
+            onZoomChange = onZoomChange,
         )
     }
 }

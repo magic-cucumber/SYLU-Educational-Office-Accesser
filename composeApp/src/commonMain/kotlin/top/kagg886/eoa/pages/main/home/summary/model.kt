@@ -10,9 +10,9 @@ import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.util.calculateWeekNumber
 import top.kagg886.util.getPeriodNumber
-import top.kagg886.util.getTimeByLessonNumber
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.ExperimentalTime
@@ -20,57 +20,59 @@ import kotlin.time.ExperimentalTime
 class SummaryModel(
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : BaseViewModel<SummaryState, SummarySideEffect>(name = "SummaryModel", initial = SummaryState.Loading) {
+) : BaseViewModel<SummaryState, SummarySideEffect>(
+    name = "SummaryModel",
+    initial = SummaryState.Loading
+) {
     private val courseRecordDao = database.courseRecordDao()
     private val courseExtendDao = database.courseExtendDao()
 
     @OptIn(OrbitExperimental::class)
     override suspend fun Syntax<SummaryState, SummarySideEffect>.init() {
-            initData().join()
+        initData().join()
 
 
-            //进度监听。每分钟调度一次
-            intent {
-                while (true) {
-                    awaitRunOn<SummaryState.Success> {
-                        logger.i("refresh summary UI")
-                        val current = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time.toSecondOfDay()
-                        for (i in state.plan) {
-                            val start = i.date.first.toSecondOfDay()
-                            val end = i.date.second.toSecondOfDay()
-                            val progress = current.takeIf { current in start..end }?.let {
-                                val a = current - start
-                                val b = end - start
-                                a.toFloat() / b.toFloat()
-                            }
-                            val state = i.progress as MutableStateFlow<Float?>
-                            state.emit(progress)
-
-                            logger.d("summary UI refresh result: $i --> $progress")
-                        }
-                    }
-                    delay(1.minutes)
-                    logger.i("prepare for refresh summary UI")
-                }
-            }
-
-            //每日0:00刷新UI。
-            intent {
-                while (true) {
+        //进度监听。每分钟调度一次
+        intent {
+            while (true) {
+                awaitRunOn<SummaryState.Success> {
+                    logger.i("refresh summary UI")
                     val timeZone = TimeZone.currentSystemDefault()
-                    val now = Clock.System.now()
+                    val current = Clock.System.now().toEpochMilliseconds()
+                    for (i in state.plan) {
+                        val start = i.date.first.toInstant(timeZone).toEpochMilliseconds()
+                        val end = i.date.second.toInstant(timeZone).toEpochMilliseconds()
+                        val progress = current
+                            .takeIf { it in start..<end }
+                            ?.let { (it - start).toFloat() / (end - start).toFloat() }
+                        val state = i.progress as MutableStateFlow<Float?>
+                        state.emit(progress)
 
-                    val today = now.toLocalDateTime(timeZone).date
-                    val nextMidnight = today
-                        .plus(1, DateTimeUnit.DAY)
-                        .atStartOfDayIn(timeZone)
-
-                    delay(nextMidnight - now)
-
-                    reduce { SummaryState.Loading }
-                    initData().join()
+                        logger.d("summary UI refresh result: $i --> $progress")
+                    }
                 }
+                delay(1.minutes)
+                logger.i("prepare for refresh summary UI")
             }
+        }
+
+        //每日0:00刷新UI。
+        intent {
+            while (true) {
+                val timeZone = TimeZone.currentSystemDefault()
+                val now = Clock.System.now()
+
+                val today = now.toLocalDateTime(timeZone).date
+                val nextMidnight = today
+                    .plus(1, DateTimeUnit.DAY)
+                    .atStartOfDayIn(timeZone)
+
+                delay(nextMidnight - now)
+
+                reduce { SummaryState.Loading }
+                initData().join()
+            }
+        }
     }
 
     private fun initData() = intent {
@@ -129,20 +131,15 @@ class SummaryModel(
 
         //获取今天的课表计划
         val plan = courseRecordDao.getCoursesWithRecordInfo(
-            weekNumber = currentWeek,
-            dayOfWeek = today.dayOfWeek.isoDayNumber,
+            start = today.date.atTime(0, 0),
+            end = today.date.plus(1, DateTimeUnit.DAY).atTime(0, 0)
         )
 
         //将课表计划和课表信息合并
         val period = today.time.getPeriodNumber()
-        val progress = period?.let {
-            val (start, end) = getTimeByLessonNumber(it)
-            val all = end.toSecondOfDay() - start.toSecondOfDay()
-            val current = today.time.toSecondOfDay() - start.toSecondOfDay()
-            current.toFloat() / all.toFloat()
-        }
-
         val extendClass = courseExtendDao.all(currentWeek)
+        val timeZone = TimeZone.currentSystemDefault()
+        val now = today.toInstant(timeZone).toEpochMilliseconds()
 
         val plans: List<TodayClass> = plan
             .map { (course, record) ->
@@ -150,26 +147,80 @@ class SummaryModel(
                     name = course.name,
                     teacher = course.teacherName,
                     location = course.classroomName,
-                    date = getTimeByLessonNumber(record.periodOfDay),
+                    date = record.startTime to record.endTime,
                     recordId = record.id!!,
                     courseId = course.id!!,
-                    progress = MutableStateFlow(if (period == record.periodOfDay) progress else null),
                     isDegreeProgram = course.isDegreeRequired,
                     isExamine = course.isExaminable,
+                    fullDate = record.startTime to record.endTime,
                 )
             }
-            .groupBy { it.date }
-            .map { (_, classes) ->
-                if (classes.size == 1) {
-                    classes.single()
-                } else {
-                    TodayClass.Conflict(
-                        date = classes.first().date,
-                        progress = classes.first().progress,
-                        data = classes
-                    )
-                }
+            .flatMap { course ->
+                listOf(
+                    course.date.first to (EventType.START to course),
+                    course.date.second to (EventType.END to course),
+                )
             }
+            .groupBy(
+                keySelector = { it.first },
+                valueTransform = { it.second },
+            )
+            .entries
+            .sortedBy { it.key }
+            .asSequence()
+            .runningFold(SweepState()) { state, (time, events) ->
+                SweepState(
+                    time = time,
+                    active = buildSet {
+                        addAll(state.active)
+
+                        events
+                            .asSequence()
+                            .filter { it.first == EventType.END }
+                            .map { it.second }
+                            .forEach(::remove)
+
+                        events
+                            .asSequence()
+                            .filter { it.first == EventType.START }
+                            .map { it.second }
+                            .forEach(::add)
+                    },
+                )
+            }
+            .zipWithNext()
+            .mapNotNull { (previous, current) ->
+                val start = previous.time ?: return@mapNotNull null
+                val end = current.time ?: return@mapNotNull null
+
+                previous.active
+                    .takeIf { it.isNotEmpty() && start < end }
+                    ?.let { active ->
+                        val startMillis = start.toInstant(timeZone).toEpochMilliseconds()
+                        val endMillis = end.toInstant(timeZone).toEpochMilliseconds()
+                        val progress = now
+                            .takeIf { it in startMillis..<endMillis }
+                            ?.let {
+                                (it - startMillis).toFloat() /
+                                        (endMillis - startMillis).toFloat()
+                            }
+
+                        if (active.size == 1) {
+                            active.single().copy(
+                                date = start to end,
+                                progress = MutableStateFlow(progress),
+                            )
+                        } else {
+                            TodayClass.Conflict(
+                                date = start to end,
+                                progress = MutableStateFlow(progress),
+                                data = active.toList(),
+                            )
+                        }
+                    }
+            }
+            .toList()
+
         reduce {
             SummaryState.Success(
                 weekNumber = currentWeek,
@@ -189,16 +240,24 @@ class SummaryModel(
     fun redirectToCourse(it: TodayClass) = intent {
         when (it) {
             is TodayClass.Single -> {
-                postSideEffect(SummarySideEffect.NavigateToCourseInfo(it.recordId))
+                postSideEffect(
+                    SummarySideEffect.NavigateToCourseInfo(
+                        CourseDetailRoute(
+                            recordId = it.recordId,
+                            source = "summary",
+                            startTime = it.date.first,
+                            endTime = it.date.second,
+                        )
+                    )
+                )
             }
 
             is TodayClass.Conflict -> {
                 val sample = courseRecordDao.getById(it.data.first().recordId)
                 postSideEffect(
                     SummarySideEffect.NavigateToConflictInfo(
-                        weekNumber = sample.weekNumber,
-                        dayOfWeek = sample.dayOfWeek,
-                        periodOfDay = sample.periodOfDay
+                        startTime = sample.startTime,
+                        endTime = sample.endTime
                     )
                 )
             }
@@ -240,10 +299,18 @@ sealed interface SummaryState {
 
 sealed interface SummarySideEffect {
     data class NavigateToCourseInfo(
-        val courseId: Long,
+        val route: CourseDetailRoute,
     ) : SummarySideEffect
 
-    data class NavigateToConflictInfo(
-        val weekNumber: Int, val dayOfWeek: Int, val periodOfDay: Int
-    ) : SummarySideEffect
+    data class NavigateToConflictInfo(val startTime: LocalDateTime, val endTime: LocalDateTime) :
+        SummarySideEffect
 }
+
+private enum class EventType {
+    START, END
+}
+
+private data class SweepState(
+    val time: LocalDateTime? = null,
+    val active: Set<TodayClass.Single> = emptySet(),
+)

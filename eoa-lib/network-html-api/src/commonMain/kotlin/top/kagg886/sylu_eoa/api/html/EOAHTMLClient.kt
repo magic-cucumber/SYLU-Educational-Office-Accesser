@@ -12,9 +12,13 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.DateTimeUnit
 import kotlin.time.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import top.kagg886.sylu_eoa.api.html.config.BuildConfig
@@ -23,8 +27,10 @@ import top.kagg886.sylu_eoa.api.v2.*
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
+import kotlin.collections.flatMap
 import kotlin.properties.Delegates
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 internal class EOAHTMLClient : EOAClient {
     private var storage by Delegates.notNull<StorageCookieStorage>()
@@ -136,7 +142,7 @@ internal class EOAHTMLClient : EOAClient {
     override suspend fun login(captchaHandler: (suspend (ByteArray) -> String)?) =
         internalLogin(null, captchaHandler)
 
-    @OptIn(kotlin.time.ExperimentalTime::class)
+    @OptIn(ExperimentalTime::class)
     private suspend fun internalLogin(
         captcha: String? = null,
         captchaHandler: (suspend (ByteArray) -> String)? = null
@@ -282,7 +288,7 @@ internal class EOAHTMLClient : EOAClient {
         )
     }
 
-    @OptIn(kotlin.time.ExperimentalTime::class)
+    @OptIn(ExperimentalTime::class)
     override suspend fun getExamList(picker: TermPicker): List<ExamItem> {
 
         @Serializable
@@ -351,11 +357,66 @@ internal class EOAHTMLClient : EOAClient {
         return resp.body<ByteArray>()
     }
 
-    override suspend fun getClassTable(picker: TermPicker): ClassReturn {
+    override suspend fun getClassTable(picker: TermPicker, firstDay: LocalDate): ClassReturn {
         @Serializable
-        data class ClassUnitReturn(
-            val kbList: List<ClassTable>,
-            val sjkList: List<ClassExtend>,
+        data class InternalClassTable(
+            //名字
+            @SerialName("kcmc") val name: String,
+            //老师名字
+            @SerialName("xm") val teacher: String,
+            //房间
+            @SerialName("cdmc") val room: String,
+            //第几周有课
+            @SerialName("zcd") val weekEachLesson: String,
+            //节数
+            @SerialName("jcs") val lesson: String,
+            //星期几 1 2 3 4 5 6 7
+            @SerialName("xqj") val dayInWeek: String,
+
+            //学分
+            @SerialName("xf") val score: String,
+
+            //考察形式（考查，考试）
+            @SerialName("khfsmc") val classType: String,
+
+            @SerialName("zyhxkcbj") private val _degreeProgram: String,
+        ) {
+            val isDegreeProgram by lazy {
+                _degreeProgram == "是"
+            }
+
+            //1-2节
+            val rangeEveryDay by lazy {
+                val ls = lesson.split("-")
+                ((ls[0]).toInt()..(ls[1]).toInt()).toList()
+            }
+
+            //7周,9-11周(单),12-16周, 一定大于1。
+            val rangeAllTerm by lazy {
+                weekEachLesson.convertToWeekNumberArray()
+            }
+        }
+
+        @Serializable
+        data class InternalClassExtend(
+            @SerialName("qsjsz") private val weekEachLesson: String,
+            @SerialName("jsxm") val teacher: String,
+            @SerialName("kcmc") val name: String,
+            @SerialName("sfsjk") private val _otherClassFlag: String,
+        ) {
+            val rangeAllTerm by lazy {
+                weekEachLesson.convertToWeekNumberArray()
+            }
+
+            val isOther by lazy {
+                _otherClassFlag != "1"
+            }
+        }
+
+        @Serializable
+        data class InternalClassReturn(
+            val kbList: List<InternalClassTable>,
+            val sjkList: List<InternalClassExtend>,
         )
 
         val doc = client.submitForm(
@@ -366,15 +427,46 @@ internal class EOAHTMLClient : EOAClient {
                 this["kzlx"] = "ck"
                 this["xsdm"] = ""
             }
-        ).body<ClassUnitReturn>()
+        ).body<InternalClassReturn>()
+
+        val tables = doc.kbList.flatMap { i ->
+            i.rangeAllTerm.flatMap { weekNumber ->
+                i.rangeEveryDay.map { lessonNumber ->
+                    val time = getTimeByLessonNumber(lessonNumber)
+                    ClassTable(
+                        name = i.name,
+                        teacher = i.teacher,
+                        room = i.room,
+                        score = i.score,
+                        classType = i.classType,
+                        isDegreeProgram = i.isDegreeProgram,
+                        startTime = firstDay.plus(weekNumber-1, DateTimeUnit.WEEK).plus(i.dayInWeek.toInt() - 1, DateTimeUnit.DAY).atTime(time.first),
+                        endTime = firstDay.plus(weekNumber-1, DateTimeUnit.WEEK).plus(i.dayInWeek.toInt() - 1, DateTimeUnit.DAY).atTime(time.second),
+                    )
+                }
+            }
+        }
+
+        val extend = doc.sjkList.map {
+            ClassExtend(
+                teacher = it.teacher,
+                name = it.name,
+                isOther = it.isOther,
+                ranges = it.rangeAllTerm
+            )
+        }
 
         return ClassReturn(
-            extend = doc.sjkList,
-            tables = doc.kbList
+            extend, tables
         )
+
+//        return ClassReturn(
+//            extend = doc.sjkList,
+//            tables = doc.kbList
+//        )
     }
 
-    @OptIn(kotlin.time.ExperimentalTime::class)
+    @OptIn(ExperimentalTime::class)
     override suspend fun getGPAScores(): List<GPAScoreSummary> {
         @Serializable
         data class GPAScoreSummaryReturn(
@@ -410,7 +502,7 @@ internal class EOAHTMLClient : EOAClient {
         return doc.items
     }
 
-    @OptIn(kotlin.time.ExperimentalTime::class)
+    @OptIn(ExperimentalTime::class)
     override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
         @Serializable
         data class SystemNoticeReturn(
@@ -481,5 +573,39 @@ private class StorageCookieStorage(
         return cookies.get(requestUrl).ifEmpty {
             list[requestUrl.host] ?: emptyList()
         }
+    }
+}
+
+private fun String.convertToWeekNumberArray() = replace("周", "").split(",").map {
+    val a = it.substring(0, it.length)
+    if (!a.contains("-")) {
+        return@map listOf(a.toInt())
+    }
+    val range = a.split("-")
+
+    var end = range[1]
+    var step = 1
+    if (end.contains("(")) {
+        step = 2
+        end = end.substring(0, end.indexOf("("))
+    }
+    (range[0].toInt()..end.toInt() step step).toList()
+}.flatten()
+
+private fun getTimeByLessonNumber(dt: Int): Pair<LocalTime, LocalTime> {
+    return when (dt) {
+        1 -> LocalTime.parse("08:00") to LocalTime.parse("08:45")
+        2 -> LocalTime.parse("08:55") to LocalTime.parse("09:40")
+        3 -> LocalTime.parse("10:00") to LocalTime.parse("10:45")
+        4 -> LocalTime.parse("10:55") to LocalTime.parse("11:40")
+        5 -> LocalTime.parse("13:00") to LocalTime.parse("13:45")
+        6 -> LocalTime.parse("13:55") to LocalTime.parse("14:40")
+        7 -> LocalTime.parse("14:50") to LocalTime.parse("15:35")
+        8 -> LocalTime.parse("15:45") to LocalTime.parse("16:30")
+        9 -> LocalTime.parse("16:40") to LocalTime.parse("17:25")
+        10 -> LocalTime.parse("17:35") to LocalTime.parse("18:20")
+        11 -> LocalTime.parse("19:30") to LocalTime.parse("20:15")
+        12 -> LocalTime.parse("20:25") to LocalTime.parse("21:10")
+        else -> throw IllegalStateException("no this class")
     }
 }

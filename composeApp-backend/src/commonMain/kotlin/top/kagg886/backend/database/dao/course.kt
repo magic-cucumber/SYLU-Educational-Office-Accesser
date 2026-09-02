@@ -2,6 +2,9 @@ package top.kagg886.backend.database.dao
 
 import androidx.room3.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalDateTime
+import top.kagg886.backend.database.converters.SeverityConverter
+import top.kagg886.backend.database.converters.TimeConverter
 
 @Entity(tableName = "courses")
 data class CourseEntity(
@@ -12,29 +15,28 @@ data class CourseEntity(
     val credits: Float,
     val isDegreeRequired: Boolean,
     val isExaminable: Boolean,
-    val yearCode: String,
-    val semesterCode: String,
-
     val isUserAdded: Boolean = false
 )
 
 @Dao
+@ColumnTypeConverters(TimeConverter::class)
 interface CourseDao {
     /**
-     * xnm和xqm传当前的学期，会删除以下内容：
-     * 1. 学年名和学期名相同的非自定义课程
-     * 2. 学年名和学期名不相同的自定义课程
+     * 清理校历范围外的所有课程，以及校历范围内的非自定义课程。
+     * 最终仅保留至少有一条记录位于校历范围内的自定义课程。
      */
     @Query("""
         DELETE FROM courses
-        WHERE 
-        -- 情况1：非自定义且学年、学期匹配
-        (isUserAdded = 0 AND yearCode = :xnm AND semesterCode = :xqm)
-        OR
-        -- 情况2：自定义且学年或学期不匹配
-        (isUserAdded = 1 AND (yearCode != :xnm OR semesterCode != :xqm))
+        WHERE isUserAdded = 0
+           OR NOT EXISTS (
+            SELECT 1
+            FROM course_records
+            WHERE course_records.courseId = courses.id
+              AND course_records.startTime >= :start
+              AND course_records.endTime <= :end
+        )
     """)
-    suspend fun clear(xnm: String, xqm: String)
+    suspend fun clear(start: LocalDateTime,end: LocalDateTime)
 
     @Query("DELETE FROM courses")
     suspend fun clearAll()

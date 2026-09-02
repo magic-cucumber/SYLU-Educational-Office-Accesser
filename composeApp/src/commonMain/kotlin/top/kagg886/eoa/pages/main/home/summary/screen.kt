@@ -15,34 +15,25 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import co.touchlab.kermit.Logger
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.format
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -54,16 +45,15 @@ import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
-import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
+import top.kagg886.eoa.pages.main.home.course.detail.sharedBoundsKey
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeModel
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeRoute
 import top.kagg886.eoa.pages.main.home.notice.SystemNoticeState
-import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.pages.rootViewModel
@@ -111,11 +101,11 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
     model.collectSideEffect {
         when (it) {
             is SummarySideEffect.NavigateToCourseInfo -> {
-                nav.navigate(CourseDetailRoute(it.courseId))
+                nav.navigate(it.route)
             }
 
             is SummarySideEffect.NavigateToConflictInfo -> {
-                nav.navigate(CourseConflictRoute(it.weekNumber, it.dayOfWeek, it.periodOfDay))
+                nav.navigate(CourseConflictRoute(it.startTime, it.endTime))
             }
         }
     }
@@ -685,21 +675,33 @@ private fun CourseItem(
     onCourseItemClicked: (TodayClass) -> Unit,
 ) {
     val showPlaceHolder = course == null
-    val startTime = course?.date?.first?.toString() ?: "08:00"
-    val endTime = course?.date?.second?.toString() ?: "09:40"
+    val startTime =
+        course?.date?.first?.time?.format(LocalTime.Format { hour(); chars(":"); minute() }) ?: ""
+    val endTime =
+        course?.date?.second?.time?.format(LocalTime.Format { hour(); chars(":"); minute() }) ?: ""
+
     val courseName = when (course) {
         is TodayClass.Conflict -> "冲突课程 (${course.data.size}门)"
         is TodayClass.Single -> course.name
         null -> "课程名称"
     }
     val cardShape = RoundedCornerShape(8.dp)
+    val route = (course as? TodayClass.Single)?.let {
+        CourseDetailRoute(
+            recordId = it.recordId,
+            source = "summary",
+            startTime = it.date.first,
+            endTime = it.date.second,
+        )
+    }
+    val sharedBoundsKey = route?.sharedBoundsKey
 
     val cardModifier = modifier
         .fillMaxWidth()
-        .applyIf(course is TodayClass.Single) {
+        .applyIf(sharedBoundsKey) { key ->
             shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(
-                    key = "summary-course-to-detail-${(course as TodayClass.Single).recordId}"
+                    key = key
                 ),
                 animatedVisibilityScope = LocalAnimatedContentScope.current,
                 resizeMode = RemeasureToBounds,

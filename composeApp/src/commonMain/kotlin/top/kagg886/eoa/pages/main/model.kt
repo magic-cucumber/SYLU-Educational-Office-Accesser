@@ -16,6 +16,9 @@ import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
 import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
@@ -56,7 +59,11 @@ fun mainViewModelOrNull(): MainRouteViewModel? {
 }
 
 
-class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteViewState, MainRouteViewEffect>(name = "MainRouteViewModel", initial = MainRouteViewState.Empty) {
+class MainRouteViewModel(val database: AppDatabase) :
+    BaseViewModel<MainRouteViewState, MainRouteViewEffect>(
+        name = "MainRouteViewModel",
+        initial = MainRouteViewState.Empty
+    ) {
     private val syncDao = database.syncRecordDao()
     private val llmProviderDao = database.llmProviderDao()
 
@@ -91,17 +98,17 @@ class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteVie
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     override suspend fun Syntax<MainRouteViewState, MainRouteViewEffect>.init() {
-            val time = try {
-                syncDao.getLastSyncTime()
-            } catch (e: Exception) {
-                logger.w("获取同步时间出错：", e)
-                reduce {
-                    MainRouteViewState.SyncFailed(false, "数据库损坏，请删除数据库后重试")
-                }
-                return
+        val time = try {
+            syncDao.getLastSyncTime()
+        } catch (e: Exception) {
+            logger.w("获取同步时间出错：", e)
+            reduce {
+                MainRouteViewState.SyncFailed(false, "数据库损坏，请删除数据库后重试")
             }
-            logger.i("上次同步时间：${time}")
-            startSync().join()
+            return
+        }
+        logger.i("上次同步时间：${time}")
+        startSync().join()
     }
 
     fun startSync() = intent {
@@ -147,16 +154,23 @@ class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteVie
             )
         }
         val overviewId = overview.id ?: run {
-            postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Error, message = "无法生成检查点，请重试"))
+            postSideEffect(
+                MainRouteViewEffect.Toast(
+                    type = SnackBarType.Error,
+                    message = "无法生成检查点，请重试"
+                )
+            )
             return@intent
         }
         var checkpoint = syncDao.getCheckpointByOverviewId(overviewId) ?: run {
-            val checkpointId = syncDao.upsertCheckpoint(SyncCheckpointEntity(overviewId = overviewId)).toInt()
+            val checkpointId =
+                syncDao.upsertCheckpoint(SyncCheckpointEntity(overviewId = overviewId)).toInt()
             SyncCheckpointEntity(id = checkpointId, overviewId = overviewId)
         }
 
         suspend fun updateCheckpoint(block: (SyncCheckpointEntity) -> SyncCheckpointEntity) {
-            checkpoint = block(checkpoint).copy(updatedStamp = Clock.System.now().toEpochMilliseconds())
+            checkpoint =
+                block(checkpoint).copy(updatedStamp = Clock.System.now().toEpochMilliseconds())
             syncDao.updateCheckpoint(checkpoint)
         }
 
@@ -180,7 +194,14 @@ class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteVie
                     }
 
 
-                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(-1, -1)) }
+                    reduce {
+                        state.copy(
+                            progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(
+                                -1,
+                                -1
+                            )
+                        )
+                    }
                     // 考试详情数量不固定：第一次进入时把列表写入 payload，恢复时只处理 payload 中剩余条目。
                     if (!checkpoint.examSuccess) {
                         val examDao = database.examDao()
@@ -218,7 +239,14 @@ class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteVie
                         logger.i("考试信息已同步，跳过")
                     }
 
-                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(-1, -1)) }
+                    reduce {
+                        state.copy(
+                            progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(
+                                -1,
+                                -1
+                            )
+                        )
+                    }
                     // GPA 详情数量不固定：payload 保存剩余 summary，每个 summary 详情落库后再从 payload 删除。
                     if (!checkpoint.gpaSuccess) {
                         val gpa = database.gpaDao()
@@ -325,61 +353,86 @@ class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteVie
                     reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingCourseData) }
                     // 课程可按当前默认学期整体重建；完成标记前失败，下次会重新清理并重拉。
                     if (!checkpoint.courseSuccess) {
+                        val picker = AppSyncMMKV.picker!!
+                        val calendar = AppSyncMMKV.calender!!
                         val courseDao = database.courseDao()
                         val recordDao = database.courseRecordDao()
                         val courseExtendDao = database.courseExtendDao()
                         oldPicker?.default?.asTerm()?.run {
-                            courseDao.clear(xnm, xqm)
+                            courseDao.clear(
+                                calendar.start.atTime(0, 0),
+                                calendar.end.plus(1, DateTimeUnit.DAY).atTime(0, 0)
+                            )
                             courseExtendDao.clear(xnm, xqm)
                         }
 
-                        val (science, tables) = getClassTable(AppSyncMMKV.picker!!.default)
+                        val (science, tables) = getClassTable(
+                            AppSyncMMKV.picker!!.default,
+                            calendar.start
+                        )
 
                         courseExtendDao.insertAll(
                             science.flatMap {
-                                it.rangeAllTerm.map { weekNumber ->
-                                    with(AppSyncMMKV.picker!!.default.asTerm()) {
-                                        CourseExtendEntity(
-                                            name = it.name,
-                                            teacherName = it.teacher,
-                                            weekNumber = weekNumber,
-                                            yearCode = xnm,
-                                            semesterCode = xqm,
-                                        )
-                                    }
+                                it.ranges.map { week ->
+                                    CourseExtendEntity(
+                                        name = it.name,
+                                        teacherName = it.teacher,
+                                        weekNumber = week,
+                                        yearCode = picker.default.asTerm().xnm,
+                                        semesterCode = picker.default.asTerm().xqm,
+                                    )
                                 }
                             }
                         )
 
-                        for (i in tables) {
+                        for ((name, entity) in tables.groupBy { it.name }) {
+                            val i = entity.first()
                             val bindId = courseDao.insert(
-                                item = with(AppSyncMMKV.picker!!.default.asTerm()) {
-                                    CourseEntity(
-                                        name = i.name,
-                                        teacherName = i.teacher,
-                                        classroomName = i.room,
-                                        credits = i.score.toFloat(),
-                                        isDegreeRequired = i.isDegreeProgram,
-                                        isExaminable = i.classType == "考试",
-                                        yearCode = xnm,
-                                        semesterCode = xqm,
+                                item = CourseEntity(
+                                    name = name,
+                                    teacherName = i.teacher,
+                                    classroomName = i.room,
+                                    credits = i.score.toFloat(),
+                                    isDegreeRequired = i.isDegreeProgram,
+                                    isExaminable = i.classType == "考试",
+                                )
+                            )
+
+                            recordDao.insertAll(
+                                entity.map {
+                                    CourseRecordEntity(
+                                        courseId = bindId,
+                                        startTime = it.startTime,
+                                        endTime = it.endTime,
                                     )
                                 }
                             )
-                            val dayNumber = i.dayInWeek
-                            i.rangeAllTerm.forEach { weekNumber ->
-                                i.rangeEveryDay.forEach { lessonNumber ->
-                                    recordDao.insert(
-                                        CourseRecordEntity(
-                                            courseId = bindId,
-                                            weekNumber = weekNumber,
-                                            dayOfWeek = dayNumber.toInt(),
-                                            periodOfDay = lessonNumber
-                                        )
-                                    )
-                                }
-                            }
                         }
+//                        for (i in tables) {
+//                            val bindId = courseDao.insert(
+//                                item = CourseEntity(
+//                                    name = i.name,
+//                                    teacherName = i.teacher,
+//                                    classroomName = i.room,
+//                                    credits = i.score.toFloat(),
+//                                    isDegreeRequired = i.isDegreeProgram,
+//                                    isExaminable = i.classType == "考试",
+//                                )
+//                            )
+//                            val dayNumber = i.dayInWeek
+//                            i.rangeAllTerm.forEach { weekNumber ->
+//                                i.rangeEveryDay.forEach { lessonNumber ->
+//                                    recordDao.insert(
+//                                        CourseRecordEntity(
+//                                            courseId = bindId,
+//                                            weekNumber = weekNumber,
+//                                            dayOfWeek = dayNumber.toInt(),
+//                                            periodOfDay = lessonNumber
+//                                        )
+//                                    )
+//                                }
+//                            }
+//                        }
                         updateCheckpoint { it.copy(courseSuccess = true) }
                         logger.i("成功同步课程信息")
                     } else {

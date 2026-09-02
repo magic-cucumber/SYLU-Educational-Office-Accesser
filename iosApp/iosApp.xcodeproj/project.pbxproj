@@ -17,6 +17,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		5A0000010000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A93A952F29CC810C00F8E227 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5AC637732FC28E29002EDA6F;
+			remoteInfo = TodayCourseWidgetExtension;
+		};
 		5AC637812FC28E2A002EDA6F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A93A952F29CC810C00F8E227 /* Project object */;
@@ -218,6 +225,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				5A0000020000000000000002 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5ADD078D2F0F819700668CD4 /* ImageProcessing */,
@@ -391,6 +399,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5A0000020000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5AC637732FC28E29002EDA6F /* TodayCourseWidgetExtension */;
+			targetProxy = 5A0000010000000000000001 /* PBXContainerItemProxy */;
+		};
 		5AC637822FC28E2A002EDA6F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5AC637732FC28E29002EDA6F /* TodayCourseWidgetExtension */;
