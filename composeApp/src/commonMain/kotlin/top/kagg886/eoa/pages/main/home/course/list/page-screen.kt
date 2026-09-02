@@ -20,10 +20,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,7 +70,12 @@ import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
 
 @Composable
-fun CoursePageListScreen(index: Int, courseListState: CourseListState.DataAccessible) {
+fun CoursePageListScreen(
+    index: Int,
+    isCurrentPage: Boolean,
+    scale: Float,
+    onZoomChange: (Float) -> Unit,
+) {
     val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CoursePageViewModel>(
@@ -110,9 +115,9 @@ fun CoursePageListScreen(index: Int, courseListState: CourseListState.DataAccess
     }
 
     CoursePageScreenContent(
-        index = index,
         state = state,
-        courseListState = courseListState,
+        isCurrentPage = isCurrentPage,
+        scale = scale,
         useNightMode = useNightMode,
         hideWeekendCourse = hideWeekendCourse,
         onCourseItemClicked = {
@@ -120,19 +125,21 @@ fun CoursePageListScreen(index: Int, courseListState: CourseListState.DataAccess
         },
         onCourseConflictClicked = { startTime, endTime ->
             model.navigateToConflictDetail(startTime, endTime)
-        }
+        },
+        onZoomChange = onZoomChange
     )
 }
 
 @Composable
 private fun CoursePageScreenContent(
-    index: Int,
     state: CoursePageState,
-    courseListState: CourseListState.DataAccessible,
+    isCurrentPage: Boolean,
+    scale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
+    onZoomChange: (Float) -> Unit,
 ) {
     when (state) {
         is CoursePageState.Failed -> {
@@ -172,13 +179,17 @@ private fun CoursePageScreenContent(
             val scrollState = rememberScrollState()
 
             CoursePageScreenSuccess(
-                state = state,
+                thisWeekStartDate = state.thisWeekStartDate,
+                currentDate = state.currentDate,
+                currentWeekCourse = state.currentWeekCourse,
+                scale = scale,
                 useNightMode = useNightMode,
                 hideWeekendCourse = hideWeekendCourse,
                 scrollState = scrollState,
-                longShotEnabled = courseListState.state.currentPage == index,
+                longShotEnabled = isCurrentPage,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
+                onZoomChange = onZoomChange,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -188,19 +199,19 @@ private fun CoursePageScreenContent(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CoursePageScreenSuccess(
-    state: CoursePageState.Success,
+    thisWeekStartDate: LocalDate,
+    currentDate: LocalDate,
+    currentWeekCourse: Map<Int, List<TodayClass>>,
+    scale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     scrollState: androidx.compose.foundation.ScrollState,
     longShotEnabled: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
+    onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var timelineScale by remember {
-        mutableFloatStateOf(HalfHourScale)
-    }
-
     var expandedCourseKey by remember {
         mutableStateOf<CourseSegmentKey?>(null)
     }
@@ -208,14 +219,14 @@ private fun CoursePageScreenSuccess(
         Animatable(0f)
     }
 
+    val currentOnZoomChange by rememberUpdatedState(onZoomChange)
     val transformableState = rememberTransformableState {
             _,
             zoomChange,
             _,
             _,
         ->
-        timelineScale = (timelineScale * zoomChange)
-            .coerceIn(MinTimelineScale, MaxTimelineScale)
+        currentOnZoomChange(zoomChange)
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -372,14 +383,11 @@ private fun CoursePageScreenSuccess(
             else -> 64.dp
         }
 
-        val visibleDays = remember(
-            hideWeekendCourse,
-            state.currentWeekCourse
-        ) {
+        val visibleDays = remember(hideWeekendCourse, currentWeekCourse) {
             if (
                 hideWeekendCourse &&
-                state.currentWeekCourse[6].isNullOrEmpty() &&
-                state.currentWeekCourse[7].isNullOrEmpty()
+                currentWeekCourse[6].isNullOrEmpty() &&
+                currentWeekCourse[7].isNullOrEmpty()
             ) {
                 1..5
             } else {
@@ -387,9 +395,9 @@ private fun CoursePageScreenSuccess(
             }
         }
 
-        val timelineRange = remember(state.currentWeekCourse) {
+        val timelineRange = remember(currentWeekCourse) {
             calculateTimelineRange(
-                state.currentWeekCourse.values.flatten()
+                currentWeekCourse.values.flatten()
             )
         }
 
@@ -398,11 +406,11 @@ private fun CoursePageScreenSuccess(
          * 2x = 2.4dp / 分钟
          * 3x = 3.6dp / 分钟
          */
-        val minuteHeight = BaseMinuteHeight * timelineScale
+        val minuteHeight = BaseMinuteHeight * scale
 
         val tickIntervalMinutes = when {
-            timelineScale >= MaxTimelineScale - ScaleThresholdEpsilon -> 15
-            timelineScale >= HalfHourScale -> 30
+            scale >= MaxTimelineScale - ScaleThresholdEpsilon -> 15
+            scale >= HalfHourScale -> 30
             else -> 60
         }
 
@@ -420,14 +428,14 @@ private fun CoursePageScreenSuccess(
                 modifier = Modifier.height(CalendarHeaderHeight)
             ) {
                 MonthHeader(
-                    month = state.thisWeekStartDate.month.number,
+                    month = thisWeekStartDate.month.number,
                     modifier = Modifier
                         .width(timeAxisWidth)
                         .fillMaxHeight()
                 )
 
                 for (dayOfWeek in visibleDays) {
-                    val date = state.thisWeekStartDate.plus(
+                    val date = thisWeekStartDate.plus(
                         dayOfWeek - 1,
                         DateTimeUnit.DAY
                     )
@@ -435,7 +443,7 @@ private fun CoursePageScreenSuccess(
                     DayHeader(
                         date = date,
                         dayOfWeek = dayOfWeek,
-                        isCurrentDay = date == state.currentDate,
+                        isCurrentDay = date == currentDate,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -454,7 +462,7 @@ private fun CoursePageScreenSuccess(
 
                 for (dayOfWeek in visibleDays) {
                     DayTimeline(
-                        courses = state.currentWeekCourse[dayOfWeek].orEmpty(),
+                        courses = currentWeekCourse[dayOfWeek].orEmpty(),
                         range = timelineRange,
                         minuteHeight = minuteHeight,
                         tickIntervalMinutes = tickIntervalMinutes,
@@ -801,7 +809,6 @@ private fun CourseCalendarCard(
     var showCourseLocation by remember(course) {
         mutableStateOf(course !is TodayClass.Single)
     }
-    val showCourseText = showCourseName && showCourseLocation
 
     val cardModifier = modifier
         .applyIf(sharedBoundsKey) { key ->
@@ -862,7 +869,7 @@ private fun CourseCalendarCard(
                         "冲突课程 (${course.data.size}门)"
                 },
                 modifier = Modifier.alpha(
-                    if (showCourseText) 1f else 0f
+                    if (showCourseName) 1f else 0f
                 ),
                 style = courseNameTextStyle,
                 fontWeight = FontWeight.SemiBold,
@@ -880,7 +887,7 @@ private fun CourseCalendarCard(
                 Text(
                     text = course.location,
                     modifier = Modifier.alpha(
-                        if (showCourseText) 1f else 0f
+                        if (showCourseLocation) 1f else 0f
                     ),
                     style = courseLocationTextStyle,
                     color = contentColor.copy(
