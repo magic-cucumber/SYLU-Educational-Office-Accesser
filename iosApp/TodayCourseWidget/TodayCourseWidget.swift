@@ -175,8 +175,8 @@ extension TodayClass {
         let day = Int32(components.day ?? 1)
         let startDate = Kotlinx_datetimeLocalDateTime(
             year: year,
-            monthNumber: month,
-            dayOfMonth: day,
+            month: month,
+            day: day,
             hour: Int32(start / 60),
             minute: Int32(start % 60),
             second: 0,
@@ -184,14 +184,17 @@ extension TodayClass {
         )
         let endDate = Kotlinx_datetimeLocalDateTime(
             year: year,
-            monthNumber: month,
-            dayOfMonth: day,
+            month: month,
+            day: day,
             hour: Int32(end / 60),
             minute: Int32(end % 60),
             second: 0,
             nanosecond: 0
         )
-        let date = KotlinPair(first: startDate, second: endDate)
+        let date = KotlinPair<Kotlinx_datetimeLocalDateTime, Kotlinx_datetimeLocalDateTime>(
+            first: startDate,
+            second: endDate
+        )
         let kotlinProgress = progress.map { KotlinFloat(value: $0) }
 
         return TodayClass(
@@ -215,8 +218,8 @@ private extension Kotlinx_datetimeLocalDateTime {
     var foundationDate: Date? {
         var components = DateComponents()
         components.year = Int(year)
-        components.month = Int(monthNumber)
-        components.day = Int(dayOfMonth)
+        components.month = Int(month.number)
+        components.day = Int(day)
         components.hour = Int(hour)
         components.minute = Int(minute)
         components.second = Int(second)
