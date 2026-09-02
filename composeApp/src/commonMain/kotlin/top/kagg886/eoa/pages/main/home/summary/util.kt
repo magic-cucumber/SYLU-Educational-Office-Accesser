@@ -18,6 +18,7 @@ sealed interface TodayClass {
         val isDegreeProgram: Boolean,
         val isExamine: Boolean,
 
+        val fullDate: Pair<LocalDateTime, LocalDateTime>,
         override val date: Pair<LocalDateTime, LocalDateTime>,
         override val progress: Flow<Float?> = MutableStateFlow(null),
     ) : TodayClass
@@ -29,3 +30,7 @@ sealed interface TodayClass {
         val data: List<Single>
     ) : TodayClass
 }
+
+
+val TodayClass.Single.hasCourseConflict: Boolean
+    get() = date != fullDate

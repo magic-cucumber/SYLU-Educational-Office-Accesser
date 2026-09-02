@@ -1,6 +1,8 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
@@ -14,8 +16,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +40,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.times
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -54,6 +60,7 @@ import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.course.detail.sharedBoundsKey
 import top.kagg886.eoa.pages.main.home.summary.TodayClass
+import top.kagg886.eoa.pages.main.home.summary.hasCourseConflict
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
@@ -194,6 +201,13 @@ private fun CoursePageScreenSuccess(
         mutableFloatStateOf(HalfHourScale)
     }
 
+    var expandedCourseKey by remember {
+        mutableStateOf<CourseSegmentKey?>(null)
+    }
+    val expansionProgress = remember {
+        Animatable(0f)
+    }
+
     val transformableState = rememberTransformableState {
             _,
             zoomChange,
@@ -205,13 +219,88 @@ private fun CoursePageScreenSuccess(
     }
 
     val coroutineScope = rememberCoroutineScope()
+    val zoomEnabled = expandedCourseKey == null
+
+    fun expandCourse(course: TodayClass.Single) {
+        expandedCourseKey = course.segmentKey
+        coroutineScope.launch {
+            expansionProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = CourseExpansionAnimationSpec
+            )
+        }
+    }
+
+    fun dismissExpandedCourse() {
+        val dismissingKey = expandedCourseKey ?: return
+        coroutineScope.launch {
+            expansionProgress.animateTo(
+                targetValue = 0f,
+                animationSpec = CourseExpansionAnimationSpec
+            )
+            if (expandedCourseKey == dismissingKey) {
+                expandedCourseKey = null
+            }
+        }
+    }
+
+    fun handleCourseClicked(course: TodayClass) {
+        val currentExpandedKey = expandedCourseKey
+
+        if (currentExpandedKey != null) {
+            if (
+                course is TodayClass.Single &&
+                course.segmentKey == currentExpandedKey
+            ) {
+                expandedCourseKey = null
+                coroutineScope.launch {
+                    expansionProgress.snapTo(0f)
+                }
+                onCourseItemClicked(course)
+            } else {
+                dismissExpandedCourse()
+            }
+            return
+        }
+
+        when (course) {
+            is TodayClass.Single -> {
+                if (course.hasCourseConflict) {
+                    expandCourse(course)
+                } else {
+                    onCourseItemClicked(course)
+                }
+            }
+
+            is TodayClass.Conflict -> {
+                onCourseConflictClicked(
+                    course.date.first,
+                    course.date.second
+                )
+            }
+        }
+    }
+
+    LaunchedEffect(longShotEnabled) {
+        if (!longShotEnabled) {
+            expansionProgress.snapTo(0f)
+            expandedCourseKey = null
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
 
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                enabled = expandedCourseKey != null,
+                onClick = ::dismissExpandedCourse
+            )
+
             // 在 Initial 阶段拦截 Shift + 滚轮，
             // 避免同时触发纵向滚动。
-            .pointerInput(transformableState) {
+            .pointerInput(transformableState, zoomEnabled) {
                 awaitPointerEventScope {
                     while (true) {
                         val event = awaitPointerEvent(
@@ -243,6 +332,10 @@ private fun CoursePageScreenSuccess(
                             it.consume()
                         }
 
+                        if (!zoomEnabled) {
+                            continue
+                        }
+
                         val zoomFactor = if (wheelDelta < 0f) {
                             MouseWheelZoomStep
                         } else {
@@ -264,7 +357,8 @@ private fun CoursePageScreenSuccess(
             .transformable(
                 state = transformableState,
                 canPan = { false },
-                lockRotationOnZoomPan = true
+                lockRotationOnZoomPan = true,
+                enabled = zoomEnabled
             )
 
             .miuiLongShotSupport(
@@ -366,8 +460,9 @@ private fun CoursePageScreenSuccess(
                         tickIntervalMinutes = tickIntervalMinutes,
                         dividerOffset = timelineDividerOffset,
                         useNightMode = useNightMode,
-                        onCourseItemClicked = onCourseItemClicked,
-                        onCourseConflictClicked = onCourseConflictClicked,
+                        expandedCourseKey = expandedCourseKey,
+                        expansionProgress = expansionProgress.value,
+                        onCourseClicked = ::handleCourseClicked,
                         modifier = Modifier
                             .weight(1f)
                             .height(timelineHeight)
@@ -523,8 +618,9 @@ private fun DayTimeline(
     tickIntervalMinutes: Int,
     dividerOffset: Dp,
     useNightMode: Boolean,
-    onCourseItemClicked: (TodayClass.Single) -> Unit,
-    onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
+    expandedCourseKey: CourseSegmentKey?,
+    expansionProgress: Float,
+    onCourseClicked: (TodayClass) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sortedCourses = remember(courses) {
@@ -555,42 +651,82 @@ private fun DayTimeline(
         }
 
         for (course in sortedCourses) {
-            CourseCalendarCard(
-                course = course,
-                useNightMode = useNightMode,
-                onClick = {
-                    when (course) {
-                        is TodayClass.Single -> {
-                            onCourseItemClicked(course)
-                        }
+            key(course.segmentKey) {
+                val isExpanded =
+                    course is TodayClass.Single &&
+                            course.segmentKey == expandedCourseKey
 
-                        is TodayClass.Conflict -> {
-                            onCourseConflictClicked(
-                                course.date.first,
-                                course.date.second
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .offset(
-                        y = range.offsetOf(
-                            minute = course.startMinute,
-                            minuteHeight = minuteHeight
-                        ) + dividerOffset
+                val collapsedTop = range.offsetOf(
+                    minute = course.startMinute,
+                    minuteHeight = minuteHeight
+                ) + dividerOffset
+                val collapsedHeight = range.heightOf(
+                    courseStartMinute = course.startMinute,
+                    courseEndMinute = course.endMinute,
+                    minuteHeight = minuteHeight
+                )
+
+                val expandedTop = if (course is TodayClass.Single) {
+                    range.offsetOf(
+                        minute = course.fullStartMinute,
+                        minuteHeight = minuteHeight
+                    ) + dividerOffset
+                } else {
+                    collapsedTop
+                }
+                val expandedHeight = if (course is TodayClass.Single) {
+                    range.heightOf(
+                        courseStartMinute = course.fullStartMinute,
+                        courseEndMinute = course.fullEndMinute,
+                        minuteHeight = minuteHeight
                     )
-                    .fillMaxWidth()
-                    .height(
-                        range.heightOf(
-                            course = course,
-                            minuteHeight = minuteHeight
+                } else {
+                    collapsedHeight
+                }
+
+                CourseCalendarCard(
+                    course = course,
+                    useNightMode = useNightMode,
+                    onClick = {
+                        onCourseClicked(course)
+                    },
+                    modifier = Modifier
+                        .zIndex(
+                            if (isExpanded) {
+                                ExpandedCourseZIndex
+                            } else {
+                                0f
+                            }
                         )
-                    )
-                    .padding(
-                        horizontal = CourseHorizontalPadding,
-                        vertical = CourseVerticalPadding
-                    )
-            )
+                        .offset(
+                            y = if (isExpanded) {
+                                lerp(
+                                    collapsedTop,
+                                    expandedTop,
+                                    expansionProgress
+                                )
+                            } else {
+                                collapsedTop
+                            }
+                        )
+                        .fillMaxWidth()
+                        .height(
+                            if (isExpanded) {
+                                lerp(
+                                    collapsedHeight,
+                                    expandedHeight,
+                                    expansionProgress
+                                )
+                            } else {
+                                collapsedHeight
+                            }
+                        )
+                        .padding(
+                            horizontal = CourseHorizontalPadding,
+                            vertical = CourseVerticalPadding
+                        )
+                )
+            }
         }
     }
 }
@@ -823,14 +959,15 @@ private data class TimelineRange(
     }
 
     fun heightOf(
-        course: TodayClass,
+        courseStartMinute: Int,
+        courseEndMinute: Int,
         minuteHeight: Dp
     ): Dp {
-        val visibleStart = course.startMinute.coerceAtLeast(
+        val visibleStart = courseStartMinute.coerceAtLeast(
             startMinute
         )
 
-        val visibleEnd = course.endMinute.coerceAtMost(
+        val visibleEnd = courseEndMinute.coerceAtMost(
             endMinute
         )
 
@@ -843,11 +980,23 @@ private fun calculateTimelineRange(
     courses: List<TodayClass>
 ): TimelineRange {
     val earliestMinute =
-        courses.minOfOrNull { it.startMinute }
+        courses.minOfOrNull {
+            if (it is TodayClass.Single) {
+                minOf(it.startMinute, it.fullStartMinute)
+            } else {
+                it.startMinute
+            }
+        }
             ?: DefaultStartMinute
 
     val latestMinute =
-        courses.maxOfOrNull { it.endMinute }
+        courses.maxOfOrNull {
+            if (it is TodayClass.Single) {
+                maxOf(it.endMinute, it.fullEndMinute)
+            } else {
+                it.endMinute
+            }
+        }
             ?: DefaultEndMinute
 
     val startMinute =
@@ -873,6 +1022,23 @@ private val TodayClass.endMinute: Int
     get() =
         date.second.hour * MinutesPerHour +
                 date.second.minute
+
+private val TodayClass.Single.fullStartMinute: Int
+    get() =
+        fullDate.first.hour * MinutesPerHour +
+                fullDate.first.minute
+
+private val TodayClass.Single.fullEndMinute: Int
+    get() =
+        fullDate.second.hour * MinutesPerHour +
+                fullDate.second.minute
+
+private val TodayClass.segmentKey: CourseSegmentKey
+    get() = CourseSegmentKey(
+        recordId = (this as? TodayClass.Single)?.recordId,
+        startTime = date.first,
+        endTime = date.second
+    )
 
 private fun Int.roundDownToHour(): Int =
     this / MinutesPerHour * MinutesPerHour
@@ -938,6 +1104,12 @@ private const val ScaleThresholdEpsilon = 0.001f
  */
 private const val MouseWheelZoomStep = 1.05f
 
+private val CourseExpansionAnimationSpec = tween<Float>(
+    durationMillis = 280
+)
+
+private const val ExpandedCourseZIndex = 99999f
+
 private val CalendarHeaderHeight = 64.dp
 
 /*
@@ -959,3 +1131,9 @@ private val CourseVerticalPadding = 1.dp
 
 private const val DividerAlpha = 0.5f
 private const val MinorDividerAlpha = 0.25f
+
+private data class CourseSegmentKey(
+    val recordId: Long?,
+    val startTime: LocalDateTime,
+    val endTime: LocalDateTime
+)

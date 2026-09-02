@@ -152,6 +152,7 @@ class SummaryModel(
                     courseId = course.id!!,
                     isDegreeProgram = course.isDegreeRequired,
                     isExamine = course.isExaminable,
+                    fullDate = record.startTime to record.endTime,
                 )
             }
             .flatMap { course ->
