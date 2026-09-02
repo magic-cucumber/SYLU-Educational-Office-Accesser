@@ -17,18 +17,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isCtrlPressed
-import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -310,8 +312,14 @@ private fun CoursePageScreenSuccess(
             else -> 60
         }
 
+        val timelineDividerOffset = TimeLabelTopPadding +
+                with(LocalDensity.current) {
+                    MaterialTheme.typography.labelSmall.lineHeight.toDp()
+                } / 2
+
         val timelineHeight =
-            timelineRange.durationMinutes * minuteHeight
+            timelineRange.durationMinutes * minuteHeight +
+                    timelineDividerOffset
 
         Column {
             Row(
@@ -340,13 +348,6 @@ private fun CoursePageScreenSuccess(
                     )
                 }
             }
-
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant.copy(
-                    alpha = DividerAlpha
-                )
-            )
-
             Row {
                 TimeAxis(
                     range = timelineRange,
@@ -358,17 +359,12 @@ private fun CoursePageScreenSuccess(
                 )
 
                 for (dayOfWeek in visibleDays) {
-                    val date = state.thisWeekStartDate.plus(
-                        dayOfWeek - 1,
-                        DateTimeUnit.DAY
-                    )
-
                     DayTimeline(
                         courses = state.currentWeekCourse[dayOfWeek].orEmpty(),
                         range = timelineRange,
                         minuteHeight = minuteHeight,
                         tickIntervalMinutes = tickIntervalMinutes,
-                        isCurrentDay = date == state.currentDate,
+                        dividerOffset = timelineDividerOffset,
                         useNightMode = useNightMode,
                         onCourseItemClicked = onCourseItemClicked,
                         onCourseConflictClicked = onCourseConflictClicked,
@@ -392,22 +388,28 @@ private fun MonthHeader(
         contentAlignment = Alignment.Center
     ) {
         Surface(
+            modifier = Modifier.height(with(LocalDensity.current) { MaterialTheme.typography.labelSmall.lineHeight.toDp() } + 4.dp + 28.dp),
             color = MaterialTheme.colorScheme.secondaryContainer.copy(
                 alpha = 0.5f
             ),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             shape = RoundedCornerShape(10.dp)
         ) {
-            Text(
-                text = "${month}月",
-                modifier = Modifier.padding(
-                    horizontal = 8.dp,
-                    vertical = 4.dp
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${month}月",
+                    modifier = Modifier.padding(
+                        horizontal = 8.dp,
+                        vertical = 4.dp
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
@@ -485,14 +487,13 @@ private fun TimeAxis(
             Text(
                 text = minute.toTimeLabel(),
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopCenter)
                     .offset(
                         y = range.offsetOf(
                             minute = minute,
                             minuteHeight = minuteHeight
                         ) + TimeLabelTopPadding
-                    )
-                    .padding(end = 6.dp),
+                    ),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = if (isHourMark) {
                     FontWeight.Medium
@@ -507,7 +508,7 @@ private fun TimeAxis(
                     }
                 ),
                 maxLines = 1,
-                textAlign = TextAlign.End
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -520,7 +521,7 @@ private fun DayTimeline(
     range: TimelineRange,
     minuteHeight: Dp,
     tickIntervalMinutes: Int,
-    isCurrentDay: Boolean,
+    dividerOffset: Dp,
     useNightMode: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
@@ -530,24 +531,7 @@ private fun DayTimeline(
         courses.sortedBy { it.startMinute }
     }
 
-    Box(
-        modifier = modifier.background(
-            if (isCurrentDay) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-            } else {
-                Color.Transparent
-            }
-        )
-    ) {
-        VerticalDivider(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .fillMaxHeight(),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(
-                alpha = DividerAlpha
-            )
-        )
-
+    Box(modifier = modifier) {
         for (minute in range.marks(tickIntervalMinutes)) {
             val isHourMark = minute % MinutesPerHour == 0
 
@@ -557,7 +541,7 @@ private fun DayTimeline(
                         y = range.offsetOf(
                             minute = minute,
                             minuteHeight = minuteHeight
-                        )
+                        ) + dividerOffset
                     )
                     .fillMaxWidth(),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(
@@ -593,7 +577,7 @@ private fun DayTimeline(
                         y = range.offsetOf(
                             minute = course.startMinute,
                             minuteHeight = minuteHeight
-                        )
+                        ) + dividerOffset
                     )
                     .fillMaxWidth()
                     .height(
@@ -663,6 +647,26 @@ private fun CourseCalendarCard(
 
     val shape = RoundedCornerShape(10.dp)
 
+    val density = LocalDensity.current
+    val courseNameTextStyle = MaterialTheme.typography.labelMedium.copy(
+        fontSize = with(density) { CourseNameFontSize.toSp() },
+        lineHeight = with(density) { CourseTextLineHeight.toSp() },
+        letterSpacing = with(density) { CourseTextLetterSpacing.toSp() }
+    )
+    val courseLocationTextStyle = MaterialTheme.typography.labelSmall.copy(
+        fontSize = with(density) { CourseLocationFontSize.toSp() },
+        lineHeight = with(density) { CourseTextLineHeight.toSp() },
+        letterSpacing = with(density) { CourseTextLetterSpacing.toSp() }
+    )
+
+    var showCourseName by remember(course) {
+        mutableStateOf(false)
+    }
+    var showCourseLocation by remember(course) {
+        mutableStateOf(course !is TodayClass.Single)
+    }
+    val showCourseText = showCourseName && showCourseLocation
+
     val cardModifier = modifier
         .applyIf(sharedBoundsKey) { key ->
             shareBoundsComposed(
@@ -712,7 +716,7 @@ private fun CourseCalendarCard(
                     horizontal = 5.dp,
                     vertical = 4.dp
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             Text(
                 text = when (course) {
@@ -721,28 +725,38 @@ private fun CourseCalendarCard(
                     is TodayClass.Conflict ->
                         "冲突课程 (${course.data.size}门)"
                 },
-                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.alpha(
+                    if (showCourseText) 1f else 0f
+                ),
+                style = courseNameTextStyle,
                 fontWeight = FontWeight.SemiBold,
                 color = contentColor,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = {
+                    showCourseName = it.size.height.toFloat() >=
+                            it.multiParagraph.height
+                }
             )
 
             if (course is TodayClass.Single) {
-                Spacer(
-                    modifier = Modifier.weight(1f)
-                )
-
                 Text(
                     text = course.location,
-                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.alpha(
+                        if (showCourseText) 1f else 0f
+                    ),
+                    style = courseLocationTextStyle,
                     color = contentColor.copy(
                         alpha = 0.75f
                     ),
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Start,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    onTextLayout = {
+                        showCourseLocation = it.size.height.toFloat() >=
+                                it.multiParagraph.height
+                    }
                 )
             }
         }
@@ -936,6 +950,10 @@ private val CalendarHeaderHeight = 64.dp
 private val BaseMinuteHeight = 2.4.dp
 
 private val TimeLabelTopPadding = 4.dp
+private val CourseNameFontSize = 12.dp
+private val CourseLocationFontSize = 11.dp
+private val CourseTextLineHeight = 16.dp
+private val CourseTextLetterSpacing = 0.5.dp
 private val CourseHorizontalPadding = 3.dp
 private val CourseVerticalPadding = 1.dp
 
