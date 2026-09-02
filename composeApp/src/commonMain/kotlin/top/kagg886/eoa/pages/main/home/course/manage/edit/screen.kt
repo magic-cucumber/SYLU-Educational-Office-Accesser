@@ -3,13 +3,18 @@
 package top.kagg886.eoa.pages.main.home.course.manage.edit
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -561,6 +566,7 @@ private fun CourseDayGroup(
         ) {
             Column(
                 modifier = Modifier
+                    .animateContentSize()
                     .fillMaxWidth()
                     .padding(start = 16.dp, bottom = 12.dp)
             ) {
@@ -572,14 +578,33 @@ private fun CourseDayGroup(
                         modifier = Modifier.padding(vertical = 10.dp)
                     )
                 } else {
-                    records.forEach { record ->
-                        CourseTimeRecordItem(
-                            record = record,
-                            isError = record.id?.let { it in invalidRecordIds } == true,
-                            onStartTimeClicked = { onStartTimeClicked(record) },
-                            onEndTimeClicked = { onEndTimeClicked(record) },
-                            onDeleteRecord = { onDeleteRecord(record) },
-                        )
+                    for (record in records) {
+                        key(record.id) {
+                            val visibleState = remember {
+                                MutableTransitionState(false).apply { targetState = true }
+                            }
+
+                            LaunchedEffect(visibleState.isIdle, visibleState.currentState) {
+                                if (visibleState.isIdle && !visibleState.currentState) {
+                                    onDeleteRecord(record)
+                                }
+                            }
+
+                            AnimatedVisibility(
+                                visibleState = visibleState,
+                                enter = fadeIn(),
+                                exit = fadeOut() + shrinkVertically(),
+                            ) {
+                                CourseTimeRecordItem(
+                                    record = record,
+                                    isError = record.id?.let { it in invalidRecordIds } == true,
+                                    onStartTimeClicked = { onStartTimeClicked(record) },
+                                    onEndTimeClicked = { onEndTimeClicked(record) },
+                                    onDeleteRecord = { visibleState.targetState = false  },
+                                )
+                            }
+                        }
+
                     }
                 }
             }
@@ -591,13 +616,14 @@ private fun CourseDayGroup(
 
 @Composable
 private fun CourseTimeRecordItem(
+    modifier: Modifier = Modifier,
     record: CourseRecordEntity,
     isError: Boolean,
     onStartTimeClicked: () -> Unit,
     onEndTimeClicked: () -> Unit,
     onDeleteRecord: () -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Column(modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

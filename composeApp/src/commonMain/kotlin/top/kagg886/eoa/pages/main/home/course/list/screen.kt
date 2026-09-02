@@ -3,10 +3,11 @@ package top.kagg886.eoa.pages.main.home.course.list
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
@@ -127,20 +128,40 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                     if (weeks == -1) {
                         return@ModalBottomSheet
                     }
-                    LazyColumn {
-                        items((1..weeks).toList()) {
-                            ListItem(
-                                headlineContent = {
-                                    Text("第 $it 周")
-                                },
-                                modifier = Modifier.clickable {
-                                    model.selectToWeek(it)
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 48.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        items((1..weeks).toList()) { week ->
+                            val isCurrent = currentPage != null && currentPage + 1 == week
+                            Surface(
+                                onClick = {
+                                    model.selectToWeek(week - 1)
                                     jumpModal = false
                                 },
-                                colors = ListItemDefaults.colors(
-                                    containerColor = BottomSheetDefaults.ContainerColor
-                                )
-                            )
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f),
+                                shape = MaterialTheme.shapes.medium,
+                                color = if (isCurrent) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surface,
+                                contentColor = if (isCurrent) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface,
+                                border = if (isCurrent) null
+                                else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "$week",
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
