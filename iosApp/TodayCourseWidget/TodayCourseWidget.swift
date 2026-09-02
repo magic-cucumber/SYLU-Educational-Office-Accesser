@@ -170,34 +170,38 @@ extension TodayClass {
         progress: Float?
     ) -> TodayClass {
         let components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+        let year = Int32(components.year ?? 1970)
+        let month = Int32(components.month ?? 1)
+        let day = Int32(components.day ?? 1)
+        let startDate = Kotlinx_datetimeLocalDateTime(
+            year: year,
+            monthNumber: month,
+            dayOfMonth: day,
+            hour: Int32(start / 60),
+            minute: Int32(start % 60),
+            second: 0,
+            nanosecond: 0
+        )
+        let endDate = Kotlinx_datetimeLocalDateTime(
+            year: year,
+            monthNumber: month,
+            dayOfMonth: day,
+            hour: Int32(end / 60),
+            minute: Int32(end % 60),
+            second: 0,
+            nanosecond: 0
+        )
+        let date = KotlinPair(first: startDate, second: endDate)
+        let kotlinProgress = progress.map { KotlinFloat(value: $0) }
 
-        TodayClass(
+        return TodayClass(
             recordId: 1,
             courseId: 1,
             name: name,
             teacher: "",
             location: location,
-            date: KotlinPair(
-                first: Kotlinx_datetimeLocalDateTime(
-                    year: Int32(components.year ?? 1970),
-                    monthNumber: Int32(components.month ?? 1),
-                    dayOfMonth: Int32(components.day ?? 1),
-                    hour: Int32(start / 60),
-                    minute: Int32(start % 60),
-                    second: 0,
-                    nanosecond: 0
-                ),
-                second: Kotlinx_datetimeLocalDateTime(
-                    year: Int32(components.year ?? 1970),
-                    monthNumber: Int32(components.month ?? 1),
-                    dayOfMonth: Int32(components.day ?? 1),
-                    hour: Int32(end / 60),
-                    minute: Int32(end % 60),
-                    second: 0,
-                    nanosecond: 0
-                )
-            ),
-            progress: progress.map { KotlinFloat(value: $0) },
+            date: date,
+            progress: kotlinProgress,
             conflict: false
         )
     }
