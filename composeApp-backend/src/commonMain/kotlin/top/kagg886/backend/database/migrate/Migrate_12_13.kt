@@ -7,6 +7,7 @@ import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.util.getTimeByLessonNumber
+import top.kagg886.util.initializeMMKV
 
 private data class MigratedCourseRecord(
     val id: Long,
@@ -45,6 +46,7 @@ internal val MIGRATION_12_13 = Migration(12, 13) { connection ->
         }
     }
     val calender = if (legacyRecords.isEmpty()) null else {
+        initializeMMKV()
         checkNotNull(AppSyncMMKV.calender) {
             "数据库迁移 12 -> 13 需要校历数据"
         }

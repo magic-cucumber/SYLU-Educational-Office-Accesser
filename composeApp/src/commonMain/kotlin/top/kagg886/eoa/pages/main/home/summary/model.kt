@@ -253,11 +253,10 @@ class SummaryModel(
             }
 
             is TodayClass.Conflict -> {
-                val sample = courseRecordDao.getById(it.data.first().recordId)
                 postSideEffect(
                     SummarySideEffect.NavigateToConflictInfo(
-                        startTime = sample.startTime,
-                        endTime = sample.endTime
+                        startTime = it.date.first,
+                        endTime = it.date.second
                     )
                 )
             }

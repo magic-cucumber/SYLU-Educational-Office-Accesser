@@ -385,11 +385,11 @@ class MainRouteViewModel(val database: AppDatabase) :
                             }
                         )
 
-                        for ((name, entity) in tables.groupBy { it.name }) {
+                        for ((_, entity) in tables.groupBy { it.id }) {
                             val i = entity.first()
                             val bindId = courseDao.insert(
                                 item = CourseEntity(
-                                    name = name,
+                                    name = i.name,
                                     teacherName = i.teacher,
                                     classroomName = i.room,
                                     credits = i.score.toFloat(),

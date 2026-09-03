@@ -360,6 +360,8 @@ internal class EOAHTMLClient : EOAClient {
     override suspend fun getClassTable(picker: TermPicker, firstDay: LocalDate): ClassReturn {
         @Serializable
         data class InternalClassTable(
+            @SerialName("kch_id")
+            val id: String,
             //名字
             @SerialName("kcmc") val name: String,
             //老师名字
@@ -434,6 +436,7 @@ internal class EOAHTMLClient : EOAClient {
                 i.rangeEveryDay.map { lessonNumber ->
                     val time = getTimeByLessonNumber(lessonNumber)
                     ClassTable(
+                        id = i.id.toLong(),
                         name = i.name,
                         teacher = i.teacher,
                         room = i.room,

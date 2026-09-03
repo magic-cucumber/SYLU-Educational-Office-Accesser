@@ -27,6 +27,8 @@ data class ClassExtend(
 
 @Serializable
 data class ClassTable(
+    //课程ID
+    val id: Long,
     //课程名称
     val name: String,
     //老师名称

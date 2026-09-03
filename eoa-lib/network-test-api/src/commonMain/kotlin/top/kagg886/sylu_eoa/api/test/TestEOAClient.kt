@@ -17,7 +17,6 @@ internal class TestEOAClient : EOAClient {
     val todayWeekMonday = today.minus(today.dayOfWeek.ordinal, DateTimeUnit.DAY)
 
 
-
     @OptIn(ExperimentalEncodingApi::class)
     override suspend fun getUserProfile(): UserProfile {
         val avatar = Base64.decode(
@@ -170,6 +169,7 @@ internal class TestEOAClient : EOAClient {
         term: Term,
         config: ExamExportOptions
     ): ByteArray = byteArrayOf()
+
     override suspend fun getClassTable(
         picker: TermPicker,
         firstDay: LocalDate,
@@ -535,7 +535,7 @@ internal class TestEOAClient : EOAClient {
         )
 
         val tables = templates.flatMap { template ->
-            template.weeks.map { weekNumber ->
+            template.weeks.mapIndexed { index, weekNumber ->
                 val date = firstDay
                     .plus(weekNumber - 1, DateTimeUnit.WEEK)
                     .plus(template.dayOfWeek - 1, DateTimeUnit.DAY)
@@ -553,6 +553,7 @@ internal class TestEOAClient : EOAClient {
                     }
 
                 ClassTable(
+                    id = index.toLong(),
                     name = template.name,
                     teacher = template.teacher,
                     room = template.room,
@@ -570,6 +571,7 @@ internal class TestEOAClient : EOAClient {
             tables = tables,
         )
     }
+
     override suspend fun getGPAScores(): List<GPAScoreSummary> {
         return listOf(
             GPAScoreSummary(
@@ -592,7 +594,10 @@ internal class TestEOAClient : EOAClient {
             "2024学年第一学期" -> listOf(
                 GPAScore(name = "人工智能：无尽的前沿", score = "2.0"),
                 GPAScore(name = "大语言模型及AIGC基础导论", score = "1.5"),
-                GPAScore(name = "迈向共生、共享、共创的人工智能时代——DeepSeek大模型原理、技术与应用", score = "1.0"),
+                GPAScore(
+                    name = "迈向共生、共享、共创的人工智能时代——DeepSeek大模型原理、技术与应用",
+                    score = "1.0"
+                ),
                 GPAScore(name = "AI技术的最新发展和挑战", score = "1.0"),
                 GPAScore(name = "新科技革命解放人脑", score = "0.5")
             )
@@ -612,6 +617,7 @@ internal class TestEOAClient : EOAClient {
                 GPAScore(name = "“新的科学革命的结构”中的哲学与科学", score = "1.0"),
                 GPAScore(name = "AI赋能的信任与可信AI", score = "0.5")
             )
+
             else -> listOf()
         }
     }
