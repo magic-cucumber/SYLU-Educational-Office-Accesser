@@ -222,7 +222,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
             .shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current,
-                resizeMode = RemeasureToBounds,
+                
                 clipInOverlayDuringTransition = OverlayClip(fabShape)
             )
             .revealableAutoMeasured(1, fabArrow) {

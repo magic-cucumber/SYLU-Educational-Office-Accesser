@@ -1,7 +1,6 @@
 package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -98,7 +97,6 @@ private fun CourseDetailScreenContent(state: CourseDetailState, route: CourseDet
                     key = key
                 ),
                 animatedVisibilityScope = LocalAnimatedContentScope.current,
-                resizeMode = RemeasureToBounds,
                 clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
             )
         }
