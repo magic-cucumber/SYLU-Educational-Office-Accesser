@@ -1345,6 +1345,7 @@ private fun CourseCalendarCard(
         }
     }
 }
+
 private data class CoursePastel(
     val container: Color,
     val content: Color

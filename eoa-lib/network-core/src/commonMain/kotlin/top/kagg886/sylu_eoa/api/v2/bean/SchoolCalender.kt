@@ -8,7 +8,8 @@ import kotlin.time.ExperimentalTime
 @Serializable
 data class SchoolCalender(
     val start: LocalDate,
-    val end: LocalDate
+    val end: LocalDate,
+    val holidays: List<LocalDate> = emptyList(),
 ) {
 
     @OptIn(ExperimentalTime::class)

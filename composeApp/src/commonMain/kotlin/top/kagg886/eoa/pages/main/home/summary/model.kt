@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.*
 import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
+import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseExtendEntity
@@ -112,9 +113,10 @@ class SummaryModel(
 
     @OptIn(ExperimentalTime::class)
     fun setDataUnsafe() = intent {
+        val calendar = AppSyncMMKV.calender ?: return@intent
         val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
-        val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
+        val (isInHoliday, isBeforeInTerm, currentWeek) = calendar.calculateWeekNumber()
 
         if (currentWeek == -1) {
             when {
@@ -130,7 +132,8 @@ class SummaryModel(
         }
 
         //获取今天的课表计划
-        val plan = courseRecordDao.getCoursesWithRecordInfo(
+        //法定节假日固定返回空课表
+        val plan = if (today.date in calendar.holidays && !AppSettingsMMKV.showHolidayCourse) emptyList() else courseRecordDao.getCoursesWithRecordInfo(
             start = today.date.atTime(0, 0),
             end = today.date.plus(1, DateTimeUnit.DAY).atTime(0, 0)
         )
@@ -261,6 +264,10 @@ class SummaryModel(
                 )
             }
         }
+    }
+
+    fun refresh() = intent {
+        initData().join()
     }
 }
 

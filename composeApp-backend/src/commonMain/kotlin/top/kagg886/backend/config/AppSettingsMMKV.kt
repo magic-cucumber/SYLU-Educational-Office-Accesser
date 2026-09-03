@@ -37,6 +37,8 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings", mode = MMKVMode
         }
     })
 
+    override var showHolidayCourse: Boolean by boolean("show-holiday-course", false)
+
     override var systemWidgetRadius: Boolean by boolean("system-widget-radius", true)
 
     override var showExperimentClass: Boolean by boolean("show-experiment-class", true)
@@ -63,6 +65,7 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings", mode = MMKVMode
 sealed interface AppSettingsMMKVType {
     var color: Color
     var theme: AppTheme
+    var showHolidayCourse: Boolean
 
     var systemWidgetRadius: Boolean
 

@@ -39,6 +39,7 @@ internal class TestEOAClient : EOAClient {
         return SchoolCalender(
             start = todayWeekMonday.minus(7, DateTimeUnit.WEEK),
             end = todayWeekMonday.plus(7, DateTimeUnit.WEEK),
+            holidays = listOf(todayWeekMonday)
         )
     }
 
@@ -535,7 +536,7 @@ internal class TestEOAClient : EOAClient {
         )
 
         val tables = templates.flatMap { template ->
-            template.weeks.mapIndexed { index, weekNumber ->
+            template.weeks.map { weekNumber ->
                 val date = firstDay
                     .plus(weekNumber - 1, DateTimeUnit.WEEK)
                     .plus(template.dayOfWeek - 1, DateTimeUnit.DAY)
@@ -553,7 +554,7 @@ internal class TestEOAClient : EOAClient {
                     }
 
                 ClassTable(
-                    id = index.toLong(),
+                    id = template.name.hashCode().toLong(),
                     name = template.name,
                     teacher = template.teacher,
                     room = template.room,

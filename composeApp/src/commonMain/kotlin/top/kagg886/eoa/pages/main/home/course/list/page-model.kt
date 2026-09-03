@@ -1,23 +1,32 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
-import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.datetime.*
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.syntax.Syntax
+import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.home.summary.TodayClass
+import top.kagg886.eoa.util.BaseViewModel
 import kotlin.time.Clock
 
 class CoursePageViewModel(
     private val syncState: MainRouteViewState,
     private val weekIndex: Int,
-    database: AppDatabase
+    database: AppDatabase,
 ) : BaseViewModel<CoursePageState, CoursePageSideEffect>(
     name = "CoursePageViewModel",
     initial = CoursePageState.Loading
@@ -61,15 +70,19 @@ class CoursePageViewModel(
     }
 
     fun setDataUnsafe() = intent {
-        val weekStartDate = AppSyncMMKV.calender!!.start.plus(weekIndex - 1, DateTimeUnit.WEEK).atTime(0,0)
-        val weekEndDate = AppSyncMMKV.calender!!.start.plus(weekIndex, DateTimeUnit.WEEK).atTime(0,0)
+        val calendar = AppSyncMMKV.calender!!
+        val weekStartDate = calendar.start.plus(weekIndex - 1, DateTimeUnit.WEEK).atTime(0,0)
+        val weekEndDate = calendar.start.plus(weekIndex, DateTimeUnit.WEEK).atTime(0,0)
+
         courseRecordDao
-            .getCoursesWithRecordInfoFlow(weekStartDate,weekEndDate)
+            .getCoursesWithRecordInfoFlow(weekStartDate, weekEndDate)
             .flowOn(Dispatchers.IO)
             .collect { course ->
                 val timeZone = TimeZone.currentSystemDefault()
                 val now = Clock.System.now().toEpochMilliseconds()
                 val data = course
+                    //过滤法定节假日当天的所有课程
+                    .filter { (it.record.startTime.date !in calendar.holidays) || AppSettingsMMKV.showHolidayCourse }
                     .groupBy { it.record.startTime.date.dayOfWeek.isoDayNumber }
                     .mapValues { (_, courseAndRecord) ->
                         courseAndRecord
@@ -179,9 +192,9 @@ class CoursePageViewModel(
         )
     }
 
-    fun navigateToConflictDetail(startTime: LocalDateTime,endTime: LocalDateTime) = intent {
+    fun navigateToConflictDetail(startTime: LocalDateTime, endTime: LocalDateTime) = intent {
         postSideEffect(
-            CoursePageSideEffect.NavigateToConflictDetail(startTime,endTime)
+            CoursePageSideEffect.NavigateToConflictDetail(startTime, endTime)
         )
     }
 }

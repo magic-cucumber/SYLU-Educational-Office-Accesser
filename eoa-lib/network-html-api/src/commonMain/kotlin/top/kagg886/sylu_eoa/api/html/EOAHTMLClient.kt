@@ -233,9 +233,27 @@ internal class EOAHTMLClient : EOAClient {
 
                 it.substring(l + 1, r).split("至").toList()
             }
+
+        val holidays = run<List<LocalDate>> {
+            //<input type="hidden" name="rcStr" value="50F498B8A1F53A40E0630200050A7683!one!中秋!one!2026-09-25!one!2026-09-27!two!50F498B8A1F63A40E0630200050A7683!one!国庆!one!2026-10-01!one!2026-10-07!two!50F498B8A1F43A40E0630200050A7683!one!元旦!one!2027-01-01!one!2027-01-01!two!" id="rcStr"/>
+            val rcStr =
+                document.getElementsByAttribute("name").find { it.attr("name") == "rcStr" }?.value()
+                    ?: return@run emptyList()
+
+            rcStr.split("!two!")
+                .dropLast(1)
+                .map {
+                    val fields = it.split("!one!")
+                    LocalDate.parse(fields[2])..LocalDate.parse(fields[3])
+                }
+                .flatMap { it.toList() }
+        }
+
+
         return SchoolCalender(
             start = LocalDate.parse(startDateString),
-            end = LocalDate.parse(endDateString)
+            end = LocalDate.parse(endDateString),
+            holidays = holidays
         )
     }
 
@@ -443,8 +461,10 @@ internal class EOAHTMLClient : EOAClient {
                         score = i.score,
                         classType = i.classType,
                         isDegreeProgram = i.isDegreeProgram,
-                        startTime = firstDay.plus(weekNumber-1, DateTimeUnit.WEEK).plus(i.dayInWeek.toInt() - 1, DateTimeUnit.DAY).atTime(time.first),
-                        endTime = firstDay.plus(weekNumber-1, DateTimeUnit.WEEK).plus(i.dayInWeek.toInt() - 1, DateTimeUnit.DAY).atTime(time.second),
+                        startTime = firstDay.plus(weekNumber - 1, DateTimeUnit.WEEK)
+                            .plus(i.dayInWeek.toInt() - 1, DateTimeUnit.DAY).atTime(time.first),
+                        endTime = firstDay.plus(weekNumber - 1, DateTimeUnit.WEEK)
+                            .plus(i.dayInWeek.toInt() - 1, DateTimeUnit.DAY).atTime(time.second),
                     )
                 }
             }

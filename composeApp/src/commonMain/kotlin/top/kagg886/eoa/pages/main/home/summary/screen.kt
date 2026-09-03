@@ -1,7 +1,6 @@
 package top.kagg886.eoa.pages.main.home.summary
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +14,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -89,9 +89,14 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
     val syncState by mainViewModel.collectAsState()
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
+    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
     val showExperimentClass by rootState.showExperimentClass.collectAsState()
     val model = viewModel<SummaryModel>(key = "summary-${syncState.toViewModelKey()}") {
         SummaryModel(syncState, mainViewModel.database)
+    }
+
+    LaunchedEffect(showHolidayCourse) {
+        model.refresh()
     }
 
     val noticeModel = viewModel<SystemNoticeModel>(key = "notice-${syncState.toViewModelKey()}") {

@@ -49,6 +49,7 @@ fun AppearanceSettingsScreen() = MainScreen {
     val rootState by rootModel.collectAsState()
     val color by rootState.color.collectAsState()
     val theme by rootState.theme.collectAsState()
+    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
     val module by rootState.module.collectAsState()
     val systemWidgetRadius by rootState.systemWidgetRadius.collectAsState()
     val showExperimentClass by rootState.showExperimentClass.collectAsState()
@@ -58,12 +59,14 @@ fun AppearanceSettingsScreen() = MainScreen {
     AppearanceSettingsContent(
         color = color,
         theme = theme,
+        showHolidayCourse = showHolidayCourse,
         module = module,
         systemWidgetRadius = systemWidgetRadius,
         showExperimentClass = showExperimentClass,
         hideWeekendCourse = hideWeekendCourse,
         onColorSettingsClicked = rootModel::postNewColorSetting,
         onThemeSettingsClicked = rootModel::postNewThemeSetting,
+        onShowHolidayCourseChanged = rootModel::postShowHolidayCourse,
         onModuleChanged = rootModel::postEOAModuleSetting,
         onSystemWidgetRadiusChanged = rootModel::postSystemWidgetRadiusSetting,
         onShowExperimentClassChanged = rootModel::postShowExperimentClassSetting,
@@ -79,12 +82,14 @@ fun AppearanceSettingsScreen() = MainScreen {
 private fun AppearanceSettingsContent(
     color: Color,
     theme: AppSettingsMMKVType.AppTheme,
+    showHolidayCourse: Boolean,
     module: List<EOAHomeModule>,
     systemWidgetRadius: Boolean,
     showExperimentClass: Boolean,
     hideWeekendCourse: Boolean,
     onColorSettingsClicked: (Color) -> Unit,
     onThemeSettingsClicked: (AppSettingsMMKVType.AppTheme) -> Unit,
+    onShowHolidayCourseChanged: (Boolean) -> Unit,
     onModuleChanged: (List<EOAHomeModule>) -> Unit = {},
     onSystemWidgetRadiusChanged: (Boolean) -> Unit,
     onShowExperimentClassChanged: (Boolean) -> Unit,
@@ -234,6 +239,24 @@ private fun AppearanceSettingsContent(
                     }
                 },
                 modifier = Modifier.clickable { colorDialog = true },
+            )
+
+
+            ListItem(
+                headlineContent = { Text("显示法定节假日课程") },
+                supportingContent = { Text("开启后，课程、概要页面中，涉及到法定节假日的课程不会被隐藏") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.Celebration,
+                        "显示法定节假日课程"
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = showHolidayCourse,
+                        onCheckedChange = onShowHolidayCourseChanged
+                    )
+                }
             )
 
             var moduleDialog by remember { mutableStateOf(false) }

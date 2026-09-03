@@ -12,7 +12,6 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDateTime
-import top.kagg886.backend.database.converters.SeverityConverter
 import top.kagg886.backend.database.converters.TimeConverter
 
 @Entity(

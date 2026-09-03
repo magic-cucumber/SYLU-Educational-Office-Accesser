@@ -46,7 +46,8 @@ fun rootViewModel(): RootViewModel {
     }
 }
 
-class RootViewModel(database: AppDatabase) : BaseViewModel<RootState, RootEffect>(name = "RootViewModel", initial = RootState()) {
+class RootViewModel(database: AppDatabase) :
+    BaseViewModel<RootState, RootEffect>(name = "RootViewModel", initial = RootState()) {
     private val client = HttpClient {
         install(ContentNegotiation) {
             json(
@@ -88,6 +89,12 @@ class RootViewModel(database: AppDatabase) : BaseViewModel<RootState, RootEffect
         viewModelScope.launch {
             state.theme.collect {
                 AppSettingsMMKV.theme = it
+            }
+        }
+
+        viewModelScope.launch {
+            state.showHolidayCourse.collect {
+                AppSettingsMMKV.showHolidayCourse = it
             }
         }
 
@@ -139,6 +146,10 @@ class RootViewModel(database: AppDatabase) : BaseViewModel<RootState, RootEffect
 
     fun postNewColorSetting(color: Color) = intent {
         state.color.value = color
+    }
+
+    fun postShowHolidayCourse(bool: Boolean) = intent {
+        state.showHolidayCourse.value = bool
     }
 
     fun postNewThemeSetting(theme: AppSettingsMMKVType.AppTheme) = intent {
@@ -219,6 +230,7 @@ class RootViewModel(database: AppDatabase) : BaseViewModel<RootState, RootEffect
 data class RootState(
     val color: MutableStateFlow<Color> = MutableStateFlow(AppSettingsMMKV.color),
     val theme: MutableStateFlow<AppSettingsMMKVType.AppTheme> = MutableStateFlow(AppSettingsMMKV.theme),
+    val showHolidayCourse: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showHolidayCourse),
     val module: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(AppSettingsMMKV.homeModule),
     val syncDuration: MutableStateFlow<Duration> = MutableStateFlow(AppSettingsMMKV.syncDuration),
     val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius),
