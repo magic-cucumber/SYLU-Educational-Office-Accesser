@@ -33,11 +33,9 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.io.buffered
-import kotlinx.io.bytestring.encode
 import kotlinx.io.okio.asKotlinxIoRawSink
 import kotlinx.io.okio.asKotlinxIoRawSource
 import kotlinx.serialization.Serializable
@@ -72,7 +70,6 @@ import top.kagg886.util.zip
 import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 class AppModel(private val database: AppDatabase, private val crash: String) : ViewModel(),
@@ -99,13 +96,6 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                 return@orbitContainer
             }
 
-
-            @Serializable
-            data class CrashConfig(
-                val server: String,
-                val modulus: String,
-                val exponent: String,
-            )
 
             //取配置
             val config = try {
@@ -175,13 +165,6 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                 client
             }
 
-            @Serializable
-            data class BaseResponse<T>(
-                val success: Boolean,
-                val message: String? = null,
-                val data: T? = null
-            )
-
             /**
              * 使用 /test 路由测试rsa链路是否通顺。
              * - 服务器error返回server returned unsuccessfully status code
@@ -197,7 +180,12 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
                 }
                 val resp = report.post("/test") {
                     contentType(ContentType.Application.Json)
-                    setBody("payload" to Base64.encode(rsa.encryptor().encrypt(payload)))
+                    setBody(
+                        EncryptedPayload(
+                            first = "payload",
+                            second = Base64.encode(rsa.encryptor().encrypt(payload)),
+                        )
+                    )
                 }
 
                 if (!resp.status.isSuccess()) error("server returned unsuccessfully status code: ${resp.status}")
@@ -219,13 +207,6 @@ class AppModel(private val database: AppDatabase, private val crash: String) : V
             progress.emit(0f)
 
             val token = try {
-                @Serializable
-                data class ReportTokenGenerateRequest(
-                    val cipher: String,
-                    val deviceId: String,
-                )
-
-
                 val resp = report.put("/report") {
                     contentType(ContentType.Application.Json)
                     setBody(
@@ -433,3 +414,30 @@ sealed interface AppModelState {
         val success: MutableStateFlow<Boolean>
     ) : AppModelState
 }
+
+
+@Serializable
+private data class CrashConfig(
+    val server: String,
+    val modulus: String,
+    val exponent: String,
+)
+
+@Serializable
+private data class BaseResponse<T>(
+    val success: Boolean,
+    val message: String? = null,
+    val data: T? = null
+)
+
+@Serializable
+private data class ReportTokenGenerateRequest(
+    val cipher: String,
+    val deviceId: String,
+)
+
+@Serializable
+private data class EncryptedPayload(
+    val first: String,
+    val second: String,
+)
