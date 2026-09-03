@@ -21,6 +21,11 @@
 # MKMB保护
 -keep class top.kagg886.mkmb.MMKVInternalLog { *; }
 
+# CrashActivity 通过反射调用 Kotlin 属性生成的 getter
+-keep class top.kagg886.eoa.EOAApplication {
+    public top.kagg886.backend.database.AppDatabase getDatabase();
+}
+
 
 # 保持 META-INF/services 资源文件同步
 -adaptresourcefilenames META-INF/services/*
