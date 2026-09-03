@@ -43,7 +43,7 @@ internal class EOAHTMLClient : EOAClient {
     }
 
     //懒加载，因为client需要在init之后才能使用
-    private val client by lazy {
+    internal val client by lazy {
         HttpClient {
             defaultRequest { url("https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}") }
 
