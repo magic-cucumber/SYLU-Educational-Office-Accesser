@@ -3,7 +3,9 @@ package top.kagg886.eoa.pages.main.home.course.list
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.zip
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -27,6 +29,7 @@ class CoursePageViewModel(
     private val syncState: MainRouteViewState,
     private val weekIndex: Int,
     database: AppDatabase,
+    private val showHolidayCourseFlow: MutableStateFlow<Boolean>
 ) : BaseViewModel<CoursePageState, CoursePageSideEffect>(
     name = "CoursePageViewModel",
     initial = CoursePageState.Loading
@@ -35,21 +38,17 @@ class CoursePageViewModel(
     private val courseRecordDao = database.courseRecordDao()
 
     override suspend fun Syntax<CoursePageState, CoursePageSideEffect>.init() {
-        refresh().join()
-    }
-
-    fun refresh() = intent {
         if (syncState is MainRouteViewState.SyncFailed) {
             // 非首次同步则展示脏数据
             if (syncState.haveDirtyData) {
                 setDataUnsafe()
-                return@intent
+                return
             }
             // 否则提示同步失败
             reduce {
                 CoursePageState.Failed(syncState.message)
             }
-            return@intent
+            return
         }
 
         // 正在同步则展示加载中
@@ -57,36 +56,37 @@ class CoursePageViewModel(
             // 如果有脏数据则展示
             if (syncState.haveDirtyData) {
                 setDataUnsafe()
-                return@intent
+                return
             }
             // 否则展示加载中
             reduce {
                 CoursePageState.Loading
             }
-            return@intent
+            return
         }
 
         // 同步成功则展示数据
         if (syncState is MainRouteViewState.SyncSuccess) {
             setDataUnsafe()
-            return@intent
+            return
         }
     }
 
     fun setDataUnsafe() = intent {
         val calendar = AppSyncMMKV.calender!!
-        val weekStartDate = calendar.start.plus(weekIndex - 1, DateTimeUnit.WEEK).atTime(0,0)
-        val weekEndDate = calendar.start.plus(weekIndex, DateTimeUnit.WEEK).atTime(0,0)
+        val weekStartDate = calendar.start.plus(weekIndex - 1, DateTimeUnit.WEEK).atTime(0, 0)
+        val weekEndDate = calendar.start.plus(weekIndex, DateTimeUnit.WEEK).atTime(0, 0)
 
         courseRecordDao
             .getCoursesWithRecordInfoFlow(weekStartDate, weekEndDate)
             .flowOn(Dispatchers.IO)
-            .collect { course ->
+            .combine(showHolidayCourseFlow) { course, showHolidayCourse -> course to showHolidayCourse }
+            .collect { (course,showHolidayCourse) ->
                 val timeZone = TimeZone.currentSystemDefault()
                 val now = Clock.System.now().toEpochMilliseconds()
                 val data = course
                     //过滤法定节假日当天的所有课程
-                    .filter { (it.record.startTime.date !in calendar.holidays) || AppSettingsMMKV.showHolidayCourse }
+                    .filter { (it.record.startTime.date !in calendar.holidays) || showHolidayCourse }
                     .groupBy { it.record.startTime.date.dayOfWeek.isoDayNumber }
                     .mapValues { (_, courseAndRecord) ->
                         courseAndRecord
@@ -144,8 +144,10 @@ class CoursePageViewModel(
                                 previous.active
                                     .takeIf { it.isNotEmpty() && start < end }
                                     ?.let { active ->
-                                        val startMillis = start.toInstant(timeZone).toEpochMilliseconds()
-                                        val endMillis = end.toInstant(timeZone).toEpochMilliseconds()
+                                        val startMillis =
+                                            start.toInstant(timeZone).toEpochMilliseconds()
+                                        val endMillis =
+                                            end.toInstant(timeZone).toEpochMilliseconds()
                                         val progress = now
                                             .takeIf { it in startMillis..<endMillis }
                                             ?.let {

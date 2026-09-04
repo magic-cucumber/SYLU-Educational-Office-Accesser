@@ -92,8 +92,6 @@ fun CoursePageListScreen(
             AppSettingsMMKVType.AppTheme.SystemDefault -> systemNight
         }
     }
-
-    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
     val hideWeekendCourse by rootState.hideWeekendCourse.collectAsState()
 
     val mainViewModel = mainViewModelOrNull() ?: return
@@ -101,7 +99,7 @@ fun CoursePageListScreen(
     val model = viewModel<CoursePageViewModel>(
         key = "${index * 31 + syncState.toViewModelKey().hashCode()}"
     ) {
-        CoursePageViewModel(syncState, index + 1, mainViewModel.database)
+        CoursePageViewModel(syncState, index + 1, mainViewModel.database,rootState.showHolidayCourse)
     }
     val state by model.collectAsState()
     model.collectSideEffect {
@@ -115,11 +113,6 @@ fun CoursePageListScreen(
             }
         }
     }
-
-    LaunchedEffect(showHolidayCourse) {
-        model.refresh().join()
-    }
-
 
     CoursePageScreenContent(
         state = state,

@@ -89,14 +89,9 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
     val syncState by mainViewModel.collectAsState()
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
-    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
     val showExperimentClass by rootState.showExperimentClass.collectAsState()
     val model = viewModel<SummaryModel>(key = "summary-${syncState.toViewModelKey()}") {
-        SummaryModel(syncState, mainViewModel.database)
-    }
-
-    LaunchedEffect(showHolidayCourse) {
-        model.refresh().join()
+        SummaryModel(syncState, mainViewModel.database,rootState.showHolidayCourse)
     }
 
     val noticeModel = viewModel<SystemNoticeModel>(key = "notice-${syncState.toViewModelKey()}") {

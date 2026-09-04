@@ -53,6 +53,10 @@ interface CourseRecordDao {
     @Query("SELECT * FROM course_records WHERE courseId = :courseId")
     suspend fun getByCourseId(courseId: Long): List<CourseRecordEntity>
 
+
+    @Query("SELECT * FROM course_records WHERE courseId = :courseId")
+    fun getByCourseIdFlow(courseId: Long): Flow<List<CourseRecordEntity>>
+
     @Query("SELECT * FROM course_records WHERE id = :recordId")
     suspend fun getById(recordId: Long): CourseRecordEntity
 

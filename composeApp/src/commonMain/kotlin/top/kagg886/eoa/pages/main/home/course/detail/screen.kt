@@ -75,17 +75,11 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
 ) {
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
-    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
 
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CourseDetailViewModel>(key = syncState.toViewModelKey()) {
-        CourseDetailViewModel(route.recordId, syncState, mainViewModel.database)
-    }
-
-    //监听showHolidayCourse,以及时刷新
-    LaunchedEffect(showHolidayCourse) {
-        model.refresh().join()
+        CourseDetailViewModel(route.recordId, syncState, mainViewModel.database,rootState.showHolidayCourse)
     }
 
     val state by model.collectAsState()

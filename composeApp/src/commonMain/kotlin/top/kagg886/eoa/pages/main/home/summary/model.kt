@@ -1,8 +1,13 @@
 package top.kagg886.eoa.pages.main.home.summary
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.datetime.*
 import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
@@ -20,7 +25,8 @@ import kotlin.time.ExperimentalTime
 
 class SummaryModel(
     private val syncState: MainRouteViewState,
-    database: AppDatabase
+    database: AppDatabase,
+    private val showHolidayCourseFlow: MutableStateFlow<Boolean>
 ) : BaseViewModel<SummaryState, SummarySideEffect>(
     name = "SummaryModel",
     initial = SummaryState.Loading
@@ -30,9 +36,7 @@ class SummaryModel(
 
     @OptIn(OrbitExperimental::class)
     override suspend fun Syntax<SummaryState, SummarySideEffect>.init() {
-        initData().join()
-
-
+        initData()
         //进度监听。每分钟调度一次
         intent {
             while (true) {
@@ -71,7 +75,7 @@ class SummaryModel(
                 delay(nextMidnight - now)
 
                 reduce { SummaryState.Loading }
-                initData().join()
+                initData()
             }
         }
     }
@@ -80,7 +84,7 @@ class SummaryModel(
         if (syncState is MainRouteViewState.SyncFailed) {
             // 非首次同步则展示脏数据
             if (syncState.haveDirtyData) {
-                setDataUnsafe().join()
+                setDataUnsafe()
                 return@intent
             }
             // 否则提示同步失败
@@ -94,7 +98,7 @@ class SummaryModel(
         if (syncState is MainRouteViewState.SyncProcess) {
             // 如果有脏数据则展示
             if (syncState.haveDirtyData) {
-                setDataUnsafe().join()
+                setDataUnsafe()
                 return@intent
             }
             // 否则展示加载中
@@ -106,7 +110,7 @@ class SummaryModel(
 
         // 同步成功则展示数据
         if (syncState is MainRouteViewState.SyncSuccess) {
-            setDataUnsafe().join()
+            setDataUnsafe()
             return@intent
         }
     }
@@ -131,113 +135,117 @@ class SummaryModel(
             return@intent
         }
 
-        //获取今天的课表计划
-        //法定节假日固定返回空课表
-        val plan = if (today.date in calendar.holidays && !AppSettingsMMKV.showHolidayCourse) emptyList() else courseRecordDao.getCoursesWithRecordInfo(
-            start = today.date.atTime(0, 0),
-            end = today.date.plus(1, DateTimeUnit.DAY).atTime(0, 0)
-        )
-
-        //将课表计划和课表信息合并
-        val period = today.time.getPeriodNumber()
-        val extendClass = courseExtendDao.all(currentWeek)
-        val timeZone = TimeZone.currentSystemDefault()
-        val now = today.toInstant(timeZone).toEpochMilliseconds()
-
-        val plans: List<TodayClass> = plan
-            .map { (course, record) ->
-                TodayClass.Single(
-                    name = course.name,
-                    teacher = course.teacherName,
-                    location = course.classroomName,
-                    date = record.startTime to record.endTime,
-                    recordId = record.id!!,
-                    courseId = course.id!!,
-                    isDegreeProgram = course.isDegreeRequired,
-                    isExamine = course.isExaminable,
-                    fullDate = record.startTime to record.endTime,
-                )
-            }
-            .flatMap { course ->
-                listOf(
-                    course.date.first to (EventType.START to course),
-                    course.date.second to (EventType.END to course),
-                )
-            }
-            .groupBy(
-                keySelector = { it.first },
-                valueTransform = { it.second },
+        courseRecordDao
+            .getCoursesWithRecordInfoFlow(
+                start = today.date.atTime(0, 0),
+                end = today.date.plus(1, DateTimeUnit.DAY).atTime(0, 0)
             )
-            .entries
-            .sortedBy { it.key }
-            .asSequence()
-            .runningFold(SweepState()) { state, (time, events) ->
-                SweepState(
-                    time = time,
-                    active = buildSet {
-                        addAll(state.active)
+            .flowOn(Dispatchers.IO)
+            .combine(showHolidayCourseFlow) { course, showHolidayCourse -> course to showHolidayCourse }
+            .collect { (plan, showHolidayCourse) ->
+                //将课表计划和课表信息合并
+                val period = today.time.getPeriodNumber()
+                val extendClass = courseExtendDao.all(currentWeek)
+                val timeZone = TimeZone.currentSystemDefault()
+                val now = today.toInstant(timeZone).toEpochMilliseconds()
 
-                        events
-                            .asSequence()
-                            .filter { it.first == EventType.END }
-                            .map { it.second }
-                            .forEach(::remove)
-
-                        events
-                            .asSequence()
-                            .filter { it.first == EventType.START }
-                            .map { it.second }
-                            .forEach(::add)
-                    },
-                )
-            }
-            .zipWithNext()
-            .mapNotNull { (previous, current) ->
-                val start = previous.time ?: return@mapNotNull null
-                val end = current.time ?: return@mapNotNull null
-
-                previous.active
-                    .takeIf { it.isNotEmpty() && start < end }
-                    ?.let { active ->
-                        val startMillis = start.toInstant(timeZone).toEpochMilliseconds()
-                        val endMillis = end.toInstant(timeZone).toEpochMilliseconds()
-                        val progress = now
-                            .takeIf { it in startMillis..<endMillis }
-                            ?.let {
-                                (it - startMillis).toFloat() /
-                                        (endMillis - startMillis).toFloat()
-                            }
-
-                        if (active.size == 1) {
-                            active.single().copy(
-                                date = start to end,
-                                progress = MutableStateFlow(progress),
-                            )
-                        } else {
-                            TodayClass.Conflict(
-                                date = start to end,
-                                progress = MutableStateFlow(progress),
-                                data = active.toList(),
-                            )
-                        }
+                val plans: List<TodayClass> = plan
+                    //过滤法定节假日当天的所有课程
+                    .filter { (it.record.startTime.date !in calendar.holidays) || showHolidayCourse }
+                    .map { (course, record) ->
+                        TodayClass.Single(
+                            name = course.name,
+                            teacher = course.teacherName,
+                            location = course.classroomName,
+                            date = record.startTime to record.endTime,
+                            recordId = record.id!!,
+                            courseId = course.id!!,
+                            isDegreeProgram = course.isDegreeRequired,
+                            isExamine = course.isExaminable,
+                            fullDate = record.startTime to record.endTime,
+                        )
                     }
-            }
-            .toList()
-
-        reduce {
-            SummaryState.Success(
-                weekNumber = currentWeek,
-                dayPeriod = period,
-                progress = with(AppSyncMMKV.calender!!) {
-                    start.until(today.date, DateTimeUnit.DAY).toFloat() / start.until(
-                        end,
-                        DateTimeUnit.DAY
+                    .flatMap { course ->
+                        listOf(
+                            course.date.first to (EventType.START to course),
+                            course.date.second to (EventType.END to course),
+                        )
+                    }
+                    .groupBy(
+                        keySelector = { it.first },
+                        valueTransform = { it.second },
                     )
-                },
-                plan = plans,
-                extendClass = extendClass
-            )
-        }
+                    .entries
+                    .sortedBy { it.key }
+                    .asSequence()
+                    .runningFold(SweepState()) { state, (time, events) ->
+                        SweepState(
+                            time = time,
+                            active = buildSet {
+                                addAll(state.active)
+
+                                events
+                                    .asSequence()
+                                    .filter { it.first == EventType.END }
+                                    .map { it.second }
+                                    .forEach(::remove)
+
+                                events
+                                    .asSequence()
+                                    .filter { it.first == EventType.START }
+                                    .map { it.second }
+                                    .forEach(::add)
+                            },
+                        )
+                    }
+                    .zipWithNext()
+                    .mapNotNull { (previous, current) ->
+                        val start = previous.time ?: return@mapNotNull null
+                        val end = current.time ?: return@mapNotNull null
+
+                        previous.active
+                            .takeIf { it.isNotEmpty() && start < end }
+                            ?.let { active ->
+                                val startMillis = start.toInstant(timeZone).toEpochMilliseconds()
+                                val endMillis = end.toInstant(timeZone).toEpochMilliseconds()
+                                val progress = now
+                                    .takeIf { it in startMillis..<endMillis }
+                                    ?.let {
+                                        (it - startMillis).toFloat() /
+                                                (endMillis - startMillis).toFloat()
+                                    }
+
+                                if (active.size == 1) {
+                                    active.single().copy(
+                                        date = start to end,
+                                        progress = MutableStateFlow(progress),
+                                    )
+                                } else {
+                                    TodayClass.Conflict(
+                                        date = start to end,
+                                        progress = MutableStateFlow(progress),
+                                        data = active.toList(),
+                                    )
+                                }
+                            }
+                    }
+                    .toList()
+
+                reduce {
+                    SummaryState.Success(
+                        weekNumber = currentWeek,
+                        dayPeriod = period,
+                        progress = with(AppSyncMMKV.calender!!) {
+                            start.until(today.date, DateTimeUnit.DAY).toFloat() / start.until(
+                                end,
+                                DateTimeUnit.DAY
+                            )
+                        },
+                        plan = plans,
+                        extendClass = extendClass
+                    )
+                }
+            }
     }
 
     fun redirectToCourse(it: TodayClass) = intent {
@@ -264,10 +272,6 @@ class SummaryModel(
                 )
             }
         }
-    }
-
-    fun refresh() = intent {
-        initData().join()
     }
 }
 
