@@ -3,6 +3,8 @@ package top.kagg886.eoa.pages.main.home.course.detail
 import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.datetime.*
 import org.orbitmvi.orbit.syntax.Syntax
+import top.kagg886.backend.config.AppSettingsMMKV
+import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
@@ -18,42 +20,43 @@ class CourseDetailViewModel(
 
 
     override suspend fun Syntax<CourseDetailState, CourseDetailSideEffect>.init() {
-            if (syncState is MainRouteViewState.SyncFailed) {
-                // 非首次同步则展示脏数据
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return
-                }
-                // 否则提示同步失败
-                reduce {
-                    CourseDetailState.Failed(syncState.message)
-                }
-                return
-            }
-
-            // 正在同步则展示加载中
-            if (syncState is MainRouteViewState.SyncProcess) {
-                // 如果有脏数据则展示
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return
-                }
-                // 否则展示加载中
-                reduce {
-                    CourseDetailState.Loading
-                }
-                return
-            }
-
-            // 同步成功则展示数据
-            if (syncState is MainRouteViewState.SyncSuccess) {
+        if (syncState is MainRouteViewState.SyncFailed) {
+            // 非首次同步则展示脏数据
+            if (syncState.haveDirtyData) {
                 setDataUnsafe().join()
                 return
             }
+            // 否则提示同步失败
+            reduce {
+                CourseDetailState.Failed(syncState.message)
+            }
+            return
+        }
+
+        // 正在同步则展示加载中
+        if (syncState is MainRouteViewState.SyncProcess) {
+            // 如果有脏数据则展示
+            if (syncState.haveDirtyData) {
+                setDataUnsafe().join()
+                return
+            }
+            // 否则展示加载中
+            reduce {
+                CourseDetailState.Loading
+            }
+            return
+        }
+
+        // 同步成功则展示数据
+        if (syncState is MainRouteViewState.SyncSuccess) {
+            setDataUnsafe().join()
+            return
+        }
     }
 
     fun setDataUnsafe() = intent {
         //因为配置了删除课程时级联删除记录，所以我们无需过滤xnm和xqm。
+        val calendar = AppSyncMMKV.calender!!
 
         //获取课程实体
         val course = courseDao.getById(courseRecordDao.getById(recordId).courseId!!)
@@ -75,20 +78,23 @@ class CourseDetailViewModel(
         reduce {
             CourseDetailState.Success(
                 entity = course,
-                records = plans.map {
-                    CourseRecordAndProgress(
-                        id = it.id!!,
-                        courseId = it.courseId!!,
-                        isUserAdded = it.isUserAdded,
-                        progressStatus = when {
-                            current < it.startTime -> CourseRecordAndProgress.ProgressStatus.NotStarted
-                            current > it.endTime -> CourseRecordAndProgress.ProgressStatus.Completed
-                            else -> CourseRecordAndProgress.ProgressStatus.InProgress
-                        },
-                        start = it.startTime,
-                        end = it.endTime,
-                    )
-                },
+                records = plans
+                    //过滤法定节假日当天的所有课程
+                    .filter { (it.startTime.date !in calendar.holidays) || AppSettingsMMKV.showHolidayCourse }
+                    .map {
+                        CourseRecordAndProgress(
+                            id = it.id!!,
+                            courseId = it.courseId!!,
+                            isUserAdded = it.isUserAdded,
+                            progressStatus = when {
+                                current < it.startTime -> CourseRecordAndProgress.ProgressStatus.NotStarted
+                                current > it.endTime -> CourseRecordAndProgress.ProgressStatus.Completed
+                                else -> CourseRecordAndProgress.ProgressStatus.InProgress
+                            },
+                            start = it.startTime,
+                            end = it.endTime,
+                        )
+                    },
                 progress = progress,
             )
         }
