@@ -876,11 +876,7 @@ private fun CourseCalendarCard(
                     vertical = 4.dp
                 ),
             content = {
-                /*
-                 * 0: 两行标题高度探针
-                 *
-                 * 永远不会被 place。
-                 */
+                // 0: 两行课程名探针
                 Text(
                     text = title,
                     style = courseNameTextStyle,
@@ -892,9 +888,7 @@ private fun CourseCalendarCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                /*
-                 * 1: 一行标题高度探针
-                 */
+                // 1: 一行课程名探针
                 Text(
                     text = title,
                     style = courseNameTextStyle,
@@ -907,27 +901,29 @@ private fun CourseCalendarCard(
                 )
 
                 if (single != null) {
-                    /*
-                     * 2: 一行地点高度探针
-                     */
+                    // 2: 两行教室探针
                     Text(
                         text = single.location,
                         style = courseLocationTextStyle,
-                        color = contentColor.copy(
-                            alpha = 0.75f
-                        ),
+                        color = contentColor.copy(alpha = 0.75f),
+                        textAlign = TextAlign.Start,
+                        minLines = 2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    // 3: 一行教室探针
+                    Text(
+                        text = single.location,
+                        style = courseLocationTextStyle,
+                        color = contentColor.copy(alpha = 0.75f),
                         textAlign = TextAlign.Start,
                         minLines = 1,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    /*
-                     * 3: 实际两行标题
-                     *
-                     * 不指定 minLines，因此标题实际上只有一行时，
-                     * 不会强制占据两行高度。
-                     */
+                    // 4: 实际两行课程名
                     Text(
                         text = title,
                         style = courseNameTextStyle,
@@ -938,9 +934,7 @@ private fun CourseCalendarCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    /*
-                     * 4: 实际一行标题
-                     */
+                    // 5: 实际一行课程名
                     Text(
                         text = title,
                         style = courseNameTextStyle,
@@ -951,26 +945,27 @@ private fun CourseCalendarCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    /*
-                     * 5: 实际地点
-                     */
+                    // 6: 实际两行教室
                     Text(
                         text = single.location,
                         style = courseLocationTextStyle,
-                        color = contentColor.copy(
-                            alpha = 0.75f
-                        ),
+                        color = contentColor.copy(alpha = 0.75f),
+                        textAlign = TextAlign.Start,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    // 7: 实际一行教室
+                    Text(
+                        text = single.location,
+                        style = courseLocationTextStyle,
+                        color = contentColor.copy(alpha = 0.75f),
                         textAlign = TextAlign.Start,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 } else {
-                    /*
-                     * Conflict:
-                     *
-                     * 2: 实际两行标题
-                     * 3: 实际一行标题
-                     */
+                    // 2: 实际两行课程名
                     Text(
                         text = title,
                         style = courseNameTextStyle,
@@ -981,6 +976,7 @@ private fun CourseCalendarCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
+                    // 3: 实际一行课程名
                     Text(
                         text = title,
                         style = courseNameTextStyle,
@@ -993,11 +989,6 @@ private fun CourseCalendarCard(
                 }
             }
         ) { measurables, constraints ->
-            /*
-             * Probe 不应该受到当前 Card 高度约束，
-             * 否则 Card 很矮时 probe 自己就会被裁剪，
-             * 得不到一行/两行文本真正需要的高度。
-             */
             val probeConstraints = Constraints(
                 minWidth = 0,
                 maxWidth = constraints.maxWidth,
@@ -1005,11 +996,8 @@ private fun CourseCalendarCard(
                 maxHeight = Constraints.Infinity
             )
 
-            val title2Probe = measurables[0]
-                .measure(probeConstraints)
-
-            val title1Probe = measurables[1]
-                .measure(probeConstraints)
+            val title2Probe = measurables[0].measure(probeConstraints)
+            val title1Probe = measurables[1].measure(probeConstraints)
 
             val availableHeight = if (constraints.hasBoundedHeight) {
                 constraints.maxHeight
@@ -1017,326 +1005,205 @@ private fun CourseCalendarCard(
                 Int.MAX_VALUE
             }
 
+            fun layoutSize(
+                width: Int,
+                contentHeight: Int
+            ): Pair<Int, Int> {
+                return (
+                        if (constraints.hasBoundedWidth) {
+                            constraints.maxWidth
+                        } else {
+                            width
+                        }
+                        ) to (
+                        if (constraints.hasBoundedHeight) {
+                            constraints.maxHeight
+                        } else {
+                            contentHeight
+                        }
+                        )
+            }
+
             if (single != null) {
-                val locationProbe = measurables[2]
-                    .measure(probeConstraints)
+                val location2Probe = measurables[2].measure(probeConstraints)
+                val location1Probe = measurables[3].measure(probeConstraints)
 
-                val canShowTitle2AndLocation =
-                    title2Probe.height + locationProbe.height <=
-                            availableHeight
+                val title2Measurable = measurables[4]
+                val title1Measurable = measurables[5]
+                val location2Measurable = measurables[6]
+                val location1Measurable = measurables[7]
 
-                val canShowTitle1AndLocation =
-                    title1Probe.height + locationProbe.height <=
-                            availableHeight
-
-                val canShowTitle2 =
-                    title2Probe.height <= availableHeight
-
-                val canShowTitle1 =
-                    title1Probe.height <= availableHeight
-
-                val title2Measurable = measurables[3]
-                val title1Measurable = measurables[4]
-                val locationMeasurable = measurables[5]
+                val titleLines: Int
+                val locationLines: Int
 
                 when {
-                    /*
-                     * 2 行 title + 1 行 location
-                     */
-                    canShowTitle2AndLocation -> {
-                        val titlePlaceable = title2Measurable.measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = availableHeight
-                            )
-                        )
-
-                        val locationPlaceable =
-                            locationMeasurable.measure(
-                                Constraints(
-                                    minWidth = 0,
-                                    maxWidth = constraints.maxWidth,
-                                    minHeight = 0,
-                                    maxHeight = (
-                                            availableHeight -
-                                                    titlePlaceable.height
-                                            ).coerceAtLeast(0)
-                                )
-                            )
-
-                        val contentHeight =
-                            titlePlaceable.height +
-                                    locationPlaceable.height
-
-                        val width = if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            maxOf(
-                                titlePlaceable.width,
-                                locationPlaceable.width
-                            )
-                        }
-
-                        val height = if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            contentHeight
-                        }
-
-                        layout(
-                            width = width,
-                            height = height
-                        ) {
-                            titlePlaceable.placeRelative(
-                                x = 0,
-                                y = 0
-                            )
-
-                            locationPlaceable.placeRelative(
-                                x = 0,
-                                y = titlePlaceable.height
-                            )
-                        }
+                    // 2 行课程名 / 2 行教室
+                    title2Probe.height + location2Probe.height <= availableHeight -> {
+                        titleLines = 2
+                        locationLines = 2
                     }
 
-                    /*
-                     * 1 行 title + 1 行 location
-                     */
-                    canShowTitle1AndLocation -> {
-                        val titlePlaceable = title1Measurable.measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = availableHeight
-                            )
-                        )
-
-                        val locationPlaceable =
-                            locationMeasurable.measure(
-                                Constraints(
-                                    minWidth = 0,
-                                    maxWidth = constraints.maxWidth,
-                                    minHeight = 0,
-                                    maxHeight = (
-                                            availableHeight -
-                                                    titlePlaceable.height
-                                            ).coerceAtLeast(0)
-                                )
-                            )
-
-                        val contentHeight =
-                            titlePlaceable.height +
-                                    locationPlaceable.height
-
-                        val width = if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            maxOf(
-                                titlePlaceable.width,
-                                locationPlaceable.width
-                            )
-                        }
-
-                        val height = if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            contentHeight
-                        }
-
-                        layout(
-                            width = width,
-                            height = height
-                        ) {
-                            titlePlaceable.placeRelative(
-                                x = 0,
-                                y = 0
-                            )
-
-                            locationPlaceable.placeRelative(
-                                x = 0,
-                                y = titlePlaceable.height
-                            )
-                        }
+                    // 1 行课程名 / 2 行教室
+                    title1Probe.height + location2Probe.height <= availableHeight -> {
+                        titleLines = 1
+                        locationLines = 2
                     }
 
-                    /*
-                     * 2 行 title
-                     */
-                    canShowTitle2 -> {
-                        val titlePlaceable = title2Measurable.measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = availableHeight
-                            )
-                        )
-
-                        val width = if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            titlePlaceable.width
-                        }
-
-                        val height = if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            titlePlaceable.height
-                        }
-
-                        layout(
-                            width = width,
-                            height = height
-                        ) {
-                            titlePlaceable.placeRelative(
-                                x = 0,
-                                y = 0
-                            )
-                        }
+                    // 1 行课程名 / 1 行教室
+                    title1Probe.height + location1Probe.height <= availableHeight -> {
+                        titleLines = 1
+                        locationLines = 1
                     }
 
-                    /*
-                     * 1 行 title
-                     */
-                    canShowTitle1 -> {
-                        val titlePlaceable = title1Measurable.measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = availableHeight
-                            )
-                        )
-
-                        val width = if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            titlePlaceable.width
-                        }
-
-                        val height = if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            titlePlaceable.height
-                        }
-
-                        layout(
-                            width = width,
-                            height = height
-                        ) {
-                            titlePlaceable.placeRelative(
-                                x = 0,
-                                y = 0
-                            )
-                        }
+                    // 2 行课程名
+                    title2Probe.height <= availableHeight -> {
+                        titleLines = 2
+                        locationLines = 0
                     }
 
-                    /*
-                     * 什么都放不下。
-                     */
+                    // 1 行课程名
+                    title1Probe.height <= availableHeight -> {
+                        titleLines = 1
+                        locationLines = 0
+                    }
+
+                    // 不显示
                     else -> {
-                        layout(
-                            width = if (constraints.hasBoundedWidth) {
-                                constraints.maxWidth
+                        titleLines = 0
+                        locationLines = 0
+                    }
+                }
+
+                if (titleLines == 0) {
+                    layout(
+                        width = if (constraints.hasBoundedWidth) {
+                            constraints.maxWidth
+                        } else {
+                            0
+                        },
+                        height = if (constraints.hasBoundedHeight) {
+                            constraints.maxHeight
+                        } else {
+                            0
+                        }
+                    ) {}
+                } else {
+                    val titlePlaceable = (
+                            if (titleLines == 2) {
+                                title2Measurable
                             } else {
-                                0
-                            },
-                            height = if (constraints.hasBoundedHeight) {
-                                constraints.maxHeight
-                            } else {
-                                0
+                                title1Measurable
                             }
-                        ) {}
+                            ).measure(
+                            Constraints(
+                                minWidth = 0,
+                                maxWidth = constraints.maxWidth,
+                                minHeight = 0,
+                                maxHeight = availableHeight
+                            )
+                        )
+
+                    val locationPlaceable = when (locationLines) {
+                        2 -> location2Measurable.measure(
+                            Constraints(
+                                minWidth = 0,
+                                maxWidth = constraints.maxWidth,
+                                minHeight = 0,
+                                maxHeight = (
+                                        availableHeight - titlePlaceable.height
+                                        ).coerceAtLeast(0)
+                            )
+                        )
+
+                        1 -> location1Measurable.measure(
+                            Constraints(
+                                minWidth = 0,
+                                maxWidth = constraints.maxWidth,
+                                minHeight = 0,
+                                maxHeight = (
+                                        availableHeight - titlePlaceable.height
+                                        ).coerceAtLeast(0)
+                            )
+                        )
+
+                        else -> null
+                    }
+
+                    val contentHeight =
+                        titlePlaceable.height +
+                                (locationPlaceable?.height ?: 0)
+
+                    val contentWidth = maxOf(
+                        titlePlaceable.width,
+                        locationPlaceable?.width ?: 0
+                    )
+
+                    val (width, height) = layoutSize(
+                        width = contentWidth,
+                        contentHeight = contentHeight
+                    )
+
+                    layout(
+                        width = width,
+                        height = height
+                    ) {
+                        titlePlaceable.placeRelative(
+                            x = 0,
+                            y = 0
+                        )
+
+                        locationPlaceable?.placeRelative(
+                            x = 0,
+                            y = titlePlaceable.height
+                        )
                     }
                 }
             } else {
-                /*
-                 * Conflict:
-                 *
-                 * 2 行 title
-                 * > 1 行 title
-                 * > nothing
-                 */
-                val title2Measurable = measurables[2]
-                val title1Measurable = measurables[3]
+                // Conflict 保持：
+                // 2 行标题 -> 1 行标题 -> 不显示
+                val titleMeasurable = when {
+                    title2Probe.height <= availableHeight ->
+                        measurables[2]
 
-                when {
-                    title2Probe.height <= availableHeight -> {
-                        val titlePlaceable =
-                            title2Measurable.measure(
-                                Constraints(
-                                    minWidth = 0,
-                                    maxWidth = constraints.maxWidth,
-                                    minHeight = 0,
-                                    maxHeight = availableHeight
-                                )
-                            )
+                    title1Probe.height <= availableHeight ->
+                        measurables[3]
 
-                        layout(
-                            width = if (constraints.hasBoundedWidth) {
-                                constraints.maxWidth
-                            } else {
-                                titlePlaceable.width
-                            },
-                            height = if (constraints.hasBoundedHeight) {
-                                constraints.maxHeight
-                            } else {
-                                titlePlaceable.height
-                            }
-                        ) {
-                            titlePlaceable.placeRelative(
-                                x = 0,
-                                y = 0
-                            )
+                    else -> null
+                }
+
+                if (titleMeasurable == null) {
+                    layout(
+                        width = if (constraints.hasBoundedWidth) {
+                            constraints.maxWidth
+                        } else {
+                            0
+                        },
+                        height = if (constraints.hasBoundedHeight) {
+                            constraints.maxHeight
+                        } else {
+                            0
                         }
-                    }
+                    ) {}
+                } else {
+                    val titlePlaceable = titleMeasurable.measure(
+                        Constraints(
+                            minWidth = 0,
+                            maxWidth = constraints.maxWidth,
+                            minHeight = 0,
+                            maxHeight = availableHeight
+                        )
+                    )
 
-                    title1Probe.height <= availableHeight -> {
-                        val titlePlaceable =
-                            title1Measurable.measure(
-                                Constraints(
-                                    minWidth = 0,
-                                    maxWidth = constraints.maxWidth,
-                                    minHeight = 0,
-                                    maxHeight = availableHeight
-                                )
-                            )
+                    val (width, height) = layoutSize(
+                        width = titlePlaceable.width,
+                        contentHeight = titlePlaceable.height
+                    )
 
-                        layout(
-                            width = if (constraints.hasBoundedWidth) {
-                                constraints.maxWidth
-                            } else {
-                                titlePlaceable.width
-                            },
-                            height = if (constraints.hasBoundedHeight) {
-                                constraints.maxHeight
-                            } else {
-                                titlePlaceable.height
-                            }
-                        ) {
-                            titlePlaceable.placeRelative(
-                                x = 0,
-                                y = 0
-                            )
-                        }
-                    }
-
-                    else -> {
-                        layout(
-                            width = if (constraints.hasBoundedWidth) {
-                                constraints.maxWidth
-                            } else {
-                                0
-                            },
-                            height = if (constraints.hasBoundedHeight) {
-                                constraints.maxHeight
-                            } else {
-                                0
-                            }
-                        ) {}
+                    layout(
+                        width = width,
+                        height = height
+                    ) {
+                        titlePlaceable.placeRelative(0, 0)
                     }
                 }
             }
@@ -1567,9 +1434,9 @@ private val CalendarHeaderHeight = 64.dp
 private val BaseMinuteHeight = 2.4.dp
 
 private val TimeLabelTopPadding = 4.dp
-private val CourseNameFontSize = 12.dp
-private val CourseLocationFontSize = 11.dp
-private val CourseTextLineHeight = 16.dp
+private val CourseNameFontSize = 10.dp
+private val CourseLocationFontSize = 8.dp
+private val CourseTextLineHeight = 14.dp
 private val CourseTextLetterSpacing = 0.5.dp
 private val CourseHorizontalPadding = 3.dp
 private val CourseVerticalPadding = 1.dp
