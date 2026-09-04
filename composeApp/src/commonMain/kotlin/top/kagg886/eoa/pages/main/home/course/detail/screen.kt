@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import kotlinx.coroutines.flow.drop
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -32,6 +35,7 @@ import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -69,11 +73,21 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
         BackIconButton()
     }
 ) {
+    val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
+
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CourseDetailViewModel>(key = syncState.toViewModelKey()) {
         CourseDetailViewModel(route.recordId, syncState, mainViewModel.database)
     }
+
+    //监听showHolidayCourse,以及时刷新
+    LaunchedEffect(showHolidayCourse) {
+        model.refresh().join()
+    }
+
     val state by model.collectAsState()
 
     model.collectSideEffect {

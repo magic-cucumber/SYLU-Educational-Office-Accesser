@@ -32,7 +32,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
-import kotlinx.coroutines.flow.drop
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.format
 import kotlinx.serialization.Serializable
@@ -90,19 +89,14 @@ fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
     val syncState by mainViewModel.collectAsState()
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
+    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
     val showExperimentClass by rootState.showExperimentClass.collectAsState()
     val model = viewModel<SummaryModel>(key = "summary-${syncState.toViewModelKey()}") {
         SummaryModel(syncState, mainViewModel.database)
     }
 
-    LaunchedEffect(model,rootState.showHolidayCourse) {
-        rootState.showHolidayCourse
-            //过掉初始值，初始值由VM内部初始化
-            .drop(1)
-            .collect {
-                model.refresh().join()
-            }
-
+    LaunchedEffect(showHolidayCourse) {
+        model.refresh().join()
     }
 
     val noticeModel = viewModel<SystemNoticeModel>(key = "notice-${syncState.toViewModelKey()}") {

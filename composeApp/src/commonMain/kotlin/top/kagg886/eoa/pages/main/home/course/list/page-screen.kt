@@ -78,6 +78,24 @@ fun CoursePageListScreen(
     scale: Float,
     onZoomChange: (Float) -> Unit,
 ) {
+    val nav = LocalNavController.current
+
+    val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+
+    val theme by rootState.theme.collectAsState()
+    val systemNight = isSystemInDarkTheme()
+    val useNightMode = remember(theme, systemNight) {
+        when (theme) {
+            AppSettingsMMKVType.AppTheme.Dark -> true
+            AppSettingsMMKVType.AppTheme.Light -> false
+            AppSettingsMMKVType.AppTheme.SystemDefault -> systemNight
+        }
+    }
+
+    val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
+    val hideWeekendCourse by rootState.hideWeekendCourse.collectAsState()
+
     val mainViewModel = mainViewModelOrNull() ?: return
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CoursePageViewModel>(
@@ -85,9 +103,7 @@ fun CoursePageListScreen(
     ) {
         CoursePageViewModel(syncState, index + 1, mainViewModel.database)
     }
-
-    val nav = LocalNavController.current
-
+    val state by model.collectAsState()
     model.collectSideEffect {
         when (it) {
             is CoursePageSideEffect.NavigateToCourseDetail -> {
@@ -100,21 +116,10 @@ fun CoursePageListScreen(
         }
     }
 
-    val state by model.collectAsState()
-
-    val rootModel = rootViewModel()
-    val rootState by rootModel.collectAsState()
-    val theme by rootState.theme.collectAsState()
-    val hideWeekendCourse by rootState.hideWeekendCourse.collectAsState()
-
-    val systemNight = isSystemInDarkTheme()
-    val useNightMode = remember(theme, systemNight) {
-        when (theme) {
-            AppSettingsMMKVType.AppTheme.Dark -> true
-            AppSettingsMMKVType.AppTheme.Light -> false
-            AppSettingsMMKVType.AppTheme.SystemDefault -> systemNight
-        }
+    LaunchedEffect(showHolidayCourse) {
+        model.refresh().join()
     }
+
 
     CoursePageScreenContent(
         state = state,

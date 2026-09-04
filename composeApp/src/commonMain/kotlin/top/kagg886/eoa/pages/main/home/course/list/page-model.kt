@@ -35,17 +35,21 @@ class CoursePageViewModel(
     private val courseRecordDao = database.courseRecordDao()
 
     override suspend fun Syntax<CoursePageState, CoursePageSideEffect>.init() {
+        refresh().join()
+    }
+
+    fun refresh() = intent {
         if (syncState is MainRouteViewState.SyncFailed) {
             // 非首次同步则展示脏数据
             if (syncState.haveDirtyData) {
                 setDataUnsafe()
-                return
+                return@intent
             }
             // 否则提示同步失败
             reduce {
                 CoursePageState.Failed(syncState.message)
             }
-            return
+            return@intent
         }
 
         // 正在同步则展示加载中
@@ -53,19 +57,19 @@ class CoursePageViewModel(
             // 如果有脏数据则展示
             if (syncState.haveDirtyData) {
                 setDataUnsafe()
-                return
+                return@intent
             }
             // 否则展示加载中
             reduce {
                 CoursePageState.Loading
             }
-            return
+            return@intent
         }
 
         // 同步成功则展示数据
         if (syncState is MainRouteViewState.SyncSuccess) {
             setDataUnsafe()
-            return
+            return@intent
         }
     }
 

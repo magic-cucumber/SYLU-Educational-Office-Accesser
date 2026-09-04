@@ -20,17 +20,21 @@ class CourseDetailViewModel(
 
 
     override suspend fun Syntax<CourseDetailState, CourseDetailSideEffect>.init() {
+        refresh().join()
+    }
+
+    fun refresh() = intent {
         if (syncState is MainRouteViewState.SyncFailed) {
             // 非首次同步则展示脏数据
             if (syncState.haveDirtyData) {
                 setDataUnsafe().join()
-                return
+                return@intent
             }
             // 否则提示同步失败
             reduce {
                 CourseDetailState.Failed(syncState.message)
             }
-            return
+            return@intent
         }
 
         // 正在同步则展示加载中
@@ -38,19 +42,19 @@ class CourseDetailViewModel(
             // 如果有脏数据则展示
             if (syncState.haveDirtyData) {
                 setDataUnsafe().join()
-                return
+                return@intent
             }
             // 否则展示加载中
             reduce {
                 CourseDetailState.Loading
             }
-            return
+            return@intent
         }
 
         // 同步成功则展示数据
         if (syncState is MainRouteViewState.SyncSuccess) {
             setDataUnsafe().join()
-            return
+            return@intent
         }
     }
 
