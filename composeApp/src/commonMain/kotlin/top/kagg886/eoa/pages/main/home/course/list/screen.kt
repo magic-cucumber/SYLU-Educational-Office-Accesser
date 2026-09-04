@@ -2,7 +2,6 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,13 +18,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -42,7 +39,6 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.manage.list.CourseManageListRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
-import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
@@ -50,13 +46,15 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
+import top.kagg886.util.Platform
+import top.kagg886.util.current
 
 @Serializable
 data object CourseListRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseList) {
+fun CourseListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCourseList) {
     val nav = LocalNavController.current
     val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
@@ -249,6 +247,14 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
 
         CourseListScreenContent(
             state = state,
+            modifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+                val platform = Platform.current
+                when(platform) {
+                    is Platform.Apple, is Platform.Android -> Text("单指左右扫动以切换周数；双指捏合以缩放课程。\n单指上下扫动则可以滚动")
+
+                    is Platform.Desktop -> Text("shift+滚轮 以切换周数；ctrl+滚轮 以缩放课程；\n单独地使用滚轮则可以滚动")
+                }
+            },
             onZoomChange = model::scaleBy,
         )
     }
@@ -258,10 +264,11 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
 @Composable
 private fun CourseListScreenContent(
     state: CourseListState,
+    modifier: Modifier = Modifier,
     onZoomChange: (Float) -> Unit,
 ) = when (state) {
     is CourseListState.Loading -> {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
                 Spacer(Modifier.width(16.dp))
@@ -274,6 +281,7 @@ private fun CourseListScreenContent(
         val scale by state.scale.collectAsState()
 
         CourseDrawerContent(
+            modifier = modifier,
             pagerState = state.state,
             scale = scale,
             onZoomChange = onZoomChange,
@@ -288,7 +296,7 @@ private fun CourseListScreenContent(
             message = {
                 Text(state.msg)
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         )
     }
 
@@ -308,7 +316,7 @@ private fun CourseListScreenContent(
             message = {
                 Text("享受假期吧!")
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize()
         )
     }
 }
@@ -318,10 +326,11 @@ private fun CourseDrawerContent(
     pagerState: PagerState,
     scale: Float,
     onZoomChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
     ) {
         CoursePageListScreen(
             index = it,
