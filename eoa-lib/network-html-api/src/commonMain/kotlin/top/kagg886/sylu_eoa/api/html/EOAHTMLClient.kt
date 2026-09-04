@@ -454,7 +454,7 @@ internal class EOAHTMLClient : EOAClient {
                 i.rangeEveryDay.map { lessonNumber ->
                     val time = getTimeByLessonNumber(lessonNumber)
                     ClassTable(
-                        id = i.id.toLong(),
+                        id = i.id,
                         name = i.name,
                         teacher = i.teacher,
                         room = i.room,

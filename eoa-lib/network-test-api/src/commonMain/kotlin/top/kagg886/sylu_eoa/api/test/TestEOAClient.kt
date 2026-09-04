@@ -10,6 +10,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.time.ExperimentalTime
+import kotlin.uuid.Uuid
 
 internal class TestEOAClient : EOAClient {
     @OptIn(ExperimentalTime::class)
@@ -176,6 +177,7 @@ internal class TestEOAClient : EOAClient {
         firstDay: LocalDate,
     ): ClassReturn {
         data class Template(
+            val id: String = Uuid.random().toString(),
             val name: String,
             val teacher: String,
             val room: String,
@@ -554,7 +556,7 @@ internal class TestEOAClient : EOAClient {
                     }
 
                 ClassTable(
-                    id = template.name.hashCode().toLong(),
+                    id = template.id,
                     name = template.name,
                     teacher = template.teacher,
                     room = template.room,
