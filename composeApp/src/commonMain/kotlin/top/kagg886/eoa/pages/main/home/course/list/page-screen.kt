@@ -5,8 +5,10 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.gestures.zoomBy
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -41,8 +43,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -70,6 +74,8 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun CoursePageListScreen(
@@ -99,7 +105,9 @@ fun CoursePageListScreen(
     val model = viewModel<CoursePageViewModel>(
         key = "${index * 31 + syncState.toViewModelKey().hashCode()}"
     ) {
-        CoursePageViewModel(syncState, index + 1, mainViewModel.database,rootState.showHolidayCourse)
+        CoursePageViewModel(
+            syncState, index + 1, mainViewModel.database, rootState.showHolidayCourse
+        )
     }
     val state by model.collectAsState()
     model.collectSideEffect {
@@ -143,25 +151,20 @@ private fun CoursePageScreenContent(
 ) {
     when (state) {
         is CoursePageState.Failed -> {
-            ErrorPage(
-                title = {
-                    Text("加载课表失败")
-                },
-                message = {
-                    Text(state.msg)
-                }
-            )
+            ErrorPage(title = {
+                Text("加载课表失败")
+            }, message = {
+                Text(state.msg)
+            })
         }
 
         is CoursePageState.Loading -> {
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 3.dp
+                        color = MaterialTheme.colorScheme.primary, strokeWidth = 3.dp
                     )
 
                     Spacer(Modifier.height(16.dp))
@@ -220,6 +223,7 @@ private fun CoursePageScreenSuccess(
     }
 
     val currentOnZoomChange by rememberUpdatedState(onZoomChange)
+    val currentScale by rememberUpdatedState(scale)
     val transformableState = rememberTransformableState {
             _,
             zoomChange,
@@ -231,13 +235,55 @@ private fun CoursePageScreenSuccess(
 
     val coroutineScope = rememberCoroutineScope()
     val zoomEnabled = expandedCourseKey == null
+    val density = LocalDensity.current
+    val timelineDividerOffset = TimeLabelTopPadding + with(density) {
+        MaterialTheme.typography.labelSmall.lineHeight.toDp()
+    } / 2
+    val timelineScaleOriginPx = with(density) {
+        (CalendarHeaderHeight + timelineDividerOffset).toPx()
+    }
+    var zoomAnchorY by remember {
+        mutableStateOf<Float?>(null)
+    }
+    var pendingTouchScale by remember {
+        mutableStateOf<Float?>(null)
+    }
+    var scrollCompensatedScale by remember {
+        mutableStateOf(scale)
+    }
+
+    LaunchedEffect(scale) {
+        val anchorY = zoomAnchorY
+        val pendingScale = pendingTouchScale
+        val previousScale = scrollCompensatedScale
+
+        if (anchorY != null && pendingScale != null && scale != previousScale) {
+            val scaleChange = scale / previousScale
+            val currentScroll = scrollState.value.toFloat()
+            val targetScroll = timelineScaleOriginPx +
+                (currentScroll + anchorY - timelineScaleOriginPx) * scaleChange -
+                anchorY
+
+            scrollState.scrollTo(targetScroll.roundToInt())
+        }
+
+        scrollCompensatedScale = scale
+
+        if (
+            pendingScale != null &&
+            pendingTouchScale == pendingScale &&
+            abs(pendingScale - scale) <= ScaleThresholdEpsilon
+        ) {
+            pendingTouchScale = null
+            zoomAnchorY = null
+        }
+    }
 
     fun expandCourse(course: TodayClass.Single) {
         expandedCourseKey = course.segmentKey
         coroutineScope.launch {
             expansionProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = CourseExpansionAnimationSpec
+                targetValue = 1f, animationSpec = CourseExpansionAnimationSpec
             )
         }
     }
@@ -246,8 +292,7 @@ private fun CoursePageScreenSuccess(
         val dismissingKey = expandedCourseKey ?: return
         coroutineScope.launch {
             expansionProgress.animateTo(
-                targetValue = 0f,
-                animationSpec = CourseExpansionAnimationSpec
+                targetValue = 0f, animationSpec = CourseExpansionAnimationSpec
             )
             if (expandedCourseKey == dismissingKey) {
                 expandedCourseKey = null
@@ -259,10 +304,7 @@ private fun CoursePageScreenSuccess(
         val currentExpandedKey = expandedCourseKey
 
         if (currentExpandedKey != null) {
-            if (
-                course is TodayClass.Single &&
-                course.segmentKey == currentExpandedKey
-            ) {
+            if (course is TodayClass.Single && course.segmentKey == currentExpandedKey) {
                 expandedCourseKey = null
                 coroutineScope.launch {
                     expansionProgress.snapTo(0f)
@@ -285,8 +327,7 @@ private fun CoursePageScreenSuccess(
 
             is TodayClass.Conflict -> {
                 onCourseConflictClicked(
-                    course.date.first,
-                    course.date.second
+                    course.date.first, course.date.second
                 )
             }
         }
@@ -302,80 +343,130 @@ private fun CoursePageScreenSuccess(
     BoxWithConstraints(
         modifier = modifier
 
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                enabled = expandedCourseKey != null,
-                onClick = ::dismissExpandedCourse
-            )
+        .clickable(
+            interactionSource = null,
+            indication = null,
+            enabled = expandedCourseKey != null,
+            onClick = ::dismissExpandedCourse
+        )
 
-            // 在 Initial 阶段拦截 Shift + 滚轮，
-            // 避免同时触发纵向滚动。
-            .pointerInput(transformableState, zoomEnabled) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(
-                            pass = PointerEventPass.Initial
-                        )
+        // 在 Initial 阶段拦截 Shift + 滚轮，
+        // 避免同时触发纵向滚动。
+        .pointerInput(transformableState, zoomEnabled) {
+            awaitPointerEventScope {
+                while (true) {
+                    val event = awaitPointerEvent(
+                        pass = PointerEventPass.Initial
+                    )
 
-                        // 只处理 Ctrl + 滚轮。
-                        // Shift + 滚轮以及普通滚轮全部交给外层处理。
-                        if (
-                            event.type != PointerEventType.Scroll ||
-                            !event.keyboardModifiers.isCtrlPressed
-                        ) {
-                            continue
-                        }
+                    // 只处理 Ctrl + 滚轮。
+                    // Shift + 滚轮以及普通滚轮全部交给外层处理。
+                    if (event.type != PointerEventType.Scroll || !event.keyboardModifiers.isCtrlPressed) {
+                        continue
+                    }
 
-                        val delta = event.changes
-                            .firstOrNull()
-                            ?.scrollDelta
-                            ?: continue
+                    val delta = event.changes.firstOrNull()?.scrollDelta ?: continue
 
-                        val wheelDelta = when {
-                            delta.y != 0f -> delta.y
-                            delta.x != 0f -> delta.x
-                            else -> continue
-                        }
+                    val wheelDelta = when {
+                        delta.y != 0f -> delta.y
+                        delta.x != 0f -> delta.x
+                        else -> continue
+                    }
 
-                        // 只有 Ctrl + 滚轮才消费。
-                        event.changes.forEach {
-                            it.consume()
-                        }
+                    // 只有 Ctrl + 滚轮才消费。
+                    event.changes.forEach {
+                        it.consume()
+                    }
 
-                        if (!zoomEnabled) {
-                            continue
-                        }
+                    if (!zoomEnabled) {
+                        continue
+                    }
 
-                        val zoomFactor = if (wheelDelta < 0f) {
-                            MouseWheelZoomStep
-                        } else {
-                            1f / MouseWheelZoomStep
-                        }
+                    val zoomFactor = if (wheelDelta < 0f) {
+                        MouseWheelZoomStep
+                    } else {
+                        1f / MouseWheelZoomStep
+                    }
 
-                        coroutineScope.launch {
-                            transformableState.zoomBy(zoomFactor)
-                        }
+                    coroutineScope.launch {
+                        transformableState.zoomBy(zoomFactor)
                     }
                 }
             }
+        }
 
-            .verticalScroll(scrollState)
-            // 移动端双指捏合。
-            //
-            // canPan = false 很重要：
-            // 不让 transformable 抢占单指纵向滚动。
-            .transformable(
-                state = transformableState,
-                canPan = { false },
-                lockRotationOnZoomPan = true,
-                enabled = zoomEnabled
-            )
+        // 在 Initial 阶段接管双指手势，避免 Card 点击或滚动先消费事件，
+        // 导致捏合被取消。单指事件仍交给点击、纵向滚动和周切换。
+        .pointerInput(zoomEnabled) {
+            if (!zoomEnabled) {
+                return@pointerInput
+            }
 
-            .miuiLongShotSupport(
-                enabled = longShotEnabled,
-                scrollState = scrollState
-            )
+            awaitPointerEventScope {
+                while (true) {
+                    var isMultiTouchGesture = false
+                    var pastTouchSlop = false
+                    var accumulatedZoom = 1f
+                    var gestureScale = currentScale
+                    var event = awaitPointerEvent(
+                        pass = PointerEventPass.Initial
+                    )
+
+                    do {
+                        if (event.changes.count { it.pressed } >= 2) {
+                            isMultiTouchGesture = true
+                        }
+
+                        if (isMultiTouchGesture) {
+                            val zoomChange = event.calculateZoom()
+
+                            if (!pastTouchSlop) {
+                                accumulatedZoom *= zoomChange
+                                val centroidSize = event.calculateCentroidSize(
+                                    useCurrent = false
+                                )
+                                pastTouchSlop = abs(1f - accumulatedZoom) * centroidSize >
+                                    viewConfiguration.touchSlop
+                            }
+
+                            // 第二个触点出现后立刻取消 Card press 和滚动竞争；
+                            // 即使先抬起一根手指，也持续消费到本轮手势结束。
+                            event.changes.forEach {
+                                it.consume()
+                            }
+
+                            if (pastTouchSlop && zoomChange != 1f) {
+                                val targetScale = (gestureScale * zoomChange).coerceIn(
+                                    MinTimelineScale, MaxTimelineScale
+                                )
+                                val effectiveZoomChange = targetScale / gestureScale
+
+                                if (effectiveZoomChange != 1f) {
+                                    zoomAnchorY = event.calculateCentroid().y
+                                    pendingTouchScale = targetScale
+                                    gestureScale = targetScale
+                                    currentOnZoomChange(effectiveZoomChange)
+                                }
+                            }
+                        }
+
+                        if (event.changes.none { it.pressed }) {
+                            break
+                        }
+
+                        event = awaitPointerEvent(
+                            pass = PointerEventPass.Initial
+                        )
+                    } while (true)
+                }
+            }
+        }
+
+        .verticalScroll(scrollState)
+
+        .miuiLongShotSupport(
+            enabled = longShotEnabled, scrollState = scrollState
+        )
     ) {
         val timeAxisWidth = when {
             maxWidth < 600.dp -> 48.dp
@@ -384,11 +475,7 @@ private fun CoursePageScreenSuccess(
         }
 
         val visibleDays = remember(hideWeekendCourse, currentWeekCourse) {
-            if (
-                hideWeekendCourse &&
-                currentWeekCourse[6].isNullOrEmpty() &&
-                currentWeekCourse[7].isNullOrEmpty()
-            ) {
+            if (hideWeekendCourse && currentWeekCourse[6].isNullOrEmpty() && currentWeekCourse[7].isNullOrEmpty()) {
                 1..5
             } else {
                 1..7
@@ -414,14 +501,7 @@ private fun CoursePageScreenSuccess(
             else -> 60
         }
 
-        val timelineDividerOffset = TimeLabelTopPadding +
-                with(LocalDensity.current) {
-                    MaterialTheme.typography.labelSmall.lineHeight.toDp()
-                } / 2
-
-        val timelineHeight =
-            timelineRange.durationMinutes * minuteHeight +
-                    timelineDividerOffset
+        val timelineHeight = timelineRange.durationMinutes * minuteHeight + timelineDividerOffset
 
         Column {
             Row(
@@ -429,24 +509,19 @@ private fun CoursePageScreenSuccess(
             ) {
                 MonthHeader(
                     month = thisWeekStartDate.month.number,
-                    modifier = Modifier
-                        .width(timeAxisWidth)
-                        .fillMaxHeight()
+                    modifier = Modifier.width(timeAxisWidth).fillMaxHeight()
                 )
 
                 for (dayOfWeek in visibleDays) {
                     val date = thisWeekStartDate.plus(
-                        dayOfWeek - 1,
-                        DateTimeUnit.DAY
+                        dayOfWeek - 1, DateTimeUnit.DAY
                     )
 
                     DayHeader(
                         date = date,
                         dayOfWeek = dayOfWeek,
                         isCurrentDay = date == currentDate,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
+                        modifier = Modifier.weight(1f).fillMaxHeight()
                     )
                 }
             }
@@ -455,9 +530,7 @@ private fun CoursePageScreenSuccess(
                     range = timelineRange,
                     minuteHeight = minuteHeight,
                     tickIntervalMinutes = tickIntervalMinutes,
-                    modifier = Modifier
-                        .width(timeAxisWidth)
-                        .height(timelineHeight)
+                    modifier = Modifier.width(timeAxisWidth).height(timelineHeight)
                 )
 
                 for (dayOfWeek in visibleDays) {
@@ -471,9 +544,7 @@ private fun CoursePageScreenSuccess(
                         expandedCourseKey = expandedCourseKey,
                         expansionProgress = expansionProgress.value,
                         onCourseClicked = ::handleCourseClicked,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(timelineHeight)
+                        modifier = Modifier.weight(1f).height(timelineHeight)
                     )
                 }
             }
@@ -483,30 +554,24 @@ private fun CoursePageScreenSuccess(
 
 @Composable
 private fun MonthHeader(
-    month: Int,
-    modifier: Modifier = Modifier
+    month: Int, modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center
+        modifier = modifier, contentAlignment = Alignment.Center
     ) {
-        Surface(
-            modifier = Modifier.height(with(LocalDensity.current) { MaterialTheme.typography.labelSmall.lineHeight.toDp() } + 4.dp + 28.dp),
+        Surface(modifier = Modifier.height(with(LocalDensity.current) { MaterialTheme.typography.labelSmall.lineHeight.toDp() } + 4.dp + 28.dp),
             color = MaterialTheme.colorScheme.secondaryContainer.copy(
                 alpha = 0.5f
             ),
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            shape = RoundedCornerShape(10.dp)
-        ) {
+            shape = RoundedCornerShape(10.dp)) {
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "${month}月",
                     modifier = Modifier.padding(
-                        horizontal = 8.dp,
-                        vertical = 4.dp
+                        horizontal = 8.dp, vertical = 4.dp
                     ),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
@@ -519,10 +584,7 @@ private fun MonthHeader(
 
 @Composable
 private fun DayHeader(
-    date: LocalDate,
-    dayOfWeek: Int,
-    isCurrentDay: Boolean,
-    modifier: Modifier = Modifier
+    date: LocalDate, dayOfWeek: Int, isCurrentDay: Boolean, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
@@ -545,17 +607,13 @@ private fun DayHeader(
         )
 
         Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(
+            modifier = Modifier.size(28.dp).clip(CircleShape).background(
                     if (isCurrentDay) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         Color.Transparent
                     }
-                ),
-            contentAlignment = Alignment.Center
+                ), contentAlignment = Alignment.Center
         ) {
             Text(
                 text = date.day.toString(),
@@ -578,40 +636,28 @@ private fun DayHeader(
 
 @Composable
 private fun TimeAxis(
-    range: TimelineRange,
-    minuteHeight: Dp,
-    tickIntervalMinutes: Int,
-    modifier: Modifier = Modifier
+    range: TimelineRange, minuteHeight: Dp, tickIntervalMinutes: Int, modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
         for (minute in range.marks(tickIntervalMinutes)) {
             val isHourMark = minute % MinutesPerHour == 0
 
             Text(
-                text = minute.toTimeLabel(),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(
+                text = minute.toTimeLabel(), modifier = Modifier.align(Alignment.TopCenter).offset(
                         y = range.offsetOf(
-                            minute = minute,
-                            minuteHeight = minuteHeight
+                            minute = minute, minuteHeight = minuteHeight
                         ) + TimeLabelTopPadding
-                    ),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (isHourMark) {
+                    ), style = MaterialTheme.typography.labelSmall, fontWeight = if (isHourMark) {
                     FontWeight.Medium
                 } else {
                     FontWeight.Normal
-                },
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                }, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                     alpha = if (isHourMark) {
                         0.8f
                     } else {
                         0.55f
                     }
-                ),
-                maxLines = 1,
-                textAlign = TextAlign.Center
+                ), maxLines = 1, textAlign = TextAlign.Center
             )
         }
     }
@@ -640,15 +686,11 @@ private fun DayTimeline(
             val isHourMark = minute % MinutesPerHour == 0
 
             HorizontalDivider(
-                modifier = Modifier
-                    .offset(
+                modifier = Modifier.offset(
                         y = range.offsetOf(
-                            minute = minute,
-                            minuteHeight = minuteHeight
+                            minute = minute, minuteHeight = minuteHeight
                         ) + dividerOffset
-                    )
-                    .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(
+                    ).fillMaxWidth(), color = MaterialTheme.colorScheme.outlineVariant.copy(
                     alpha = if (isHourMark) {
                         DividerAlpha
                     } else {
@@ -661,12 +703,10 @@ private fun DayTimeline(
         for (course in sortedCourses) {
             key(course.segmentKey) {
                 val isExpanded =
-                    course is TodayClass.Single &&
-                            course.segmentKey == expandedCourseKey
+                    course is TodayClass.Single && course.segmentKey == expandedCourseKey
 
                 val collapsedTop = range.offsetOf(
-                    minute = course.startMinute,
-                    minuteHeight = minuteHeight
+                    minute = course.startMinute, minuteHeight = minuteHeight
                 ) + dividerOffset
                 val collapsedHeight = range.heightOf(
                     courseStartMinute = course.startMinute,
@@ -676,8 +716,7 @@ private fun DayTimeline(
 
                 val expandedTop = if (course is TodayClass.Single) {
                     range.offsetOf(
-                        minute = course.fullStartMinute,
-                        minuteHeight = minuteHeight
+                        minute = course.fullStartMinute, minuteHeight = minuteHeight
                     ) + dividerOffset
                 } else {
                     collapsedTop
@@ -693,45 +732,32 @@ private fun DayTimeline(
                 }
 
                 CourseCalendarCard(
-                    course = course,
-                    useNightMode = useNightMode,
-                    onClick = {
+                    course = course, useNightMode = useNightMode, onClick = {
                         onCourseClicked(course)
-                    },
-                    modifier = Modifier
-                        .zIndex(
+                    }, modifier = Modifier.zIndex(
                             if (isExpanded) {
                                 ExpandedCourseZIndex
                             } else {
                                 0f
                             }
-                        )
-                        .offset(
+                        ).offset(
                             y = if (isExpanded) {
                                 lerp(
-                                    collapsedTop,
-                                    expandedTop,
-                                    expansionProgress
+                                    collapsedTop, expandedTop, expansionProgress
                                 )
                             } else {
                                 collapsedTop
                             }
-                        )
-                        .fillMaxWidth()
-                        .height(
+                        ).fillMaxWidth().height(
                             if (isExpanded) {
                                 lerp(
-                                    collapsedHeight,
-                                    expandedHeight,
-                                    expansionProgress
+                                    collapsedHeight, expandedHeight, expansionProgress
                                 )
                             } else {
                                 collapsedHeight
                             }
-                        )
-                        .padding(
-                            horizontal = CourseHorizontalPadding,
-                            vertical = CourseVerticalPadding
+                        ).padding(
+                            horizontal = CourseHorizontalPadding, vertical = CourseVerticalPadding
                         )
                 )
             }
@@ -742,10 +768,7 @@ private fun DayTimeline(
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CourseCalendarCard(
-    course: TodayClass,
-    useNightMode: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    course: TodayClass, useNightMode: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     val single = course as? TodayClass.Single
 
@@ -760,18 +783,13 @@ private fun CourseCalendarCard(
 
     val sharedBoundsKey = route?.sharedBoundsKey
 
-    val colorSeed = single
-        ?.name
-        .orEmpty()
-        .hashCode()
+    val colorSeed = single?.name.orEmpty().hashCode()
 
     val pastel = remember(
-        colorSeed,
-        useNightMode
+        colorSeed, useNightMode
     ) {
         coursePastelOf(
-            seed = colorSeed,
-            dark = useNightMode
+            seed = colorSeed, dark = useNightMode
         )
     }
 
@@ -791,75 +809,37 @@ private fun CourseCalendarCard(
 
     val shape = RoundedCornerShape(10.dp)
 
-    val density = LocalDensity.current
-
-    val courseNameTextStyle = MaterialTheme.typography.labelMedium.copy(
-        fontSize = with(density) {
-            CourseNameFontSize.toSp()
-        },
-        lineHeight = with(density) {
-            CourseTextLineHeight.toSp()
-        },
-        letterSpacing = with(density) {
-            CourseTextLetterSpacing.toSp()
-        }
-    )
-
-    val courseLocationTextStyle = MaterialTheme.typography.labelSmall.copy(
-        fontSize = with(density) {
-            CourseLocationFontSize.toSp()
-        },
-        lineHeight = with(density) {
-            CourseTextLineHeight.toSp()
-        },
-        letterSpacing = with(density) {
-            CourseTextLetterSpacing.toSp()
-        }
-    )
-
     val title = when (course) {
-        is TodayClass.Single ->
-            course.name
+        is TodayClass.Single -> course.name
 
-        is TodayClass.Conflict ->
-            "冲突课程 (${course.data.size}门)"
+        is TodayClass.Conflict -> "冲突课程 (${course.data.size}门)"
     }
 
-    val cardModifier = modifier
-        .applyIf(sharedBoundsKey) { key ->
+    val location = single?.location?.takeIf(String::isNotBlank)
+
+    val cardModifier = modifier.applyIf(sharedBoundsKey) { key ->
             shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(
                     key = key
-                ),
-                animatedVisibilityScope = LocalAnimatedContentScope.current
+                ), animatedVisibilityScope = LocalAnimatedContentScope.current
             )
-        }
-        .clip(shape)
-        .clickable(onClick = onClick)
+        }.clip(shape).clickable(onClick = onClick)
 
     Card(
-        modifier = cardModifier,
-        shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        ),
-        elevation = CardDefaults.cardElevation(
+        modifier = cardModifier, shape = shape, colors = CardDefaults.cardColors(
+            containerColor = containerColor, contentColor = contentColor
+        ), elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp
         )
     ) {
-        val progress = course.progress
-            .collectAsState(null)
-            .value
+        val progress = course.progress.collectAsState(null).value
 
         progress?.let {
             LinearProgressIndicator(
                 progress = {
                     it.coerceIn(0f, 1f)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp),
+                modifier = Modifier.fillMaxWidth().height(3.dp),
                 color = contentColor,
                 trackColor = contentColor.copy(
                     alpha = 0.15f
@@ -867,353 +847,199 @@ private fun CourseCalendarCard(
             )
         }
 
+        CourseCardText(
+            title = title,
+            location = location,
+            contentColor = contentColor,
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(
+                    horizontal = 5.dp, vertical = 4.dp
+                )
+        )
+    }
+}
+
+@Composable
+private fun CourseCardText(
+    title: String, location: String?, contentColor: Color, modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val typographyMetrics = courseCardTypographyMetrics(maxWidth)
+        val titleStyle = MaterialTheme.typography.labelMedium.copy(
+            fontSize = typographyMetrics.titleFontSize,
+            lineHeight = typographyMetrics.titleLineHeight
+        )
+        val locationStyle = MaterialTheme.typography.labelSmall.copy(
+            fontSize = typographyMetrics.locationFontSize,
+            lineHeight = typographyMetrics.locationLineHeight
+        )
+
         Layout(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 5.dp,
-                    vertical = 4.dp
-                ),
-            content = {
-                // 0: 两行课程名探针
+            modifier = Modifier.fillMaxSize(), content = {
                 Text(
                     text = title,
-                    style = courseNameTextStyle,
+                    style = titleStyle,
                     fontWeight = FontWeight.SemiBold,
                     color = contentColor,
                     textAlign = TextAlign.Start,
-                    minLines = 2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                // 1: 一行课程名探针
                 Text(
                     text = title,
-                    style = courseNameTextStyle,
+                    style = titleStyle,
                     fontWeight = FontWeight.SemiBold,
                     color = contentColor,
                     textAlign = TextAlign.Start,
-                    minLines = 1,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                if (single != null) {
-                    // 2: 两行教室探针
+                if (location != null) {
                     Text(
-                        text = single.location,
-                        style = courseLocationTextStyle,
-                        color = contentColor.copy(alpha = 0.75f),
-                        textAlign = TextAlign.Start,
-                        minLines = 2,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // 3: 一行教室探针
-                    Text(
-                        text = single.location,
-                        style = courseLocationTextStyle,
-                        color = contentColor.copy(alpha = 0.75f),
-                        textAlign = TextAlign.Start,
-                        minLines = 1,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // 4: 实际两行课程名
-                    Text(
-                        text = title,
-                        style = courseNameTextStyle,
-                        fontWeight = FontWeight.SemiBold,
-                        color = contentColor,
-                        textAlign = TextAlign.Start,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // 5: 实际一行课程名
-                    Text(
-                        text = title,
-                        style = courseNameTextStyle,
-                        fontWeight = FontWeight.SemiBold,
-                        color = contentColor,
-                        textAlign = TextAlign.Start,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // 6: 实际两行教室
-                    Text(
-                        text = single.location,
-                        style = courseLocationTextStyle,
+                        text = location,
+                        style = locationStyle,
                         color = contentColor.copy(alpha = 0.75f),
                         textAlign = TextAlign.Start,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    // 7: 实际一行教室
                     Text(
-                        text = single.location,
-                        style = courseLocationTextStyle,
+                        text = location,
+                        style = locationStyle,
                         color = contentColor.copy(alpha = 0.75f),
-                        textAlign = TextAlign.Start,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                } else {
-                    // 2: 实际两行课程名
-                    Text(
-                        text = title,
-                        style = courseNameTextStyle,
-                        fontWeight = FontWeight.SemiBold,
-                        color = contentColor,
-                        textAlign = TextAlign.Start,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    // 3: 实际一行课程名
-                    Text(
-                        text = title,
-                        style = courseNameTextStyle,
-                        fontWeight = FontWeight.SemiBold,
-                        color = contentColor,
                         textAlign = TextAlign.Start,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
-        ) { measurables, constraints ->
-            val probeConstraints = Constraints(
+            }) { measurables, constraints ->
+            val candidateConstraints = Constraints(
                 minWidth = 0,
                 maxWidth = constraints.maxWidth,
                 minHeight = 0,
                 maxHeight = Constraints.Infinity
             )
-
-            val title2Probe = measurables[0].measure(probeConstraints)
-            val title1Probe = measurables[1].measure(probeConstraints)
-
+            val candidates = measurables.map {
+                it.measure(candidateConstraints)
+            }
+            val title2 = candidates[0]
+            val title1 = candidates[1]
+            val location2 = candidates.getOrNull(2)
+            val location1 = candidates.getOrNull(3)
             val availableHeight = if (constraints.hasBoundedHeight) {
                 constraints.maxHeight
             } else {
                 Int.MAX_VALUE
             }
 
-            fun layoutSize(
-                width: Int,
-                contentHeight: Int
-            ): Pair<Int, Int> {
-                return (
-                        if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            width
-                        }
-                        ) to (
-                        if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            contentHeight
-                        }
-                        )
+            val layoutMode = selectCourseCardLayoutMode(
+                availableHeight = availableHeight,
+                title2Height = title2.height,
+                title1Height = title1.height,
+                location2Height = location2?.height,
+                location1Height = location1?.height
+            )
+
+            val titlePlaceable = when (layoutMode) {
+                CourseCardLayoutMode.Title2Location2, CourseCardLayoutMode.Title2Location1, CourseCardLayoutMode.Title2 -> title2
+
+                CourseCardLayoutMode.Title1Location1, CourseCardLayoutMode.Title1 -> title1
+
+                CourseCardLayoutMode.Hidden -> null
+            }
+            val locationPlaceable = when (layoutMode) {
+                CourseCardLayoutMode.Title2Location2 -> location2
+                CourseCardLayoutMode.Title2Location1, CourseCardLayoutMode.Title1Location1 -> location1
+
+                CourseCardLayoutMode.Title2, CourseCardLayoutMode.Title1, CourseCardLayoutMode.Hidden -> null
+            }
+            val contentWidth = maxOf(
+                titlePlaceable?.width ?: 0, locationPlaceable?.width ?: 0
+            )
+            val contentHeight = (titlePlaceable?.height ?: 0) + (locationPlaceable?.height ?: 0)
+            val layoutWidth = if (constraints.hasBoundedWidth) {
+                constraints.maxWidth
+            } else {
+                contentWidth.coerceAtLeast(constraints.minWidth)
+            }
+            val layoutHeight = if (constraints.hasBoundedHeight) {
+                constraints.maxHeight
+            } else {
+                contentHeight.coerceAtLeast(constraints.minHeight)
             }
 
-            if (single != null) {
-                val location2Probe = measurables[2].measure(probeConstraints)
-                val location1Probe = measurables[3].measure(probeConstraints)
-
-                val title2Measurable = measurables[4]
-                val title1Measurable = measurables[5]
-                val location2Measurable = measurables[6]
-                val location1Measurable = measurables[7]
-
-                val titleLines: Int
-                val locationLines: Int
-
-                when {
-                    // 2 行课程名 / 2 行教室
-                    title2Probe.height + location2Probe.height <= availableHeight -> {
-                        titleLines = 2
-                        locationLines = 2
-                    }
-
-                    // 1 行课程名 / 2 行教室
-                    title1Probe.height + location2Probe.height <= availableHeight -> {
-                        titleLines = 1
-                        locationLines = 2
-                    }
-
-                    // 1 行课程名 / 1 行教室
-                    title1Probe.height + location1Probe.height <= availableHeight -> {
-                        titleLines = 1
-                        locationLines = 1
-                    }
-
-                    // 2 行课程名
-                    title2Probe.height <= availableHeight -> {
-                        titleLines = 2
-                        locationLines = 0
-                    }
-
-                    // 1 行课程名
-                    title1Probe.height <= availableHeight -> {
-                        titleLines = 1
-                        locationLines = 0
-                    }
-
-                    // 不显示
-                    else -> {
-                        titleLines = 0
-                        locationLines = 0
-                    }
-                }
-
-                if (titleLines == 0) {
-                    layout(
-                        width = if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            0
-                        },
-                        height = if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            0
-                        }
-                    ) {}
-                } else {
-                    val titlePlaceable = (
-                            if (titleLines == 2) {
-                                title2Measurable
-                            } else {
-                                title1Measurable
-                            }
-                            ).measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = availableHeight
-                            )
-                        )
-
-                    val locationPlaceable = when (locationLines) {
-                        2 -> location2Measurable.measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = (
-                                        availableHeight - titlePlaceable.height
-                                        ).coerceAtLeast(0)
-                            )
-                        )
-
-                        1 -> location1Measurable.measure(
-                            Constraints(
-                                minWidth = 0,
-                                maxWidth = constraints.maxWidth,
-                                minHeight = 0,
-                                maxHeight = (
-                                        availableHeight - titlePlaceable.height
-                                        ).coerceAtLeast(0)
-                            )
-                        )
-
-                        else -> null
-                    }
-
-                    val contentHeight =
-                        titlePlaceable.height +
-                                (locationPlaceable?.height ?: 0)
-
-                    val contentWidth = maxOf(
-                        titlePlaceable.width,
-                        locationPlaceable?.width ?: 0
-                    )
-
-                    val (width, height) = layoutSize(
-                        width = contentWidth,
-                        contentHeight = contentHeight
-                    )
-
-                    layout(
-                        width = width,
-                        height = height
-                    ) {
-                        titlePlaceable.placeRelative(
-                            x = 0,
-                            y = 0
-                        )
-
-                        locationPlaceable?.placeRelative(
-                            x = 0,
-                            y = titlePlaceable.height
-                        )
-                    }
-                }
-            } else {
-                // Conflict 保持：
-                // 2 行标题 -> 1 行标题 -> 不显示
-                val titleMeasurable = when {
-                    title2Probe.height <= availableHeight ->
-                        measurables[2]
-
-                    title1Probe.height <= availableHeight ->
-                        measurables[3]
-
-                    else -> null
-                }
-
-                if (titleMeasurable == null) {
-                    layout(
-                        width = if (constraints.hasBoundedWidth) {
-                            constraints.maxWidth
-                        } else {
-                            0
-                        },
-                        height = if (constraints.hasBoundedHeight) {
-                            constraints.maxHeight
-                        } else {
-                            0
-                        }
-                    ) {}
-                } else {
-                    val titlePlaceable = titleMeasurable.measure(
-                        Constraints(
-                            minWidth = 0,
-                            maxWidth = constraints.maxWidth,
-                            minHeight = 0,
-                            maxHeight = availableHeight
-                        )
-                    )
-
-                    val (width, height) = layoutSize(
-                        width = titlePlaceable.width,
-                        contentHeight = titlePlaceable.height
-                    )
-
-                    layout(
-                        width = width,
-                        height = height
-                    ) {
-                        titlePlaceable.placeRelative(0, 0)
-                    }
-                }
+            layout(
+                width = layoutWidth, height = layoutHeight
+            ) {
+                titlePlaceable?.placeRelative(0, 0)
+                locationPlaceable?.placeRelative(
+                    x = 0, y = titlePlaceable?.height ?: 0
+                )
             }
         }
     }
 }
 
+private fun courseCardTypographyMetrics(
+    contentWidth: Dp
+): CourseCardTypographyMetrics {
+    val widthProgress = ((contentWidth - 40.dp) / 40.dp).coerceIn(0f, 1f)
+    val titleFontSize = lerp(10.sp, 20.sp, widthProgress)
+    val locationFontSize = lerp(9.sp, 18.sp, widthProgress)
+
+    return CourseCardTypographyMetrics(
+        titleFontSize = titleFontSize,
+        titleLineHeight = titleFontSize * 1.25f,
+        locationFontSize = locationFontSize,
+        locationLineHeight = locationFontSize * 1.25f
+    )
+}
+
+private fun selectCourseCardLayoutMode(
+    availableHeight: Int,
+    title2Height: Int,
+    title1Height: Int,
+    location2Height: Int?,
+    location1Height: Int?
+): CourseCardLayoutMode {
+    if (location2Height != null && location1Height != null) {
+        return when {
+            title2Height + location2Height <= availableHeight -> CourseCardLayoutMode.Title2Location2
+
+            title2Height + location1Height <= availableHeight -> CourseCardLayoutMode.Title2Location1
+
+            title1Height + location1Height <= availableHeight -> CourseCardLayoutMode.Title1Location1
+
+            title2Height <= availableHeight -> CourseCardLayoutMode.Title2
+
+            title1Height <= availableHeight -> CourseCardLayoutMode.Title1
+
+            else -> CourseCardLayoutMode.Hidden
+        }
+    }
+
+    return when {
+        title2Height <= availableHeight -> CourseCardLayoutMode.Title2
+
+        title1Height <= availableHeight -> CourseCardLayoutMode.Title1
+
+        else -> CourseCardLayoutMode.Hidden
+    }
+}
+
+private data class CourseCardTypographyMetrics(
+    val titleFontSize: TextUnit,
+    val titleLineHeight: TextUnit,
+    val locationFontSize: TextUnit,
+    val locationLineHeight: TextUnit
+)
+
+private enum class CourseCardLayoutMode {
+    Title2Location2, Title2Location1, Title1Location1, Title2, Title1, Hidden
+}
+
 private data class CoursePastel(
-    val container: Color,
-    val content: Color
+    val container: Color, val content: Color
 )
 
 private val LightCoursePalette = listOf(
@@ -1239,8 +1065,7 @@ private val DarkCoursePalette = listOf(
 )
 
 private fun coursePastelOf(
-    seed: Int,
-    dark: Boolean
+    seed: Int, dark: Boolean
 ): CoursePastel {
     val palette = if (dark) {
         DarkCoursePalette
@@ -1248,32 +1073,25 @@ private fun coursePastelOf(
         LightCoursePalette
     }
 
-    return palette[
-        (seed and Int.MAX_VALUE) % palette.size
-    ]
+    return palette[(seed and Int.MAX_VALUE) % palette.size]
 }
 
 private data class TimelineRange(
-    val startMinute: Int,
-    val endMinute: Int
+    val startMinute: Int, val endMinute: Int
 ) {
     val durationMinutes: Int
         get() = endMinute - startMinute
 
-    fun marks(stepMinutes: Int): IntProgression =
-        startMinute until endMinute step stepMinutes
+    fun marks(stepMinutes: Int): IntProgression = startMinute until endMinute step stepMinutes
 
     fun offsetOf(
-        minute: Int,
-        minuteHeight: Dp
+        minute: Int, minuteHeight: Dp
     ): Dp {
         return (minute - startMinute) * minuteHeight
     }
 
     fun heightOf(
-        courseStartMinute: Int,
-        courseEndMinute: Int,
-        minuteHeight: Dp
+        courseStartMinute: Int, courseEndMinute: Int, minuteHeight: Dp
     ): Dp {
         val visibleStart = courseStartMinute.coerceAtLeast(
             startMinute
@@ -1283,67 +1101,49 @@ private data class TimelineRange(
             endMinute
         )
 
-        return (visibleEnd - visibleStart)
-            .coerceAtLeast(1) * minuteHeight
+        return (visibleEnd - visibleStart).coerceAtLeast(1) * minuteHeight
     }
 }
 
 private fun calculateTimelineRange(
     courses: List<TodayClass>
 ): TimelineRange {
-    val earliestMinute =
-        courses.minOfOrNull {
-            if (it is TodayClass.Single) {
-                minOf(it.startMinute, it.fullStartMinute)
-            } else {
-                it.startMinute
-            }
+    val earliestMinute = courses.minOfOrNull {
+        if (it is TodayClass.Single) {
+            minOf(it.startMinute, it.fullStartMinute)
+        } else {
+            it.startMinute
         }
-            ?: DefaultStartMinute
+    } ?: DefaultStartMinute
 
-    val latestMinute =
-        courses.maxOfOrNull {
-            if (it is TodayClass.Single) {
-                maxOf(it.endMinute, it.fullEndMinute)
-            } else {
-                it.endMinute
-            }
+    val latestMinute = courses.maxOfOrNull {
+        if (it is TodayClass.Single) {
+            maxOf(it.endMinute, it.fullEndMinute)
+        } else {
+            it.endMinute
         }
-            ?: DefaultEndMinute
+    } ?: DefaultEndMinute
 
-    val startMinute =
-        minOf(DefaultStartMinute, earliestMinute)
-            .roundDownToHour()
+    val startMinute = minOf(DefaultStartMinute, earliestMinute).roundDownToHour()
 
-    val endMinute =
-        maxOf(DefaultEndMinute, latestMinute)
-            .roundUpToHour()
+    val endMinute = maxOf(DefaultEndMinute, latestMinute).roundUpToHour()
 
     return TimelineRange(
-        startMinute = startMinute,
-        endMinute = endMinute
+        startMinute = startMinute, endMinute = endMinute
     )
 }
 
 private val TodayClass.startMinute: Int
-    get() =
-        date.first.hour * MinutesPerHour +
-                date.first.minute
+    get() = date.first.hour * MinutesPerHour + date.first.minute
 
 private val TodayClass.endMinute: Int
-    get() =
-        date.second.hour * MinutesPerHour +
-                date.second.minute
+    get() = date.second.hour * MinutesPerHour + date.second.minute
 
 private val TodayClass.Single.fullStartMinute: Int
-    get() =
-        fullDate.first.hour * MinutesPerHour +
-                fullDate.first.minute
+    get() = fullDate.first.hour * MinutesPerHour + fullDate.first.minute
 
 private val TodayClass.Single.fullEndMinute: Int
-    get() =
-        fullDate.second.hour * MinutesPerHour +
-                fullDate.second.minute
+    get() = fullDate.second.hour * MinutesPerHour + fullDate.second.minute
 
 private val TodayClass.segmentKey: CourseSegmentKey
     get() = CourseSegmentKey(
@@ -1352,13 +1152,9 @@ private val TodayClass.segmentKey: CourseSegmentKey
         endTime = date.second
     )
 
-private fun Int.roundDownToHour(): Int =
-    this / MinutesPerHour * MinutesPerHour
+private fun Int.roundDownToHour(): Int = this / MinutesPerHour * MinutesPerHour
 
-private fun Int.roundUpToHour(): Int =
-    (this + MinutesPerHour - 1) /
-            MinutesPerHour *
-            MinutesPerHour
+private fun Int.roundUpToHour(): Int = (this + MinutesPerHour - 1) / MinutesPerHour * MinutesPerHour
 
 private fun Int.toTimeLabel(): String {
     val hour = this / MinutesPerHour
@@ -1388,11 +1184,9 @@ private fun dayOfWeekName(
 
 private const val MinutesPerHour = 60
 
-private const val DefaultStartMinute =
-    8 * MinutesPerHour
+private const val DefaultStartMinute = 8 * MinutesPerHour
 
-private const val DefaultEndMinute =
-    22 * MinutesPerHour
+private const val DefaultEndMinute = 22 * MinutesPerHour
 
 /*
  * 时间轴缩放：
@@ -1434,10 +1228,6 @@ private val CalendarHeaderHeight = 64.dp
 private val BaseMinuteHeight = 2.4.dp
 
 private val TimeLabelTopPadding = 4.dp
-private val CourseNameFontSize = 10.dp
-private val CourseLocationFontSize = 8.dp
-private val CourseTextLineHeight = 14.dp
-private val CourseTextLetterSpacing = 0.5.dp
 private val CourseHorizontalPadding = 3.dp
 private val CourseVerticalPadding = 1.dp
 
@@ -1445,7 +1235,5 @@ private const val DividerAlpha = 0.5f
 private const val MinorDividerAlpha = 0.25f
 
 private data class CourseSegmentKey(
-    val recordId: Long?,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime
+    val recordId: Long?, val startTime: LocalDateTime, val endTime: LocalDateTime
 )
