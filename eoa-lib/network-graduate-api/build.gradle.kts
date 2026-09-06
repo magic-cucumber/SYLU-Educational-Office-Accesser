@@ -30,6 +30,8 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.serialization.json)
             implementation(libs.ktor.client.logging)
+            implementation(libs.cryptography.core)
+            implementation(libs.cryptography.provider.optimal)
 
             implementation(project.dependencies.project(":util"))
             implementation(project.dependencies.project(":lib:rsa"))

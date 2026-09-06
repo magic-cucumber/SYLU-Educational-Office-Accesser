@@ -1,5 +1,7 @@
 package top.kagg886.sylu_eoa.api.graduate
 
+import com.fleeksoft.ksoup.Ksoup
+import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
@@ -8,26 +10,30 @@ import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.request.forms.submitForm
+import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.Cookie
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Parameters
 import io.ktor.http.Url
-import io.ktor.http.fullPath
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.serialization
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import top.kagg886.sylu_eoa.api.graduate.util.HtmlFormat
 import top.kagg886.sylu_eoa.api.graduate.util.RequestMergePlugin
-import top.kagg886.sylu_eoa.api.graduate.util.SuspendableHttpRequestRetry
-import top.kagg886.sylu_eoa.api.graduate.util.clearCookie
-import top.kagg886.sylu_eoa.api.graduate.util.cookie
+import top.kagg886.sylu_eoa.api.graduate.util.ResponseBodyRewritePlugin
 import top.kagg886.sylu_eoa.api.graduate.util.kermit
 import top.kagg886.sylu_eoa.api.html.config.BuildConfig
+import top.kagg886.sylu_eoa.api.html.util.RSA
+import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
 import top.kagg886.sylu_eoa.api.v2.EOAClient
-import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
+import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
 import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.sylu_eoa.api.v2.Storage
+import top.kagg886.sylu_eoa.api.v2.UnknownException
 import top.kagg886.sylu_eoa.api.v2.bean.ClassReturn
 import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
@@ -42,7 +48,9 @@ import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.properties.Delegates
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 
 internal class EOAGraduateClient : EOAClient {
     private var storage by Delegates.notNull<StorageCookieStorage>()
@@ -50,12 +58,13 @@ internal class EOAGraduateClient : EOAClient {
     override var password by Delegates.notNull<String>()
     override var captchaHandler: (suspend (a: ByteArray) -> String)? = null
 
-    override suspend fun login() {
-        TODO("Not yet implemented")
-    }
+    override suspend fun login() = internalLogin(captchaHandler = captchaHandler)
 
     override suspend fun logout() {
-        TODO("Not yet implemented")
+        client.get("home/logout")
+        //下次登录时需要抛出异常
+        username = ""
+        password = ""
     }
 
     override suspend fun markNoticeReadable(noticeId: String): Boolean {
@@ -70,13 +79,14 @@ internal class EOAGraduateClient : EOAClient {
     //懒加载，因为client需要在init之后才能使用
     private val client by lazy {
         HttpClient {
-            defaultRequest { url("https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}") }
+            defaultRequest { url("https://yjsgl.${BuildConfig.MESSAGE_API_ENDPOINT}") }
 
             install(ContentNegotiation) {
                 json(json)
-
-                serialization(ContentType.Text.Html, HtmlFormat)
+                serialization(ContentType.Text.Html, json)
             }
+
+            install(ResponseBodyRewritePlugin)
 
             install(Logging) {
                 logger = kermit.asKtorLogger
@@ -98,78 +108,144 @@ internal class EOAGraduateClient : EOAClient {
                 requestTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
 
-            install(SuspendableHttpRequestRetry) {
-                retryOnExceptionIf { req, cause ->
-                    val url = req.url.build().fullPath
-                    //登出接口不需要retry
-                    if (url.startsWith("/logout")) {
-                        return@retryOnExceptionIf false
-                    }
-
-                    if (url.startsWith("/xtgl/login_getPublicKey.html")) {
-                        return@retryOnExceptionIf false
-                    }
-
-                    //登录接口下放在业务端处理
-                    if (url.startsWith("/xtgl/login_slogin.html")) {
-                        return@retryOnExceptionIf false
-                    }
-                    cause !is InvalidCredentialsException && cause !is RetryLimitException
-                }
-                retryIf { _, resp ->
-                    //除此之外全部redirect到登录页面的均需要重发
-                    if (resp.headers[HttpHeaders.Location] == "/xtgl/login_slogin.html") {
-                        return@retryIf true
-                    }
-
-                    //可能json api会返回这个值
-                    if (resp.status.value == 901) {
-                        return@retryIf true
-                    }
-
-                    false
-                }
-                exponentialDelay()
-                maxRetries = 3
-
-                modifyRequest { req ->
-                    kermit.d("Retry request: ${req.url.build().fullPath}, $retryCount / $maxRetries")
-                    //重新登录。每次 Ktor retry 只尝试一次，重试次数交给 HttpRequestRetry 控制。
-                    val cookie = try {
-                        //TODO internal 登录代码
-                        storage.get(req.url.build())
-                    } catch (e: Exception) {
-                        //同样这里需要throw，否则未登录异常会被忽略
-                        if (e is InvalidCredentialsException) {
-                            throw e
-                        }
-                        kermit.d("Retry request: ${req.url.build().fullPath} failed.", e)
-                        throw if (retryCount >= maxRetries) RetryLimitException(e) else e
-                    }
-
-                    if (cookie.isEmpty()) {
-                        throw RetryLimitException(this.cause)
-                    }
-
-                    //清空原请求cookie
-                    req.clearCookie()
-                    //设置新cookie
-                    for (c in cookie) {
-                        req.cookie(c)
-                    }
-                }
-            }
-
             install(RequestMergePlugin)
         }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private suspend fun internalLogin(captchaHandler: (suspend (ByteArray) -> String)? = null) {
+        if (username.isBlank() || password.isBlank()) {
+            throw BadCredentialsException()
+        }
+
+        @Serializable
+        data class LoginInfo(
+            @SerialName("UserId")
+            val name: String,
+            @SerialName("Password")
+            val pass: String,
+            @SerialName("Vericode")
+            val code: String,
+            val url: String,
+            val city: String,
+        )
+
+        @Serializable
+        data class LoginReturn(
+            val jg: String,
+            val msg: String = "",
+            val url: String = "",
+        )
+
+        val loginPage = client.get("home/stulogin").body<String>().let { Ksoup.parse(it) }
+        val pubkey = loginPage.getElementById("pubkey")
+            ?.attr("value")
+            .orEmpty()
+            .replace("-----BEGIN PUBLIC KEY-----", "")
+            .replace("-----END PUBLIC KEY-----", "")
+            .filterNot { it.isWhitespace() }
+
+        if (pubkey.isBlank()) {
+            throw UnknownException("登录页缺少公钥")
+        }
+
+        do {
+            val captcha = client.get("Home/VerificationCode?codetype=stucode&&t=${Clock.System.now().toEpochMilliseconds()}")
+                .body<ByteArray>()
+                .let { captchaHandler?.invoke(it) ?: throw NeedCaptchaException() }
+
+            val response = client.submitForm(
+                url = "home/stulogin_do",
+                formParameters = Parameters.build {
+                    append(
+                        "json",
+                        json.encodeToString(
+                            LoginInfo(
+                                name = username,
+                                pass = RSA.encrypt(password, pubkey),
+                                code = captcha,
+                                url = loginPage.getElementById("hfgoto")?.attr("value").orEmpty(),
+                                city = loginPage.getElementById("hfcity")?.attr("value").orEmpty(),
+                            )
+                        )
+                    )
+                }
+            ).body<LoginReturn>()
+
+
+            if (response.jg == "1") {
+                return
+            }
+
+            if (response.msg.contains("验证码错误")) {
+                continue
+            }
+            if (response.msg.contains("密码错误")) {
+                throw BadCredentialsException()
+            }
+
+            if (response.msg.contains("用户不存在")) {
+                throw BadCredentialsException()
+            }
+
+            if (response.msg.contains("连续登录错误5次，请两小时后再登录！")) {
+                throw RetryLimitException(UnknownException("登陆次数过多，请2小时后再试。"))
+            }
+
+            throw UnknownException(response.msg)
+        } while (true)
     }
 
     override fun init(storage: Storage) {
         this.storage = StorageCookieStorage(storage)
     }
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun getUserProfile(): UserProfile {
-        TODO("Not yet implemented")
+        @Serializable
+        data class GraduateUserInfo(
+            // 学号
+            val xh: String = "",
+            // 姓名
+            val xm: String = "",
+            // 学生所在学院名称
+            val xsmc: String = "",
+            // 专业名称
+            val zymc: String = "",
+            // 邮箱
+            val email: String = "",
+            // 手机号码
+            val sjhm: String = "",
+            // 联系电话
+            val lxdh: String = "",
+            // 政治面貌
+            val zzmm: String = "",
+            // 外语语种
+            val wyyz: String = "英语",
+        )
+
+        @Serializable
+        data class GraduateUserProfileReturn(
+            val jbxx: GraduateUserInfo,
+        )
+
+        val profile = client.get("student/grgl/xsxx_jbxx?_=${Clock.System.now().toEpochMilliseconds()}")
+            .body<GraduateUserProfileReturn>()
+            .jbxx
+
+        val avatar = client.get("student/grgl/PotoImageShow/?bh=${profile.xh}").body<ByteArray>()
+
+        return UserProfile(
+            name = profile.xm,
+            collegeName = profile.xsmc,
+            studyName = profile.zymc,
+            avatar = avatar,
+            email = profile.email,
+            phone = profile.sjhm.ifBlank { profile.lxdh },
+            id = profile.xh,
+            policy = profile.zzmm,
+            language = profile.wyyz,
+        )
     }
 
     override suspend fun getSchoolCalender(): SchoolCalender {
