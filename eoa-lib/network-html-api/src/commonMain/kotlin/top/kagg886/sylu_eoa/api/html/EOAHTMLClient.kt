@@ -31,6 +31,8 @@ internal class EOAHTMLClient : EOAClient {
     override var username by Delegates.notNull<String>()
     override var password by Delegates.notNull<String>()
 
+    override var captchaHandler: (suspend (ByteArray) -> String)? = null
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -105,7 +107,7 @@ internal class EOAHTMLClient : EOAClient {
                     kermit.d("Retry request: ${req.url.build().fullPath}, $retryCount / $maxRetries")
                     //重新登录。每次 Ktor retry 只尝试一次，重试次数交给 HttpRequestRetry 控制。
                     val cookie = try {
-                        internalLogin()
+                        internalLogin(captchaHandler = captchaHandler)
                         storage.get(req.url.build())
                     } catch (e: Exception) {
                         //同样这里需要throw，否则未登录异常会被忽略
@@ -133,7 +135,7 @@ internal class EOAHTMLClient : EOAClient {
         }
     }
 
-    override suspend fun login(captchaHandler: (suspend (ByteArray) -> String)?) =
+    override suspend fun login() =
         internalLogin(null, captchaHandler)
 
     @OptIn(kotlin.time.ExperimentalTime::class)

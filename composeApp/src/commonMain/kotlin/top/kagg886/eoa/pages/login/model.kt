@@ -7,6 +7,7 @@ import kotlinx.coroutines.Job
 import org.orbitmvi.orbit.syntax.Syntax
 import org.orbitmvi.orbit.annotation.OrbitExperimental
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
+import top.kagg886.eoa.pages.main.home.second.SecondClassState
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 
@@ -35,14 +36,14 @@ class LoginViewModel : BaseViewModel<LoginViewModelState, LoginSideEffect>(name 
             try {
                 AppLoginPropertiesMMKV.client.username = username
                 AppLoginPropertiesMMKV.client.password = password
-                AppLoginPropertiesMMKV.client.login {
+                AppLoginPropertiesMMKV.client.captchaHandler = {
                     logger.w("发现验证码")
                     val defer = CompletableDeferred<String>(viewModelScope.coroutineContext[Job])
-                    reduce {
-                        LoginViewModelState.WaitLogin.VerifyCode(it, defer,  oldState.provider, oldState.selected)
-                    }
+                    postSideEffect(LoginSideEffect.NavigateToCaptcha(it))
+                    reduce { LoginViewModelState.WaitLogin.VerifyCode(defer, oldState.provider, oldState.selected) }
                     defer.await()
                 }
+                AppLoginPropertiesMMKV.client.login()
                 AppLoginPropertiesMMKV.username = username
                 AppLoginPropertiesMMKV.password = password
                 logger.i("登录成功")
@@ -100,27 +101,29 @@ sealed interface LoginViewModelState {
         data class Processing(val toast: String,override val provider: List<EOAClientProvider>,override val selected: EOAClientProvider) : WaitLogin
 
         data class VerifyCode(
-            val data: ByteArray,
             val defer: CompletableDeferred<String>,
-            override val provider: List<EOAClientProvider>,override val selected: EOAClientProvider
-        ) : WaitLogin {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other !is VerifyCode) return false
-
-                if (!data.contentEquals(other.data)) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                return data.contentHashCode()
-            }
-        }
+            override val provider: List<EOAClientProvider>,
+            override val selected: EOAClientProvider
+        ) : WaitLogin
     }
 }
 
 sealed interface LoginSideEffect {
     data object NavigateToMain : LoginSideEffect
+    data class NavigateToCaptcha(val byte: ByteArray) : LoginSideEffect {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as NavigateToCaptcha
+
+            return byte.contentEquals(other.byte)
+        }
+
+        override fun hashCode(): Int {
+            return byte.contentHashCode()
+        }
+    }
+
     data class Toast(val type: SnackBarType, val message: String) : LoginSideEffect
 }

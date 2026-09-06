@@ -14,6 +14,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.room3.withWriteTransaction
 import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import org.orbitmvi.orbit.syntax.Syntax
@@ -26,9 +29,13 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.*
 import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.pages.login.LoginSideEffect
+import top.kagg886.eoa.pages.login.LoginViewModelState
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
+import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
 import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
@@ -164,6 +171,12 @@ class MainRouteViewModel(val database: AppDatabase) : BaseViewModel<MainRouteVie
             @OptIn(OrbitExperimental::class)
             runOn<MainRouteViewState.SyncProcess> {
                 with(AppLoginPropertiesMMKV.client) {
+                    captchaHandler = {
+                        logger.w("发现验证码")
+                        val defer = CompletableDeferred<String?>(viewModelScope.coroutineContext[Job])
+                        postSideEffect(MainRouteViewEffect.NavigateToCaptcha(it,defer))
+                        defer.await() ?: throw NeedCaptchaException()
+                    }
                     // 该阶段已经完成时直接跳过，避免断点续传重复请求和重复覆盖本地缓存。
                     if (!checkpoint.profileSuccess) {
                         AppSyncMMKV.profile = getUserProfile()
@@ -560,6 +573,21 @@ sealed interface MainRouteViewEffect {
         val message: String,
         val action: TextToastAction? = null,
     ) : MainRouteViewEffect
+
+    data class NavigateToCaptcha(val byte: ByteArray,val deferred: CompletableDeferred<String?>) : MainRouteViewEffect {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as NavigateToCaptcha
+
+            return byte.contentEquals(other.byte)
+        }
+
+        override fun hashCode(): Int {
+            return byte.contentHashCode()
+        }
+    }
 
     data object SyncErrorToast : MainRouteViewEffect
 }

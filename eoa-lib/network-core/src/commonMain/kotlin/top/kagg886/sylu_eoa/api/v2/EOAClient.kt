@@ -102,13 +102,12 @@ interface EOAClient {
     var username: String
     var password: String
 
+    var captchaHandler: (suspend (a: ByteArray) -> String)?
+
     /**
-     * 使用提供的密码登录系统
-     * @param username 用户名
-     * @param pass 用户密码
-     * @param captchaHandler 可选的验证码处理程序
+     * 使用提供的密码和验证码器登录系统
      */
-    suspend fun login(captchaHandler: (suspend (a: ByteArray) -> String)? = null)
+    suspend fun login()
 
     /**
      * 从系统登出
