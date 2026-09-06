@@ -48,7 +48,9 @@ internal class EOAGraduateClient : EOAClient {
     private var storage by Delegates.notNull<StorageCookieStorage>()
     override var username by Delegates.notNull<String>()
     override var password by Delegates.notNull<String>()
-    override suspend fun login(captchaHandler: (suspend (a: ByteArray) -> String)?) {
+    override var captchaHandler: (suspend (a: ByteArray) -> String)? = null
+
+    override suspend fun login() {
         TODO("Not yet implemented")
     }
 

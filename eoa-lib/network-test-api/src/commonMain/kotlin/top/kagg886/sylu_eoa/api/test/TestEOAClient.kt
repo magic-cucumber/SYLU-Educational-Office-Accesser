@@ -183,11 +183,11 @@ internal class TestEOAClient : EOAClient {
         config: ExamExportOptions
     ): ByteArray = byteArrayOf()
 
-    override suspend fun getClassTable(picker: TermPicker): ClassReturn {
+    override suspend fun getClassTable(picker: TermPicker,firstDay: LocalDate): ClassReturn {
         if (password == "captcha") {
             val client = captchaHandler?.invoke(avatar)
             if (client != "YAY5BN") {
-                getClassTable(picker)
+                getClassTable(picker,firstDay)
             }
         }
         data class Template(
