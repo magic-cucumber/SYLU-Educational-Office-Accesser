@@ -22,7 +22,12 @@ import io.github.vinceglb.filekit.readBytes
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.syntax.Syntax
@@ -43,8 +48,12 @@ class CourseEditModel(
 ) : BaseViewModel<CourseEditState, CourseEditSideEffect>(name = "CourseEditModel", initial = CourseEditState.Loading) {
     private val courseDao = database.courseDao()
     private val courseRecordDao = database.courseRecordDao()
+    private var nextDraftRecordId = -1L
+
+    private fun newDraftRecordId(): Long = nextDraftRecordId--
+
     override suspend fun Syntax<CourseEditState, CourseEditSideEffect>.init() {
-            val (xnm, xqm) = AppSyncMMKV.picker!!.default.asTerm()
+            val calendar = AppSyncMMKV.calender!!
             val courseInfo = courseId?.let { courseDao.getById(it) } ?: CourseEntity(
                 name = "",
                 teacherName = "",
@@ -52,20 +61,23 @@ class CourseEditModel(
                 credits = 0f,
                 isDegreeRequired = false,
                 isExaminable = false,
-                yearCode = xnm,
-                semesterCode = xqm,
                 isUserAdded = true
             )
 
-            val records = courseId?.let { courseRecordDao.getByCourseId(it) } ?: emptyList()
+            val records = courseId
+                ?.let { courseRecordDao.getByCourseId(it) }
+                .orEmpty()
+                .map { record ->
+                    if (record.id == null) record.copy(id = newDraftRecordId()) else record
+                }
 
             reduce {
                 CourseEditState.Success(
                     courseId = courseId,
                     courseInfo = courseInfo,
                     recordInfo = records,
-                    startDate = AppSyncMMKV.calender!!.start,
-                    allWeekNumber = AppSyncMMKV.calender!!.count(),
+                    startDate = calendar.start,
+                    allWeekNumber = calendar.count(),
                     llmKeys = llmExecutors.keys.toList(),
                     enableSaveButton = true,
                     aiGenerating = null,
@@ -100,12 +112,28 @@ class CourseEditModel(
                 postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, "请添加课程时间"))
                 return@runOn
             }
-            reduce { state.copy(enableSaveButton = false) } //防止重复点击
-            val id = state.courseId?.apply { courseDao.update(state.courseInfo) } ?: courseDao.insert(state.courseInfo)
-            if (state.courseId == null) {
-                courseRecordDao.insertAll(state.recordInfo.map { it.copy(courseId = id) })
+            state.recordInfo.timeValidationError()?.let { message ->
+                postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Error, message))
+                return@runOn
             }
-            postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Success, "修改成功"))
+            reduce { state.copy(enableSaveButton = false) } //防止重复点击
+            val id = state.courseId?.also {
+                courseDao.update(state.courseInfo.copy(id = it))
+            } ?: courseDao.insert(state.courseInfo.copy(id = null))
+
+            courseRecordDao.getByCourseId(id).forEach {
+                courseRecordDao.delete(it)
+            }
+            courseRecordDao.insertAll(
+                state.recordInfo.map {
+                    it.copy(
+                        id = null,
+                        courseId = id,
+                    )
+                }
+            )
+
+            postSideEffect(CourseEditSideEffect.Toast(SnackBarType.Success, "保存成功"))
             reduce {
                 state.copy(
                     courseInfo = state.courseInfo.copy(id = id),
@@ -117,20 +145,15 @@ class CourseEditModel(
     }
 
     @OptIn(OrbitExperimental::class)
-    fun addRecord(weekNumber: Int, dayOfWeek: Int, periodOfDay: Int) = intent {
+    fun addRecord(date: LocalDate) = intent {
         runOn<CourseEditState.Success> {
             val record = CourseRecordEntity(
-                id = null,
+                id = newDraftRecordId(),
                 courseId = state.courseId,
-                weekNumber = weekNumber,
-                dayOfWeek = dayOfWeek,
-                periodOfDay = periodOfDay,
+                startTime = date.atTime(LocalTime(8, 0)),
+                endTime = date.atTime(LocalTime(9, 40)),
                 isUserAdded = true
             )
-            //是修改模式则编辑数据库
-            if (state.courseId != null) {
-                courseRecordDao.insert(record)
-            }
             reduce {
                 state.copy(
                     recordInfo = state.recordInfo + record
@@ -140,15 +163,32 @@ class CourseEditModel(
     }
 
     @OptIn(OrbitExperimental::class)
-    fun deleteRecord(it: CourseRecordEntity) = intent {
+    fun updateRecord(
+        record: CourseRecordEntity,
+        startTime: LocalDateTime,
+        endTime: LocalDateTime,
+    ) = intent {
         runOn<CourseEditState.Success> {
-            //是修改模式则编辑数据库
-            if (it.courseId != null) {
-                courseRecordDao.delete(it)
-            }
             reduce {
                 state.copy(
-                    recordInfo = state.recordInfo - it
+                    recordInfo = state.recordInfo.map {
+                        if (it.id == record.id) {
+                            it.copy(startTime = startTime, endTime = endTime)
+                        } else {
+                            it
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    @OptIn(OrbitExperimental::class)
+    fun deleteRecord(record: CourseRecordEntity) = intent {
+        runOn<CourseEditState.Success> {
+            reduce {
+                state.copy(
+                    recordInfo = state.recordInfo.filterNot { it.id == record.id }
                 )
             }
         }
@@ -214,37 +254,30 @@ class CourseEditModel(
         sub.join()
     }
 
-    private val example = listOf(
-        // 示例1：时间范围处理
-        CourseAddReturn(
-            course = LLMCourseReturn(
-                name = "艺术鉴赏",
-                teacherName = null,
-                classroomName = "A栋302",
-                credits = null,
-                isDegreeRequired = null,
-                isExaminable = null,
-            ),
-            record = listOf(
-                // 第3周至第16周，每周三下午3-4节
-                LLMRecordReturn(
-                    weekNumber = 3,
-                    dayOfWeek = listOf(3),
-                    periodOfDay = listOf(listOf(3, 4))
+    private fun examples(firstDay: LocalDate): List<CourseAddReturn> {
+        val records = (2..3).map { weekIndex ->
+            val date = firstDay
+                .plus(weekIndex, DateTimeUnit.WEEK)
+                .plus(2, DateTimeUnit.DAY)
+            LLMRecordReturn(
+                startTime = date.atTime(LocalTime(10, 0)).toString(),
+                endTime = date.atTime(LocalTime(11, 40)).toString(),
+            )
+        }
+        return listOf(
+            CourseAddReturn(
+                course = LLMCourseReturn(
+                    name = "艺术鉴赏",
+                    teacherName = null,
+                    classroomName = "A栋302",
+                    credits = null,
+                    isDegreeRequired = null,
+                    isExaminable = null,
                 ),
-                LLMRecordReturn(
-                    weekNumber = 4,
-                    dayOfWeek = listOf(3),
-                    periodOfDay = listOf(listOf(3, 4))
-                ),
-                LLMRecordReturn(
-                    weekNumber = 5,
-                    dayOfWeek = listOf(3),
-                    periodOfDay = listOf(listOf(3, 4))
-                )
+                record = records,
             )
         )
-    )
+    }
 
     @OptIn(OrbitExperimental::class)
     private fun generateCourseByAIInternal(build: RequestMessagePartsBuilder.() -> Unit) = intent {
@@ -283,7 +316,8 @@ class CourseEditModel(
                                     ## 原则
                                     1. 仅提取输入中明确提到的信息，不推测、不补全。
                                     2. 缺失信息填null，不能虚构。
-                                    3. 每个record仅对应一个weekNumber。
+                                    3. 每个record表示一次实际发生的课程，必须包含完整的开始和结束日期时间。
+                                    4. 周次范围、单双周和多个星期必须展开为多条具体record。
 
                                     ## 字段定义
                                     course:
@@ -295,19 +329,38 @@ class CourseEditModel(
                                     - isExaminable: 是否为考试课
 
                                     record:
-                                    - weekNumber: 周次（展开所有范围），如果输入出现具体日期，需要根据学期起止日期计算周数：
-                                      - 学期开始时间：${app.start}
-                                      - 学期结束时间：${app.end}
-                                    - dayOfWeek: 星期几（1=周一,...,7=周日）
-                                    - periodOfDay: 二维数组，每行对应一个dayOfWeek的节次，如 [[3,4]]
+                                    - startTime: 开始时间，严格使用yyyy-MM-ddTHH:mm格式
+                                    - endTime: 结束时间，严格使用yyyy-MM-ddTHH:mm格式
+
+                                    ## 学期信息
+                                    - 第一周周一：${app.start}
+                                    - 学期结束日期：${app.end}
+                                    - 总周数：${app.count()}
+
+                                    ## 节次时间
+                                    - 第1节 08:00-08:45；第2节 08:55-09:40
+                                    - 第3节 10:00-10:45；第4节 10:55-11:40
+                                    - 第5节 13:00-13:45；第6节 13:55-14:40
+                                    - 第7节 14:50-15:35；第8节 15:45-16:30
+                                    - 第9节 16:40-17:25；第10节 17:35-18:20
+                                    - 第11节 19:30-20:15；第12节 20:25-21:10
 
                                     ## 时间解析规则
-                                    - "第3-16周" → 3~16
-                                    - "3-5周(单)" → 3,5
-                                    - "7-14周(双)" → 8,10,12,14
+                                    - "第3-16周" → 展开第3至16周的每一次上课日期
+                                    - "3-5周(单)" → 展开第3、5周
+                                    - "7-14周(双)" → 展开第8、10、12、14周
                                     - "第5周开始" → 5到学期结束（默认到第${app.count()}周）
                                     - "单周"/"双周" → 1,3... 或 2,4...
-                                    - 当输入包含具体日期（如“2025年9月10日”），根据 ${app.start} 计算该日期属于第几周。
+                                    - "3-4节" → 一条record，开始时间为10:00，结束时间为11:40
+                                    - 输入给出具体时刻时，直接使用输入中的小时和分钟
+                                    - 输入给出具体日期时，直接使用该日期，不再输出周次字段
+                                    - 无法同时确定开始和结束时间时，不生成record
+
+                                    ## record约束
+                                    - 每条record必须位于${app.start}至${app.end}之间
+                                    - startTime和endTime必须在同一天，且startTime必须早于endTime
+                                    - 时间精确到分钟，不得包含秒、时区或偏移量
+                                    - record之间不得发生时间交叠；首尾相接不算交叠
 
                                     ## 输出要求
                                     - 无课程信息 → course = null
@@ -324,14 +377,14 @@ class CourseEditModel(
                                     true -> StructuredRequest.Native(
                                         structure = JsonStructure.create(
                                             schemaGenerator = StandardJsonSchemaGenerator.Default,
-                                            examples = example
+                                            examples = examples(app.start)
                                         )
                                     )
 
                                     false -> StructuredRequest.Manual(
                                         structure = JsonStructure.create(
                                             schemaGenerator = StandardJsonSchemaGenerator.Default,
-                                            examples = example
+                                            examples = examples(app.start)
                                         )
                                     )
                                 }
@@ -396,22 +449,46 @@ class CourseEditModel(
                 return@runOn
             }
 
-            if (course != null) {
-                reduce {
-                    state.copy(
-                        courseInfo = with(AppSyncMMKV.picker!!.default.asTerm()) {
-                            course.toEntity(xnm, xqm)
-                        }
+            val generatedRecords = try {
+                record.orEmpty().map {
+                    it.toEntity(
+                        id = newDraftRecordId(),
+                        courseId = state.courseId,
                     )
+                }.also { records ->
+                    require(
+                        records.all {
+                            it.startTime.date in app.start..app.end &&
+                                    it.endTime.date in app.start..app.end
+                        }
+                    ) {
+                        "AI生成的课程时间超出当前学期范围"
+                    }
                 }
+            } catch (e: Throwable) {
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Error,
+                        "AI生成的时间格式无效：${e.message}",
+                    )
+                )
+                return@runOn
             }
 
-            if (record.isNullOrEmpty().not()) {
-                reduce {
-                    state.copy(
-                        recordInfo = record.flatMap { it.toEntity() }
-                    )
+            val generatedRecordInfo = if (record.isNullOrEmpty()) {
+                state.recordInfo
+            } else {
+                val recordsOutsideCurrentTerm = state.recordInfo.filter {
+                    it.startTime.date !in app.start..app.end
                 }
+                recordsOutsideCurrentTerm + generatedRecords
+            }
+
+            reduce {
+                state.copy(
+                    courseInfo = course?.toEntity(state.courseInfo) ?: state.courseInfo,
+                    recordInfo = generatedRecordInfo,
+                )
             }
 
             postSideEffect(
@@ -419,16 +496,25 @@ class CourseEditModel(
                     type = SnackBarType.Success,
                     message = when {
                         course != null && record.isNullOrEmpty()
-                            .not() -> "成功生成课程详情和 ${record.size} 个 课程数据。请查阅后点击确定以添加课程"
+                            .not() -> "成功生成课程详情和 ${generatedRecords.size} 条课程时间。请检查后保存"
 
                         course == null && record.isNullOrEmpty()
-                            .not() -> "未生成课程详情，但成功解析出 ${record.size} 个 课程数据。请查阅后点击确定以添加课程"
+                            .not() -> "未生成课程详情，但成功解析出 ${generatedRecords.size} 条课程时间。请检查后保存"
 
-                        course != null && record.isNullOrEmpty() -> "成功生成课程详情，但未生成出任何课程。请查阅后点击确定以添加课程"
+                        course != null && record.isNullOrEmpty() -> "成功生成课程详情，但未生成课程时间。请检查后保存"
                         else -> return@runOn
                     }
                 )
             )
+
+            generatedRecordInfo.timeValidationError()?.let {
+                postSideEffect(
+                    CourseEditSideEffect.Toast(
+                        SnackBarType.Warning,
+                        "生成结果存在无效或重叠的课程时间，修正前无法保存",
+                    )
+                )
+            }
         }
     }
 }
@@ -460,16 +546,14 @@ private data class LLMCourseReturn(
     @property:LLMDescription("是否为考试课，true标识考试课")
     val isExaminable: Boolean?,
 ) {
-    fun toEntity(year: String, sem: String): CourseEntity = CourseEntity(
-        name = name ?: "",
-        teacherName = teacherName ?: "",
-        classroomName = classroomName ?: "",
-        credits = credits ?: 0.0f,
-        isDegreeRequired = isDegreeRequired ?: false,
-        isExaminable = isExaminable ?: false,
+    fun toEntity(base: CourseEntity): CourseEntity = base.copy(
+        name = name ?: base.name,
+        teacherName = teacherName ?: base.teacherName,
+        classroomName = classroomName ?: base.classroomName,
+        credits = credits ?: base.credits,
+        isDegreeRequired = isDegreeRequired ?: base.isDegreeRequired,
+        isExaminable = isExaminable ?: base.isExaminable,
         isUserAdded = true,
-        yearCode = year,
-        semesterCode = sem
     )
 }
 
@@ -477,21 +561,52 @@ private data class LLMCourseReturn(
 @SerialName("LLMRecordReturn")
 @LLMDescription("课程时间安排记录")
 private data class LLMRecordReturn(
-    @property:LLMDescription("具体的周数，表示这门课在第几周有课，从1开始计数。对于时间范围（如第3-16周），需要为每一周都创建一个独立的record。")
-    val weekNumber: Int, // 学期周数(从1开始)
-    @property:LLMDescription("dayOfWeek属性，在星期几会有这门课，1=周一，2=周二，...，7=周日")
-    val dayOfWeek: List<Int>, // 星期几(1-7)
-    @property:LLMDescription("一个二维矩阵，纵坐标为dayOfWeek属性的index，横坐标为在第几节会有这门课。")
-    val periodOfDay: List<List<Int>>, // 第几节课
+    @property:LLMDescription("课程开始日期时间，严格使用yyyy-MM-ddTHH:mm格式，不含秒和时区")
+    val startTime: String,
+    @property:LLMDescription("课程结束日期时间，严格使用yyyy-MM-ddTHH:mm格式，不含秒和时区")
+    val endTime: String,
 ) {
-    fun toEntity(): List<CourseRecordEntity> = periodOfDay.withIndex().flatMap { (index, periods) ->
-        periods.map {
-            CourseRecordEntity(
-                weekNumber = weekNumber,
-                dayOfWeek = dayOfWeek[index],
-                periodOfDay = it,
-                isUserAdded = true
-            )
+    fun toEntity(id: Long, courseId: Long?): CourseRecordEntity = CourseRecordEntity(
+        id = id,
+        courseId = courseId,
+        startTime = LocalDateTime.parse(startTime),
+        endTime = LocalDateTime.parse(endTime),
+        isUserAdded = true,
+    )
+}
+
+private fun List<CourseRecordEntity>.timeValidationError(): String? {
+    if (any { it.startTime.date != it.endTime.date || it.startTime >= it.endTime }) {
+        return "结束时间必须晚于开始时间，且二者必须在同一天"
+    }
+
+    for (firstIndex in indices) {
+        for (secondIndex in firstIndex + 1 until size) {
+            val first = this[firstIndex]
+            val second = this[secondIndex]
+            if (first.startTime < second.endTime && second.startTime < first.endTime) {
+                return "课程时间不能重叠"
+            }
+        }
+    }
+    return null
+}
+
+private fun List<CourseRecordEntity>.invalidRecordIds(): Set<Long> = buildSet {
+    this@invalidRecordIds.forEach { record ->
+        if (record.startTime.date != record.endTime.date || record.startTime >= record.endTime) {
+            record.id?.let(::add)
+        }
+    }
+
+    for (firstIndex in indices) {
+        for (secondIndex in firstIndex + 1 until size) {
+            val first = this@invalidRecordIds[firstIndex]
+            val second = this@invalidRecordIds[secondIndex]
+            if (first.startTime < second.endTime && second.startTime < first.endTime) {
+                first.id?.let(::add)
+                second.id?.let(::add)
+            }
         }
     }
 }
@@ -511,7 +626,13 @@ sealed interface CourseEditState {
         val selectLLMKey: LLMProviderEntity? = llmKeys.firstOrNull(),
 
         val aiGenerating: String?,
-    ) : CourseEditState
+    ) : CourseEditState {
+        val invalidRecordIds: Set<Long>
+            get() = recordInfo.invalidRecordIds()
+
+        val canSave: Boolean
+            get() = enableSaveButton && invalidRecordIds.isEmpty()
+    }
 }
 
 sealed interface CourseEditSideEffect {

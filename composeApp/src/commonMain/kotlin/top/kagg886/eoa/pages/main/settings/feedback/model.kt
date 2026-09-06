@@ -132,7 +132,12 @@ class FeedbackModel : BaseViewModel<FeedbackState, FeedbackSideEffect>(
             }
             val response = report.post("/test") {
                 contentType(ContentType.Application.Json)
-                setBody("payload" to Base64.encode(rsa.encryptor().encrypt(payload)))
+                setBody(
+                    EncryptedPayload(
+                        first = "payload",
+                        second = Base64.encode(rsa.encryptor().encrypt(payload)),
+                    )
+                )
             }
             if (!response.status.isSuccess()) {
                 error("服务端握手失败：${response.status}")
@@ -305,6 +310,12 @@ private data class FeedbackBaseResponse<T>(
     val success: Boolean,
     val message: String? = null,
     val data: T? = null,
+)
+
+@Serializable
+private data class EncryptedPayload(
+    val first: String,
+    val second: String,
 )
 
 private data class PreparedFeedback(

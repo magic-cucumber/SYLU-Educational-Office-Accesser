@@ -1,5 +1,6 @@
 package top.kagg886.sylu_eoa.api.v2
 
+import kotlinx.datetime.LocalDate
 import top.kagg886.sylu_eoa.api.v2.bean.ClassReturn
 import top.kagg886.sylu_eoa.api.v2.bean.ClassTable
 import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions
@@ -68,9 +69,10 @@ interface EOAClient {
     /**
      * 获取指定学期的课程表
      * @param picker 要获取课程表的学期
+     * @param firstDay 第一周第一天的日期
      * @return 课程表中的课程单元列表
      */
-    suspend fun getClassTable(picker: TermPicker): ClassReturn
+    suspend fun getClassTable(picker: TermPicker,firstDay: LocalDate): ClassReturn
 
     /**
      * 获取GPA成绩类别

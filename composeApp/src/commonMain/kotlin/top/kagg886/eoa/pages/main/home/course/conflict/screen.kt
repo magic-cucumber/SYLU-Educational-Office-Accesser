@@ -10,6 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.savedstate.SavedState
+import androidx.savedstate.read
+import androidx.savedstate.write
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -18,9 +26,55 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import kotlin.time.Instant
 
 @Serializable
-data class CourseConflictRoute(val weekNumber: Int, val dayOfWeek: Int, val periodOfDay: Int)
+data class CourseConflictRoute(
+    val startTime: LocalDateTime,
+    val endTime: LocalDateTime
+) {
+    companion object {
+        val Type: NavType<LocalDateTime> = object : NavType<LocalDateTime>(false) {
+            override fun put(bundle: SavedState, key: String, value: LocalDateTime) {
+                bundle.write {
+                    putLong(
+                        key,
+                        value.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                    )
+                }
+            }
+
+            override fun get(
+                bundle: SavedState,
+                key: String
+            ): LocalDateTime? {
+                return bundle.read {
+                    try {
+                        Instant.fromEpochMilliseconds(getLong(key))
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                    } catch (e: Throwable) {
+                        null
+                    }
+                }
+            }
+
+            override fun parseValue(value: String): LocalDateTime {
+                return try {
+                    Instant.fromEpochMilliseconds(value.toLong())
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                } catch (e: Throwable) {
+                    throw IllegalArgumentException(e)
+                }
+            }
+
+            override fun serializeAsValue(value: LocalDateTime): String {
+                return value.toInstant(TimeZone.currentSystemDefault())
+                    .toEpochMilliseconds()
+                    .toString()
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,9 +83,8 @@ fun CourseConflictScreen(route: CourseConflictRoute) {
     val model = viewModel {
         CourseConflictViewModel(
             database = mainModel.database,
-            weekNumber = route.weekNumber,
-            dayOfWeek = route.dayOfWeek,
-            periodOfDay = route.periodOfDay
+            startTime = route.startTime,
+            endTime = route.endTime
         )
     }
     val nav = LocalNavController.current
@@ -73,7 +126,8 @@ private fun CourseConflictScreenContent(
             LazyColumn(modifier) {
                 items(state.course) {
                     ListItem(
-                        modifier = Modifier.clip(CardDefaults.shape).clickable { onCourseItemClicked(it) },
+                        modifier = Modifier.clip(CardDefaults.shape)
+                            .clickable { onCourseItemClicked(it) },
                         colors = ListItemDefaults.colors(
                             containerColor = AlertDialogDefaults.containerColor
                         ),

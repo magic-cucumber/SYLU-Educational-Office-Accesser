@@ -150,7 +150,7 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
                 .shareBoundsComposed(
                     sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
                     animatedVisibilityScope = LocalAnimatedContentScope.current,
-                    resizeMode = RemeasureToBounds,
+                    
                     clipInOverlayDuringTransition = OverlayClip(surfaceShape)
                 )
                 .clip(surfaceShape)

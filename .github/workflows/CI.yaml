@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches:
-      - '**'
+      - master-4.0
     paths:
       - buildSrc/**
       - androidApp/**
@@ -16,6 +16,18 @@ on:
       - widgetApp/**
       - .github/workflows/CI.yaml
   pull_request:
+    paths:
+      - buildSrc/**
+      - androidApp/**
+      - composeApp/**
+      - composeApp-backend/**
+      - eoa-lib/**
+      - lib/**
+      - iosApp/**
+      - second-class/**
+      - util/**
+      - widgetApp/**
+      - .github/workflows/CI.yaml
   workflow_dispatch:
 
 env:

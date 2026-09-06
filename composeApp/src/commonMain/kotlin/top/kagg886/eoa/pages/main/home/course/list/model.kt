@@ -3,6 +3,7 @@ package top.kagg886.eoa.pages.main.home.course.list
 import androidx.compose.foundation.pager.PagerState
 import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -16,29 +17,32 @@ import kotlin.time.Clock
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
-) : BaseViewModel<CourseListState, CourseListSideEffect>(name = "CourseListViewModel", initial = CourseListState.Loading) {
+) : BaseViewModel<CourseListState, CourseListSideEffect>(
+    name = "CourseListViewModel",
+    initial = CourseListState.Loading
+) {
     override suspend fun Syntax<CourseListState, CourseListSideEffect>.init() {
-            refresh().join()
+        refresh().join()
 
-            //每日0:00刷新UI。立即执行
-            intent {
-                while (true) {
-                    val timeZone = TimeZone.currentSystemDefault()
-                    val now = Clock.System.now()
+        //每日0:00刷新UI。立即执行
+        intent {
+            while (true) {
+                val timeZone = TimeZone.currentSystemDefault()
+                val now = Clock.System.now()
 
-                    val today = now.toLocalDateTime(timeZone).date
-                    val nextMidnight = today
-                        .plus(1, DateTimeUnit.DAY)
-                        .atStartOfDayIn(timeZone)
+                val today = now.toLocalDateTime(timeZone).date
+                val nextMidnight = today
+                    .plus(1, DateTimeUnit.DAY)
+                    .atStartOfDayIn(timeZone)
 
-                    logger.i("we will delay ${nextMidnight - now} to refresh course UI")
+                logger.i("we will delay ${nextMidnight - now} to refresh course UI")
 
-                    delay(nextMidnight - now)
+                delay(nextMidnight - now)
 
-                    reduce { CourseListState.Loading }
-                    refresh().join()
-                }
+                reduce { CourseListState.Loading }
+                refresh().join()
             }
+        }
     }
 
     fun setDataUnsafe() = intent {
@@ -53,7 +57,8 @@ class CourseListViewModel(
                 isBeforeInTerm -> reduce {
                     CourseListState.BeforeTerm(
                         state = PagerState(currentPage = 0) { allWeek },
-                        allWeek = allWeek
+                        allWeek = allWeek,
+                        scale = MutableStateFlow(1f)
                     )
                 }
             }
@@ -65,6 +70,7 @@ class CourseListViewModel(
                 allWeek = allWeek,
                 //currentPage是index，从0开始
                 state = PagerState(currentPage = currentWeek - 1) { allWeek },
+                scale = MutableStateFlow(1f)
             )
         }
     }
@@ -82,6 +88,13 @@ class CourseListViewModel(
         }
         // 只发送事件，不直接处理动画
         postSideEffect(CourseListSideEffect.ScrollToCurrentWeek(week))
+    }
+
+    fun scaleBy(zoomChange: Float) = intent {
+        runOn<CourseListState.DataAccessible> {
+            state.scale.value = (state.scale.value * zoomChange)
+                .coerceIn(0.5f, 2f)
+        }
     }
 
     fun refresh() = intent {
@@ -129,12 +142,18 @@ sealed interface CourseListState {
         override val state: PagerState,
         val currentWeek: Int, //当前周数
         override val allWeek: Int, //总周数
+        override val scale: MutableStateFlow<Float>, //缩放倍数
     ) : DataAccessible
-    data object AfterTerm: CourseListState
-    data class BeforeTerm(override val state: PagerState, override val allWeek: Int) : DataAccessible
-    interface DataAccessible: CourseListState {
+
+    data object AfterTerm : CourseListState
+    data class BeforeTerm(override val state: PagerState, override val allWeek: Int, override val scale: MutableStateFlow<Float>) :
+        DataAccessible
+
+    interface DataAccessible : CourseListState {
         val state: PagerState
         val allWeek: Int
+
+        val scale: MutableStateFlow<Float>
     }
 }
 

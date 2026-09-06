@@ -1,5 +1,6 @@
 package top.kagg886.eoa.pages.main.home.course.conflict
 
+import kotlinx.datetime.LocalDateTime
 import top.kagg886.eoa.util.BaseViewModel
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.database.AppDatabase
@@ -8,13 +9,12 @@ import top.kagg886.backend.database.dao.CourseRecordEntity
 
 class CourseConflictViewModel(
     database: AppDatabase,
-    private val weekNumber: Int,
-    private val dayOfWeek: Int,
-    private val periodOfDay: Int
+    private val startTime: LocalDateTime,
+    private val endTime: LocalDateTime,
 ) : BaseViewModel<CourseConflictState, CourseConflictSideEffect>(name = "CourseConflictViewModel", initial = CourseConflictState.Loading) {
     private val courseRecordDao = database.courseRecordDao()
     override suspend fun Syntax<CourseConflictState, CourseConflictSideEffect>.init() {
-            val date = courseRecordDao.getCoursesWithRecordInfo(weekNumber, dayOfWeek, periodOfDay)
+            val date = courseRecordDao.getCoursesWithRecordInfo(startTime,endTime)
             reduce {
                 CourseConflictState.Success(date)
             }

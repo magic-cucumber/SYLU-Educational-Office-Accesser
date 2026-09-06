@@ -1,8 +1,6 @@
 package top.kagg886.eoa.pages.main.home.course.detail
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,17 +11,20 @@ import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
 import com.eygraber.compose.placeholder.material3.placeholder
 import com.eygraber.compose.placeholder.material3.shimmer
+import kotlinx.coroutines.flow.drop
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -34,6 +35,7 @@ import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
@@ -41,11 +43,26 @@ import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
-import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.util.toFixed
 
 @Serializable
-data class CourseDetailRoute(val recordId: Long)
+data class CourseDetailRoute(
+    val recordId: Long,
+    val type: String? = null,
+)
+
+fun CourseDetailRoute(
+    recordId: Long,
+    source: String,
+    startTime: LocalDateTime,
+    endTime: LocalDateTime,
+) = CourseDetailRoute(
+    recordId = recordId,
+    type = "$source-$startTime-$endTime",
+)
+
+val CourseDetailRoute.sharedBoundsKey: String?
+    get() = type?.let { "$it-course-to-detail-$recordId" }
 
 
 @Composable
@@ -56,11 +73,15 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
         BackIconButton()
     }
 ) {
+    val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CourseDetailViewModel>(key = syncState.toViewModelKey()) {
-        CourseDetailViewModel(route.recordId, syncState, mainViewModel.database)
+        CourseDetailViewModel(route.recordId, syncState, mainViewModel.database,rootState.showHolidayCourse)
     }
+
     val state by model.collectAsState()
 
     model.collectSideEffect {
@@ -71,27 +92,22 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
         }
     }
 
-    CourseDetailScreenContent(state, route.recordId)
+    CourseDetailScreenContent(state, route)
 }
 
 @Composable
-private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) {
-    val rootModifier = Modifier.shareBoundsComposed(
-        sharedContentState = rememberSharedContentState(
-            key = "summary-course-to-detail-$recordId"
-        ),
-        animatedVisibilityScope = LocalAnimatedContentScope.current,
-        resizeMode = RemeasureToBounds,
-        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-    )
-        .shareBoundsComposed(
-            sharedContentState = rememberSharedContentState(
-                key = "list-course-to-detail-$recordId"
-            ),
-            animatedVisibilityScope = LocalAnimatedContentScope.current,
-            resizeMode = RemeasureToBounds,
-            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
-        )
+private fun CourseDetailScreenContent(state: CourseDetailState, route: CourseDetailRoute) {
+    val sharedBoundsKey = route.sharedBoundsKey
+    val rootModifier = Modifier
+        .applyIf(sharedBoundsKey) { key ->
+            shareBoundsComposed(
+                sharedContentState = rememberSharedContentState(
+                    key = key
+                ),
+                animatedVisibilityScope = LocalAnimatedContentScope.current,
+                clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+            )
+        }
 
     when (state) {
         is CourseDetailState.Failed -> {
@@ -103,11 +119,11 @@ private fun CourseDetailScreenContent(state: CourseDetailState, recordId: Long) 
         }
 
         CourseDetailState.Loading -> {
-            CourseDetailScreenSuccess(null,rootModifier)
+            CourseDetailScreenSuccess(null, rootModifier)
         }
 
         is CourseDetailState.Success -> {
-            CourseDetailScreenSuccess(state,rootModifier)
+            CourseDetailScreenSuccess(state, rootModifier)
         }
     }
 }
@@ -120,22 +136,25 @@ private fun CourseDetailScreenSuccess(
     val design = currentLayoutType()
     when (design) {
         NavigationSuiteType.NavigationBar -> {
-            CourseDetailPanelPhone(state,modifier)
+            CourseDetailPanelPhone(state, modifier)
         }
 
         NavigationSuiteType.NavigationRail -> {
-            CourseDetailPanelTablet(state,modifier)
+            CourseDetailPanelTablet(state, modifier)
         }
 
         NavigationSuiteType.NavigationDrawer -> {
-            CourseDetailPanelTablet(state,modifier)
+            CourseDetailPanelTablet(state, modifier)
         }
     }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseDetailPanelPhone(state: CourseDetailState.Success?,modifier: Modifier = Modifier) {
+private fun CourseDetailPanelPhone(
+    state: CourseDetailState.Success?,
+    modifier: Modifier = Modifier
+) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
@@ -166,7 +185,10 @@ private fun CourseDetailPanelPhone(state: CourseDetailState.Success?,modifier: M
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun CourseDetailPanelTablet(state: CourseDetailState.Success?,modifier: Modifier = Modifier) {
+private fun CourseDetailPanelTablet(
+    state: CourseDetailState.Success?,
+    modifier: Modifier = Modifier
+) {
     val visible by remember(state) {
         derivedStateOf {
             state == null
@@ -329,7 +351,11 @@ private fun CourseDetails(
 
             DetailItem("教师", state?.entity?.teacherName ?: "", visible)
             DetailItem("学分", state?.entity?.credits?.toString() ?: "", visible)
-            DetailItem("自定义课程",  if (state?.entity?.isUserAdded == true) "是" else "否", visible)
+            DetailItem(
+                "自定义课程",
+                if (state?.entity?.isUserAdded == true) "是" else "否",
+                visible
+            )
 
         }
     }
@@ -444,7 +470,7 @@ private fun ClassUnitData(
         },
         headlineContent = {
             Text(
-                record?.date.toString(),
+                record?.start?.date.toString(),
                 modifier = Modifier.placeholder(
                     visible = visible,
                     highlight = PlaceholderHighlight.shimmer()
@@ -453,7 +479,7 @@ private fun ClassUnitData(
         },
         supportingContent = {
             Text(
-                "${record?.start.toString()} - ${record?.start.toString()}",
+                "${record?.start?.time.toString()} - ${record?.end?.time.toString()}",
                 modifier = Modifier.placeholder(
                     visible = visible,
                     highlight = PlaceholderHighlight.shimmer()

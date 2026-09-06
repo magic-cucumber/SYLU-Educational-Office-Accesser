@@ -333,8 +333,17 @@ fun RevealContainer(
         }
     }
 
-    LaunchedEffect(registry, show) {
-        if (registry[0]?.content != null && show) {
+
+    // `registry[0].content` 只表示自定义引导气泡已经注册；Reveal 库内部的
+    // revealable 则要等目标完成布局后才会注册到 `RevealState`。两者都满足时，
+    // 才允许调用 `reveal(0)`，避免在目标刚进入 Composition 时触发竞态崩溃。
+    val reallyShow = show &&
+        registry[0]?.content != null &&
+        state.containsRevealable(0)
+
+    // `reallyShow` 会在 Reveal 库完成布局注册后变为 true；未准备好或引导被关闭时隐藏遮罩。
+    LaunchedEffect(registry, reallyShow) {
+        if (reallyShow) {
             state.reveal(0)
         } else {
             state.hide()

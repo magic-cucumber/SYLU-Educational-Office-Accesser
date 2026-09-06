@@ -277,7 +277,6 @@ private fun ExamItem(
                         key = "exam-card-to-detail-${exam?.id}"
                     ),
                     animatedVisibilityScope = LocalAnimatedContentScope.current,
-                    resizeMode = RemeasureToBounds,
                     clipInOverlayDuringTransition = OverlayClip(CardDefaults.shape)
                 )
             }

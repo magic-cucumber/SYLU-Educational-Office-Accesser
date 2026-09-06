@@ -24,6 +24,10 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeFormat
 import top.kagg886.eoa.androidApp.R
 import top.kagg886.eoa.AppActivity
 import top.kagg886.eoa.widget.LocalInnerRadius
@@ -108,7 +112,7 @@ private fun EmptyCoursesView(message: String) {
 }
 
 @Composable
-private fun CoursesList(courses: List<TodayClass>,modifier: GlanceModifier = GlanceModifier) {
+private fun CoursesList(courses: List<TodayClass>, modifier: GlanceModifier = GlanceModifier) {
     LazyColumn(modifier = modifier) {
         itemsIndexed(courses) { index, course ->
             Column {
@@ -131,7 +135,12 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(if (course.conflict) WidgetUtils.createCourseConflictAction(course.weekNumber, periodOfDay = course.period) else WidgetUtils.createCourseDetailAction(course.recordId))
+            .clickable(
+                if (course.conflict) WidgetUtils.createCourseConflictAction(
+                    course.date.first,
+                    course.date.second
+                ) else WidgetUtils.createCourseDetailAction(course.recordId)
+            )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -186,7 +195,7 @@ private fun CourseItem(modifier: GlanceModifier = GlanceModifier, course: TodayC
                 }
 
                 Text(
-                    text = WidgetUtils.formatPeriod(course.period) + if (!course.conflict) " • ${course.location}" else "",
+                    text = course.date.first.time.format(LocalTime.Format { hour(); chars(":"); minute() }) + if (!course.conflict) " • ${course.location}" else "",
                     style = TextStyle(
                         fontSize = 10.sp,
                         color = ColorProvider(MaterialTheme.colorScheme.onSurface)

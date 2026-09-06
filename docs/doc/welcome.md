@@ -44,7 +44,7 @@
 
 第一次使用时，先进入[登录](./login.md)页面，使用教务系统账号完成登录。如果教务系统要求验证码，应用会在登录流程里提示输入。
 
-登录后应用会更新教务信息并保存在手机上。更新完成后，可以先从[课表页面](./course-timetable.md)查看当前周课程，再进入[课表总览](./course-overview.md)添加自定义课程、处理课程导出或整理课程信息。
+登录后应用会更新教务信息并保存在手机上。更新完成后，可以先从[课表页面](./course-timetable.md)查看当前周课程，再进入[课程管理](./course-overview.md)添加自定义课程、处理课程导出或整理课程信息。
 
 如果需要追踪学业状态，可以查看[考试](./exam.md)、[成绩与绩点](./gpa.md)和[教务通知](./academic-notice.md)。第二课堂相关内容可以在[第二课堂](./second-class.md)页面按提示登录后查询。
 
@@ -58,7 +58,7 @@
 
 - [登录](./login.md)
 - [课表页面](./course-timetable.md)
-- [课表总览](./course-overview.md)
+- [课程管理](./course-overview.md)
 - [考试](./exam.md)
 - [成绩与绩点](./gpa.md)
 - [第二课堂](./second-class.md)

@@ -1,5 +1,6 @@
 package top.kagg886.backend.config
 
+import co.touchlab.kermit.Logger
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
@@ -11,6 +12,7 @@ import top.kagg886.util.string
 private val mmkv = MMKV.mmkvWithID("login-properties", mode = MMKVMode.MULTI_PROCESS)
 object AppLoginPropertiesMMKV : MMKV by mmkv,
     AppLoginPropertiesMMKVType {
+    private val logger = Logger.withTag("AppLoginPropertiesMMKV")
     override var username: String by string("username", "")
     override var password: String by string("password", "")
     override var token: String by string("session-key", "")
@@ -42,6 +44,7 @@ object AppLoginPropertiesMMKV : MMKV by mmkv,
 
     override var client: EOAClient =
         EOAClientProvider.providers.first { it.id == clientId }.provide().apply {
+            logger.d("current provider id: $clientId")
             init(
                 object : Storage {
                     override fun get(): String = token

@@ -2,12 +2,13 @@ package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Info
@@ -17,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -46,13 +46,15 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
+import top.kagg886.util.Platform
+import top.kagg886.util.current
 
 @Serializable
 data object CourseListRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseList) {
+fun CourseListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCourseList) {
     val nav = LocalNavController.current
     val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
@@ -61,6 +63,11 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
     }
 
     val state by model.collectAsState()
+    val dataAccessibleState = state as? CourseListState.DataAccessible
+    val pagerState = dataAccessibleState?.state
+    val currentPage = pagerState?.currentPage
+    val allWeek = dataAccessibleState?.allWeek
+    val isCurrentTerm = state is CourseListState.Success
     val fabArrow = when (currentLayoutType()) {
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
@@ -72,27 +79,21 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
     HomeScreen(
         route = EOAHomeModule.COURSE,
         title = {
-            when (val it = state) {
-                is CourseListState.DataAccessible -> {
-                    val it = it.state.currentPage
-
-                    AnimatedContent(
-                        targetState = it,
-                        transitionSpec = createMenuButtonAnim { initialState > targetState }
-                    ) {
-                        Text(
-                            text = "第 ${it + 1} 周",
-                            modifier = Modifier.placeholder(
-                                visible = it == -1,
-                                highlight = PlaceholderHighlight.shimmer()
-                            )
+            if (currentPage != null) {
+                AnimatedContent(
+                    targetState = currentPage,
+                    transitionSpec = createMenuButtonAnim { initialState > targetState }
+                ) {
+                    Text(
+                        text = "第 ${it + 1} 周",
+                        modifier = Modifier.placeholder(
+                            visible = it == -1,
+                            highlight = PlaceholderHighlight.shimmer()
                         )
-                    }
+                    )
                 }
-
-                else -> {
-                    Text("课程表")
-                }
+            } else {
+                Text("课程表")
             }
         },
         menu = {
@@ -104,7 +105,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 onClick = {
                     iconExpanded = true
                 },
-                enabled = state is CourseListState.DataAccessible,
+                enabled = pagerState != null,
                 modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
                     Text("点这里可以刷新课表、回到本周，也可以快速跳到其他周。")
                 }
@@ -123,24 +124,44 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 ModalBottomSheet(
                     onDismissRequest = { jumpModal = false }
                 ) {
-                    val weeks = (state as? CourseListState.DataAccessible)?.allWeek ?: -1
+                    val weeks = allWeek ?: -1
                     if (weeks == -1) {
                         return@ModalBottomSheet
                     }
-                    LazyColumn {
-                        items((1..weeks).toList()) {
-                            ListItem(
-                                headlineContent = {
-                                    Text("第 $it 周")
-                                },
-                                modifier = Modifier.clickable {
-                                    model.selectToWeek(it)
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 48.dp),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        items((1..weeks).toList()) { week ->
+                            val isCurrent = currentPage != null && currentPage + 1 == week
+                            Surface(
+                                onClick = {
+                                    model.selectToWeek(week - 1)
                                     jumpModal = false
                                 },
-                                colors = ListItemDefaults.colors(
-                                    containerColor = BottomSheetDefaults.ContainerColor
-                                )
-                            )
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f),
+                                shape = MaterialTheme.shapes.medium,
+                                color = if (isCurrent) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surface,
+                                contentColor = if (isCurrent) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurface,
+                                border = if (isCurrent) null
+                                else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "$week",
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -162,7 +183,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                     }
                 )
 
-                if (state is CourseListState.Success) {
+                if (isCurrentTerm) {
                     DropdownMenuItem(
                         text = {
                             Text("回到本周")
@@ -201,7 +222,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
             .shareBoundsComposed(
                 sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
                 animatedVisibilityScope = LocalAnimatedContentScope.current,
-                resizeMode = RemeasureToBounds,
+                
                 clipInOverlayDuringTransition = OverlayClip(fabShape)
             )
             .revealableAutoMeasured(1, fabArrow) {
@@ -218,7 +239,7 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
                 is CourseListSideEffect.ScrollToCurrentWeek -> {
                     // 在 UI 层执行动画，这里已经有正确的 Compose 上下文
                     scope.launch {
-                        (state as? CourseListState.DataAccessible)?.state?.animateScrollToPage(it.page)
+                        pagerState?.animateScrollToPage(it.page)
                     }
                 }
             }
@@ -226,6 +247,15 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
 
         CourseListScreenContent(
             state = state,
+            modifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+                val platform = Platform.current
+                when(platform) {
+                    is Platform.Apple, is Platform.Android -> Text("单指左右扫动以切换周数；双指捏合以缩放课程。\n单指上下扫动则可以滚动")
+
+                    is Platform.Desktop -> Text("shift+滚轮 以切换周数；ctrl+滚轮 以缩放课程；\n单独地使用滚轮则可以滚动")
+                }
+            },
+            onZoomChange = model::scaleBy,
         )
     }
 
@@ -234,9 +264,11 @@ fun CourseListScreen() = RevealContainer(2, AppInitializeMMKV::tutorialCourseLis
 @Composable
 private fun CourseListScreenContent(
     state: CourseListState,
+    modifier: Modifier = Modifier,
+    onZoomChange: (Float) -> Unit,
 ) = when (state) {
     is CourseListState.Loading -> {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
                 Spacer(Modifier.width(16.dp))
@@ -246,7 +278,14 @@ private fun CourseListScreenContent(
     }
 
     is CourseListState.DataAccessible -> {
-        CourseDrawerContent(state)
+        val scale by state.scale.collectAsState()
+
+        CourseDrawerContent(
+            modifier = modifier,
+            pagerState = state.state,
+            scale = scale,
+            onZoomChange = onZoomChange,
+        )
     }
 
     is CourseListState.Failed -> {
@@ -257,7 +296,7 @@ private fun CourseListScreenContent(
             message = {
                 Text(state.msg)
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         )
     }
 
@@ -277,20 +316,27 @@ private fun CourseListScreenContent(
             message = {
                 Text("享受假期吧!")
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize()
         )
     }
 }
 
 @Composable
-private fun CourseDrawerContent(state: CourseListState.DataAccessible) {
+private fun CourseDrawerContent(
+    pagerState: PagerState,
+    scale: Float,
+    onZoomChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     HorizontalPager(
-        state = state.state,
-        modifier = Modifier.fillMaxSize(),
+        state = pagerState,
+        modifier = modifier.fillMaxSize(),
     ) {
         CoursePageListScreen(
             index = it,
-            courseListState = state,
+            isCurrentPage = pagerState.currentPage == it,
+            scale = scale,
+            onZoomChange = onZoomChange,
         )
     }
 }
