@@ -15,14 +15,17 @@ import kotlin.time.Clock
 import kotlinx.serialization.Serializable
 import top.kagg886.backend.database.converters.ExamSyncPayloadConverter
 import top.kagg886.backend.database.converters.GPASyncPayloadConverter
+import top.kagg886.backend.database.converters.TimeConverter
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScoreSummary
+import kotlin.time.Instant
 
 @Entity(tableName = "sync-overviews")
+@ColumnTypeConverters(TimeConverter::class)
 data class SyncOverviewEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int? = null,
-    val updatedStamp: Long = Clock.System.now().toEpochMilliseconds(),
+    val updatedStamp: Instant = Clock.System.now(),
 
     @ColumnInfo(defaultValue = "true")
     val success: Boolean = true,
@@ -54,12 +57,16 @@ data class GPASyncPayload(
         Index(value = ["overviewId"], unique = true)
     ]
 )
-@ColumnTypeConverters(ExamSyncPayloadConverter::class, GPASyncPayloadConverter::class)
+@ColumnTypeConverters(
+    ExamSyncPayloadConverter::class,
+    GPASyncPayloadConverter::class,
+    TimeConverter::class
+)
 data class SyncCheckpointEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int? = null,
     val overviewId: Int,
-    val updatedStamp: Long = Clock.System.now().toEpochMilliseconds(),
+    val updatedStamp: Instant = Clock.System.now(),
 
     val profileSuccess: Boolean = false,
     val calendarSuccess: Boolean = false,
@@ -74,6 +81,7 @@ data class SyncCheckpointEntity(
 )
 
 @Dao
+@ColumnTypeConverters(TimeConverter::class)
 interface SyncRecordDao {
     @Insert
     suspend fun insertOverview(record: SyncOverviewEntity): Long
@@ -116,7 +124,7 @@ interface SyncRecordDao {
             LIMIT 1
         """
     )
-    suspend fun getLastSyncTime(): Long?
+    suspend fun getLastSyncTime(): Instant?
 
     @Query(
         """

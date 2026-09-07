@@ -20,6 +20,7 @@ kotlin {
         commonMain.dependencies {
             api(project.dependencies.project(":eoa-lib:network-core"))
             implementation(libs.sweet.api.runtime)
+            implementation(libs.kotlinx.coroutines.core)
         }
 
         commonTest.dependencies {
