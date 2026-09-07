@@ -13,8 +13,6 @@ class EOARelatedTest {
 
         suspend fun beforeAll() = run {
             this@Companion.client = EOAHTMLClient()
-            client.username = "2203050528"
-            client.password = "CaiCai5201314/"
             client.init(
                 object : Storage {
                     private var string: String? = null
@@ -32,7 +30,7 @@ class EOARelatedTest {
     @Test
     fun testEOAAllUnRelatedItem() = runBlocking {
         beforeAll()
-        val calendar = client.getSchoolCalender()
+        val calendar = client.getNotice(true)
         println(calendar)
     }
 }
