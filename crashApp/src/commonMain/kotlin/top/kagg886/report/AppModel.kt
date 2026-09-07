@@ -72,7 +72,7 @@ import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
-class AppModel(private val database: AppDatabase, private val crash: String) : ViewModel(),
+class AppModel(private val crash: String) : ViewModel(),
     OrbitContainerHost<AppModelState, AppModelState, Unit> {
     private val logger = Logger.withTag("CrashAppModel")
     private val client = HttpClient {

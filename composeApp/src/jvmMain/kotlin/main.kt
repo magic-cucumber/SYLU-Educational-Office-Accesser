@@ -131,7 +131,6 @@ fun main() {
                 onCloseRequest = ::exitApplication,
                 content = {
                     CrashApp(
-                        database = database,
                         error = lastException!!.stackTraceToString(),
                         onRestart = {}
                     )
