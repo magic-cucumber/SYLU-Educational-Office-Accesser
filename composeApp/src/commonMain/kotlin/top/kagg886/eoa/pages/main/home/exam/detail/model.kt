@@ -2,12 +2,14 @@ package top.kagg886.eoa.pages.main.home.exam.detail
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
+import kotlinx.coroutines.delay
 import top.kagg886.eoa.util.BaseViewModel
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSyncMMKV
 import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
+import kotlin.time.Duration.Companion.seconds
 
 class ExamDetailViewModel(
     private val recordId: Long,
@@ -53,19 +55,39 @@ class ExamDetailViewModel(
     }
 
     fun setDataUnsafe() = intent {
-        val exam = examDao.getById(recordId)!!
+        // 可能会出现用户停留在旧考试页面但新同步已经完成，此时不能再用路由的id。因此需要回退router。
+        val exam = examDao.getById(recordId) ?: run {
+            postSideEffect(ExamDetailSideEffect.ShowToast("考试数据已更新，请重新进入此页面"))
+            delay(3.seconds)
+            postSideEffect(ExamDetailSideEffect.NavigateBack)
+            return@intent
+        }
 
         val terms = AppSyncMMKV.picker!!.list
-        val timeline = examDao.getTimeLineByCourseId(exam.courseID)!!.map { timeLine ->
+        val timeline = examDao.getTimeLineByCourseId(exam.courseID)?.map { timeLine ->
             timeLine.copy(
                 year = terms.first { it.asTerm().xnm == timeLine.year }.asDisplay().xnm,
                 semester = terms.first { it.asTerm().xqm == timeLine.semester }.asDisplay().xqm,
             )
         }
 
+        if (timeline == null) {
+            postSideEffect(ExamDetailSideEffect.ShowToast("考试数据已更新，请重新进入此页面"))
+            delay(3.seconds)
+            postSideEffect(ExamDetailSideEffect.NavigateBack)
+            return@intent
+        }
+
+        val currentExam = timeline.firstOrNull { it.id == recordId } ?: run {
+            postSideEffect(ExamDetailSideEffect.ShowToast("考试数据已更新，请重新进入此页面"))
+            delay(3.seconds)
+            postSideEffect(ExamDetailSideEffect.NavigateBack)
+            return@intent
+        }
+
         reduce {
             ExamDetailState.Success(
-                records = timeline.first { it.id == recordId },
+                records = currentExam,
                 timeline = timeline
             )
         }
@@ -86,4 +108,5 @@ sealed interface ExamDetailState {
 
 sealed interface ExamDetailSideEffect {
     data class ShowToast(val message: String) : ExamDetailSideEffect
+    data object NavigateBack : ExamDetailSideEffect
 }

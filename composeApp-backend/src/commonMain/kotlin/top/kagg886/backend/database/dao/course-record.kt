@@ -58,7 +58,7 @@ interface CourseRecordDao {
     fun getByCourseIdFlow(courseId: Long): Flow<List<CourseRecordEntity>>
 
     @Query("SELECT * FROM course_records WHERE id = :recordId")
-    suspend fun getById(recordId: Long): CourseRecordEntity
+    suspend fun getById(recordId: Long): CourseRecordEntity?
 
     @Query(
         """

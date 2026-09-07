@@ -31,6 +31,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.NavigationSuiteType
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
@@ -77,6 +78,7 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
     val rootState by rootModel.collectAsState()
 
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
+    val nav = LocalNavController.current
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<CourseDetailViewModel>(key = syncState.toViewModelKey()) {
         CourseDetailViewModel(route.recordId, syncState, mainViewModel.database,rootState.showHolidayCourse)
@@ -88,6 +90,9 @@ fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
         when (it) {
             is CourseDetailSideEffect.ShowToast -> {
                 mainViewModel.toast(type = SnackBarType.Info, it.message)
+            }
+            CourseDetailSideEffect.NavigateBack -> {
+                nav.popBackStack()
             }
         }
     }

@@ -57,7 +57,7 @@ interface CourseDao {
     suspend fun insertAll(items: List<CourseEntity>)
 
     @Query("SELECT * FROM courses WHERE id = :courseId")
-    suspend fun getById(courseId: Long): CourseEntity
+    suspend fun getById(courseId: Long): CourseEntity?
 
     @Delete
     suspend fun delete(item: CourseEntity)
