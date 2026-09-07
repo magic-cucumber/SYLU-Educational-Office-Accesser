@@ -266,7 +266,7 @@ class MainRouteViewModel(val database: AppDatabase) :
     }
 
     // 固定本轮同步使用的登录客户端，避免同步过程中客户端状态发生变化。
-    private inner class SyncSession(private val client: EOAClient, initial: SyncCheckpointEntity) {
+    private inner class SyncSession(val client: EOAClient, initial: SyncCheckpointEntity) {
         // 当前已成功提交的检查点。
         // 只有数据库事务成功后才会更新，保证其始终与数据库状态一致。
         var checkpoint = initial
