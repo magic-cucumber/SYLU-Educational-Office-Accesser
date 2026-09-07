@@ -12,6 +12,7 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.Cookie
 import io.ktor.http.HttpHeaders
@@ -19,7 +20,14 @@ import io.ktor.http.Parameters
 import io.ktor.http.Url
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.serialization
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atTime
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -35,6 +43,7 @@ import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.sylu_eoa.api.v2.UnknownException
 import top.kagg886.sylu_eoa.api.v2.bean.ClassReturn
+import top.kagg886.sylu_eoa.api.v2.bean.ClassTable
 import top.kagg886.sylu_eoa.api.v2.bean.ExamExportOptions
 import top.kagg886.sylu_eoa.api.v2.bean.ExamItem
 import top.kagg886.sylu_eoa.api.v2.bean.GPAScore
@@ -47,6 +56,7 @@ import top.kagg886.sylu_eoa.api.v2.bean.TermResult
 import top.kagg886.sylu_eoa.api.v2.bean.UserProfile
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
+import kotlin.math.abs
 import kotlin.properties.Delegates
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -65,10 +75,6 @@ internal class EOAGraduateClient : EOAClient {
         //下次登录时需要抛出异常
         username = ""
         password = ""
-    }
-
-    override suspend fun markNoticeReadable(noticeId: String): Boolean {
-        TODO("Not yet implemented")
     }
 
     private val json = Json {
@@ -150,7 +156,11 @@ internal class EOAGraduateClient : EOAClient {
         }
 
         do {
-            val captcha = client.get("Home/VerificationCode?codetype=stucode&&t=${Clock.System.now().toEpochMilliseconds()}")
+            val captcha = client.get(
+                "Home/VerificationCode?codetype=stucode&&t=${
+                    Clock.System.now().toEpochMilliseconds()
+                }"
+            )
                 .body<ByteArray>()
                 .let { captchaHandler?.invoke(it) ?: throw NeedCaptchaException() }
 
@@ -226,12 +236,14 @@ internal class EOAGraduateClient : EOAClient {
 
         @Serializable
         data class GraduateUserProfileReturn(
-            val jbxx: GraduateUserInfo,
+            @SerialName("jbxx")
+            val info: GraduateUserInfo,
         )
 
-        val profile = client.get("student/grgl/xsxx_jbxx?_=${Clock.System.now().toEpochMilliseconds()}")
-            .body<GraduateUserProfileReturn>()
-            .jbxx
+        val profile =
+            client.get("student/grgl/xsxx_jbxx?_=${Clock.System.now().toEpochMilliseconds()}")
+                .body<GraduateUserProfileReturn>()
+                .info
 
         val avatar = client.get("student/grgl/PotoImageShow/?bh=${profile.xh}").body<ByteArray>()
 
@@ -248,47 +260,231 @@ internal class EOAGraduateClient : EOAClient {
         )
     }
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun getSchoolCalender(): SchoolCalender {
-        TODO("Not yet implemented")
+        @Serializable
+        data class Registration(val zcrq: String = "")
+
+        val registrations = client.post("student/grgl/bindXsZcXx")
+            .body<List<Registration>>()
+
+        val today = Clock.System.now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
+
+        val anchorDate = registrations
+            .mapNotNull { registration ->
+                runCatching { LocalDate.parse(registration.zcrq) }.getOrNull()
+            }
+            .minByOrNull { date -> abs(date.toEpochDays() - today.toEpochDays()) }
+            ?: throw UnknownException("校历接口未返回有效的注册日期")
+
+        val daysFromMonday = anchorDate.dayOfWeek.ordinal - DayOfWeek.MONDAY.ordinal
+        val previousMonday = anchorDate.plus(-daysFromMonday, DateTimeUnit.DAY)
+        val nextMonday = previousMonday.plus(7, DateTimeUnit.DAY)
+        val startDate =
+            if (anchorDate.toEpochDays() - previousMonday.toEpochDays() <= nextMonday.toEpochDays() - anchorDate.toEpochDays()) previousMonday else nextMonday
+
+        return SchoolCalender(
+            start = startDate,
+            end = startDate.plus(20, DateTimeUnit.WEEK),
+        )
     }
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun getAllAvailableTerms(): TermResult {
-        TODO("Not yet implemented")
-    }
+        @Serializable
+        data class GraduateTerm(
+            @SerialName("termcode")
+            val termCode: String,
+            val selected: Boolean = false,
+        )
 
-    override suspend fun getExamList(picker: TermPicker): List<ExamItem> {
-        TODO("Not yet implemented")
-    }
+        val terms =
+            client.get("student/default/bindterm?_=${Clock.System.now().toEpochMilliseconds()}")
+                .body<List<GraduateTerm>>()
 
-    override suspend fun getExamInfo(examItem: ExamItem): List<List<String>> {
-        TODO("Not yet implemented")
-    }
+        val termPickers = terms.map { term ->
+            val code = term.termCode.split("-")
+            if (code.size != 3 || code[0].length != 2 || code[1].length != 2) {
+                throw UnknownException("学期接口返回了无效的学期代码：${term.termCode}")
+            }
 
-    override suspend fun getExamExportSink(
-        term: Term,
-        config: ExamExportOptions
-    ): ByteArray {
-        TODO("Not yet implemented")
+            val semesterName = when (code[2]) {
+                "01" -> "第一学期"
+                "02" -> "第二学期"
+                else -> throw UnknownException("学期接口返回了无效的学期代码：${term.termCode}")
+            }
+
+            TermPicker(
+                yearName = "20${code[0]}-20${code[1]}学年" to code.take(2).joinToString("-"),
+                yearCode = semesterName to code[2],
+            )
+        }
+
+        val defaultIndex = terms.indexOfFirst { it.selected }
+        if (defaultIndex < 0) {
+            throw UnknownException("学期接口未返回默认学期")
+        }
+
+        return TermResult(
+            list = termPickers,
+            default = termPickers[defaultIndex],
+        )
     }
 
     override suspend fun getClassTable(
         picker: TermPicker,
         firstDay: LocalDate
     ): ClassReturn {
-        TODO("Not yet implemented")
+        fun getTimeByLessonNumber(lessonNumber: Int): Pair<LocalTime, LocalTime> =
+            when (lessonNumber) {
+                1 -> LocalTime.parse("08:00") to LocalTime.parse("08:45")
+                2 -> LocalTime.parse("08:55") to LocalTime.parse("09:40")
+                3 -> LocalTime.parse("10:00") to LocalTime.parse("10:45")
+                4 -> LocalTime.parse("10:55") to LocalTime.parse("11:40")
+
+                5 -> LocalTime.parse("13:00") to LocalTime.parse("13:45")
+                6 -> LocalTime.parse("13:55") to LocalTime.parse("14:40")
+                7 -> LocalTime.parse("14:50") to LocalTime.parse("15:35")
+                8 -> LocalTime.parse("15:45") to LocalTime.parse("16:30")
+                9 -> LocalTime.parse("16:40") to LocalTime.parse("17:25")
+                10 -> LocalTime.parse("17:35") to LocalTime.parse("18:20")
+
+                11 -> LocalTime.parse("19:30") to LocalTime.parse("20:15")
+                12 -> LocalTime.parse("20:25") to LocalTime.parse("21:10")
+
+                else -> error("No such lesson: $lessonNumber")
+            }
+
+        @Serializable
+        data class InternalClassRow(
+            val jcid: Int,
+            val sjbz: String,
+            val mc: String,
+            val z1: String?,
+            val z2: String?,
+            val z3: String?,
+            val z4: String?,
+            val z5: String?,
+            val z6: String?,
+            val z7: String?,
+        )
+
+        @Serializable
+        data class InternalClassReturn(
+            val rows: List<InternalClassRow>,
+            val week: String,
+        )
+
+        data class ParsedClass(
+            val name: String,
+            val teacher: String,
+            val room: String,
+            val weeks: List<Int>,
+        )
+
+        fun String.parseWeeks(): List<Int> = split(",").flatMap { item ->
+            val value = item.removeSuffix("周")
+            val range = value.split("-")
+
+            if (range.size == 1) {
+                listOf(range[0].toInt())
+            } else {
+                (range[0].toInt()..range[1].toInt()).toList()
+            }
+        }
+
+        fun String.parseClass(): ParsedClass {
+            // 例如：
+            // 人工智能1班[3-10周] 黄海新[主校区综合楼A223]
+
+            val weekStart = indexOf('[')
+            val weekEnd = indexOf(']', weekStart)
+
+            val roomStart = indexOf('[', weekEnd)
+            val roomEnd = indexOf(']', roomStart)
+
+            return ParsedClass(
+                name = substring(0, weekStart),
+                teacher = substring(weekEnd + 1, roomStart).trim(),
+                room = substring(roomStart + 1, roomEnd),
+                weeks = substring(weekStart + 1, weekEnd).parseWeeks(),
+            )
+        }
+
+        fun String.parseCell(): List<ParsedClass> =
+            split("<br/><br/>")
+                .map { it.removePrefix("<br/>") }
+                .map { it.parseClass() }
+
+        fun InternalClassRow.cells() = listOf(
+            z1, z2, z3, z4, z5, z6, z7
+        )
+
+        fun Int.toLessonNumber(): Int =
+            (this / 10 - 1) * 4 + this % 10
+
+        val term = picker.asTerm()
+
+        val result =
+            client.submitForm(url = "/student/pygl/py_kbcx_ew", formParameters = Parameters.build {
+                append("kblx", "xs")
+                append("termcode", "${term.xnm}-${term.xqm}")
+            }).body<InternalClassReturn>()
+
+        val tables = result.rows
+            .filter { it.jcid != 40 }
+            .flatMap { row ->
+                val lessonNumber = row.jcid.toLessonNumber()
+                val (startTime, endTime) = getTimeByLessonNumber(lessonNumber)
+
+                row.cells().flatMapIndexed { dayIndex, cell ->
+                    cell?.parseCell()?.flatMap { course ->
+                        course.weeks.map { week ->
+                            val date = firstDay
+                                .plus(week - 1, DateTimeUnit.WEEK)
+                                .plus(dayIndex, DateTimeUnit.DAY)
+
+                            ClassTable(
+                                id = "${course.name}|${course.teacher}|${course.room}",
+                                name = course.name,
+                                teacher = course.teacher,
+                                room = course.room,
+
+                                // 此接口不提供这些信息。
+                                score = "0",
+                                classType = "",
+                                isDegreeProgram = false,
+
+                                startTime = date.atTime(startTime),
+                                endTime = date.atTime(endTime),
+                            )
+                        }
+                    }.orEmpty()
+                }
+            }
+
+        return ClassReturn(
+            extend = emptyList(),
+            tables = tables,
+        )
     }
 
-    override suspend fun getGPAScores(): List<GPAScoreSummary> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getExamList(picker: TermPicker): List<ExamItem> = listOf()
 
-    override suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getExamInfo(examItem: ExamItem): List<List<String>> = listOf()
 
-    override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getExamExportSink(term: Term, config: ExamExportOptions): ByteArray =
+        byteArrayOf()
+
+
+    override suspend fun getGPAScores(): List<GPAScoreSummary> = listOf()
+
+    override suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore> = listOf()
+    override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> = listOf()
+    override suspend fun markNoticeReadable(noticeId: String): Boolean = false
+
 }
 
 /**
