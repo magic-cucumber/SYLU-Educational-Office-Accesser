@@ -19,7 +19,7 @@ actual fun rememberCalendarManagerState(): CalendarState {
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) callback@{ result ->
             state = when {
                 result.values.all { it } -> CalendarState.Granted(AndroidCalendarManager(ctx)) //全部为true则通过检查
-                result.values.any { it } -> CalendarState.Denied(
+                else -> CalendarState.Denied( //否则报错
                     permanent = result.any {
                         ActivityCompat.shouldShowRequestPermissionRationale(
                             ctx.findActivity()!!,
@@ -27,8 +27,6 @@ actual fun rememberCalendarManagerState(): CalendarState {
                         )
                     }
                 )
-
-                else -> error("dead code")
             }
         }
 
