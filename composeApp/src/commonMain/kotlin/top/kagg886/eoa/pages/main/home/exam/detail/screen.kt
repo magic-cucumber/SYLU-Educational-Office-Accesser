@@ -67,6 +67,7 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     back = { BackIconButton() }
 ) {
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
+    val nav = LocalNavController.current
     val syncState by mainViewModel.collectAsState()
     val model = viewModel<ExamDetailViewModel>(key = syncState.toViewModelKey()) {
         ExamDetailViewModel(route.examId, syncState, mainViewModel.database)
@@ -77,6 +78,9 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
         when (it) {
             is ExamDetailSideEffect.ShowToast -> {
                 mainViewModel.toast(type = SnackBarType.Info, it.message)
+            }
+            ExamDetailSideEffect.NavigateBack -> {
+                nav.popBackStack()
             }
         }
     }

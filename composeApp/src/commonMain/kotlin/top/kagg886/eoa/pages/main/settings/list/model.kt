@@ -51,7 +51,7 @@ class SettingsModel(
 
     private fun setDataUnsafe() = intent {
         val profile = AppSyncMMKV.profile!!
-        val last = syncDao.getLastSyncTime()!!.let { Instant.fromEpochMilliseconds(it) }
+        val last = syncDao.getLastSyncTime() ?: Instant.DISTANT_PAST
         reduce {
             SettingsState.Success(
                 stuId = AppLoginPropertiesMMKV.username,

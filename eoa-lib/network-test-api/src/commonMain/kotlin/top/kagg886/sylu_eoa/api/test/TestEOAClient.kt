@@ -1,5 +1,6 @@
 package top.kagg886.sylu_eoa.api.test
 
+import kotlinx.coroutines.delay
 import kotlinx.datetime.*
 import kotlin.time.Clock
 import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
@@ -11,6 +12,7 @@ import top.kagg886.sylu_eoa.api.v2.Storage
 import top.kagg886.sylu_eoa.api.v2.bean.*
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.Uuid
 
@@ -18,6 +20,8 @@ internal class TestEOAClient : EOAClient {
     @OptIn(ExperimentalTime::class)
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     val todayWeekMonday = today.minus(today.dayOfWeek.ordinal, DateTimeUnit.DAY)
+
+    val mills = 1.seconds
 
 
     override var username: String = ""
@@ -31,6 +35,7 @@ internal class TestEOAClient : EOAClient {
 
     @OptIn(ExperimentalEncodingApi::class)
     override suspend fun getUserProfile(): UserProfile {
+        delay(mills)
         val avatar = Base64.decode(
             source = "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"
         )
@@ -48,6 +53,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getSchoolCalender(): SchoolCalender {
+        delay(mills)
         return SchoolCalender(
             start = todayWeekMonday.minus(7, DateTimeUnit.WEEK),
             end = todayWeekMonday.plus(7, DateTimeUnit.WEEK),
@@ -56,6 +62,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getAllAvailableTerms(): TermResult {
+        delay(mills)
         val pickers = (today.year downTo (today.year - 20)).map {
             TermPicker(
                 yearName = "$it-${it + 1}" to "$it",
@@ -69,6 +76,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getExamList(picker: TermPicker): List<ExamItem> {
+        delay(mills)
         return listOf(
             ExamItem(
                 year = "2024",
@@ -159,6 +167,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getExamInfo(examItem: ExamItem): List<List<String>> {
+        delay(mills)
         return listOf(
             listOf("无")
         )
@@ -181,9 +190,15 @@ internal class TestEOAClient : EOAClient {
     override suspend fun getExamExportSink(
         term: Term,
         config: ExamExportOptions
-    ): ByteArray = byteArrayOf()
+    ): ByteArray {
+        delay(mills)
+        return byteArrayOf()
+    }
 
-    override suspend fun getClassTable(picker: TermPicker,firstDay: LocalDate): ClassReturn {
+    override suspend fun getClassTable(
+        picker: TermPicker,
+        firstDay: LocalDate,
+    ): ClassReturn {
         if (password == "captcha") {
             val client = captchaHandler?.invoke(avatar)
             if (client != "YAY5BN") {
@@ -193,6 +208,7 @@ internal class TestEOAClient : EOAClient {
         if (password == "failed") {
             throw Throwable("异常")
         }
+        delay(mills)
         data class Template(
             val id: String = Uuid.random().toString(),
             val name: String,
@@ -593,6 +609,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getGPAScores(): List<GPAScoreSummary> {
+        delay(mills)
         return listOf(
             GPAScoreSummary(
                 name = "2024学年第一学期",
@@ -610,6 +627,7 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun getGPAScoreList(summary: GPAScoreSummary): List<GPAScore> {
+        delay(mills)
         return when (summary.name) {
             "2024学年第一学期" -> listOf(
                 GPAScore(name = "人工智能：无尽的前沿", score = "2.0"),
@@ -634,11 +652,13 @@ internal class TestEOAClient : EOAClient {
                 GPAScore(name = "“新的科学革命的结构”中的哲学与科学", score = "1.0"),
                 GPAScore(name = "AI赋能的信任与可信AI", score = "0.5")
             )
+
             else -> listOf()
         }
     }
 
     override suspend fun getNotice(hasRead: Boolean): List<SystemNotice> {
+        delay(mills)
         return if (hasRead) {
             listOf(
                 SystemNotice(
@@ -756,8 +776,12 @@ internal class TestEOAClient : EOAClient {
     }
 
     override suspend fun logout() {
+        delay(mills)
     }
 
-    override suspend fun markNoticeReadable(noticeId: String): Boolean = true
+    override suspend fun markNoticeReadable(noticeId: String): Boolean {
+        delay(mills)
+        return true
+    }
 
 }

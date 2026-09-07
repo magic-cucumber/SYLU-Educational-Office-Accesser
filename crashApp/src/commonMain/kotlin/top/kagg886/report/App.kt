@@ -38,7 +38,7 @@ import kotlin.random.Random
  */
 
 @Composable
-fun CrashApp(database: AppDatabase, error: String, onRestart: () -> Unit) {
+fun CrashApp(error: String, onRestart: () -> Unit) {
     val random = remember {
         Random(error.hashCode()).nextInt(36000) / 100.0f
     }
@@ -60,7 +60,7 @@ fun CrashApp(database: AppDatabase, error: String, onRestart: () -> Unit) {
         }
 
     AppTheme(color = color, nightTheme = isSystemInDarkTheme()) {
-        val model = viewModel { AppModel(database, error) }
+        val model = viewModel { AppModel(error) }
         val state by model.collectAsState()
 
         GuideScaffold(

@@ -14,6 +14,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.room3.withWriteTransaction
 import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
@@ -23,7 +24,6 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.syntax.Syntax
-import org.orbitmvi.orbit.annotation.OrbitExperimental
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -37,6 +37,7 @@ import top.kagg886.eoa.pages.login.LoginViewModelState
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
+import top.kagg886.sylu_eoa.api.v2.EOAClient
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
 import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
 import top.kagg886.sylu_eoa.api.v2.RetryLimitException
@@ -115,400 +116,452 @@ class MainRouteViewModel(val database: AppDatabase) :
             return
         }
         logger.i("上次同步时间：${time}")
-        startSync().join()
-    }
 
-    fun startSync() = intent {
-        if (state is MainRouteViewState.SyncProcess) {
-            return@intent
-        }
-        val lastSyncTime = Instant.fromEpochMilliseconds(syncDao.getLastSyncTime() ?: 0)
-        val lastSyncUnSuccess = syncDao.getLastSyncSuccess()?.not() ?: true
+        //准备同步了
+        if (state is MainRouteViewState.SyncProcess) return
 
-        //上次同步未成功 或 距离上次同步超过一定时间 时，开始同步
-        if ((Clock.System.now() - lastSyncTime > AppSettingsMMKV.syncDuration) || lastSyncUnSuccess) {
+        val lastSyncTime = syncDao.getLastSyncTime() ?: Instant.DISTANT_PAST
+        val lastSyncFailed = syncDao.getLastSyncSuccess()?.not() ?: true
+
+        // 上次同步未成功或超过同步间隔时，从检查点继续。
+        if ((Clock.System.now() - lastSyncTime > AppSettingsMMKV.syncDuration) || lastSyncFailed) {
             startSyncForce()
-            return@intent
-        }
-        reduce {
-            MainRouteViewState.SyncSuccess(lastSyncTime)
+        } else {
+            reduce { MainRouteViewState.SyncSuccess(lastSyncTime) }
         }
     }
 
     fun startSyncForce() = intent {
-        val lastSyncTime = syncDao.getLastSyncTime()
-        val haveDirtyData = lastSyncTime != null
-        reduce {
-            MainRouteViewState.SyncProcess(
-                haveDirtyData = haveDirtyData,
-                progress = MainRouteViewState.SyncProcessProgress.ProcessingUserData
-            )
-        }
-        logger.i("开始同步")
-        postSideEffect(MainRouteViewEffect.Toast(type = SnackBarType.Info, message = "开始同步"))
-        var overview = syncDao.getLastUnSuccessOverview()
-        if (overview == null) {
-            val overviewId = syncDao.insertOverview(
-                SyncOverviewEntity(
-                    updatedStamp = lastSyncTime ?: 0,
-                    success = false
-                )
-            ).toInt()
-            overview = SyncOverviewEntity(
-                id = overviewId,
-                updatedStamp = lastSyncTime ?: 0,
-                success = false
-            )
-        }
-        val overviewId = overview.id ?: run {
+        val lastSyncTime = try {
+            syncDao.getLastSyncTime()
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+
+            logger.e("数据库初始化失败", e)
             postSideEffect(
                 MainRouteViewEffect.Toast(
-                    type = SnackBarType.Error,
-                    message = "无法生成检查点，请重试"
+                    SnackBarType.Error,
+                    "数据库出现错误！请查看日志。\n如果您认为这个错误不应该发生，可以尝试清除所有数据后重新登录。"
                 )
             )
+            reduce {
+                MainRouteViewState.SyncFailed(
+                    haveDirtyData = false,
+                    message = e.message ?: "数据库初始化失败"
+                )
+            }
             return@intent
         }
-        var checkpoint = syncDao.getCheckpointByOverviewId(overviewId) ?: run {
-            val checkpointId =
-                syncDao.upsertCheckpoint(SyncCheckpointEntity(overviewId = overviewId)).toInt()
-            SyncCheckpointEntity(id = checkpointId, overviewId = overviewId)
+
+        reduce {
+            MainRouteViewState.SyncProcess(
+                haveDirtyData = lastSyncTime != null,
+                progress = MainRouteViewState.SyncProcessProgress.ProcessingSchoolCalendar
+            )
         }
 
-        suspend fun updateCheckpoint(block: (SyncCheckpointEntity) -> SyncCheckpointEntity) {
-            checkpoint =
-                block(checkpoint).copy(updatedStamp = Clock.System.now().toEpochMilliseconds())
-            syncDao.updateCheckpoint(checkpoint)
+        logger.i("开始同步")
+        postSideEffect(
+            MainRouteViewEffect.Toast(
+                type = SnackBarType.Info,
+                message = "开始同步"
+            )
+        )
+
+        val overview = syncDao.getLastUnSuccessOverview() ?: run {
+            val item = SyncOverviewEntity(
+                updatedStamp = lastSyncTime ?: Instant.DISTANT_PAST,
+                success = false
+            )
+            item.copy(id = syncDao.insertOverview(item).toInt())
         }
 
-        val result = runCatching {
-            @OptIn(OrbitExperimental::class)
-            runOn<MainRouteViewState.SyncProcess> {
-                with(AppLoginPropertiesMMKV.client) {
-                    captchaHandler = {
-                        logger.w("发现验证码")
-                        val defer = CompletableDeferred<String?>(viewModelScope.coroutineContext[Job])
-                        postSideEffect(MainRouteViewEffect.NavigateToCaptcha(it,defer))
-                        defer.await() ?: throw NeedCaptchaException()
-                    }
-                    // 该阶段已经完成时直接跳过，避免断点续传重复请求和重复覆盖本地缓存。
-                    if (!checkpoint.profileSuccess) {
-                        AppSyncMMKV.profile = getUserProfile()
-                        updateCheckpoint { it.copy(profileSuccess = true) }
-                        logger.i("成功同步用户信息")
-                    }
+        try {
+            val overviewId = checkNotNull(overview.id) { "无法生成检查点，请重试" }
 
-                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingSchoolCalendar) }
-                    // 校历是固定数量数据，只有请求并写入 MMKV 后才标记完成。
-                    if (!checkpoint.calendarSuccess) {
-                        AppSyncMMKV.calender = getSchoolCalender()
-                        updateCheckpoint { it.copy(calendarSuccess = true) }
-                        logger.i("成功同步校历信息")
-                    }
-
-
-                    reduce {
-                        state.copy(
-                            progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(
-                                -1,
-                                -1
-                            )
-                        )
-                    }
-                    // 考试详情数量不固定：第一次进入时把列表写入 payload，恢复时只处理 payload 中剩余条目。
-                    if (!checkpoint.examSuccess) {
-                        val examDao = database.examDao()
-                        if (checkpoint.examPayload == null) {
-                            val items = getExamList()
-                            database.withWriteTransaction {
-                                examDao.clear()
-                                updateCheckpoint { it.copy(examPayload = ExamSyncPayload(items)) }
-                            }
-                        }
-                        while (!checkpoint.examPayload!!.remains.isEmpty()) {
-                            val payload = checkpoint.examPayload!!
-                            val items = payload.remains
-                            val item = items.first()
-                            reduce {
-                                state.copy(
-                                    progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(
-                                        payload.total - items.size,
-                                        payload.total
-                                    )
-                                )
-                            }
-                            val details = getExamInfo(item)
-                            // 落库和 payload 移除必须在同一个事务内，保证崩溃后不会重复插入或漏插。
-                            database.withWriteTransaction {
-                                examDao.insert(item.toEntity(details))
-                                updateCheckpoint {
-                                    it.copy(examPayload = payload.copy(remains = items.drop(1)))
-                                }
-                            }
-                        }
-                        updateCheckpoint { it.copy(examSuccess = true, examPayload = null) }
-                        logger.i("成功同步考试信息")
-                    } else {
-                        logger.i("考试信息已同步，跳过")
-                    }
-
-                    reduce {
-                        state.copy(
-                            progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(
-                                -1,
-                                -1
-                            )
-                        )
-                    }
-                    // GPA 详情数量不固定：payload 保存剩余 summary，每个 summary 详情落库后再从 payload 删除。
-                    if (!checkpoint.gpaSuccess) {
-                        val gpa = database.gpaDao()
-                        val gpaSummary = database.gpaSummaryDao()
-                        if (checkpoint.gpaPayload == null) {
-                            val items = getGPAScores()
-                            database.withWriteTransaction {
-                                gpa.clear()
-                                gpaSummary.clear()
-                                updateCheckpoint { it.copy(gpaPayload = GPASyncPayload(items)) }
-                            }
-                        }
-                        while (!checkpoint.gpaPayload!!.remains.isEmpty()) {
-                            val payload = checkpoint.gpaPayload!!
-                            val items = payload.remains
-                            val item = items.first()
-                            reduce {
-                                state.copy(
-                                    progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(
-                                        payload.total - items.size,
-                                        payload.total
-                                    )
-                                )
-                            }
-                            val details = getGPAScoreList(item)
-                            // summary、score 和 payload 移除同事务提交，保证恢复时不会出现孤儿或重复数据。
-                            database.withWriteTransaction {
-                                val gpaSummaryId = gpaSummary.insert(item.toEntity())
-                                for (detail in details) {
-                                    gpa.insert(detail.toEntity(gpaSummaryId))
-                                }
-                                updateCheckpoint {
-                                    it.copy(gpaPayload = payload.copy(remains = items.drop(1)))
-                                }
-                            }
-                        }
-                        updateCheckpoint { it.copy(gpaSuccess = true, gpaPayload = null) }
-                        logger.i("成功同步GPA信息")
-                    } else {
-                        logger.i("GPA信息已同步，跳过")
-                    }
-
-                    // 通知可整体重建：未完成时清表重拉，完成后续传直接跳过。
-                    if (!checkpoint.noticeSuccess) {
-                        database.noticeDao().let { dao ->
-                            dao.clear()
-
-                            reduce {
-                                state.copy(
-                                    progress = MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice(
-                                        true
-                                    )
-                                )
-                            }
-                            getNotice(true).forEach {
-                                dao.insert(
-                                    SystemNoticeEntity(
-                                        id = it.id,
-                                        title = it.title,
-                                        content = it.content,
-                                        time = it.createTime,
-                                        isRead = true
-                                    )
-                                )
-                            }
-
-                            reduce {
-                                state.copy(
-                                    progress = MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice(
-                                        false
-                                    )
-                                )
-                            }
-                            getNotice(false).forEach {
-                                dao.insert(
-                                    SystemNoticeEntity(
-                                        id = it.id,
-                                        title = it.title,
-                                        content = it.content,
-                                        time = it.createTime,
-                                        isRead = false
-                                    )
-                                )
-                            }
-                        }
-                        updateCheckpoint { it.copy(noticeSuccess = true) }
-                        logger.i("成功同步系统通知")
-                    } else {
-                        logger.i("系统通知已同步，跳过")
-                    }
-
-                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingTermData) }
-                    var oldPicker = AppSyncMMKV.picker
-                    // 学期数据会被课程同步依赖；只有写入 picker 后才允许后续课程阶段运行。
-                    if (!checkpoint.termSuccess) {
-                        oldPicker = AppSyncMMKV.picker
-                        AppSyncMMKV.picker = getAllAvailableTerms()
-                        updateCheckpoint { it.copy(termSuccess = true) }
-                        logger.i("成功同步学期信息")
-                    } else {
-                        logger.i("学期信息已同步，跳过")
-                    }
-
-                    reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingCourseData) }
-                    // 课程可按当前默认学期整体重建；完成标记前失败，下次会重新清理并重拉。
-                    if (!checkpoint.courseSuccess) {
-                        val picker = AppSyncMMKV.picker!!
-                        val calendar = AppSyncMMKV.calender!!
-                        val courseDao = database.courseDao()
-                        val recordDao = database.courseRecordDao()
-                        val courseExtendDao = database.courseExtendDao()
-                        oldPicker?.default?.asTerm()?.run {
-                            courseDao.clear(
-                                calendar.start.atTime(0, 0),
-                                calendar.end.plus(1, DateTimeUnit.DAY).atTime(0, 0)
-                            )
-                            courseExtendDao.clear(xnm, xqm)
-                        }
-
-                        val (science, tables) = getClassTable(
-                            AppSyncMMKV.picker!!.default,
-                            calendar.start
-                        )
-
-                        courseExtendDao.insertAll(
-                            science.flatMap {
-                                it.ranges.map { week ->
-                                    CourseExtendEntity(
-                                        name = it.name,
-                                        teacherName = it.teacher,
-                                        weekNumber = week,
-                                        yearCode = picker.default.asTerm().xnm,
-                                        semesterCode = picker.default.asTerm().xqm,
-                                    )
-                                }
-                            }
-                        )
-
-                        for ((_, entity) in tables.groupBy { it.id }) {
-                            val i = entity.first()
-                            val bindId = courseDao.insert(
-                                item = CourseEntity(
-                                    name = i.name,
-                                    teacherName = i.teacher,
-                                    classroomName = i.room,
-                                    credits = i.score.toFloat(),
-                                    isDegreeRequired = i.isDegreeProgram,
-                                    isExaminable = i.classType == "考试",
-                                )
-                            )
-
-                            recordDao.insertAll(
-                                entity.map {
-                                    CourseRecordEntity(
-                                        courseId = bindId,
-                                        startTime = it.startTime,
-                                        endTime = it.endTime,
-                                    )
-                                }
-                            )
-                        }
-//                        for (i in tables) {
-//                            val bindId = courseDao.insert(
-//                                item = CourseEntity(
-//                                    name = i.name,
-//                                    teacherName = i.teacher,
-//                                    classroomName = i.room,
-//                                    credits = i.score.toFloat(),
-//                                    isDegreeRequired = i.isDegreeProgram,
-//                                    isExaminable = i.classType == "考试",
-//                                )
-//                            )
-//                            val dayNumber = i.dayInWeek
-//                            i.rangeAllTerm.forEach { weekNumber ->
-//                                i.rangeEveryDay.forEach { lessonNumber ->
-//                                    recordDao.insert(
-//                                        CourseRecordEntity(
-//                                            courseId = bindId,
-//                                            weekNumber = weekNumber,
-//                                            dayOfWeek = dayNumber.toInt(),
-//                                            periodOfDay = lessonNumber
-//                                        )
-//                                    )
-//                                }
-//                            }
-//                        }
-                        updateCheckpoint { it.copy(courseSuccess = true) }
-                        logger.i("成功同步课程信息")
-                    } else {
-                        logger.i("课程信息已同步，跳过")
-                    }
-                }
+            val checkpoint = syncDao.getCheckpointByOverviewId(overviewId) ?: run {
+                val item = SyncCheckpointEntity(overviewId = overviewId)
+                item.copy(id = syncDao.upsertCheckpoint(item).toInt())
             }
-        }
 
-        if (result.isSuccess) {
+            val client = AppLoginPropertiesMMKV.client
+            client.captchaHandler = {
+                logger.w("发现验证码")
+                val defer = CompletableDeferred<String?>(viewModelScope.coroutineContext[Job])
+                postSideEffect(MainRouteViewEffect.NavigateToCaptcha(it,defer))
+                defer.await() ?: throw NeedCaptchaException()
+            }
+            val session = SyncSession(client,checkpoint)
+
+            syncCalendar(session)
+            syncTerms(session)
+            syncCourses(session)
+            syncProfile(session)
+            syncExams(session)
+            syncGpa(session)
+            syncNotices(session)
+
+            val completedAt = Clock.System.now()
+
+            database.withWriteTransaction {
+                syncDao.updateCheckpoint(
+                    session.checkpoint.copy(
+                        updatedStamp = completedAt,
+                        examPayload = null,
+                        gpaPayload = null
+                    )
+                )
+                syncDao.updateOverview(
+                    overview.copy(
+                        updatedStamp = completedAt,
+                        success = true
+                    )
+                )
+            }
+
+            reduce { MainRouteViewState.SyncSuccess(completedAt) }
+            logger.i("同步完毕！")
+
             postSideEffect(
                 MainRouteViewEffect.Toast(
                     type = SnackBarType.Success,
                     message = "同步完毕！"
                 )
             )
-            logger.i("同步完毕！")
-            val completed = overview.copy(
-                updatedStamp = Clock.System.now().toEpochMilliseconds(),
-                success = true
+        } catch (error: Exception) {
+            val ex = if (error is RetryLimitException) error.cause ?: error else error
+
+            if (ex is CancellationException) throw ex
+
+            if (ex is InvalidCredentialsException) {
+                postSideEffect(
+                    MainRouteViewEffect.Toast(
+                        type = SnackBarType.Error,
+                        message = "登录凭证已过期！请重新登录"
+                    )
+                )
+                clear0()
+                delay(3.seconds)
+                postSideEffect(MainRouteViewEffect.NavigateToLogin)
+                return@intent
+            }
+
+            logger.e("同步失败！", ex)
+
+            syncDao.updateOverview(
+                overview.copy(
+                    updatedStamp = lastSyncTime ?: Instant.DISTANT_PAST,
+                    success = false
+                )
             )
-            syncDao.updateOverview(completed)
-            syncDao.updateCheckpoint(
-                checkpoint.copy(
-                    updatedStamp = completed.updatedStamp,
-                    examPayload = null,
+
+            reduce {
+                MainRouteViewState.SyncFailed(
+                    lastSyncTime != null,
+                    ex.message ?: "未知错误"
+                )
+            }
+            postSideEffect(MainRouteViewEffect.SyncErrorToast)
+        }
+    }
+
+    // 固定本轮同步使用的登录客户端，避免同步过程中客户端状态发生变化。
+    private inner class SyncSession(private val client: EOAClient, initial: SyncCheckpointEntity) {
+        // 当前已成功提交的检查点。
+        // 只有数据库事务成功后才会更新，保证其始终与数据库状态一致。
+        var checkpoint = initial
+            private set
+
+        /**
+         * 表示一次完整的同步任务。
+         *
+         * 在执行同步action时会：
+         * - 获取检查点通过时的待写入检查点
+         * - 写入数据并更新检查点
+         * - 将已写入的检查点重新作为内存值
+         */
+        suspend fun commit(
+            update: (SyncCheckpointEntity) -> SyncCheckpointEntity,
+            write: suspend () -> Unit = {}
+        ) {
+            val pending = update(checkpoint)
+            val next = database.withWriteTransaction {
+                write()
+
+                val next = pending.copy(updatedStamp = Clock.System.now())
+                syncDao.updateCheckpoint(next)
+                next
+            }
+
+            checkpoint = next
+        }
+    }
+
+    private suspend fun syncCalendar(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.calendarSuccess) return@runOn
+            reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingSchoolCalendar) }
+            // MMKV 与 Room 无法共用事务：先写配置再标记，中断后允许重试本步骤。
+            AppSyncMMKV.calender = session.client.getSchoolCalender()
+            session.commit({ it.copy(calendarSuccess = true) })
+            logger.i("成功同步校历信息")
+        }
+    }
+
+    private suspend fun syncTerms(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.termSuccess) return@runOn
+            reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingTermData) }
+            AppSyncMMKV.picker = session.client.getAllAvailableTerms()
+            session.commit({ it.copy(termSuccess = true) })
+            logger.i("成功同步学期信息")
+        }
+    }
+
+    private suspend fun syncCourses(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.courseSuccess) return@runOn
+            reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingCourseData) }
+
+            val picker = checkNotNull(AppSyncMMKV.picker) { "缺少学期信息" }
+            val calendar = checkNotNull(AppSyncMMKV.calender) { "缺少校历信息" }
+            val term = picker.default.asTerm()
+
+            // 网络请求失败时不清理旧课程；全部写入与完成标记一起提交。
+            val (science, tables) = session.client.getClassTable(picker.default, calendar.start)
+            val courseDao = database.courseDao()
+            val recordDao = database.courseRecordDao()
+            val extendDao = database.courseExtendDao()
+
+            session.commit({ it.copy(courseSuccess = true) }) {
+                courseDao.clear(
+                    calendar.start.atTime(0, 0),
+                    calendar.end.plus(1, DateTimeUnit.DAY).atTime(0, 0)
+                )
+                extendDao.clearAll()
+                extendDao.insertAll(science.flatMap { item ->
+                    item.ranges.map { week ->
+                        CourseExtendEntity(
+                            name = item.name,
+                            teacherName = item.teacher,
+                            weekNumber = week,
+                            yearCode = term.xnm,
+                            semesterCode = term.xqm
+                        )
+                    }
+                })
+                for (records in tables.groupBy { it.id }.values) {
+                    val item = records.first()
+                    val courseId = courseDao.insert(
+                        CourseEntity(
+                            name = item.name,
+                            teacherName = item.teacher,
+                            classroomName = item.room,
+                            credits = item.score.toFloat(),
+                            isDegreeRequired = item.isDegreeProgram,
+                            isExaminable = item.classType == "考试"
+                        )
+                    )
+                    recordDao.insertAll(records.map {
+                        CourseRecordEntity(
+                            courseId = courseId,
+                            startTime = it.startTime,
+                            endTime = it.endTime
+                        )
+                    })
+                }
+            }
+            logger.i("成功同步课程信息")
+        }
+    }
+
+    private suspend fun syncProfile(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.profileSuccess) return@runOn
+            reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingUserData) }
+            AppSyncMMKV.profile = session.client.getUserProfile()
+            session.commit({ it.copy(profileSuccess = true) })
+            logger.i("成功同步用户信息")
+        }
+    }
+
+    private suspend fun syncExams(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.examSuccess) return@runOn
+
+            reduce {
+                state.copy(
+                    progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(-1, -1)
+                )
+            }
+
+            val dao = database.examDao()
+
+            // 1. 初始化考试同步任务。
+            if (session.checkpoint.examPayload == null) {
+                val items = session.client.getExamList()
+
+                session.commit(
+                    update = {
+                        it.copy(examPayload = ExamSyncPayload(items))
+                    },
+                    write = dao::clear
+                )
+            }
+
+            // 2. 逐条同步考试详情，每条都是独立的可恢复检查点。
+            while (session.checkpoint.examPayload?.remains?.isNotEmpty() == true) {
+                val payload = checkNotNull(session.checkpoint.examPayload)
+                val item = payload.remains.first()
+
+                reduce {
+                    state.copy(
+                        progress = MainRouteViewState.SyncProcessProgress.ProcessingExamData(
+                            payload.total - payload.remains.size,
+                            payload.total
+                        )
+                    )
+                }
+
+                val details = session.client.getExamInfo(item)
+
+                session.commit(
+                    update = {
+                        it.copy(
+                            examPayload = payload.copy(
+                                remains = payload.remains.drop(1)
+                            )
+                        )
+                    },
+                    write = {
+                        dao.insert(item.toEntity(details))
+                    }
+                )
+            }
+
+            // 3. 全部完成，清理恢复数据并标记成功。
+            session.commit({
+                it.copy(
+                    examSuccess = true,
+                    examPayload = null
+                )
+            })
+
+            logger.i("成功同步考试信息")
+        }
+    }
+
+    private suspend fun syncGpa(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.gpaSuccess) return@runOn
+
+            reduce {
+                state.copy(
+                    progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(-1, -1)
+                )
+            }
+
+            val dao = database.gpaDao()
+            val summaryDao = database.gpaSummaryDao()
+
+            // 1. 初始化 GPA 同步任务。
+            if (session.checkpoint.gpaPayload == null) {
+                val items = session.client.getGPAScores()
+
+                session.commit(
+                    update = {
+                        it.copy(gpaPayload = GPASyncPayload(items))
+                    },
+                    write = {
+                        dao.clear()
+                        summaryDao.clear()
+                    }
+                )
+            }
+
+            // 2. 逐组同步 GPA 汇总及明细。
+            while (session.checkpoint.gpaPayload?.remains?.isNotEmpty() == true) {
+                val payload = checkNotNull(session.checkpoint.gpaPayload)
+                val item = payload.remains.first()
+
+                reduce {
+                    state.copy(
+                        progress = MainRouteViewState.SyncProcessProgress.ProcessingGPAData(
+                            payload.total - payload.remains.size,
+                            payload.total
+                        )
+                    )
+                }
+
+                val details = session.client.getGPAScoreList(item)
+
+                // 汇总、明细以及 payload 推进作为一个可恢复子步骤原子提交。
+                session.commit(
+                    update = {
+                        it.copy(
+                            gpaPayload = payload.copy(
+                                remains = payload.remains.drop(1)
+                            )
+                        )
+                    },
+                    write = {
+                        val summaryId = summaryDao.insert(item.toEntity())
+                        details.forEach {
+                            dao.insert(it.toEntity(summaryId))
+                        }
+                    }
+                )
+            }
+
+            // 3. 全部完成，清理恢复数据并标记成功。
+            session.commit({
+                it.copy(
+                    gpaSuccess = true,
                     gpaPayload = null
                 )
-            )
-            reduce {
-                MainRouteViewState.SyncSuccess(Clock.System.now())
-            }
-            return@intent
-        }
-        val ex = when (val ex = result.exceptionOrNull()!!) {
-            is RetryLimitException -> ex.cause!!
-            else -> ex
-        }
+            })
 
-        if (ex is InvalidCredentialsException) {
-            postSideEffect(
-                MainRouteViewEffect.Toast(
-                    type = SnackBarType.Error,
-                    message = "登录凭证已过期！请重新登录"
-                )
-            )
-            clear0()
-            delay(3.seconds)
-            postSideEffect(
-                MainRouteViewEffect.NavigateToLogin
-            )
-            return@intent
+            logger.i("成功同步GPA信息")
         }
-        postSideEffect(
-            MainRouteViewEffect.SyncErrorToast
-        )
-        logger.e("同步失败！", ex)
-        syncDao.updateOverview(overview.copy(updatedStamp = lastSyncTime ?: 0, success = false))
-        reduce {
-            MainRouteViewState.SyncFailed(
-                haveDirtyData,
-                ex.message ?: "未知错误"
-            )
+    }
+
+    private suspend fun syncNotices(session: SyncSession) = subIntent {
+        runOn<MainRouteViewState.SyncProcess> {
+            if (session.checkpoint.noticeSuccess) return@runOn
+            reduce {
+                state.copy(
+                    progress = MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice(
+                        true
+                    )
+                )
+            }
+            val read = session.client.getNotice(true)
+            reduce {
+                state.copy(
+                    progress = MainRouteViewState.SyncProcessProgress.ProcessingSystemNotice(
+                        false
+                    )
+                )
+            }
+            val unread = session.client.getNotice(false)
+            val dao = database.noticeDao()
+            session.commit({ it.copy(noticeSuccess = true) }) {
+                dao.clear()
+                for ((items, isRead) in listOf(read to true, unread to false)) {
+                    for (item in items) {
+                        dao.insert(
+                            SystemNoticeEntity(
+                                id = item.id,
+                                title = item.title,
+                                content = item.content,
+                                time = item.createTime,
+                                isRead = isRead
+                            )
+                        )
+                    }
+                }
+            }
+            logger.i("成功同步系统通知")
         }
     }
 

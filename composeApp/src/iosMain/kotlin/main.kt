@@ -110,7 +110,6 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
 
         if (hasUnResolveCrashInfo) {
             CrashApp(
-                database = database,
                 error = CrashConfig.crashText,
                 onRestart = {
                     CrashConfig.hasUnResolveCrash = false

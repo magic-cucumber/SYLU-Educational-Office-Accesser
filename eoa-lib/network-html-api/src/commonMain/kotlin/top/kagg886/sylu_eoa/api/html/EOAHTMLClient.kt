@@ -537,13 +537,16 @@ internal class EOAHTMLClient : EOAClient {
         val doc = client.submitForm(
             url = "xtgl/index_cxDbsy.html?doType=query",
             formParameters = Parameters.build {
+                this["flag"] = "1"
                 this["sfyy"] = if (hasRead) "2" else "1"
+                this["_search"] = "false"
+                this["nd"] = "${Clock.System.now().toEpochMilliseconds()}"
+
                 this["queryModel.showCount"] = "5000"
                 this["queryModel.currentPage"] = "1"
                 this["queryModel.sortName"] = "cjsj"
                 this["queryModel.sortOrder"] = "desc"
-                this["_search"] = "false"
-                this["nd"] = "${Clock.System.now().toEpochMilliseconds()}"
+                this["time"] = "${Clock.System.now().toEpochMilliseconds()}" //原实现为随机值
             }
         ).body<SystemNoticeReturn>()
 

@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.course.detail
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
@@ -14,6 +15,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.CourseEntity
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 
 class CourseDetailViewModel(
     private val recordId: Long,
@@ -67,7 +69,19 @@ class CourseDetailViewModel(
         //因为配置了删除课程时级联删除记录，所以我们无需过滤xnm和xqm。
         val calendar = AppSyncMMKV.calender!!
         //获取课程实体
-        val course = courseDao.getById(courseRecordDao.getById(recordId).courseId!!)
+        //可能会出现用户停留在旧课程页面但新同步已经完成，此时不能再用路由的id。因此需要回退router。
+        val record = courseRecordDao.getById(recordId) ?: run {
+            postSideEffect(CourseDetailSideEffect.ShowToast("课程数据已更新，请重新进入此页面"))
+            delay(3.seconds)
+            postSideEffect(CourseDetailSideEffect.NavigateBack)
+            return@intent
+        }
+        val course = record.courseId?.let { courseDao.getById(it) } ?: run {
+            postSideEffect(CourseDetailSideEffect.ShowToast("课程数据已更新，请重新进入此页面"))
+            delay(3.seconds)
+            postSideEffect(CourseDetailSideEffect.NavigateBack)
+            return@intent
+        }
 
         courseRecordDao.getByCourseIdFlow(course.id!!)
             .flowOn(Dispatchers.IO)
@@ -124,4 +138,5 @@ sealed interface CourseDetailState {
 
 sealed interface CourseDetailSideEffect {
     data class ShowToast(val message: String) : CourseDetailSideEffect
+    data object NavigateBack : CourseDetailSideEffect
 }
