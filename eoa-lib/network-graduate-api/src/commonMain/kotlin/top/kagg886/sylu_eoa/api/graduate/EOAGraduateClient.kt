@@ -119,8 +119,6 @@ internal class EOAGraduateClient : EOAClient {
             install(HttpTimeout) {
                 requestTimeoutMillis = 30.seconds.inWholeMilliseconds
             }
-
-            install(RequestMergePlugin)
         }
     }
 

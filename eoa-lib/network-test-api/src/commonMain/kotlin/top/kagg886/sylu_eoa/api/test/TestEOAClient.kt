@@ -190,6 +190,9 @@ internal class TestEOAClient : EOAClient {
                 getClassTable(picker,firstDay)
             }
         }
+        if (password == "failed") {
+            throw Throwable("异常")
+        }
         data class Template(
             val id: String = Uuid.random().toString(),
             val name: String,
@@ -737,7 +740,7 @@ internal class TestEOAClient : EOAClient {
             throw BadCredentialsException()
         }
 
-        if (password == "test") {
+        if (password == "test" || password == "failed") {
             return
         }
 
