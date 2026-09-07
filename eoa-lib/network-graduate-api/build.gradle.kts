@@ -45,7 +45,7 @@ kotlin {
 }
 
 buildConfig {
-    packageName("top.kagg886.sylu_eoa.api.html.config")
+    packageName("top.kagg886.sylu_eoa.api.graduate.config")
     buildConfigField("MESSAGE_API_ENDPOINT", messageApiEndpoint)
 }
 

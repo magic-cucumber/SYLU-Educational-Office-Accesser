@@ -8,6 +8,9 @@ import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
 import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.BodyFilterResult
+import io.ktor.client.plugins.logging.CommonLogBodyFilter
+import io.ktor.client.plugins.logging.LogBodyFilter
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.forms.submitForm
@@ -15,11 +18,14 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.Cookie
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
 import io.ktor.http.Url
+import io.ktor.http.isTextType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.serialization
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -34,7 +40,7 @@ import kotlinx.serialization.json.Json
 import top.kagg886.sylu_eoa.api.graduate.util.RequestMergePlugin
 import top.kagg886.sylu_eoa.api.graduate.util.ResponseBodyRewritePlugin
 import top.kagg886.sylu_eoa.api.graduate.util.kermit
-import top.kagg886.sylu_eoa.api.html.config.BuildConfig
+import top.kagg886.sylu_eoa.api.graduate.config.BuildConfig
 import top.kagg886.sylu_eoa.api.html.util.RSA
 import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
 import top.kagg886.sylu_eoa.api.v2.EOAClient
