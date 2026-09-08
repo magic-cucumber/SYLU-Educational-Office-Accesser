@@ -228,7 +228,7 @@ class MainRouteViewModel(val database: AppDatabase) :
                     message = "同步完毕！"
                 )
             )
-        } catch (error: Exception) {
+        } catch (error: Throwable) {
             val ex = if (error is RetryLimitException) error.cause ?: error else error
 
             if (ex is CancellationException) throw ex
