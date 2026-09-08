@@ -3,7 +3,6 @@ package top.kagg886.eoa.pages.main.home.course.list
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculateCentroidSize
@@ -13,7 +12,6 @@ import androidx.compose.foundation.gestures.zoomBy
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -29,7 +27,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -51,15 +50,17 @@ import androidx.compose.ui.unit.times
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.number
-import kotlinx.datetime.plus
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.component.course.ComponentDefault
+import top.kagg886.eoa.component.course.CourseComponentHeader
+import top.kagg886.eoa.component.course.CourseLayout
+import top.kagg886.eoa.component.course.CourseTimelineScope
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
@@ -75,6 +76,7 @@ import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
 import kotlin.math.abs
+import kotlin.math.roundToLong
 import kotlin.math.roundToInt
 
 @Composable
@@ -179,8 +181,6 @@ private fun CoursePageScreenContent(
         }
 
         is CoursePageState.Success -> {
-            val scrollState = rememberScrollState()
-
             CoursePageScreenSuccess(
                 thisWeekStartDate = state.thisWeekStartDate,
                 currentDate = state.currentDate,
@@ -188,7 +188,6 @@ private fun CoursePageScreenContent(
                 scale = scale,
                 useNightMode = useNightMode,
                 hideWeekendCourse = hideWeekendCourse,
-                scrollState = scrollState,
                 longShotEnabled = isCurrentPage,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
@@ -208,7 +207,7 @@ private fun CoursePageScreenSuccess(
     scale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
-    scrollState: androidx.compose.foundation.ScrollState,
+    scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
     longShotEnabled: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
@@ -236,11 +235,11 @@ private fun CoursePageScreenSuccess(
     val coroutineScope = rememberCoroutineScope()
     val zoomEnabled = expandedCourseKey == null
     val density = LocalDensity.current
-    val timelineDividerOffset = TimeLabelTopPadding + with(density) {
+    val timelineDividerOffset = 4.dp + with(density) {
         MaterialTheme.typography.labelSmall.lineHeight.toDp()
     } / 2
     val timelineScaleOriginPx = with(density) {
-        (CalendarHeaderHeight + timelineDividerOffset).toPx()
+        (ComponentDefault.HeaderHeight + timelineDividerOffset).toPx()
     }
     var zoomAnchorY by remember {
         mutableStateOf<Float?>(null)
@@ -260,20 +259,15 @@ private fun CoursePageScreenSuccess(
         if (anchorY != null && pendingScale != null && scale != previousScale) {
             val scaleChange = scale / previousScale
             val currentScroll = scrollState.value.toFloat()
-            val targetScroll = timelineScaleOriginPx +
-                (currentScroll + anchorY - timelineScaleOriginPx) * scaleChange -
-                anchorY
+            val targetScroll =
+                timelineScaleOriginPx + (currentScroll + anchorY - timelineScaleOriginPx) * scaleChange - anchorY
 
             scrollState.scrollTo(targetScroll.roundToInt())
         }
 
         scrollCompensatedScale = scale
 
-        if (
-            pendingScale != null &&
-            pendingTouchScale == pendingScale &&
-            abs(pendingScale - scale) <= ScaleThresholdEpsilon
-        ) {
+        if (pendingScale != null && pendingTouchScale == pendingScale && abs(pendingScale - scale) <= ScaleThresholdEpsilon) {
             pendingTouchScale = null
             zoomAnchorY = null
         }
@@ -342,132 +336,130 @@ private fun CoursePageScreenSuccess(
 
     BoxWithConstraints(
         modifier = modifier
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                enabled = expandedCourseKey != null,
+                onClick = ::dismissExpandedCourse
+            )
 
-        .clickable(
-            interactionSource = null,
-            indication = null,
-            enabled = expandedCourseKey != null,
-            onClick = ::dismissExpandedCourse
-        )
-
-        // 在 Initial 阶段拦截 Shift + 滚轮，
-        // 避免同时触发纵向滚动。
-        .pointerInput(transformableState, zoomEnabled) {
-            awaitPointerEventScope {
-                while (true) {
-                    val event = awaitPointerEvent(
-                        pass = PointerEventPass.Initial
-                    )
-
-                    // 只处理 Ctrl + 滚轮。
-                    // Shift + 滚轮以及普通滚轮全部交给外层处理。
-                    if (event.type != PointerEventType.Scroll || !event.keyboardModifiers.isCtrlPressed) {
-                        continue
-                    }
-
-                    val delta = event.changes.firstOrNull()?.scrollDelta ?: continue
-
-                    val wheelDelta = when {
-                        delta.y != 0f -> delta.y
-                        delta.x != 0f -> delta.x
-                        else -> continue
-                    }
-
-                    // 只有 Ctrl + 滚轮才消费。
-                    event.changes.forEach {
-                        it.consume()
-                    }
-
-                    if (!zoomEnabled) {
-                        continue
-                    }
-
-                    val zoomFactor = if (wheelDelta < 0f) {
-                        MouseWheelZoomStep
-                    } else {
-                        1f / MouseWheelZoomStep
-                    }
-
-                    coroutineScope.launch {
-                        transformableState.zoomBy(zoomFactor)
-                    }
-                }
-            }
-        }
-
-        // 在 Initial 阶段接管双指手势，避免 Card 点击或滚动先消费事件，
-        // 导致捏合被取消。单指事件仍交给点击、纵向滚动和周切换。
-        .pointerInput(zoomEnabled) {
-            if (!zoomEnabled) {
-                return@pointerInput
-            }
-
-            awaitPointerEventScope {
-                while (true) {
-                    var isMultiTouchGesture = false
-                    var pastTouchSlop = false
-                    var accumulatedZoom = 1f
-                    var gestureScale = currentScale
-                    var event = awaitPointerEvent(
-                        pass = PointerEventPass.Initial
-                    )
-
-                    do {
-                        if (event.changes.count { it.pressed } >= 2) {
-                            isMultiTouchGesture = true
-                        }
-
-                        if (isMultiTouchGesture) {
-                            val zoomChange = event.calculateZoom()
-
-                            if (!pastTouchSlop) {
-                                accumulatedZoom *= zoomChange
-                                val centroidSize = event.calculateCentroidSize(
-                                    useCurrent = false
-                                )
-                                pastTouchSlop = abs(1f - accumulatedZoom) * centroidSize >
-                                    viewConfiguration.touchSlop
-                            }
-
-                            // 第二个触点出现后立刻取消 Card press 和滚动竞争；
-                            // 即使先抬起一根手指，也持续消费到本轮手势结束。
-                            event.changes.forEach {
-                                it.consume()
-                            }
-
-                            if (pastTouchSlop && zoomChange != 1f) {
-                                val targetScale = (gestureScale * zoomChange).coerceIn(
-                                    MinTimelineScale, MaxTimelineScale
-                                )
-                                val effectiveZoomChange = targetScale / gestureScale
-
-                                if (effectiveZoomChange != 1f) {
-                                    zoomAnchorY = event.calculateCentroid().y
-                                    pendingTouchScale = targetScale
-                                    gestureScale = targetScale
-                                    currentOnZoomChange(effectiveZoomChange)
-                                }
-                            }
-                        }
-
-                        if (event.changes.none { it.pressed }) {
-                            break
-                        }
-
-                        event = awaitPointerEvent(
+            // 在 Initial 阶段拦截 Ctrl + 滚轮，
+            // 避免同时触发纵向滚动。
+            .pointerInput(transformableState, zoomEnabled) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(
                             pass = PointerEventPass.Initial
                         )
-                    } while (true)
+
+                        // 只处理 Ctrl + 滚轮。
+                        // Shift + 滚轮以及普通滚轮全部交给外层处理。
+                        if (event.type != PointerEventType.Scroll || !event.keyboardModifiers.isCtrlPressed) {
+                            continue
+                        }
+
+                        val delta = event.changes.firstOrNull()?.scrollDelta ?: continue
+
+                        val wheelDelta = when {
+                            delta.y != 0f -> delta.y
+                            delta.x != 0f -> delta.x
+                            else -> continue
+                        }
+
+                        // 只有 Ctrl + 滚轮才消费。
+                        event.changes.forEach {
+                            it.consume()
+                        }
+
+                        if (!zoomEnabled) {
+                            continue
+                        }
+
+                        val zoomFactor = if (wheelDelta < 0f) {
+                            MouseWheelZoomStep
+                        } else {
+                            1f / MouseWheelZoomStep
+                        }
+
+                        coroutineScope.launch {
+                            transformableState.zoomBy(zoomFactor)
+                        }
+                    }
                 }
             }
-        }
 
-        .verticalScroll(scrollState)
+            // 在 Initial 阶段接管双指手势，避免 Card 点击或滚动先消费事件，
+            // 导致捏合被取消。单指事件仍交给点击、纵向滚动和周切换。
+            .pointerInput(zoomEnabled) {
+                if (!zoomEnabled) {
+                    return@pointerInput
+                }
 
-        .miuiLongShotSupport(
-            enabled = longShotEnabled, scrollState = scrollState
-        )
-    ) {
+                awaitPointerEventScope {
+                    while (true) {
+                        var isMultiTouchGesture = false
+                        var pastTouchSlop = false
+                        var accumulatedZoom = 1f
+                        var gestureScale = currentScale
+                        var event = awaitPointerEvent(
+                            pass = PointerEventPass.Initial
+                        )
+
+                        do {
+                            if (event.changes.count { it.pressed } >= 2) {
+                                isMultiTouchGesture = true
+                            }
+
+                            if (isMultiTouchGesture) {
+                                val zoomChange = event.calculateZoom()
+
+                                if (!pastTouchSlop) {
+                                    accumulatedZoom *= zoomChange
+                                    val centroidSize = event.calculateCentroidSize(
+                                        useCurrent = false
+                                    )
+                                    pastTouchSlop =
+                                        abs(1f - accumulatedZoom) * centroidSize > viewConfiguration.touchSlop
+                                }
+
+                                // 第二个触点出现后立刻取消 Card press 和滚动竞争；
+                                // 即使先抬起一根手指，也持续消费到本轮手势结束。
+                                event.changes.forEach {
+                                    it.consume()
+                                }
+
+                                if (pastTouchSlop && zoomChange != 1f) {
+                                    val targetScale = (gestureScale * zoomChange).coerceIn(
+                                        0.5f, MaxTimelineScale
+                                    )
+                                    val effectiveZoomChange = targetScale / gestureScale
+
+                                    if (effectiveZoomChange != 1f) {
+                                        zoomAnchorY = event.calculateCentroid().y
+                                        pendingTouchScale = targetScale
+                                        gestureScale = targetScale
+                                        currentOnZoomChange(effectiveZoomChange)
+                                    }
+                                }
+                            }
+
+                            if (event.changes.none { it.pressed }) {
+                                break
+                            }
+
+                            event = awaitPointerEvent(
+                                pass = PointerEventPass.Initial
+                            )
+                        } while (true)
+                    }
+                }
+            }
+
+            .verticalScroll(scrollState)
+
+            .miuiLongShotSupport(
+                enabled = longShotEnabled, scrollState = scrollState
+            )) {
         val timeAxisWidth = when {
             maxWidth < 600.dp -> 48.dp
             maxWidth < 840.dp -> 56.dp
@@ -488,64 +480,88 @@ private fun CoursePageScreenSuccess(
             )
         }
 
-        /*
-         * 1x = 1.2dp / 分钟
-         * 2x = 2.4dp / 分钟
-         * 3x = 3.6dp / 分钟
-         */
-        val minuteHeight = BaseMinuteHeight * scale
-
+        // 1x = 2.4dp/min; page-level scale controls the full layout height.
+        val minuteHeight = 2.4.dp * scale
         val tickIntervalMinutes = when {
             scale >= MaxTimelineScale - ScaleThresholdEpsilon -> 15
-            scale >= HalfHourScale -> 30
+            scale >= 1f -> 30
             else -> 60
         }
-
-        val timelineHeight = timelineRange.durationMinutes * minuteHeight + timelineDividerOffset
+        val timelineHeight = timelineRange.durationMinutes * minuteHeight
+        val gridColor = MaterialTheme.colorScheme.outlineVariant
+        val days = visibleDays.toList()
 
         Column {
-            Row(
-                modifier = Modifier.height(CalendarHeaderHeight)
-            ) {
-                MonthHeader(
-                    month = thisWeekStartDate.month.number,
-                    modifier = Modifier.width(timeAxisWidth).fillMaxHeight()
-                )
-
-                for (dayOfWeek in visibleDays) {
-                    val date = thisWeekStartDate.plus(
-                        dayOfWeek - 1, DateTimeUnit.DAY
-                    )
-
-                    DayHeader(
-                        date = date,
-                        dayOfWeek = dayOfWeek,
-                        isCurrentDay = date == currentDate,
-                        modifier = Modifier.weight(1f).fillMaxHeight()
-                    )
-                }
-            }
-            Row {
-                TimeAxis(
-                    range = timelineRange,
-                    minuteHeight = minuteHeight,
-                    tickIntervalMinutes = tickIntervalMinutes,
-                    modifier = Modifier.width(timeAxisWidth).height(timelineHeight)
-                )
-
-                for (dayOfWeek in visibleDays) {
-                    DayTimeline(
-                        courses = currentWeekCourse[dayOfWeek].orEmpty(),
-                        range = timelineRange,
-                        minuteHeight = minuteHeight,
-                        tickIntervalMinutes = tickIntervalMinutes,
-                        dividerOffset = timelineDividerOffset,
-                        useNightMode = useNightMode,
-                        expandedCourseKey = expandedCourseKey,
-                        expansionProgress = expansionProgress.value,
-                        onCourseClicked = ::handleCourseClicked,
-                        modifier = Modifier.weight(1f).height(timelineHeight)
-                    )
+            CourseComponentHeader(
+                weekStartDate = thisWeekStartDate,
+                currentDate = currentDate,
+                allowIsoWeekNumber = days,
+                timelineWidth = timeAxisWidth,
+            )
+            // Label centering belongs to this UI, not the reusable time coordinates.
+            Box(Modifier.padding(top = timelineDividerOffset)) {
+                CourseLayout(
+                    startTime = timelineRange.startMinute.toLocalTime(),
+                    endTime = timelineRange.endMinute.toLocalTime(),
+                    allowIsoWeekNumber = days,
+                    timelineWidth = timeAxisWidth,
+                    modifier = Modifier.fillMaxWidth().height(timelineHeight).drawBehind {
+                        for (minute in timelineRange.marks(tickIntervalMinutes)) {
+                            val y =
+                                (minute - timelineRange.startMinute).toFloat() / timelineRange.durationMinutes * size.height
+                            drawLine(
+                                color = gridColor.copy(alpha = if (minute % MinutesPerHour == 0) 0.5f else 0.25f),
+                                start = Offset(timeAxisWidth.toPx(), y),
+                                end = Offset(size.width, y),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                        }
+                    },
+                ) {
+                    timeline {
+                        TimeAxis(timelineRange, tickIntervalMinutes)
+                    }
+                    for (day in days) {
+                        for (course in currentWeekCourse[day].orEmpty()) {
+                            key(course.segmentKey) {
+                                val isExpanded =
+                                    course is TodayClass.Single && course.segmentKey == expandedCourseKey
+                                card(
+                                    isoWeekNumber = day,
+                                    startTime = {
+                                        val start = course.date.first.time
+                                        if (isExpanded) {
+                                            interpolateTime(
+                                                start,
+                                                course.fullDate.first.time,
+                                                expansionProgress.value
+                                            )
+                                        } else start
+                                    },
+                                    endTime = {
+                                        val end = course.date.second.time
+                                        if (isExpanded) {
+                                            interpolateTime(
+                                                end,
+                                                course.fullDate.second.time,
+                                                expansionProgress.value
+                                            )
+                                        } else end
+                                    },
+                                    modifier = Modifier
+                                        .zIndex(if (isExpanded) 99999f else 0f)
+                                        .padding(horizontal = 3.dp, vertical = 1.dp),
+                                ) {
+                                    CourseCalendarCard(
+                                        course = course,
+                                        useNightMode = useNightMode,
+                                        onClick = { handleCourseClicked(course) },
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -553,217 +569,34 @@ private fun CoursePageScreenSuccess(
 }
 
 @Composable
-private fun MonthHeader(
-    month: Int, modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier, contentAlignment = Alignment.Center
-    ) {
-        Surface(modifier = Modifier.height(with(LocalDensity.current) { MaterialTheme.typography.labelSmall.lineHeight.toDp() } + 4.dp + 28.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer.copy(
-                alpha = 0.5f
-            ),
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            shape = RoundedCornerShape(10.dp)) {
-            Box(
-                modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "${month}月",
-                    modifier = Modifier.padding(
-                        horizontal = 8.dp, vertical = 4.dp
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
-            }
-        }
+private fun CourseTimelineScope.TimeAxis(range: TimelineRange, tickIntervalMinutes: Int) {
+    val halfLabelHeight = with(LocalDensity.current) {
+        MaterialTheme.typography.labelSmall.lineHeight.toDp() / 2
     }
-}
-
-@Composable
-private fun DayHeader(
-    date: LocalDate, dayOfWeek: Int, isCurrentDay: Boolean, modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
+    for (minute in range.marks(tickIntervalMinutes)) {
+        val isHourMark = minute % MinutesPerHour == 0
         Text(
-            text = dayOfWeekName(dayOfWeek),
+            text = minute.toTimeLabel(),
+            modifier = Modifier.align(Alignment.TopCenter)
+                .offset(y = offsetOf(minute.toLocalTime()) - halfLabelHeight),
             style = MaterialTheme.typography.labelSmall,
-            color = if (isCurrentDay) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            maxLines = 1
+            fontWeight = if (isHourMark) FontWeight.Medium else FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isHourMark) 0.8f else 0.55f),
+            maxLines = 1,
+            textAlign = TextAlign.Center,
         )
-
-        Spacer(
-            modifier = Modifier.height(4.dp)
-        )
-
-        Box(
-            modifier = Modifier.size(28.dp).clip(CircleShape).background(
-                    if (isCurrentDay) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        Color.Transparent
-                    }
-                ), contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = date.day.toString(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isCurrentDay) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Normal
-                },
-                color = if (isCurrentDay) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                maxLines = 1
-            )
-        }
     }
 }
 
-@Composable
-private fun TimeAxis(
-    range: TimelineRange, minuteHeight: Dp, tickIntervalMinutes: Int, modifier: Modifier = Modifier
-) {
-    Box(modifier = modifier) {
-        for (minute in range.marks(tickIntervalMinutes)) {
-            val isHourMark = minute % MinutesPerHour == 0
-
-            Text(
-                text = minute.toTimeLabel(), modifier = Modifier.align(Alignment.TopCenter).offset(
-                        y = range.offsetOf(
-                            minute = minute, minuteHeight = minuteHeight
-                        ) + TimeLabelTopPadding
-                    ), style = MaterialTheme.typography.labelSmall, fontWeight = if (isHourMark) {
-                    FontWeight.Medium
-                } else {
-                    FontWeight.Normal
-                }, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                    alpha = if (isHourMark) {
-                        0.8f
-                    } else {
-                        0.55f
-                    }
-                ), maxLines = 1, textAlign = TextAlign.Center
-            )
-        }
-    }
+private fun interpolateTime(start: LocalTime, end: LocalTime, progress: Float): LocalTime {
+    val from = start.toNanosecondOfDay()
+    val to = end.toNanosecondOfDay()
+    return LocalTime.fromNanosecondOfDay(from + ((to - from) * progress.toDouble()).roundToLong())
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private fun DayTimeline(
-    courses: List<TodayClass>,
-    range: TimelineRange,
-    minuteHeight: Dp,
-    tickIntervalMinutes: Int,
-    dividerOffset: Dp,
-    useNightMode: Boolean,
-    expandedCourseKey: CourseSegmentKey?,
-    expansionProgress: Float,
-    onCourseClicked: (TodayClass) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val sortedCourses = remember(courses) {
-        courses.sortedBy { it.startMinute }
-    }
-
-    Box(modifier = modifier) {
-        for (minute in range.marks(tickIntervalMinutes)) {
-            val isHourMark = minute % MinutesPerHour == 0
-
-            HorizontalDivider(
-                modifier = Modifier.offset(
-                        y = range.offsetOf(
-                            minute = minute, minuteHeight = minuteHeight
-                        ) + dividerOffset
-                    ).fillMaxWidth(), color = MaterialTheme.colorScheme.outlineVariant.copy(
-                    alpha = if (isHourMark) {
-                        DividerAlpha
-                    } else {
-                        MinorDividerAlpha
-                    }
-                )
-            )
-        }
-
-        for (course in sortedCourses) {
-            key(course.segmentKey) {
-                val isExpanded =
-                    course is TodayClass.Single && course.segmentKey == expandedCourseKey
-
-                val collapsedTop = range.offsetOf(
-                    minute = course.startMinute, minuteHeight = minuteHeight
-                ) + dividerOffset
-                val collapsedHeight = range.heightOf(
-                    courseStartMinute = course.startMinute,
-                    courseEndMinute = course.endMinute,
-                    minuteHeight = minuteHeight
-                )
-
-                val expandedTop = if (course is TodayClass.Single) {
-                    range.offsetOf(
-                        minute = course.fullStartMinute, minuteHeight = minuteHeight
-                    ) + dividerOffset
-                } else {
-                    collapsedTop
-                }
-                val expandedHeight = if (course is TodayClass.Single) {
-                    range.heightOf(
-                        courseStartMinute = course.fullStartMinute,
-                        courseEndMinute = course.fullEndMinute,
-                        minuteHeight = minuteHeight
-                    )
-                } else {
-                    collapsedHeight
-                }
-
-                CourseCalendarCard(
-                    course = course, useNightMode = useNightMode, onClick = {
-                        onCourseClicked(course)
-                    }, modifier = Modifier.zIndex(
-                            if (isExpanded) {
-                                ExpandedCourseZIndex
-                            } else {
-                                0f
-                            }
-                        ).offset(
-                            y = if (isExpanded) {
-                                lerp(
-                                    collapsedTop, expandedTop, expansionProgress
-                                )
-                            } else {
-                                collapsedTop
-                            }
-                        ).fillMaxWidth().height(
-                            if (isExpanded) {
-                                lerp(
-                                    collapsedHeight, expandedHeight, expansionProgress
-                                )
-                            } else {
-                                collapsedHeight
-                            }
-                        ).padding(
-                            horizontal = CourseHorizontalPadding, vertical = CourseVerticalPadding
-                        )
-                )
-            }
-        }
-    }
-}
+// An enclosing hour can be 24:00; LocalTime represents the final nanosecond of that day instead.
+private fun Int.toLocalTime(): LocalTime =
+    LocalTime.fromNanosecondOfDay((toLong() * 60_000_000_000L).coerceAtMost(86_399_999_999_999L))
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -818,12 +651,12 @@ private fun CourseCalendarCard(
     val location = single?.location?.takeIf(String::isNotBlank)
 
     val cardModifier = modifier.applyIf(sharedBoundsKey) { key ->
-            shareBoundsComposed(
-                sharedContentState = rememberSharedContentState(
-                    key = key
-                ), animatedVisibilityScope = LocalAnimatedContentScope.current
-            )
-        }.clip(shape).clickable(onClick = onClick)
+        shareBoundsComposed(
+            sharedContentState = rememberSharedContentState(
+                key = key
+            ), animatedVisibilityScope = LocalAnimatedContentScope.current
+        )
+    }.clip(shape).clickable(onClick = onClick)
 
     Card(
         modifier = cardModifier, shape = shape, colors = CardDefaults.cardColors(
@@ -852,8 +685,8 @@ private fun CourseCalendarCard(
             location = location,
             contentColor = contentColor,
             modifier = Modifier.weight(1f).fillMaxWidth().padding(
-                    horizontal = 5.dp, vertical = 4.dp
-                )
+                horizontal = 5.dp, vertical = 4.dp
+            )
         )
     }
 }
@@ -1083,26 +916,6 @@ private data class TimelineRange(
         get() = endMinute - startMinute
 
     fun marks(stepMinutes: Int): IntProgression = startMinute until endMinute step stepMinutes
-
-    fun offsetOf(
-        minute: Int, minuteHeight: Dp
-    ): Dp {
-        return (minute - startMinute) * minuteHeight
-    }
-
-    fun heightOf(
-        courseStartMinute: Int, courseEndMinute: Int, minuteHeight: Dp
-    ): Dp {
-        val visibleStart = courseStartMinute.coerceAtLeast(
-            startMinute
-        )
-
-        val visibleEnd = courseEndMinute.coerceAtMost(
-            endMinute
-        )
-
-        return (visibleEnd - visibleStart).coerceAtLeast(1) * minuteHeight
-    }
 }
 
 private fun calculateTimelineRange(
@@ -1167,21 +980,6 @@ private fun Int.toTimeLabel(): String {
     }
 }
 
-private fun dayOfWeekName(
-    dayOfWeek: Int
-): String = when (dayOfWeek) {
-    1 -> "周一"
-    2 -> "周二"
-    3 -> "周三"
-    4 -> "周四"
-    5 -> "周五"
-    6 -> "周六"
-    7 -> "周日"
-    else -> error(
-        "Invalid day of week: $dayOfWeek"
-    )
-}
-
 private const val MinutesPerHour = 60
 
 private const val DefaultStartMinute = 8 * MinutesPerHour
@@ -1195,44 +993,22 @@ private const val DefaultEndMinute = 22 * MinutesPerHour
  * 1x -> 30 分钟刻度
  * 2x -> 15 分钟刻度
  */
-private const val MinTimelineScale = 0.5f
-private const val HalfHourScale = 1f
 private const val MaxTimelineScale = 2f
 
 /*
- * 避免浮点数刚好为 2.999999 时
+ * 避免浮点数刚好为 1.999999 时
  * 无法进入 15 分钟刻度。
  */
 private const val ScaleThresholdEpsilon = 0.001f
 
 /*
- * Shift + 每个滚轮事件缩放约 5%。
+ * Ctrl + 每个滚轮事件缩放约 5%。
  */
 private const val MouseWheelZoomStep = 1.05f
 
 private val CourseExpansionAnimationSpec = tween<Float>(
     durationMillis = 280
 )
-
-private const val ExpandedCourseZIndex = 99999f
-
-private val CalendarHeaderHeight = 64.dp
-
-/*
- * 这是 1x 时的最小高度。
- *
- * 1x = 1.2dp/min
- * 2x = 2.4dp/min
- * 3x = 3.6dp/min
- */
-private val BaseMinuteHeight = 2.4.dp
-
-private val TimeLabelTopPadding = 4.dp
-private val CourseHorizontalPadding = 3.dp
-private val CourseVerticalPadding = 1.dp
-
-private const val DividerAlpha = 0.5f
-private const val MinorDividerAlpha = 0.25f
 
 private data class CourseSegmentKey(
     val recordId: Long?, val startTime: LocalDateTime, val endTime: LocalDateTime
