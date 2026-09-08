@@ -4,16 +4,10 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.calculateCentroid
-import androidx.compose.foundation.gestures.calculateCentroidSize
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.zoomBy
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,7 +17,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,10 +24,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.isCtrlPressed
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -75,9 +64,12 @@ import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
-import kotlin.math.abs
+import top.kagg886.eoa.util.rememberVerticalZoomState
+import top.kagg886.eoa.util.verticalZoom
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToLong
-import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
 
 @Composable
 fun CoursePageListScreen(
@@ -127,7 +119,7 @@ fun CoursePageListScreen(
     CoursePageScreenContent(
         state = state,
         isCurrentPage = isCurrentPage,
-        scale = scale,
+        initialScale = scale,
         useNightMode = useNightMode,
         hideWeekendCourse = hideWeekendCourse,
         onCourseItemClicked = {
@@ -144,7 +136,7 @@ fun CoursePageListScreen(
 private fun CoursePageScreenContent(
     state: CoursePageState,
     isCurrentPage: Boolean,
-    scale: Float,
+    initialScale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
@@ -153,11 +145,14 @@ private fun CoursePageScreenContent(
 ) {
     when (state) {
         is CoursePageState.Failed -> {
-            ErrorPage(title = {
-                Text("加载课表失败")
-            }, message = {
-                Text(state.msg)
-            })
+            ErrorPage(
+                title = {
+                    Text("加载课表失败")
+                },
+                message = {
+                    Text(state.msg)
+                }
+            )
         }
 
         is CoursePageState.Loading -> {
@@ -185,7 +180,7 @@ private fun CoursePageScreenContent(
                 thisWeekStartDate = state.thisWeekStartDate,
                 currentDate = state.currentDate,
                 currentWeekCourse = state.currentWeekCourse,
-                scale = scale,
+                initialScale = initialScale,
                 useNightMode = useNightMode,
                 hideWeekendCourse = hideWeekendCourse,
                 longShotEnabled = isCurrentPage,
@@ -204,7 +199,7 @@ private fun CoursePageScreenSuccess(
     thisWeekStartDate: LocalDate,
     currentDate: LocalDate,
     currentWeekCourse: Map<Int, List<TodayClass>>,
-    scale: Float,
+    initialScale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
@@ -221,56 +216,17 @@ private fun CoursePageScreenSuccess(
         Animatable(0f)
     }
 
-    val currentOnZoomChange by rememberUpdatedState(onZoomChange)
-    val currentScaleState = rememberUpdatedState(scale)
-    val transformableState = rememberTransformableState {
-            _,
-            zoomChange,
-            _,
-            _,
-        ->
-        currentOnZoomChange(zoomChange)
-    }
+    val zoomState = rememberVerticalZoomState(initialScale = initialScale)
 
     val coroutineScope = rememberCoroutineScope()
     val zoomEnabled = expandedCourseKey == null
     val density = LocalDensity.current
-    val timelineDividerOffset = 4.dp + with(density) {
-        MaterialTheme.typography.labelSmall.lineHeight.toDp()
-    } / 2
+
+    val timelineDividerOffset = with(density) {
+        (4.dp + MaterialTheme.typography.labelSmall.lineHeight.toDp()) / 2
+    }
     val timelineScaleOriginPx = with(density) {
         (ComponentDefault.HeaderHeight + timelineDividerOffset).toPx()
-    }
-    var zoomAnchorY by remember {
-        mutableStateOf<Float?>(null)
-    }
-    var pendingTouchScale by remember {
-        mutableStateOf<Float?>(null)
-    }
-    var scrollCompensatedScale by remember {
-        mutableStateOf(scale)
-    }
-
-    LaunchedEffect(scale) {
-        val anchorY = zoomAnchorY
-        val pendingScale = pendingTouchScale
-        val previousScale = scrollCompensatedScale
-
-        if (anchorY != null && pendingScale != null && scale != previousScale) {
-            val scaleChange = scale / previousScale
-            val currentScroll = scrollState.value.toFloat()
-            val targetScroll =
-                timelineScaleOriginPx + (currentScroll + anchorY - timelineScaleOriginPx) * scaleChange - anchorY
-
-            scrollState.scrollTo(targetScroll.roundToInt())
-        }
-
-        scrollCompensatedScale = scale
-
-        if (pendingScale != null && pendingTouchScale == pendingScale && abs(pendingScale - scale) <= ScaleThresholdEpsilon) {
-            pendingTouchScale = null
-            zoomAnchorY = null
-        }
     }
 
     fun expandCourse(course: TodayClass.Single) {
@@ -343,137 +299,18 @@ private fun CoursePageScreenSuccess(
                 onClick = ::dismissExpandedCourse
             )
 
-            // 在 Initial 阶段拦截 Ctrl + 滚轮，
-            // 避免同时触发纵向滚动。
-            .pointerInput(transformableState, zoomEnabled) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent(
-                            pass = PointerEventPass.Initial
-                        )
-
-                        // 只处理 Ctrl + 滚轮。
-                        // Shift + 滚轮以及普通滚轮全部交给外层处理。
-                        if (event.type != PointerEventType.Scroll || !event.keyboardModifiers.isCtrlPressed) {
-                            continue
-                        }
-
-                        val delta = event.changes.firstOrNull()?.scrollDelta ?: continue
-
-                        val wheelDelta = when {
-                            delta.y != 0f -> delta.y
-                            delta.x != 0f -> delta.x
-                            else -> continue
-                        }
-
-                        // 只有 Ctrl + 滚轮才消费。
-                        event.changes.forEach {
-                            it.consume()
-                        }
-
-                        if (!zoomEnabled) {
-                            continue
-                        }
-
-                        val zoomFactor = if (wheelDelta < 0f) {
-                            MouseWheelZoomStep
-                        } else {
-                            1f / MouseWheelZoomStep
-                        }
-
-                        val currentScale = currentScaleState.value
-                        val targetScale = (currentScale * zoomFactor).coerceIn(
-                            0.5f, MaxTimelineScale
-                        )
-                        val effectiveZoomChange = targetScale / currentScale
-
-                        if (effectiveZoomChange == 1f) {
-                            continue
-                        }
-
-                        // 鼠标缩放的锚点是当前鼠标位置，而不是时间轴顶部。
-                        zoomAnchorY = event.changes.first().position.y
-                        pendingTouchScale = targetScale
-
-                        coroutineScope.launch {
-                            transformableState.zoomBy(effectiveZoomChange)
-                        }
-                    }
-                }
-            }
-
-            // 在 Initial 阶段接管双指手势，避免 Card 点击或滚动先消费事件，
-            // 导致捏合被取消。单指事件仍交给点击、纵向滚动和周切换。
-            .pointerInput(zoomEnabled) {
-                if (!zoomEnabled) {
-                    return@pointerInput
-                }
-
-                awaitPointerEventScope {
-                    while (true) {
-                        var isMultiTouchGesture = false
-                        var pastTouchSlop = false
-                        var accumulatedZoom = 1f
-                        var gestureScale = currentScaleState.value
-                        var event = awaitPointerEvent(
-                            pass = PointerEventPass.Initial
-                        )
-
-                        do {
-                            if (event.changes.count { it.pressed } >= 2) {
-                                isMultiTouchGesture = true
-                            }
-
-                            if (isMultiTouchGesture) {
-                                val zoomChange = event.calculateZoom()
-
-                                if (!pastTouchSlop) {
-                                    accumulatedZoom *= zoomChange
-                                    val centroidSize = event.calculateCentroidSize(
-                                        useCurrent = false
-                                    )
-                                    pastTouchSlop =
-                                        abs(1f - accumulatedZoom) * centroidSize > viewConfiguration.touchSlop
-                                }
-
-                                // 第二个触点出现后立刻取消 Card press 和滚动竞争；
-                                // 即使先抬起一根手指，也持续消费到本轮手势结束。
-                                event.changes.forEach {
-                                    it.consume()
-                                }
-
-                                if (pastTouchSlop && zoomChange != 1f) {
-                                    val targetScale = (gestureScale * zoomChange).coerceIn(
-                                        0.5f, MaxTimelineScale
-                                    )
-                                    val effectiveZoomChange = targetScale / gestureScale
-
-                                    if (effectiveZoomChange != 1f) {
-                                        zoomAnchorY = event.calculateCentroid().y
-                                        pendingTouchScale = targetScale
-                                        gestureScale = targetScale
-                                        currentOnZoomChange(effectiveZoomChange)
-                                    }
-                                }
-                            }
-
-                            if (event.changes.none { it.pressed }) {
-                                break
-                            }
-
-                            event = awaitPointerEvent(
-                                pass = PointerEventPass.Initial
-                            )
-                        } while (true)
-                    }
-                }
-            }
-
-            .verticalScroll(scrollState)
+            .verticalZoom(
+                state = zoomState,
+                scrollState = scrollState,
+                enabled = zoomEnabled,
+                scaleOriginPx = timelineScaleOriginPx,
+                onZoomChange = onZoomChange,
+            )
 
             .miuiLongShotSupport(
                 enabled = longShotEnabled, scrollState = scrollState
-            )) {
+            )
+    ) {
         val timeAxisWidth = when {
             maxWidth < 600.dp -> 48.dp
             maxWidth < 840.dp -> 56.dp
@@ -489,19 +326,49 @@ private fun CoursePageScreenSuccess(
         }
 
         val timelineRange = remember(currentWeekCourse) {
-            calculateTimelineRange(
-                currentWeekCourse.values.flatten()
+            val courses = currentWeekCourse.values.flatten()
+            val defaultStart = LocalTime(8, 0)
+            val defaultEnd = LocalTime(22, 0)
+
+            val earliest = courses.minOf { course ->
+                when (course) {
+                    is TodayClass.Single -> minOf(
+                        course.date.first.time,
+                        course.fullDate.first.time,
+                    )
+
+                    else -> course.date.first.time
+                }
+            }
+
+            val latest = courses.maxOf { course ->
+                when (course) {
+                    is TodayClass.Single -> maxOf(
+                        course.date.second.time,
+                        course.fullDate.second.time,
+                    )
+
+                    else -> course.date.second.time
+                }
+            }
+
+            //对最早课程和最晚课程取约束
+            val start = minOf(defaultStart, earliest)
+            val end = maxOf(defaultEnd, latest)
+
+            TimelineRange(
+                start = start,
+                end = end
             )
         }
 
-        // 1x = 2.4dp/min; page-level scale controls the full layout height.
-        val minuteHeight = 2.4.dp * scale
+        val scale = zoomState.scale
         val tickIntervalMinutes = when {
-            scale >= MaxTimelineScale - ScaleThresholdEpsilon -> 15
+            scale >= zoomState.maxScale -> 15
             scale >= 1f -> 30
             else -> 60
         }
-        val timelineHeight = timelineRange.durationMinutes * minuteHeight
+        val timelineHeight = timelineRange.durationMinutes * 2.4.dp * scale
         val gridColor = MaterialTheme.colorScheme.outlineVariant
         val days = visibleDays.toList()
 
@@ -515,14 +382,13 @@ private fun CoursePageScreenSuccess(
             // Label centering belongs to this UI, not the reusable time coordinates.
             Box(Modifier.padding(top = timelineDividerOffset)) {
                 CourseLayout(
-                    startTime = timelineRange.startMinute.toLocalTime(),
-                    endTime = timelineRange.endMinute.toLocalTime(),
+                    startTime = timelineRange.start,
+                    endTime = timelineRange.end,
                     allowIsoWeekNumber = days,
                     timelineWidth = timeAxisWidth,
                     modifier = Modifier.fillMaxWidth().height(timelineHeight).drawBehind {
                         for (minute in timelineRange.marks(tickIntervalMinutes)) {
-                            val y =
-                                (minute - timelineRange.startMinute).toFloat() / timelineRange.durationMinutes * size.height
+                            val y = (minute - timelineRange.start.toSecondOfDay() / 60f) / timelineRange.durationMinutes * size.height
                             drawLine(
                                 color = gridColor.copy(alpha = if (minute % MinutesPerHour == 0) 0.5f else 0.25f),
                                 start = Offset(timeAxisWidth.toPx(), y),
@@ -591,8 +457,9 @@ private fun CourseTimelineScope.TimeAxis(range: TimelineRange, tickIntervalMinut
         val isHourMark = minute % MinutesPerHour == 0
         Text(
             text = minute.toTimeLabel(),
-            modifier = Modifier.align(Alignment.TopCenter)
-                .offset(y = offsetOf(minute.toLocalTime()) - halfLabelHeight),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = offsetOf(LocalTime.fromSecondOfDay(minute * 60)) - halfLabelHeight),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = if (isHourMark) FontWeight.Medium else FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isHourMark) 0.8f else 0.55f),
@@ -607,10 +474,6 @@ private fun interpolateTime(start: LocalTime, end: LocalTime, progress: Float): 
     val to = end.toNanosecondOfDay()
     return LocalTime.fromNanosecondOfDay(from + ((to - from) * progress.toDouble()).roundToLong())
 }
-
-// An enclosing hour can be 24:00; LocalTime represents the final nanosecond of that day instead.
-private fun Int.toLocalTime(): LocalTime =
-    LocalTime.fromNanosecondOfDay((toLong() * 60_000_000_000L).coerceAtMost(86_399_999_999_999L))
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -924,53 +787,15 @@ private fun coursePastelOf(
 }
 
 private data class TimelineRange(
-    val startMinute: Int, val endMinute: Int
+    val start: LocalTime,
+    val end: LocalTime
 ) {
     val durationMinutes: Int
-        get() = endMinute - startMinute
+        get() = (end.toSecondOfDay() - start.toSecondOfDay()) / 60
 
-    fun marks(stepMinutes: Int): IntProgression = startMinute until endMinute step stepMinutes
+    fun marks(stepMinutes: Int): IntProgression =
+        (start.toSecondOfDay() / 60) until (end.toSecondOfDay() / 60) step stepMinutes
 }
-
-private fun calculateTimelineRange(
-    courses: List<TodayClass>
-): TimelineRange {
-    val earliestMinute = courses.minOfOrNull {
-        if (it is TodayClass.Single) {
-            minOf(it.startMinute, it.fullStartMinute)
-        } else {
-            it.startMinute
-        }
-    } ?: DefaultStartMinute
-
-    val latestMinute = courses.maxOfOrNull {
-        if (it is TodayClass.Single) {
-            maxOf(it.endMinute, it.fullEndMinute)
-        } else {
-            it.endMinute
-        }
-    } ?: DefaultEndMinute
-
-    val startMinute = minOf(DefaultStartMinute, earliestMinute).roundDownToHour()
-
-    val endMinute = maxOf(DefaultEndMinute, latestMinute).roundUpToHour()
-
-    return TimelineRange(
-        startMinute = startMinute, endMinute = endMinute
-    )
-}
-
-private val TodayClass.startMinute: Int
-    get() = date.first.hour * MinutesPerHour + date.first.minute
-
-private val TodayClass.endMinute: Int
-    get() = date.second.hour * MinutesPerHour + date.second.minute
-
-private val TodayClass.Single.fullStartMinute: Int
-    get() = fullDate.first.hour * MinutesPerHour + fullDate.first.minute
-
-private val TodayClass.Single.fullEndMinute: Int
-    get() = fullDate.second.hour * MinutesPerHour + fullDate.second.minute
 
 private val TodayClass.segmentKey: CourseSegmentKey
     get() = CourseSegmentKey(
@@ -979,9 +804,6 @@ private val TodayClass.segmentKey: CourseSegmentKey
         endTime = date.second
     )
 
-private fun Int.roundDownToHour(): Int = this / MinutesPerHour * MinutesPerHour
-
-private fun Int.roundUpToHour(): Int = (this + MinutesPerHour - 1) / MinutesPerHour * MinutesPerHour
 
 private fun Int.toTimeLabel(): String {
     val hour = this / MinutesPerHour
@@ -995,30 +817,6 @@ private fun Int.toTimeLabel(): String {
 }
 
 private const val MinutesPerHour = 60
-
-private const val DefaultStartMinute = 8 * MinutesPerHour
-
-private const val DefaultEndMinute = 22 * MinutesPerHour
-
-/*
- * 时间轴缩放：
- *
- * 0.5x -> 60 分钟刻度
- * 1x -> 30 分钟刻度
- * 2x -> 15 分钟刻度
- */
-private const val MaxTimelineScale = 2f
-
-/*
- * 避免浮点数刚好为 1.999999 时
- * 无法进入 15 分钟刻度。
- */
-private const val ScaleThresholdEpsilon = 0.001f
-
-/*
- * Ctrl + 每个滚轮事件缩放约 5%。
- */
-private const val MouseWheelZoomStep = 1.05f
 
 private val CourseExpansionAnimationSpec = tween<Float>(
     durationMillis = 280
