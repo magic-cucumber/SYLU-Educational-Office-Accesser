@@ -222,7 +222,7 @@ private fun CoursePageScreenSuccess(
     }
 
     val currentOnZoomChange by rememberUpdatedState(onZoomChange)
-    val currentScale by rememberUpdatedState(scale)
+    val currentScaleState = rememberUpdatedState(scale)
     val transformableState = rememberTransformableState {
             _,
             zoomChange,
@@ -381,8 +381,22 @@ private fun CoursePageScreenSuccess(
                             1f / MouseWheelZoomStep
                         }
 
+                        val currentScale = currentScaleState.value
+                        val targetScale = (currentScale * zoomFactor).coerceIn(
+                            0.5f, MaxTimelineScale
+                        )
+                        val effectiveZoomChange = targetScale / currentScale
+
+                        if (effectiveZoomChange == 1f) {
+                            continue
+                        }
+
+                        // 鼠标缩放的锚点是当前鼠标位置，而不是时间轴顶部。
+                        zoomAnchorY = event.changes.first().position.y
+                        pendingTouchScale = targetScale
+
                         coroutineScope.launch {
-                            transformableState.zoomBy(zoomFactor)
+                            transformableState.zoomBy(effectiveZoomChange)
                         }
                     }
                 }
@@ -400,7 +414,7 @@ private fun CoursePageScreenSuccess(
                         var isMultiTouchGesture = false
                         var pastTouchSlop = false
                         var accumulatedZoom = 1f
-                        var gestureScale = currentScale
+                        var gestureScale = currentScaleState.value
                         var event = awaitPointerEvent(
                             pass = PointerEventPass.Initial
                         )
