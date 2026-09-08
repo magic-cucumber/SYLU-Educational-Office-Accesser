@@ -15,10 +15,12 @@ import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppInitializeMMKV
+import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.backend.database.AppDatabase
@@ -99,9 +101,32 @@ class RootViewModel(database: AppDatabase) :
         }
 
         viewModelScope.launch {
-            state.module.collect {
-                AppSettingsMMKV.homeModule = it
-            }
+            state.module
+                .combine(AppLoginPropertiesMMKV.clientIdFlow) { module, id -> module to id }
+                .collect { (it, clientId) ->
+                    fun List<EOAHomeModule>.minusIllegalModule() = minus(
+                        when (clientId) {
+                            "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider" -> setOf(
+                                EOAHomeModule.GPA, EOAHomeModule.SECOND, EOAHomeModule.EXAM,
+                            )
+
+                            "top.kagg886.sylu_eoa.api.test.EOATestClientProvider" -> setOf(
+                                EOAHomeModule.SECOND
+                            )
+
+                            else -> setOf()
+                        }
+                    )
+
+                    state.allowModule.emit(EOAHomeModule.entries.minusIllegalModule())
+
+                    val changed = it.minusIllegalModule()
+                    if (changed != it) {
+                        state.module.emit(changed)
+                        return@collect
+                    }
+                    AppSettingsMMKV.homeModule = it
+                }
         }
 
         viewModelScope.launch {
@@ -232,6 +257,7 @@ data class RootState(
     val theme: MutableStateFlow<AppSettingsMMKVType.AppTheme> = MutableStateFlow(AppSettingsMMKV.theme),
     val showHolidayCourse: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showHolidayCourse),
     val module: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(AppSettingsMMKV.homeModule),
+    val allowModule: MutableStateFlow<List<EOAHomeModule>> = MutableStateFlow(EOAHomeModule.entries),
     val syncDuration: MutableStateFlow<Duration> = MutableStateFlow(AppSettingsMMKV.syncDuration),
     val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius),
     val showExperimentClass: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showExperimentClass),

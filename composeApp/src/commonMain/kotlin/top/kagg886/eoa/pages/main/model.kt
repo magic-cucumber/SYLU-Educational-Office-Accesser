@@ -15,6 +15,9 @@ import androidx.room3.withWriteTransaction
 import com.dokar.sonner.TextToastAction
 import io.ktor.client.plugins.logging.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.DateTimeUnit
@@ -29,8 +32,14 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.dao.*
 import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.LocalNavController
+import top.kagg886.eoa.pages.login.LoginSideEffect
+import top.kagg886.eoa.pages.login.LoginViewModelState
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
+import top.kagg886.sylu_eoa.api.v2.EOAClient
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
+import top.kagg886.sylu_eoa.api.v2.NeedCaptchaException
 import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
@@ -175,7 +184,14 @@ class MainRouteViewModel(val database: AppDatabase) :
                 item.copy(id = syncDao.upsertCheckpoint(item).toInt())
             }
 
-            val session = SyncSession(checkpoint)
+            val client = AppLoginPropertiesMMKV.client
+            client.captchaHandler = {
+                logger.w("发现验证码")
+                val defer = CompletableDeferred<String?>(viewModelScope.coroutineContext[Job])
+                postSideEffect(MainRouteViewEffect.NavigateToCaptcha(it,defer))
+                defer.await() ?: throw NeedCaptchaException()
+            }
+            val session = SyncSession(client,checkpoint)
 
             syncCalendar(session)
             syncTerms(session)
@@ -249,11 +265,8 @@ class MainRouteViewModel(val database: AppDatabase) :
         }
     }
 
-    private inner class SyncSession(initial: SyncCheckpointEntity) {
-
-        // 固定本轮同步使用的登录客户端，避免同步过程中客户端状态发生变化。
-        val client = AppLoginPropertiesMMKV.client
-
+    // 固定本轮同步使用的登录客户端，避免同步过程中客户端状态发生变化。
+    private inner class SyncSession(val client: EOAClient, initial: SyncCheckpointEntity) {
         // 当前已成功提交的检查点。
         // 只有数据库事务成功后才会更新，保证其始终与数据库状态一致。
         var checkpoint = initial
@@ -666,6 +679,21 @@ sealed interface MainRouteViewEffect {
         val message: String,
         val action: TextToastAction? = null,
     ) : MainRouteViewEffect
+
+    data class NavigateToCaptcha(val byte: ByteArray,val deferred: CompletableDeferred<String?>) : MainRouteViewEffect {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as NavigateToCaptcha
+
+            return byte.contentEquals(other.byte)
+        }
+
+        override fun hashCode(): Int {
+            return byte.contentHashCode()
+        }
+    }
 
     data object SyncErrorToast : MainRouteViewEffect
 }

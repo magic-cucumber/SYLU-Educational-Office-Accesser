@@ -235,7 +235,7 @@ class SummaryModel(
                     SummaryState.Success(
                         weekNumber = currentWeek,
                         dayPeriod = period,
-                        progress = with(AppSyncMMKV.calender!!) {
+                        progress = with(calendar) {
                             start.until(today.date, DateTimeUnit.DAY).toFloat() / start.until(
                                 end,
                                 DateTimeUnit.DAY

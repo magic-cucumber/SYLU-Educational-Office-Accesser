@@ -51,6 +51,7 @@ fun AppearanceSettingsScreen() = MainScreen {
     val theme by rootState.theme.collectAsState()
     val showHolidayCourse by rootState.showHolidayCourse.collectAsState()
     val module by rootState.module.collectAsState()
+    val allowModule by rootState.allowModule.collectAsState()
     val systemWidgetRadius by rootState.systemWidgetRadius.collectAsState()
     val showExperimentClass by rootState.showExperimentClass.collectAsState()
     val hideWeekendCourse by rootState.hideWeekendCourse.collectAsState()
@@ -61,6 +62,7 @@ fun AppearanceSettingsScreen() = MainScreen {
         theme = theme,
         showHolidayCourse = showHolidayCourse,
         module = module,
+        allowModule = allowModule,
         systemWidgetRadius = systemWidgetRadius,
         showExperimentClass = showExperimentClass,
         hideWeekendCourse = hideWeekendCourse,
@@ -84,6 +86,7 @@ private fun AppearanceSettingsContent(
     theme: AppSettingsMMKVType.AppTheme,
     showHolidayCourse: Boolean,
     module: List<EOAHomeModule>,
+    allowModule: List<EOAHomeModule>,
     systemWidgetRadius: Boolean,
     showExperimentClass: Boolean,
     hideWeekendCourse: Boolean,
@@ -262,7 +265,7 @@ private fun AppearanceSettingsContent(
             var moduleDialog by remember { mutableStateOf(false) }
             if (moduleDialog) {
                 val reorderState = rememberReorderState<EOAHomeModule>()
-                val dialogModules = module + EOAHomeModule.entries.filter { it !in module }
+                val dialogModules = module + allowModule.filter { it !in module }
 
                 AlertDialog(
                     onDismissRequest = { moduleDialog = false },

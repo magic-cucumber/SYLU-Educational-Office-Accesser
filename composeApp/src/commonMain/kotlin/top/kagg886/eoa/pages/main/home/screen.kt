@@ -51,6 +51,7 @@ fun HomeScreen(
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
     val homeModule by rootState.module.collectAsState()
+    val allowModule by rootState.allowModule.collectAsState()
     NavigationSuiteScaffold(
         enableNavigation = enableNavigation,
         modifier = modifier,
@@ -89,7 +90,7 @@ fun HomeScreen(
                 )
             }
 
-            val otherModule = EOAHomeModule.entries - homeModule.toSet()
+            val otherModule = allowModule - homeModule.toSet()
             if (otherModule.isNotEmpty()) {
                 var popMenu by mutableStateOf(false)
                 item(

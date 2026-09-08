@@ -93,6 +93,7 @@ kotlin {
             implementation(project.dependencies.project(":util"))
             //方便切换到闭源后端
             implementation(project.dependencies.project(":eoa-lib:network-html-api"))
+            implementation(project.dependencies.project(":eoa-lib:network-graduate-api"))
             implementation(project.dependencies.project(":eoa-lib:network-test-api"))
 
 

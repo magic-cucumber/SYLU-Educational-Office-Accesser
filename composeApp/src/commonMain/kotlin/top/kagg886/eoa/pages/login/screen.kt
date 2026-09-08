@@ -25,7 +25,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination.Companion.hasRoute
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -33,6 +42,7 @@ import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.config.BuildConfig
+import top.kagg886.eoa.pages.captcha.CaptchaRoute
 import top.kagg886.eoa.pages.main.MainRoute
 import top.kagg886.eoa.pages.logcat.LogcatRoute
 import top.kagg886.eoa.util.showSnackBar
@@ -41,6 +51,7 @@ import top.kagg886.sylu_eoa.api.v2.EOAClientProvider
 @Serializable
 data object LoginRoute
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Composable
 fun LoginScreen() {
     val model = viewModel { LoginViewModel() }
@@ -69,6 +80,10 @@ fun LoginScreen() {
                     }
                 )
             }
+
+            is LoginSideEffect.NavigateToCaptcha -> {
+                nav.navigate(CaptchaRoute(it.byte))
+            }
         }
     }
 
@@ -81,13 +96,30 @@ fun LoginScreen() {
         onForgetPasswordButtonClicked = {
             uri.openUri("https://jxw.${BuildConfig.MESSAGE_API_ENDPOINT}/pwdmgr/retake/index.zf")
         },
-        onVerifyCodeInput = {
-            model.processVerifyCode(it.ifBlank { null })
-        },
         onLoginBackendChanged = {
             model.setLoginClient(it)
         }
     )
+
+
+    //验证码监听
+    LaunchedEffect(nav) {
+        nav.currentBackStackEntryFlow
+            .map { entry -> entry.takeIf { it.destination.hasRoute<LoginRoute>() } }
+            .distinctUntilChanged()
+            .flatMapLatest { entry ->
+                entry
+                    ?.savedStateHandle
+                    ?.getStateFlow<String?>(CaptchaRoute.RESULT_KEY, null)
+                    ?.mapNotNull { result -> result?.let { entry to it } }
+
+                    ?: emptyFlow()
+            }
+            .collect { (entry, result) ->
+                entry.savedStateHandle.remove<String>(CaptchaRoute.RESULT_KEY)
+                model.processVerifyCode(result.ifBlank { null })
+            }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,73 +128,13 @@ private fun LoginScreenContent(
     state: LoginViewModelState,
     onLoginBackendChanged: (EOAClientProvider) -> Unit,
     onLoginButtonClicked: (String, String) -> Unit,
-    onForgetPasswordButtonClicked: () -> Unit,
-    onVerifyCodeInput: (String) -> Unit
+    onForgetPasswordButtonClicked: () -> Unit
 ) = when (state) {
     is LoginViewModelState.WaitLogin -> {
         var username by remember { mutableStateOf(AppLoginPropertiesMMKV.username) }
         var password by remember { mutableStateOf(AppLoginPropertiesMMKV.password) }
         var passwordVisible by remember { mutableStateOf(false) }
         val focusManager = LocalFocusManager.current
-
-        if (state is LoginViewModelState.WaitLogin.VerifyCode) {
-            var captchaText by remember { mutableStateOf("") }
-
-            AlertDialog(
-                onDismissRequest = {
-                    onVerifyCodeInput("")
-                },
-                title = { Text("请输入下方图片中显示的验证码") },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Display the captcha image with same height as the text field
-                        AsyncImage(
-                            model = state.data,
-                            contentDescription = "验证码图片",
-                            modifier = Modifier.height(56.dp),
-                            contentScale = ContentScale.FillHeight
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = captchaText,
-                            onValueChange = { captchaText = it },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("验证码") },
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = {
-                                if (captchaText.isNotBlank()) {
-                                    onVerifyCodeInput(captchaText)
-                                }
-                            })
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            if (captchaText.isNotBlank()) {
-                                onVerifyCodeInput(captchaText)
-                            }
-                        }
-                    ) {
-                        Text("确认")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { onVerifyCodeInput("") }
-                    ) {
-                        Text("取消")
-                    }
-                }
-            )
-        }
 
         Column(
             modifier = Modifier

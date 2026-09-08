@@ -1,6 +1,8 @@
 package top.kagg886.backend.config
 
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
@@ -28,6 +30,7 @@ object AppLoginPropertiesMMKV : MMKV by mmkv,
         set(value) {
             field = value
             _clientId = value
+            clientIdFlow.value = value
             client = EOAClientProvider.providers.first { it.id == clientId }.provide().apply {
                 init(
                     object : Storage {
@@ -41,6 +44,10 @@ object AppLoginPropertiesMMKV : MMKV by mmkv,
                 password = this@AppLoginPropertiesMMKV.password
             }
         }
+
+    //TODO workaround，日后换成全响应配置。
+    val clientIdFlow: StateFlow<String>
+        field: MutableStateFlow<String> = MutableStateFlow(clientId)
 
     override var client: EOAClient =
         EOAClientProvider.providers.first { it.id == clientId }.provide().apply {
