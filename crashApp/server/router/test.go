@@ -6,15 +6,16 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"server/util"
 )
 
 func (h *handlers) testRSA(context *gin.Context) {
-	var payload encryptedPayload
+	var payload util.EncryptedPayload
 	if err := context.ShouldBindJSON(&payload); err != nil {
 		fail(context, http.StatusBadRequest, errors.New("invalid JSON payload"))
 		return
 	}
-	plaintext, err := decryptRSA(h.dependencies.PrivateKey, payload, 128)
+	plaintext, err := util.DecryptRSA(h.dependencies.PrivateKey, payload, 128)
 	if err != nil {
 		fail(context, http.StatusBadRequest, err)
 		return

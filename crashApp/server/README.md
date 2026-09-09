@@ -1,5 +1,15 @@
 # Crash Report Server
 
+## Go 测试
+
+服务端模块及测试：
+
+```text
+cd crashApp/server
+go test ./...
+go test -race ./...
+```
+
 ## 启动参数
 
 服务默认监听 `8080` 端口：
@@ -69,7 +79,7 @@ server --cert-path <RSA私钥PEM文件> --gitee-token <Gitee令牌> [--port 8080
 
 ## `PUT /report`
 
-使用 RSA 加密 AES 密钥和账户匿名 ID，申请一次性上传 token。
+使用 RSA 加密 AES 密钥和账户匿名 ID，申请上传 token。同一设备仍有未完成上传任务时，会返回该任务已有的 token。
 
 请求头：`Content-Type: application/json`
 
@@ -90,7 +100,7 @@ server --cert-path <RSA私钥PEM文件> --gitee-token <Gitee令牌> [--port 8080
 }
 ```
 
-token 有效期为 1 分钟，且只能使用一次。申请后应立即调用 `POST /report`。
+token 有效期为 1 分钟。申请后应立即调用 `POST /report`；同一设备的并发申请会复用 token。
 
 黑名单文件不存在时，服务启动会自动创建。每行一个条目，例如：
 
@@ -108,7 +118,7 @@ xxxxxxxx 大量发布无意义内容
 
 | 字段      | 类型      | 限制                                                          |
 |---------|---------|-------------------------------------------------------------|
-| `token` | form 字段 | 必须是 `PUT /report` 返回的有效 token；token 在校验上传内容前即被消费            |
+| `token` | form 字段 | 必须是 `PUT /report` 返回的有效 token；同一 token 的并发或重复上传会等待或复用首次上传结果 |
 | `file`  | 文件字段    | 必须且只能有一个，文件分片 `Content-Type` 必须为 `application/octet-stream` |
 
 `file` 还必须满足：
@@ -118,7 +128,7 @@ xxxxxxxx 大量发布无意义内容
 - 文件内容格式为：`16 字节随机 IV + AES-256-CBC 密文`。
 - AES 使用 PKCS#5/PKCS#7 填充；解密后的明文必须是有效 ZIP 文件。
 
-服务端解密成功后，会以同一 UUID 命名并保存为 `<UUID>.zip`，保存位置由 `--save-dir` 决定。
+服务端解密成功后，会以同一 UUID 命名并保存为 `<UUID>.zip`，保存位置由 `--save-dir` 决定。同一 token 的重复上传不会使用重复请求中的文件。
 
 成功响应：
 

@@ -4,12 +4,8 @@ import (
 	"crypto/rsa"
 
 	"github.com/gin-gonic/gin"
+	"server/util"
 )
-
-type TokenCache interface {
-	Put(aesKey []byte, deviceID string) (string, error)
-	Take(token string) ([]byte, string, bool)
-}
 
 type Dependencies struct {
 	PrivateKey       *rsa.PrivateKey
@@ -18,7 +14,7 @@ type Dependencies struct {
 	Blacklist        map[string]string
 	MaxTransportSize int64
 	DebugMode        bool
-	Tokens           TokenCache
+	Reports          *util.ReportStore
 }
 
 type handlers struct {
@@ -26,6 +22,11 @@ type handlers struct {
 }
 
 func New(dependencies Dependencies) *gin.Engine {
+	if dependencies.DebugMode {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	engine := gin.New()
 	engine.Use(gin.Logger(), gin.Recovery())
 	if dependencies.DebugMode {

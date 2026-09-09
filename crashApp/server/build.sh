@@ -65,8 +65,8 @@ output_dir="$script_dir/build/$platform"
 output_file="$output_dir/server$extension"
 mkdir -p "$output_dir"
 
-printf '\n正在构建 %s/%s...\n' "$goos" "$goarch"
+printf '\n正在构建生产版本 %s/%s...\n' "$goos" "$goarch"
 GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
-    go build -trimpath -o "$output_file" .
+    go build -trimpath -buildvcs=false -ldflags '-s -w' -o "$output_file" .
 
-printf '构建完成：%s\n' "$output_file"
+printf '生产版本构建完成：%s\n' "$output_file"

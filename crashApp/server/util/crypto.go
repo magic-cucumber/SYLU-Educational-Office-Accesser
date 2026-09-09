@@ -1,4 +1,4 @@
-package router
+package util
 
 import (
 	"archive/zip"
@@ -12,19 +12,19 @@ import (
 	"fmt"
 )
 
-type encryptedPayload struct {
+type EncryptedPayload struct {
 	First  string `json:"first"`
 	Second string `json:"second"`
 }
 
-func decryptRSA(privateKey *rsa.PrivateKey, payload encryptedPayload, expectedSize int) ([]byte, error) {
+func DecryptRSA(privateKey *rsa.PrivateKey, payload EncryptedPayload, expectedSize int) ([]byte, error) {
 	if payload.First != "payload" {
 		return nil, errors.New("first must be payload")
 	}
-	return decryptRSACipher(privateKey, payload.Second, expectedSize)
+	return DecryptRSACipher(privateKey, payload.Second, expectedSize)
 }
 
-func decryptRSACipher(privateKey *rsa.PrivateKey, encodedCiphertext string, expectedSize int) ([]byte, error) {
+func DecryptRSACipher(privateKey *rsa.PrivateKey, encodedCiphertext string, expectedSize int) ([]byte, error) {
 	ciphertext, err := base64.StdEncoding.DecodeString(encodedCiphertext)
 	if err != nil {
 		return nil, errors.New("cipher is not valid Base64")
@@ -41,7 +41,7 @@ func decryptRSACipher(privateKey *rsa.PrivateKey, encodedCiphertext string, expe
 
 // The client cryptography library prepends a 16-byte random IV and uses
 // AES/CBC/PKCS5Padding (equivalent to PKCS#7 for AES).
-func decryptReport(aesKey, encrypted []byte) ([]byte, error) {
+func DecryptReport(aesKey, encrypted []byte) ([]byte, error) {
 	if len(aesKey) != 32 {
 		return nil, errors.New("invalid AES-256 key")
 	}

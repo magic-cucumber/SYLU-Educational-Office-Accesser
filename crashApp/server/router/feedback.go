@@ -40,7 +40,7 @@ func (h *handlers) createFeedback(context *gin.Context) {
 		fail(context, http.StatusBadRequest, errors.New("token is required"))
 		return
 	}
-	_, deviceID, ok := h.dependencies.Tokens.Take(request.Token)
+	_, deviceID, ok := h.dependencies.Reports.ConsumeFeedbackToken(request.Token)
 	if !ok {
 		fail(context, http.StatusBadRequest, errors.New("token is invalid, expired, or already used"))
 		return

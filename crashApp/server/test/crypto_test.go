@@ -1,4 +1,4 @@
-package router
+package test
 
 import (
 	"archive/zip"
@@ -6,6 +6,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"testing"
+
+	"server/util"
 )
 
 func TestDecryptReportMatchesClientEnvelope(t *testing.T) {
@@ -34,7 +36,7 @@ func TestDecryptReportMatchesClientEnvelope(t *testing.T) {
 	cipher.NewCBCEncrypter(block, iv).CryptBlocks(padded, padded)
 	encrypted := append(append([]byte(nil), iv...), padded...)
 
-	actual, err := decryptReport(key, encrypted)
+	actual, err := util.DecryptReport(key, encrypted)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +56,7 @@ func TestDecryptReportRejectsInvalidZip(t *testing.T) {
 		t.Fatal(err)
 	}
 	cipher.NewCBCEncrypter(block, iv).CryptBlocks(padded, padded)
-	if _, err := decryptReport(key, append(iv, padded...)); err == nil {
+	if _, err := util.DecryptReport(key, append(iv, padded...)); err == nil {
 		t.Fatal("invalid ZIP was accepted")
 	}
 }

@@ -55,16 +55,16 @@ try {
     $outputFile = Join-Path $outputDir "server$($target.Extension)"
     New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
-    Write-Host "`n正在构建 $($target.GOOS)/$goarch..."
+    Write-Host "`n正在构建生产版本 $($target.GOOS)/$goarch..."
     $env:GOOS = $target.GOOS
     $env:GOARCH = $goarch
     $env:CGO_ENABLED = "0"
-    & go build -trimpath -o $outputFile .
+    & go build -trimpath -buildvcs=false -ldflags "-s -w" -o $outputFile .
     if ($LASTEXITCODE -ne 0) {
         throw "Go 构建失败，退出码：$LASTEXITCODE"
     }
 
-    Write-Host "构建完成：$outputFile"
+    Write-Host "生产版本构建完成：$outputFile"
 } finally {
     [Console]::CursorVisible = $true
     Pop-Location

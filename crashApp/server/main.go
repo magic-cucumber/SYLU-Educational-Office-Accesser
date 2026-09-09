@@ -20,7 +20,7 @@ func main() {
 		Blacklist:        Env.Blacklist,
 		MaxTransportSize: Env.MaxTransportSize,
 		DebugMode:        Env.DebugMode,
-		Tokens:           Env.Tokens,
+		Reports:          Env.Reports,
 	})
 
 	if err := engine.Run(fmt.Sprintf(":%d", Env.Port)); err != nil {
