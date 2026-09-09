@@ -38,6 +38,7 @@ import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppInitializeMMKV
+import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
@@ -71,98 +72,110 @@ import top.kagg886.util.toFixed
 data object SummaryRoute
 
 @Composable
-fun SummaryScreen() = RevealContainer(3, AppInitializeMMKV::tutorialSummary) {
-    val nav = LocalNavController.current
+fun SummaryScreen() {
+    val currentClient by AppLoginPropertiesMMKV.clientIdFlow.collectAsState()
+    RevealContainer(
+        steps = if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") 2 else 3,
+        field = AppInitializeMMKV::tutorialSummary
+    ) {
+        val nav = LocalNavController.current
 
-    val suiteArrow = when (currentLayoutType()) {
-        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
-        else -> ContainerArrow.End
-    }
-
-    val fabArrow = when (currentLayoutType()) {
-        NavigationSuiteType.NavigationBar -> ContainerArrow.Top
-        else -> ContainerArrow.Bottom
-    }
-
-
-    val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
-    val syncState by mainViewModel.collectAsState()
-    val rootModel = rootViewModel()
-    val rootState by rootModel.collectAsState()
-    val showExperimentClass by rootState.showExperimentClass.collectAsState()
-    val model = viewModel<SummaryModel>(key = "summary-${syncState.toViewModelKey()}") {
-        SummaryModel(syncState, mainViewModel.database,rootState.showHolidayCourse)
-    }
-
-    val noticeModel = viewModel<SystemNoticeModel>(key = "notice-${syncState.toViewModelKey()}") {
-        SystemNoticeModel(syncState, mainViewModel.database)
-    }
-
-    model.collectSideEffect {
-        when (it) {
-            is SummarySideEffect.NavigateToCourseInfo -> {
-                nav.navigate(it.route)
-            }
-
-            is SummarySideEffect.NavigateToConflictInfo -> {
-                nav.navigate(CourseConflictRoute(it.startTime, it.endTime))
-            }
+        val suiteArrow = when (currentLayoutType()) {
+            NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+            else -> ContainerArrow.End
         }
-    }
-    val state by model.collectAsState()
-    val noticeState by noticeModel.collectAsState()
 
-    HomeScreen(
-        route = EOAHomeModule.SUMMARY,
-        title = {
-            Text("概要")
-        },
-        fabIcon = {
-            Icon(Icons.Default.Mail, "mail")
-        },
-        fabText = {
-            Text("通知")
-        },
-        fabOnClick = {
-            nav.navigate(SystemNoticeRoute)
-        },
-        suiteModifier = Modifier.revealableAutoMeasured(0, suiteArrow) {
-            Text("这里是主导航。可以在概要、课表、考试等页面之间切换。")
-        },
-        fabBadge = {
-            when (val state = noticeState) {
-                is SystemNoticeState.Success if (state.notices.count { !it.isRead } != 0) -> {
-                    Badge(containerColor = MaterialTheme.colorScheme.error) {
-                        Text("${state.notices.count { !it.isRead }}")
-                    }
+        val fabArrow = when (currentLayoutType()) {
+            NavigationSuiteType.NavigationBar -> ContainerArrow.Top
+            else -> ContainerArrow.Bottom
+        }
+
+
+        val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
+        val syncState by mainViewModel.collectAsState()
+        val rootModel = rootViewModel()
+        val rootState by rootModel.collectAsState()
+        val showExperimentClass by rootState.showExperimentClass.collectAsState()
+        val model = viewModel<SummaryModel>(key = "summary-${syncState.toViewModelKey()}") {
+            SummaryModel(syncState, mainViewModel.database, rootState.showHolidayCourse)
+        }
+
+        val noticeModel =
+            viewModel<SystemNoticeModel>(key = "notice-${syncState.toViewModelKey()}") {
+                SystemNoticeModel(syncState, mainViewModel.database)
+            }
+
+        model.collectSideEffect {
+            when (it) {
+                is SummarySideEffect.NavigateToCourseInfo -> {
+                    nav.navigate(it.route)
                 }
 
-                else -> Unit
+                is SummarySideEffect.NavigateToConflictInfo -> {
+                    nav.navigate(CourseConflictRoute(it.startTime, it.endTime))
+                }
             }
-        },
-        menu = {
-            val nav = LocalNavController.current
-            IconButton(
-                onClick = {
-                    nav.navigate(SettingsRoute)
-                },
-                modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Bottom) {
-                    Text("这里可以打开设置，修改账号、同步和显示相关选项。")
-                },
-            ) {
-                Icon(Icons.Default.AccountBox, contentDescription = "返回")
-            }
-        },
-        fabModifier = Modifier
-            .revealableAutoMeasured(2, fabArrow) {
-                Text("点这里查看学校通知，重要消息会集中放在这里。")
-            }
-    ) {
-        SummaryContentV2(
-            state = state,
-            showExperimentClass = showExperimentClass,
-            onCourseItemClicked = { model.redirectToCourse(it) }
-        )
+        }
+        val state by model.collectAsState()
+        val noticeState by noticeModel.collectAsState()
+
+        HomeScreen(
+            route = EOAHomeModule.SUMMARY,
+            title = {
+                Text("概要")
+            },
+            fabIcon = if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") null else {
+                {
+                    Icon(Icons.Default.Mail, "mail")
+                }
+            },
+            fabText = if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") null else {
+                {
+                    Text("通知")
+                }
+            },
+            fabModifier = Modifier.applyIf(currentClient != "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") {
+                revealableAutoMeasured(2, fabArrow) {
+                    Text("点这里查看学校通知，重要消息会集中放在这里。")
+                }
+            },
+            fabOnClick = {
+                nav.navigate(SystemNoticeRoute)
+            },
+            suiteModifier = Modifier.revealableAutoMeasured(0, suiteArrow) {
+                Text("这里是主导航。可以在概要、课表、考试等页面之间切换。")
+            },
+            fabBadge = {
+                when (val state = noticeState) {
+                    is SystemNoticeState.Success if (state.notices.count { !it.isRead } != 0) -> {
+                        Badge(containerColor = MaterialTheme.colorScheme.error) {
+                            Text("${state.notices.count { !it.isRead }}")
+                        }
+                    }
+
+                    else -> Unit
+                }
+            },
+            menu = {
+                val nav = LocalNavController.current
+                IconButton(
+                    onClick = {
+                        nav.navigate(SettingsRoute)
+                    },
+                    modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Bottom) {
+                        Text("这里可以打开设置，修改账号、同步和显示相关选项。")
+                    },
+                ) {
+                    Icon(Icons.Default.AccountBox, contentDescription = "返回")
+                }
+            },
+        ) {
+            SummaryContentV2(
+                state = state,
+                showExperimentClass = showExperimentClass,
+                onCourseItemClicked = { model.redirectToCourse(it) }
+            )
+        }
     }
 }
 
