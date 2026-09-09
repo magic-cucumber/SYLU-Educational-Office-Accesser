@@ -330,6 +330,13 @@ private fun CoursePageScreenSuccess(
             val defaultStart = LocalTime(8, 0)
             val defaultEnd = LocalTime(22, 0)
 
+            //保护课程为空的情况下使用minOf会crash的bug，这种情况为一周都没有课程
+            if (courses.isEmpty()) {
+                return@remember TimelineRange(
+                    defaultStart,defaultEnd
+                )
+            }
+
             val earliest = courses.minOf { course ->
                 when (course) {
                     is TodayClass.Single -> minOf(
