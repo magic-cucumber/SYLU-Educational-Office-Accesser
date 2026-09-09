@@ -47,39 +47,40 @@ class DownloadModel(private val url: String) : BaseViewModel<DownloadState, Down
 
     private fun startDownload() = intent {
         reduce { DownloadState.Fetching }
-        val path = withContext(Dispatchers.IO) {
-            client.prepareGet(url).execute { response ->
-                if (!response.status.isSuccess()) {
-                    return@execute null
-                }
-                val length = response.contentLength()
-                val input = response.bodyAsChannel().counted()
-
-                val path = cachePath.resolve("latest.apk").apply {
-                    if (exists()) {
-                        delete()
+        val path = try {
+            withContext(Dispatchers.IO) {
+                client.prepareGet(url).execute { response ->
+                    if (!response.status.isSuccess()) {
+                        error("service returned failed result: ${response.status}")
                     }
-                    createNewFile()
-                }
+                    val length = response.contentLength()
+                    val input = response.bodyAsChannel().counted()
 
-                path.sink().buffer().use { out ->
-                    while (!input.isClosedForRead) {
-                        val packet = input.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
-                        out.write(packet.readByteArray())
-                        length?.let {
-                            reduce { DownloadState.Progressing(input.totalBytesRead / it.toFloat()) }
+                    val path = cachePath.resolve("latest.apk").apply {
+                        if (exists()) {
+                            delete()
                         }
+                        createNewFile()
                     }
-                    out.flush()
-                }
-                path
-            }
-        }
 
-        if (path == null) {
+                    path.sink().buffer().use { out ->
+                        while (!input.isClosedForRead) {
+                            val packet = input.readRemaining(DEFAULT_BUFFER_SIZE.toLong())
+                            out.write(packet.readByteArray())
+                            length?.let {
+                                reduce { DownloadState.Progressing(input.totalBytesRead / it.toFloat()) }
+                            }
+                        }
+                        out.flush()
+                    }
+                    path
+                }
+            }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             postSideEffect(
                 DownloadSideEffect.NavigateBack(
-                    "下载失败。请检查日志",
+                    "暂时不能更新，请检查日志。",
                     SnackBarType.Error
                 )
             )
