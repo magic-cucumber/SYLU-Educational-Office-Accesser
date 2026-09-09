@@ -1,3 +1,17 @@
+fun getGitHeadCommitId(): String {
+    return try {
+        val exec = providers.exec {
+            commandLine("git", "rev-parse", "HEAD")
+            isIgnoreExitValue = true
+        }
+
+        exec.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+    } catch (e: Exception) {
+        logger.warn("Unable to resolve Git HEAD commit id: ${e.message}")
+        "unknown"
+    }
+}
+
 val databaseVersion = (project.findProperty("database.version") as String).toInt()
 val appVersion = project.findProperty("app.version") as String
 val appVersionCode = (project.findProperty("app.code") as String).toInt()
@@ -65,10 +79,10 @@ buildConfig {
 
     buildConfigField("DATABASE_VERSION", databaseVersion)
 
-    buildConfigField("APP_DESUGAR_ENABLED",useDesugarApi)
+    buildConfigField("APP_DESUGAR_ENABLED", useDesugarApi)
     buildConfigField("APP_VERSION_CODE", appVersionCode)
     buildConfigField("APP_VERSION_NAME", appVersion)
-    buildConfigField("GIT_COMMIT_SHA", "123456")
+    buildConfigField("GIT_COMMIT_SHA", getGitHeadCommitId())
     buildConfigField("MESSAGE_MAIL", messageMail)
     buildConfigField("MESSAGE_WEBSITE_URL", messageWebsiteUrl)
     buildConfigField("MESSAGE_QQ_GROUP_URL", messageQQGroupUrl)

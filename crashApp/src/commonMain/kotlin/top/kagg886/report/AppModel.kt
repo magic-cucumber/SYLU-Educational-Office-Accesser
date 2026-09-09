@@ -311,6 +311,7 @@ class AppModel(private val crash: String) : ViewModel(),
                                 appendLine("Application Info:")
                                 appendLine("    Platform: ${Platform.current}")
                                 appendLine("    Version: ${BuildConfig.APP_VERSION_NAME}(${BuildConfig.APP_VERSION_CODE})")
+                                appendLine("    Commit ID: ${BuildConfig.GIT_COMMIT_SHA})")
 
                                 with(Platform.current) {
                                     if (this is Platform.Android) {
