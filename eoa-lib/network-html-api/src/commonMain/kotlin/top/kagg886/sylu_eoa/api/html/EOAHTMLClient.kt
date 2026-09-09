@@ -21,6 +21,7 @@ import kotlinx.datetime.plus
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import okio.ByteString.Companion.toByteString
 import top.kagg886.sylu_eoa.api.html.config.BuildConfig
 import top.kagg886.sylu_eoa.api.html.util.*
 import top.kagg886.sylu_eoa.api.v2.*
@@ -456,7 +457,7 @@ internal class EOAHTMLClient : EOAClient {
                 i.rangeEveryDay.map { lessonNumber ->
                     val time = getTimeByLessonNumber(lessonNumber)
                     ClassTable(
-                        id = i.id,
+                        id = i.toString().encodeToByteArray().toByteString().md5().hex(),
                         name = i.name,
                         teacher = i.teacher,
                         room = i.room,
