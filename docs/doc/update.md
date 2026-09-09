@@ -27,7 +27,7 @@
 - 现在的教务系统接口倾向于使用ipv4访问，而非ipv6。
 - 提升崩溃信息自动提交的稳定性，减少重复提交或数据库损坏导致的处理失败。
 
-**完整的更新日志**: https://gitee.com/kagg886/sylu-educational-office-accesser/compare/4.5.2...HEAD
+**完整的更新日志**: https://gitee.com/kagg886/sylu-educational-office-accesser/compare/4.5.2...4.5.3
 
 ## 4.5.2 (2026-09-04)
 
