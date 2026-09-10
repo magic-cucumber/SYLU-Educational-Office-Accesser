@@ -33,6 +33,8 @@ import top.kagg886.util.dataPath
         AutoMigration(from = 8, to = 9),
         AutoMigration(from = 9, to = 10),
         AutoMigration(from = 11, to = 12),
+        // 低版本Android不支持TRUE/FALSE字面量
+        AutoMigration(from = 13, to = 14),
     ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)

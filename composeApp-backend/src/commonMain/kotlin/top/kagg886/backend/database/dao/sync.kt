@@ -27,7 +27,7 @@ data class SyncOverviewEntity(
     val id: Int? = null,
     val updatedStamp: Instant = Clock.System.now(),
 
-    @ColumnInfo(defaultValue = "true")
+    @ColumnInfo(defaultValue = "1")
     val success: Boolean = true,
 )
 

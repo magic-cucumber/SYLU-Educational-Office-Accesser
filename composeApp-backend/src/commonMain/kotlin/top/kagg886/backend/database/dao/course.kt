@@ -41,10 +41,10 @@ interface CourseDao {
     @Query("DELETE FROM courses")
     suspend fun clearAll()
 
-    @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
+    @Query("SELECT * FROM courses WHERE (:onlyUserAdded = 0 OR isUserAdded = 1)")
     suspend fun all(onlyUserAdded: Boolean = false): List<CourseEntity>
 
-    @Query("SELECT * FROM courses WHERE (:onlyUserAdded = false OR isUserAdded = true)")
+    @Query("SELECT * FROM courses WHERE (:onlyUserAdded = 0 OR isUserAdded = 1)")
     fun allFlow(onlyUserAdded: Boolean = false): Flow<List<CourseEntity>>
 
     @Insert
