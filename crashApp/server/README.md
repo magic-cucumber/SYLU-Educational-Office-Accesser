@@ -15,12 +15,14 @@ go test -race ./...
 服务默认监听 `8080` 端口：
 
 ```text
+server --config-file ./config.toml [--port 8080]
 server --cert-path <RSA私钥PEM文件> --gitee-token <Gitee令牌> [--port 8080] [--save-dir ./output]
         [--black-list-file ./blacklist.txt] [--max-transport-size 5MB] [--debug-mode]
 ```
 
 | 参数                     | 必填 | 默认值        | 说明                                         |
 |------------------------|----|------------|--------------------------------------------|
+| `--config-file`         | 否  | 无          | TOML 配置文件路径；命令行参数会覆盖文件中的同名配置                 |
 | `--port`               | 否  | `8080`     | HTTP 监听端口，范围 `1-65535`                     |
 | `--save-dir`           | 否  | `./output` | 解密后 ZIP 的保存目录                              |
 | `--cert-path`          | 是  | 无          | 未加密的 RSA PKCS#1 或 PKCS#8 私钥 PEM 文件         |
@@ -28,6 +30,24 @@ server --cert-path <RSA私钥PEM文件> --gitee-token <Gitee令牌> [--port 8080
 | `--black-list-file`    | 否  | `./blacklist.txt` | 黑名单文件，每行格式为 `匿名ID 封禁原因`                 |
 | `--max-transport-size` | 否  | `5MB`      | 加密报告文件的最大大小；支持字节数以及 `KB/KiB/MB/MiB/GB/GiB` |
 | `--debug-mode`         | 否  | `false`    | 每个请求额外延迟 3 秒                               |
+
+配置文件使用 TOML，键名使用 kebab-case：
+
+```toml
+port = 8080
+save-dir = "./output"
+cert-path = "./private-key.pem"
+gitee-token = "<GITEE_TOKEN>"
+black-list-file = "./blacklist.txt"
+max-transport-size = "5MB"
+debug-mode = false
+```
+
+例如，以下命令会使用配置文件中的所有值，但将监听端口覆盖为 `9090`：
+
+```text
+server --config-file ./config.toml --port 9090
+```
 
 ## 通用约定
 

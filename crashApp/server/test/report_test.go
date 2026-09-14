@@ -39,7 +39,7 @@ func TestReportEndpointsConcurrentTokenRequestsReuseToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	engine := router.New(router.Dependencies{
+	engine := router.New(router.CommandLineConfig{}, router.CommandLineConfigExtra{
 		PrivateKey:       privateKey,
 		Blacklist:        map[string]string{},
 		MaxTransportSize: 1 << 20,
@@ -123,7 +123,7 @@ func TestReportEndpointDuplicateUploadReturnsFirstResultWithoutUsingNewData(t *t
 	}
 
 	saveDir := t.TempDir()
-	engine := router.New(router.Dependencies{
+	engine := router.New(router.CommandLineConfig{}, router.CommandLineConfigExtra{
 		MaxTransportSize: 1 << 20,
 		SaveDir:          saveDir,
 		Reports:          store,
@@ -158,7 +158,7 @@ func TestReportEndpointDuplicateUploadReceivesFirstFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	engine := router.New(router.Dependencies{
+	engine := router.New(router.CommandLineConfig{}, router.CommandLineConfigExtra{
 		MaxTransportSize: 1 << 20,
 		SaveDir:          t.TempDir(),
 		Reports:          store,
@@ -189,7 +189,7 @@ func TestReportEndpointConcurrentUploadsSaveOneReport(t *testing.T) {
 	}
 
 	saveDir := t.TempDir()
-	engine := router.New(router.Dependencies{
+	engine := router.New(router.CommandLineConfig{}, router.CommandLineConfigExtra{
 		MaxTransportSize: 1 << 20,
 		SaveDir:          saveDir,
 		Reports:          store,

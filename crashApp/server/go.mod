@@ -2,7 +2,11 @@ module server
 
 go 1.23.0
 
-require github.com/gin-gonic/gin v1.11.0
+require (
+	github.com/alecthomas/kong v1.16.1
+	github.com/alecthomas/kong-toml v0.2.0
+	github.com/gin-gonic/gin v1.11.0
+)
 
 require (
 	github.com/bytedance/sonic v1.14.0 // indirect
@@ -21,6 +25,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.0 // indirect

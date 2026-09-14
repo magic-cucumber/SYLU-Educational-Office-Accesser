@@ -9,21 +9,14 @@ import (
 )
 
 func main() {
-	if err := ConfigureEnvironment(os.Args[1:]); err != nil {
+	config, extra, err := ConfigureCommandLine(os.Args[1:])
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	engine := router.New(router.Dependencies{
-		PrivateKey:       Env.PrivateKey,
-		SaveDir:          Env.SaveDir,
-		GiteeToken:       Env.GiteeToken,
-		Blacklist:        Env.Blacklist,
-		MaxTransportSize: Env.MaxTransportSize,
-		DebugMode:        Env.DebugMode,
-		Reports:          Env.Reports,
-	})
+	engine := router.New(config, extra)
 
-	if err := engine.Run(fmt.Sprintf(":%d", Env.Port)); err != nil {
+	if err := engine.Run(fmt.Sprintf(":%d", config.Port)); err != nil {
 		log.Fatal(err)
 	}
 }

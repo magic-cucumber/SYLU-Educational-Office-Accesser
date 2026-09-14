@@ -26,7 +26,9 @@ type giteeIssueResponse struct {
 	HTMLURL string `json:"html_url"`
 }
 
-func (h *handlers) createFeedback(context *gin.Context) {
+func createFeedback(context *gin.Context) {
+	config := commandLineConfigFrom(context)
+	extra := commandLineConfigExtraFrom(context)
 	var request feedbackRequest
 	if err := context.ShouldBindJSON(&request); err != nil {
 		fail(context, http.StatusBadRequest, errors.New("invalid JSON payload"))
@@ -40,12 +42,12 @@ func (h *handlers) createFeedback(context *gin.Context) {
 		fail(context, http.StatusBadRequest, errors.New("token is required"))
 		return
 	}
-	_, deviceID, ok := h.dependencies.Reports.ConsumeFeedbackToken(request.Token)
+	_, deviceID, ok := extra.Reports.ConsumeFeedbackToken(request.Token)
 	if !ok {
 		fail(context, http.StatusBadRequest, errors.New("token is invalid, expired, or already used"))
 		return
 	}
-	if strings.TrimSpace(h.dependencies.GiteeToken) == "" {
+	if strings.TrimSpace(config.GiteeToken) == "" {
 		fail(context, http.StatusInternalServerError, errors.New("Gitee token is not configured"))
 		return
 	}
@@ -58,7 +60,7 @@ func (h *handlers) createFeedback(context *gin.Context) {
 		request.Content,
 	)
 	form := url.Values{}
-	form.Set("access_token", h.dependencies.GiteeToken)
+	form.Set("access_token", config.GiteeToken)
 	form.Set("repo", "sylu-educational-office-accesser")
 	form.Set("title", "SYLU - EOA 软件反馈")
 	form.Set("body", body)

@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -13,86 +12,67 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
+	kongtoml "github.com/alecthomas/kong-toml"
+	"server/router"
 	"server/util"
 )
 
-type Environment struct {
-	Port             uint16
-	SaveDir          string
-	CertPath         string
-	GiteeToken       string
-	BlacklistFile    string
-	Blacklist        map[string]string
-	MaxTransportSize int64
-	DebugMode        bool
-	PrivateKey       *rsa.PrivateKey
-	Reports          *util.ReportStore
-}
-
-var Env Environment
-
-func ConfigureEnvironment(args []string) error {
-	flags := flag.NewFlagSet("crash-report-server", flag.ContinueOnError)
-	port := flags.Int("port", 8080, "HTTP listen port")
-	saveDir := flags.String("save-dir", "./output", "directory for decrypted ZIP files")
-	certPath := flags.String("cert-path", "", "path to the PEM encoded RSA private key (required)")
-	giteeToken := flags.String("gitee-token", "", "Gitee personal access token (required)")
-	blacklistFile := flags.String("black-list-file", "./blacklist.txt", "path to the blacklist file")
-	maxTransportSize := flags.String("max-transport-size", "5MB", "maximum encrypted upload size")
-	debugMode := flags.Bool("debug-mode", false, "delay each routed request by three seconds")
-	if err := flags.Parse(args); err != nil {
-		return err
+func ConfigureCommandLine(args []string) (router.CommandLineConfig, router.CommandLineConfigExtra, error) {
+	var config router.CommandLineConfig
+	parser, err := kong.New(
+		&config,
+		kong.Name("crash-report-server"),
+		kong.Configuration(kongtoml.Loader),
+	)
+	if err != nil {
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("create configuration parser: %w", err)
 	}
-	if flags.NArg() != 0 {
-		return fmt.Errorf("unexpected positional arguments: %s", strings.Join(flags.Args(), " "))
+	if _, err := parser.Parse(args); err != nil {
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, err
 	}
-	if *port < 1 || *port > 65535 {
-		return fmt.Errorf("--port must be between 1 and 65535")
+	if config.Port < 1 || config.Port > 65535 {
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("--port must be between 1 and 65535")
 	}
-	if strings.TrimSpace(*certPath) == "" {
-		return errors.New("--cert-path is required")
+	if strings.TrimSpace(config.CertPath) == "" {
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, errors.New("--cert-path is required")
 	}
-	if strings.TrimSpace(*giteeToken) == "" {
-		return errors.New("--gitee-token is required")
+	if strings.TrimSpace(config.GiteeToken) == "" {
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, errors.New("--gitee-token is required")
 	}
 
-	limit, err := util.ParseByteSize(*maxTransportSize)
+	limit, err := util.ParseByteSize(config.MaxTransportSize)
 	if err != nil {
-		return fmt.Errorf("invalid --max-transport-size: %w", err)
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("invalid --max-transport-size: %w", err)
 	}
-	privateKey, err := loadPrivateKey(*certPath)
+	privateKey, err := loadPrivateKey(config.CertPath)
 	if err != nil {
-		return fmt.Errorf("load --cert-path: %w", err)
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("load --cert-path: %w", err)
 	}
-	absoluteSaveDir, err := filepath.Abs(*saveDir)
+	absoluteSaveDir, err := filepath.Abs(config.SaveDir)
 	if err != nil {
-		return fmt.Errorf("resolve --save-dir: %w", err)
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("resolve --save-dir: %w", err)
 	}
 	if err := os.MkdirAll(absoluteSaveDir, 0o750); err != nil {
-		return fmt.Errorf("create --save-dir: %w", err)
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("create --save-dir: %w", err)
 	}
-	absoluteBlacklistFile, err := filepath.Abs(*blacklistFile)
+	absoluteBlacklistFile, err := filepath.Abs(config.BlacklistFile)
 	if err != nil {
-		return fmt.Errorf("resolve --black-list-file: %w", err)
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("resolve --black-list-file: %w", err)
 	}
 	blacklist, err := loadBlacklist(absoluteBlacklistFile)
 	if err != nil {
-		return fmt.Errorf("load --black-list-file: %w", err)
+		return router.CommandLineConfig{}, router.CommandLineConfigExtra{}, fmt.Errorf("load --black-list-file: %w", err)
 	}
 
-	Env = Environment{
-		Port:             uint16(*port),
+	return config, router.CommandLineConfigExtra{
 		SaveDir:          absoluteSaveDir,
-		CertPath:         *certPath,
-		GiteeToken:       *giteeToken,
 		BlacklistFile:    absoluteBlacklistFile,
 		Blacklist:        blacklist,
 		MaxTransportSize: limit,
-		DebugMode:        *debugMode,
 		PrivateKey:       privateKey,
 		Reports:          util.NewReportStore(1024, time.Minute),
-	}
-	return nil
+	}, nil
 }
 
 func loadBlacklist(path string) (map[string]string, error) {

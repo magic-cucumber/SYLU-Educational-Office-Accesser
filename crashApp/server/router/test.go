@@ -9,13 +9,14 @@ import (
 	"server/util"
 )
 
-func (h *handlers) testRSA(context *gin.Context) {
+func testRSA(context *gin.Context) {
+	extra := commandLineConfigExtraFrom(context)
 	var payload util.EncryptedPayload
 	if err := context.ShouldBindJSON(&payload); err != nil {
 		fail(context, http.StatusBadRequest, errors.New("invalid JSON payload"))
 		return
 	}
-	plaintext, err := util.DecryptRSA(h.dependencies.PrivateKey, payload, 128)
+	plaintext, err := util.DecryptRSA(extra.PrivateKey, payload, 128)
 	if err != nil {
 		fail(context, http.StatusBadRequest, err)
 		return

@@ -25,7 +25,8 @@ type reportTokenRequest struct {
 	DeviceID string `json:"deviceId"`
 }
 
-func (h *handlers) createReportToken(context *gin.Context) {
+func createReportToken(context *gin.Context) {
+	extra := commandLineConfigExtraFrom(context)
 	var request reportTokenRequest
 	if err := context.ShouldBindJSON(&request); err != nil {
 		fail(context, http.StatusBadRequest, errors.New("invalid JSON payload"))
@@ -36,13 +37,13 @@ func (h *handlers) createReportToken(context *gin.Context) {
 		fail(context, http.StatusBadRequest, errors.New("deviceId is required"))
 		return
 	}
-	if reason, ok := h.dependencies.Blacklist[deviceID]; ok {
+	if reason, ok := extra.Blacklist[deviceID]; ok {
 		fail(context, http.StatusOK, errors.New(reason))
 		return
 	}
 	var keyError error
-	token, err := h.dependencies.Reports.GetOrCreateToken(deviceID, func() ([]byte, error) {
-		key, err := util.DecryptRSACipher(h.dependencies.PrivateKey, strings.TrimSpace(request.Cipher), 32)
+	token, err := extra.Reports.GetOrCreateToken(deviceID, func() ([]byte, error) {
+		key, err := util.DecryptRSACipher(extra.PrivateKey, strings.TrimSpace(request.Cipher), 32)
 		keyError = err
 		return key, err
 	})
@@ -57,8 +58,9 @@ func (h *handlers) createReportToken(context *gin.Context) {
 	succeed(context, token)
 }
 
-func (h *handlers) uploadReport(context *gin.Context) {
-	limit := h.dependencies.MaxTransportSize
+func uploadReport(context *gin.Context) {
+	extra := commandLineConfigExtraFrom(context)
+	limit := extra.MaxTransportSize
 	if limit <= (1<<63-1)-multipartOverheadAllowance {
 		limit += multipartOverheadAllowance
 	}
@@ -81,7 +83,7 @@ func (h *handlers) uploadReport(context *gin.Context) {
 		fail(context, http.StatusBadRequest, errors.New("token is required"))
 		return
 	}
-	claim, ok := h.dependencies.Reports.BeginUpload(token)
+	claim, ok := extra.Reports.BeginUpload(token)
 	if !ok {
 		fail(context, http.StatusBadRequest, errors.New("token is invalid, expired, or already used"))
 		return
@@ -94,11 +96,11 @@ func (h *handlers) uploadReport(context *gin.Context) {
 		return
 	}
 
-	result := h.processOwnedUpload(context, claim)
+	result := processOwnedUpload(context, claim)
 	writeResult(context, result)
 }
 
-func (h *handlers) processOwnedUpload(context *gin.Context, claim util.UploadClaim) (result util.UploadResult) {
+func processOwnedUpload(context *gin.Context, claim util.UploadClaim) (result util.UploadResult) {
 	result = failureResult(http.StatusInternalServerError, errors.New("failed to process report upload"))
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -106,10 +108,11 @@ func (h *handlers) processOwnedUpload(context *gin.Context, claim util.UploadCla
 		}
 		claim.Task.Complete(result)
 	}()
-	return h.processUpload(context, claim.Task.AESKey())
+	return processUpload(context, claim.Task.AESKey())
 }
 
-func (h *handlers) processUpload(context *gin.Context, aesKey []byte) util.UploadResult {
+func processUpload(context *gin.Context, aesKey []byte) util.UploadResult {
+	extra := commandLineConfigExtraFrom(context)
 
 	fileHeader, err := firstFile(context.Request.MultipartForm, "file")
 	if err != nil {
@@ -121,7 +124,7 @@ func (h *handlers) processUpload(context *gin.Context, aesKey []byte) util.Uploa
 	if fileHeader.Header.Get("Content-Type") != "application/octet-stream" {
 		return failureResult(http.StatusBadRequest, errors.New("file content type must be application/octet-stream"))
 	}
-	if fileHeader.Size > h.dependencies.MaxTransportSize {
+	if fileHeader.Size > extra.MaxTransportSize {
 		return failureResult(http.StatusRequestEntityTooLarge, errors.New("encrypted report exceeds --max-transport-size"))
 	}
 
@@ -130,11 +133,11 @@ func (h *handlers) processUpload(context *gin.Context, aesKey []byte) util.Uploa
 		return failureResult(http.StatusBadRequest, errors.New("failed to open uploaded file"))
 	}
 	defer file.Close()
-	encrypted, err := io.ReadAll(io.LimitReader(file, h.dependencies.MaxTransportSize+1))
+	encrypted, err := io.ReadAll(io.LimitReader(file, extra.MaxTransportSize+1))
 	if err != nil {
 		return failureResult(http.StatusBadRequest, errors.New("failed to read uploaded file"))
 	}
-	if int64(len(encrypted)) > h.dependencies.MaxTransportSize {
+	if int64(len(encrypted)) > extra.MaxTransportSize {
 		return failureResult(http.StatusRequestEntityTooLarge, errors.New("encrypted report exceeds --max-transport-size"))
 	}
 	plaintext, err := util.DecryptReport(aesKey, encrypted)
@@ -143,7 +146,7 @@ func (h *handlers) processUpload(context *gin.Context, aesKey []byte) util.Uploa
 	}
 
 	name := strings.TrimSuffix(fileHeader.Filename, filepath.Ext(fileHeader.Filename)) + ".zip"
-	if err := writeExclusive(filepath.Join(h.dependencies.SaveDir, name), plaintext); err != nil {
+	if err := writeExclusive(filepath.Join(extra.SaveDir, name), plaintext); err != nil {
 		return failureResult(http.StatusInternalServerError, err)
 	}
 	return successResult(nil)
