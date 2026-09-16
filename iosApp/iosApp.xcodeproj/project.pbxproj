@@ -85,30 +85,8 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		5AC637792FC28E29002EDA6F /* TodayCourseWidget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				5AC637862FC28E2A002EDA6F /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = TodayCourseWidget;
-			sourceTree = "<group>";
-		};
-		5ADD078D2F0F819700668CD4 /* ImageProcessing */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = ImageProcessing;
-			sourceTree = "<group>";
-		};
+		5AC637792FC28E29002EDA6F /* TodayCourseWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (5AC637862FC28E2A002EDA6F /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = TodayCourseWidget; sourceTree = "<group>"; };
+		5ADD078D2F0F819700668CD4 /* ImageProcessing */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (5ADD079A2F0F819700668CD4 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ImageProcessing; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -264,8 +242,9 @@
 		A93A952F29CC810C00F8E227 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 1420;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					5AC637732FC28E29002EDA6F = {
 						CreatedOnToolsVersion = 26.4;
@@ -428,9 +407,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"",
-				);
+				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TodayCourseWidget/Info.plist;
@@ -474,9 +451,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"",
-				);
+				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TodayCourseWidget/Info.plist;
@@ -649,6 +624,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -703,6 +679,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
@@ -726,6 +703,7 @@
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "需要使用此权限来导出日历";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -762,6 +740,7 @@
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "需要使用此权限来导出日历";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
