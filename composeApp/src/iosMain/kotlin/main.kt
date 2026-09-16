@@ -41,6 +41,7 @@ import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.eoa.rememberDeepLinkController
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
+import top.kagg886.eoa.util.longshot.ProvideLongShot
 import top.kagg886.report.CrashApp
 import top.kagg886.report.CrashConfig
 import top.kagg886.util.asTaggedLogger
@@ -128,7 +129,9 @@ fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlo
 
 
         CompositionLocalProvider(LocalDatabase provides database) {
-            App(controller)
+            ProvideLongShot {
+                App(controller)
+            }
         }
     }
 

@@ -17,12 +17,22 @@ struct ComposeApp: App {
 
 struct ContentView: UIViewControllerRepresentable {
     let deepLinks: Kotlinx_coroutines_coreMutableSharedFlow
+
+    func makeCoordinator() -> LongShotScreenshotServiceHolder {
+        LongShotScreenshotServiceHolder()
+    }
     
     func makeUIViewController(context: Context) -> UIViewController {
-        return MainKt.MainViewController(deepLinkFlow: deepLinks)
+        let viewController = MainKt.MainViewController(deepLinkFlow: deepLinks)
+        context.coordinator.install(for: viewController)
+        return viewController
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         // Updates will be handled by Compose
+    }
+
+    static func dismantleUIViewController(_ uiViewController: UIViewController, coordinator: LongShotScreenshotServiceHolder) {
+        coordinator.uninstall()
     }
 }
