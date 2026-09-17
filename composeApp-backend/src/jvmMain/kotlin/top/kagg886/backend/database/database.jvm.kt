@@ -3,7 +3,8 @@ package top.kagg886.backend.database
 import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import okio.Path
 
-actual fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
-    return Room.databaseBuilder<AppDatabase>(name = databasePath).setDriver(BundledSQLiteDriver())
-}
+actual fun commonDatabaseBuilder(path: Path): RoomDatabase.Builder<AppDatabase> =
+    Room.databaseBuilder<AppDatabase>(name = path.toString())
+        .setDriver(BundledSQLiteDriver())

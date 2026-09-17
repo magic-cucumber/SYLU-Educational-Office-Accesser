@@ -300,7 +300,7 @@ class AppModel(private val crash: String) : ViewModel(),
                 }
 
                 with(root.resolve("app.db")) {
-                    databasePath.toPath() copyTo this
+                    databasePath copyTo this
                 }
 
                 with(root.resolve("platform")) {

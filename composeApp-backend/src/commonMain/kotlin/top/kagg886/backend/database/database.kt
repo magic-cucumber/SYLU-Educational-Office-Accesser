@@ -3,6 +3,7 @@ package top.kagg886.backend.database
 import androidx.room3.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import okio.Path
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.backend.database.dao.*
 import top.kagg886.backend.database.migrate.MIGRATION_10_11
@@ -59,13 +60,13 @@ expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
     override fun initialize(): AppDatabase
 }
 
-val databasePath: String by lazy {
-    dataPath.resolve("app.db").absolutePath().toString()
+val databasePath: Path by lazy {
+    dataPath.resolve("app.db").absolutePath()
 }
 
-expect fun commonDatabaseBuilder(): RoomDatabase.Builder<AppDatabase>
+expect fun commonDatabaseBuilder(path: Path): RoomDatabase.Builder<AppDatabase>
 
-fun databaseBuilder(): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder()
+fun databaseBuilder(path: Path = databasePath): RoomDatabase.Builder<AppDatabase> = commonDatabaseBuilder(path)
     .addMigrations(MIGRATION_10_11)
     .addMigrations(MIGRATION_12_13)
     .setQueryCoroutineContext(Dispatchers.IO)
