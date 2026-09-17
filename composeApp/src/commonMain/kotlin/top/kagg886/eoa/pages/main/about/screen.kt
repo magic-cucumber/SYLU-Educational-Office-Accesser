@@ -10,12 +10,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Group
@@ -29,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,6 +44,7 @@ import sylu_eoa.composeapp.generated.resources.good
 import sylu_eoa.composeapp.generated.resources.icon
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.BackIconButton
+import top.kagg886.eoa.component.Markdown
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.util.SnackBarType
@@ -49,10 +54,19 @@ import top.kagg886.util.setText
 @Serializable
 data object AboutRoute
 
+private enum class PolicyTab(
+    val title: String,
+    val resourcePath: String,
+) {
+    User("用户协议", "drawable/user.md"),
+    Privacy("隐私政策", "drawable/privacy.md"),
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen() = MainScreen {
     var showDonationDialog by remember { mutableStateOf(false) }
+    var showPolicySheet by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboard.current
     val uriHandler = LocalUriHandler.current
     val snack = LocalSnackBarHost.current
@@ -165,6 +179,13 @@ fun AboutScreen() = MainScreen {
             )
 
             AboutActionItem(
+                icon = Icons.Default.Description,
+                title = "隐私政策与用户协议",
+                subtitle = "查看隐私政策和用户协议",
+                onClick = { showPolicySheet = true }
+            )
+
+            AboutActionItem(
                 icon = Icons.Default.Code,
                 title = "查看源代码",
                 subtitle = "Gitee",
@@ -181,6 +202,10 @@ fun AboutScreen() = MainScreen {
 
     if (showDonationDialog) {
         DonationDialog(onDismiss = { showDonationDialog = false })
+    }
+
+    if (showPolicySheet) {
+        PolicyBottomSheet(onDismissRequest = { showPolicySheet = false })
     }
 }
 
@@ -230,4 +255,86 @@ private fun DonationDialog(onDismiss: () -> Unit) {
             )
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PolicyBottomSheet(onDismissRequest: () -> Unit) {
+    val pagerState = rememberPagerState(pageCount = { PolicyTab.entries.size })
+    val scope = rememberCoroutineScope()
+    var markdown by remember { mutableStateOf(emptyMap<PolicyTab, String>()) }
+
+    LaunchedEffect(pagerState.currentPage) {
+        val tab = PolicyTab.entries[pagerState.currentPage]
+        if (markdown[tab] == null) {
+            markdown = markdown + (tab to Res.readBytes(tab.resourcePath).decodeToString())
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 400.dp, max = 640.dp)
+        ) {
+            Text(
+                text = "隐私政策与用户协议",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            SecondaryTabRow(
+                selectedTabIndex = pagerState.currentPage,
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = BottomSheetDefaults.ContainerColor
+            ) {
+                PolicyTab.entries.forEach { tab ->
+                    Tab(
+                        selected = pagerState.currentPage == tab.ordinal,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(tab.ordinal) } },
+                        text = { Text(tab.title) },
+                    )
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                verticalAlignment = Alignment.Top,
+            ) { page ->
+                val tab = PolicyTab.entries[page]
+                val content = markdown[tab]
+                if (content == null) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Markdown(
+                            content = content,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(
+                            modifier = Modifier.height(
+                                BottomSheetDefaults.modalWindowInsets
+                                    .asPaddingValues()
+                                    .calculateBottomPadding()
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

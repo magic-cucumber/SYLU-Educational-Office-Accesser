@@ -94,7 +94,7 @@ struct Provider: TimelineProvider {
 private enum WidgetRuntime {
     static let repository: WidgetRepository = {
         Mmkv_iosKt.initializeMMKV()
-        let database = DatabaseKt.databaseBuilder().build()
+        let database = DatabaseKt.databaseBuilder(path: DatabaseKt.databasePath).build()
         LoggerKt.registerKermitLoggerIfExists(appLogDao: database.appLogDao())
         return WidgetRepository(database: database)
     }()
