@@ -74,6 +74,7 @@ import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.showSnackBar
 
 //新增为null，否则为id
@@ -84,6 +85,10 @@ data class CourseEditRoute(
 
 @Composable
 fun CourseEditScreen(route: CourseEditRoute) {
+    val rootModel = rootViewModel()
+    val rootState by rootModel.collectAsState()
+    val enableAI by rootState.enableAI.collectAsState()
+
     val mainModel = mainViewModelOrNull() ?: return
     val mainState by mainModel.collectAsState()
     val llmRuntimes by mainModel.llmExecutors.collectAsState()
@@ -108,6 +113,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
         model = model,
         state = state,
         snack = stack,
+        enableAI = enableAI,
         onCourseModified = { model.modifyCourse(it) },
         onCourseInfoConfirmed = { model.confirmModifyCourse() },
         onAddRecord = { model.addRecord(it) },
@@ -128,6 +134,7 @@ private fun CourseEditScreenContent(
     model: CourseEditModel,
     state: CourseEditState,
     snack: ToasterState,
+    enableAI: Boolean,
     onCourseModified: (CourseEntity) -> Unit,
     onCourseInfoConfirmed: () -> Unit,
     onAddRecord: (LocalDate) -> Unit,
@@ -223,11 +230,13 @@ private fun CourseEditScreenContent(
                                     selected = pagerState.currentPage == 1,
                                     onClick = { scope.launch { pagerState.animateScrollToPage(1) } }
                                 )
-                                Tab(
-                                    text = { Text("AI生成") },
-                                    selected = pagerState.currentPage == 2,
-                                    onClick = { scope.launch { pagerState.animateScrollToPage(2) } }
-                                )
+                                if (enableAI) {
+                                    Tab(
+                                        text = { Text("AI生成") },
+                                        selected = pagerState.currentPage == 2,
+                                        onClick = { scope.launch { pagerState.animateScrollToPage(2) } }
+                                    )
+                                }
                             }
                         )
 
@@ -252,7 +261,7 @@ private fun CourseEditScreenContent(
                                     onDeleteRecord = onDeleteRecord
                                 )
 
-                                2 -> CourseEditAI(
+                                2 if enableAI -> CourseEditAI(
                                     providers = state.llmKeys,
                                     selectedProvider = state.selectLLMKey,
                                     aiGenerating = state.aiGenerating,

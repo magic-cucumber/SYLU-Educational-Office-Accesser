@@ -154,6 +154,18 @@ class RootViewModel(database: AppDatabase) :
         }
 
         viewModelScope.launch {
+            state.enableCrashReport.collect {
+                AppSettingsMMKV.enableCrashReport = it
+            }
+        }
+
+        viewModelScope.launch {
+            state.enableAI.collect {
+                AppSettingsMMKV.enableAI = it
+            }
+        }
+
+        viewModelScope.launch {
             state.syncDuration.collect {
                 AppSettingsMMKV.syncDuration = it
             }
@@ -199,6 +211,14 @@ class RootViewModel(database: AppDatabase) :
 
     fun postHideWeekendCourseSetting(enabled: Boolean) = intent {
         state.hideWeekendCourse.value = enabled
+    }
+
+    fun postEnableCrashReportSetting(enabled: Boolean) = intent {
+        state.enableCrashReport.value = enabled
+    }
+
+    fun postEnableAISetting(enabled: Boolean) = intent {
+        state.enableAI.value = enabled
     }
 
     fun postAnimationSpeed(speed: Float) = intent {
@@ -262,6 +282,8 @@ data class RootState(
     val systemWidgetRadius: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.systemWidgetRadius),
     val showExperimentClass: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.showExperimentClass),
     val hideWeekendCourse: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.hideWeekendCourse),
+    val enableAI: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.enableAI),
+    val enableCrashReport: MutableStateFlow<Boolean> = MutableStateFlow(AppSettingsMMKV.enableCrashReport),
     val animationSpeed: MutableStateFlow<Float> = MutableStateFlow(AppSettingsMMKV.animationSpeed)
 )
 

@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.settings.ai.list
+package top.kagg886.eoa.pages.main.settings.ai.manage.list
 
 import top.kagg886.eoa.util.BaseViewModel
 import org.orbitmvi.orbit.syntax.Syntax

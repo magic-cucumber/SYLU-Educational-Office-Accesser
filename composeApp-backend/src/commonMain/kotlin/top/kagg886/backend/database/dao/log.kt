@@ -38,6 +38,9 @@ interface AppLogDao {
     @Insert
     suspend fun insert(item: AppLog)
 
+    @Insert
+    suspend fun insertAll(items: List<AppLog>)
+
     @Query("DELETE FROM log")
     suspend fun clear()
 

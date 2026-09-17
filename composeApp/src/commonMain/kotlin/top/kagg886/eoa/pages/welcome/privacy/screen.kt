@@ -42,7 +42,7 @@ import top.kagg886.eoa.component.GuideScaffoldState
 import top.kagg886.eoa.component.Markdown
 import top.kagg886.eoa.component.rememberGuideScaffoldState
 import top.kagg886.eoa.pages.welcome.WelcomeScreen
-import top.kagg886.eoa.pages.welcome.done.WelcomeDoneRoute
+import top.kagg886.eoa.pages.welcome.collect.WelcomeCollectRoute
 
 @Serializable
 data object WelcomePrivacyRoute
@@ -86,7 +86,7 @@ fun WelcomePrivacyScreen() {
             title = { Text("隐私政策与用户协议") },
             backButton = { BackIconButton() },
             confirmButton = {
-                Button(onClick = { nav.navigate(WelcomeDoneRoute) }) {
+                Button(onClick = { nav.navigate(WelcomeCollectRoute) }) {
                     Text("同意并继续")
                 }
             },

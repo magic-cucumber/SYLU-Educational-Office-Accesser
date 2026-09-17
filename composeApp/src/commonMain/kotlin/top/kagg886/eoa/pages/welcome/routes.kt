@@ -15,6 +15,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import kotlinx.serialization.Serializable
+import top.kagg886.eoa.pages.welcome.collect.WelcomeCollectRoute
+import top.kagg886.eoa.pages.welcome.collect.WelcomeCollectScreen
 import top.kagg886.eoa.pages.welcome.home.WelcomeHomeRoute
 import top.kagg886.eoa.pages.welcome.home.WelcomeHomeScreen
 import top.kagg886.eoa.pages.welcome.privacy.WelcomePrivacyRoute
@@ -34,5 +36,6 @@ val installWelcomeGraph: NavGraphBuilder.() -> Unit = {
     composable<WelcomeHomeRoute> { WelcomeHomeScreen() }
     composable<WelcomeThemeRoute> { WelcomeThemeScreen() }
     composable<WelcomePrivacyRoute> { WelcomePrivacyScreen() }
+    composable<WelcomeCollectRoute> { WelcomeCollectScreen() }
     composable<WelcomeDoneRoute> { WelcomeDoneScreen() }
 }

@@ -10,7 +10,7 @@ import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsRoute
 import top.kagg886.eoa.pages.main.settings.advanced.AdvancedSettingsScreen
 import top.kagg886.eoa.pages.main.settings.ai.AISettingsRoute
 import top.kagg886.eoa.pages.main.settings.ai.installAISettingsRoute
-import top.kagg886.eoa.pages.main.settings.ai.list.AISettingsListRoute
+import top.kagg886.eoa.pages.main.settings.ai.summary.AISettingsSummaryRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsRoute
 import top.kagg886.eoa.pages.main.settings.appearance.AppearanceSettingsScreen
 import top.kagg886.eoa.pages.main.settings.feedback.FeedbackRoute
@@ -30,7 +30,7 @@ data object SettingsRoute
 val installSettingsGraph: NavGraphBuilder.() -> Unit = {
     composable<SettingListRoute> { SettingListScreen() }
     composable<AppearanceSettingsRoute> { AppearanceSettingsScreen() }
-    navigation<AISettingsRoute>(startDestination = AISettingsListRoute, builder = installAISettingsRoute)
+    navigation<AISettingsRoute>(startDestination = AISettingsSummaryRoute, builder = installAISettingsRoute)
     composable<SyncSettingsRoute> { SyncSettingsScreen() }
     composable<AdvancedSettingsRoute> { AdvancedSettingsScreen() }
     dialog<SettingsProfile>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SettingsProfileScreen() }

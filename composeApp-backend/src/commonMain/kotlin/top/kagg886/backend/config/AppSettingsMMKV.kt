@@ -45,6 +45,10 @@ object AppSettingsMMKV : MMKV by MMKV.mmkvWithID("app-settings", mode = MMKVMode
 
     override var hideWeekendCourse: Boolean by boolean("hide-weekend-course", true)
 
+    override var enableCrashReport: Boolean by boolean("enable-crash-report", false)
+
+    override var enableAI: Boolean by boolean("enable-ai", false)
+
     override var animationSpeed: Float by float("animation-speed", 1f)
 
     override var syncDuration: Duration by json("duration", 7.days, Json {
@@ -72,6 +76,10 @@ sealed interface AppSettingsMMKVType {
     var showExperimentClass: Boolean
 
     var hideWeekendCourse: Boolean
+
+    var enableCrashReport: Boolean
+
+    var enableAI: Boolean
 
     var animationSpeed: Float
 

@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.settings.ai.edit
+package top.kagg886.eoa.pages.main.settings.ai.manage.edit
 
 import ai.koog.http.client.ktor.KtorKoogHttpClient
 import ai.koog.prompt.dsl.prompt

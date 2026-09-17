@@ -34,6 +34,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import kotlinx.io.buffered
 import kotlinx.io.okio.asKotlinxIoRawSink
@@ -42,6 +43,8 @@ import kotlinx.serialization.Serializable
 import okio.ByteString.Companion.toByteString
 import okio.Path.Companion.toPath
 import okio.use
+import androidx.room3.withReadTransaction
+import androidx.room3.withWriteTransaction
 import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -50,13 +53,12 @@ import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
-import top.kagg886.backend.database.AppDatabase
-import top.kagg886.backend.database.databasePath
+import top.kagg886.backend.database.dao.*
+import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.util.Platform
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.cachePath
-import top.kagg886.util.copyTo
 import top.kagg886.util.createNewFile
 import top.kagg886.util.current
 import top.kagg886.util.delete
@@ -71,6 +73,21 @@ import kotlin.io.encoding.Base64
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
+
+private data class ReportDatabaseSnapshot(
+    val courses: List<CourseEntity>,
+    val courseRecords: List<CourseRecordEntity>,
+    val courseExtends: List<CourseExtendEntity>,
+    val exams: List<ExamEntity>,
+    val gpaSummaries: List<GPASummaryEntity>,
+    val gpaScores: List<GPAEntity>,
+    val secondClassSummaries: List<SecondClassSummaryEntity>,
+    val secondClassData: List<SecondClassDataEntity>,
+    val systemNotices: List<SystemNoticeEntity>,
+    val syncOverviews: List<SyncOverviewEntity>,
+    val syncCheckpoints: List<SyncCheckpointEntity>,
+    val llmProviders: List<LLMProviderEntity>,
+)
 
 class AppModel(private val crash: String) : ViewModel(),
     OrbitContainerHost<AppModelState, AppModelState, Unit> {
@@ -91,7 +108,7 @@ class AppModel(private val crash: String) : ViewModel(),
         orbitContainer(AppModelState.Initializing) {
             addCloseable(client)
 
-            if (AppSyncMMKV.profile == null) {
+            if (AppSyncMMKV.profile == null || !AppSettingsMMKV.enableCrashReport) {
                 reduce { AppModelState.CrashManually }
                 return@orbitContainer
             }
@@ -300,7 +317,147 @@ class AppModel(private val crash: String) : ViewModel(),
                 }
 
                 with(root.resolve("app.db")) {
-                    databasePath copyTo this
+                    val srcDB = databaseBuilder().build()
+                    val dstDB = databaseBuilder(this).build()
+
+                    try {
+                        val anonymizedTexts = mutableMapOf<String, String>()
+                        fun anonymize(value: String): String {
+                            if (value.isBlank()) return value
+                            return anonymizedTexts.getOrPut(value) {
+                                when {
+                                    value.length <= 2 -> "***${Uuid.random()}***"
+                                    else -> "${value.first()}***${Uuid.random()}***${value.last()}"
+                                }
+                            }
+                        }
+
+                        fun anonymizeDetail(detail: List<List<String>>): List<List<String>> =
+                            detail.map { row -> row.map(::anonymize) }
+
+                        fun hide(value: String): String = if (value.isBlank()) value else "***"
+
+                        val snapshot = srcDB.withReadTransaction {
+                            val secondClassSummaries = srcDB.secondClassDao().allSummary()
+                            ReportDatabaseSnapshot(
+                                courses = srcDB.courseDao().all(),
+                                courseRecords = srcDB.courseRecordDao().all(),
+                                courseExtends = srcDB.courseExtendDao().all(),
+                                exams = srcDB.examDao().all(),
+                                gpaSummaries = srcDB.gpaSummaryDao().all(),
+                                gpaScores = srcDB.gpaDao().all(),
+                                secondClassSummaries = secondClassSummaries,
+                                secondClassData = secondClassSummaries.flatMap { summary ->
+                                    srcDB.secondClassDao().allData(summary.id)
+                                },
+                                systemNotices = srcDB.noticeDao().all(includeAll = true),
+                                syncOverviews = srcDB.syncRecordDao().allOverviews(),
+                                syncCheckpoints = srcDB.syncRecordDao().allCheckpoints(),
+                                llmProviders = srcDB.llmProviderDao().all(),
+                            )
+                        }
+
+                        dstDB.withWriteTransaction {
+                            dstDB.courseDao().insertAll(
+                                snapshot.courses.map { course ->
+                                    course.copy(
+                                        name = anonymize(course.name),
+                                        teacherName = anonymize(course.teacherName),
+                                        classroomName = anonymize(course.classroomName),
+                                    )
+                                }
+                            )
+                            dstDB.courseExtendDao().insertAll(snapshot.courseExtends.map { course ->
+                                course.copy(
+                                    name = anonymize(course.name),
+                                    teacherName = anonymize(course.teacherName),
+                                )
+                            })
+                            dstDB.courseRecordDao().insertAll(snapshot.courseRecords)
+
+                            snapshot.exams.forEach { exam ->
+                                dstDB.examDao().insert(
+                                    exam.copy(
+                                        name = anonymize(exam.name),
+                                        teacherName = anonymize(exam.teacherName),
+                                        detail = anonymizeDetail(exam.detail),
+                                        submitTeacherName = anonymize(exam.submitTeacherName),
+                                    )
+                                )
+                            }
+
+                            snapshot.gpaSummaries.forEach { summary ->
+                                dstDB.gpaSummaryDao().insert(summary.copy(name = anonymize(summary.name)))
+                            }
+                            dstDB.gpaDao().insertAll(snapshot.gpaScores.map { score ->
+                                score.copy(name = anonymize(score.name))
+                            })
+
+                            snapshot.secondClassSummaries.forEach { summary ->
+                                dstDB.secondClassDao().insert(summary)
+                            }
+                            dstDB.secondClassDao().insertAll(snapshot.secondClassData.map { item ->
+                                item.copy(
+                                    name = anonymize(item.name),
+                                    sponsor = anonymize(item.sponsor),
+                                    actor = anonymize(item.actor),
+                                )
+                            })
+
+                            snapshot.systemNotices.forEach { notice ->
+                                dstDB.noticeDao().insert(
+                                    notice.copy(
+                                        title = anonymize(notice.title),
+                                        content = anonymize(notice.content),
+                                    )
+                                )
+                            }
+
+                            snapshot.syncOverviews.forEach { overview ->
+                                dstDB.syncRecordDao().insertOverview(overview)
+                            }
+                            snapshot.syncCheckpoints.forEach { checkpoint ->
+                                dstDB.syncRecordDao().upsertCheckpoint(
+                                    checkpoint.copy(
+                                        examPayload = null,
+                                        gpaPayload = null,
+                                    )
+                                )
+                            }
+
+                            snapshot.llmProviders.forEach { provider ->
+                                dstDB.llmProviderDao().insert(
+                                    provider.copy(
+                                        modelKey = hide(provider.modelKey),
+                                        baseUrl = hide(provider.baseUrl),
+                                        modelRemark = "",
+                                        modelDescription = "",
+                                    )
+                                )
+                            }
+                        }
+
+                        val logBatch = ArrayList<AppLog>(256)
+                        srcDB.log().collect { log ->
+                            logBatch += log
+                            if (logBatch.size >= 256) {
+                                val batch = logBatch.toList()
+                                logBatch.clear()
+                                dstDB.withWriteTransaction {
+                                    dstDB.appLogDao().insertAll(batch)
+                                }
+                            }
+                        }
+                        if (logBatch.isNotEmpty()) {
+                            dstDB.withWriteTransaction {
+                                dstDB.appLogDao().insertAll(logBatch)
+                            }
+                        }
+                    } finally {
+                        srcDB.close()
+                        dstDB.close()
+                    }
+
                 }
 
                 with(root.resolve("platform")) {

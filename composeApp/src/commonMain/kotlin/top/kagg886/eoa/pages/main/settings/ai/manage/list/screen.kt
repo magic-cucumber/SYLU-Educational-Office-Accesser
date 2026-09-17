@@ -1,4 +1,4 @@
-package top.kagg886.eoa.pages.main.settings.ai.list
+package top.kagg886.eoa.pages.main.settings.ai.manage.list
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,7 +30,7 @@ import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
-import top.kagg886.eoa.pages.main.settings.ai.edit.AISettingsEditRoute
+import top.kagg886.eoa.pages.main.settings.ai.manage.edit.AISettingsManagerEditRoute
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
 
@@ -41,12 +41,11 @@ import top.kagg886.eoa.util.currentLayoutType
  * ================================================
  */
 
-
 @Serializable
-data object AISettingsListRoute
+data object AISettingsManagerListRoute
 
 @Composable
-fun AISettingsScreen() = RevealContainer(3, AppInitializeMMKV::tutorialAISettings) {
+fun AISettingsManagerListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialAISettings) {
     MainScreen {
         val mainModel = mainViewModelOrNull() ?: return@MainScreen
         val model = viewModel {
@@ -100,7 +99,7 @@ private fun AISettingsContent(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { nav.navigate(AISettingsEditRoute()) },
+                onClick = { nav.navigate(AISettingsManagerEditRoute()) },
                 modifier = Modifier.revealableAutoMeasured(1, fabArrow) {
                     Text("点这里添加一个 AI 模型。")
                 },
@@ -168,7 +167,7 @@ private fun AISettingsContent(
                                     }
                                 ) {
                                     primaryAction {
-                                        clickable { nav.navigate(AISettingsEditRoute(provider.uuid)) }
+                                        clickable { nav.navigate(AISettingsManagerEditRoute(provider.uuid)) }
                                         icon { Icon(Icons.Default.Edit, contentDescription = "编辑") }
                                     }
                                     secondAction {

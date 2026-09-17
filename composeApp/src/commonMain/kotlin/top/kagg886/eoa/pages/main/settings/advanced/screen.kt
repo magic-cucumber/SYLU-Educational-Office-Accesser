@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Animation
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
@@ -40,9 +41,12 @@ fun AdvancedSettingsScreen() = MainScreen {
 
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
+    val enableCrashReport by rootState.enableCrashReport.collectAsState()
     val animationSpeed by rootState.animationSpeed.collectAsState()
 
     AdvancedSettingsScreenContent(
+        enableCrashReport = enableCrashReport,
+        onEnableCrashReportChanged = rootModel::postEnableCrashReportSetting,
         animationSpeed = animationSpeed,
         onAnimationSpeedChanged = {
             rootModel.postAnimationSpeed(it)
@@ -64,6 +68,8 @@ fun AdvancedSettingsScreen() = MainScreen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AdvancedSettingsScreenContent(
+    enableCrashReport: Boolean,
+    onEnableCrashReportChanged: (Boolean) -> Unit,
     animationSpeed: Float,
     onAnimationSpeedChanged: (Float) -> Unit,
     onLogcatClicked: () -> Unit,
@@ -125,6 +131,23 @@ private fun AdvancedSettingsScreenContent(
                     )
                 },
                 modifier = Modifier.clickable { animationSpeedDialog = true }
+            )
+
+            ListItem(
+                headlineContent = { Text("启用崩溃上传功能") },
+                supportingContent = { Text("应用崩溃时自动收集并加密上传崩溃信息") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.BugReport,
+                        contentDescription = "启用崩溃上传功能",
+                    )
+                },
+                trailingContent = {
+                    Switch(
+                        checked = enableCrashReport,
+                        onCheckedChange = onEnableCrashReportChanged,
+                    )
+                },
             )
 
             ListItem(

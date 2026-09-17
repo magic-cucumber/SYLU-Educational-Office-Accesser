@@ -95,6 +95,12 @@ interface SyncRecordDao {
     @Update
     suspend fun updateCheckpoint(record: SyncCheckpointEntity)
 
+    @Query("SELECT * FROM `sync-overviews` ORDER BY id ASC")
+    suspend fun allOverviews(): List<SyncOverviewEntity>
+
+    @Query("SELECT * FROM `sync-checkpoints` ORDER BY id ASC")
+    suspend fun allCheckpoints(): List<SyncCheckpointEntity>
+
     @Query(
         """
             SELECT *

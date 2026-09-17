@@ -309,11 +309,11 @@ private fun SettingScreenContent(
             )
 
             ListItem(
-                headlineContent = { Text("模型管理") },
+                headlineContent = { Text("AI管理") },
                 leadingContent = {
                     Icon(
                         Icons.Default.Psychology,
-                        contentDescription = "模型管理",
+                        contentDescription = "AI管理",
                     )
                 },
                 trailingContent = {
