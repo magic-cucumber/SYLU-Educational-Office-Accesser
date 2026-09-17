@@ -15,14 +15,16 @@
 			</array>
 		</dict>
 	</array>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>我们需要您的同意才能将图片保存到您的相册。</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>我们需要访问您的相册以供您选择照片进行编辑。</string>
-	<key>NSAppTransportSecurity</key>
+    <key>NSAppTransportSecurity</key>
     <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>xg.sylu.edu.cn</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
     </dict>
 </dict>
 </plist>

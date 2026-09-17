@@ -11,7 +11,8 @@
 		5AC637782FC28E29002EDA6F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AC637772FC28E29002EDA6F /* SwiftUI.framework */; };
 		5AC637832FC28E2A002EDA6F /* TodayCourseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5ADD07962F0F819700668CD4 /* ImageProcessing.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
+			A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
+			A93A955029CC810C00F8E227 /* LongShotScreenshotDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 		A93A954229CC810D00F8E227 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A954129CC810D00F8E227 /* Preview Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -62,7 +63,8 @@
 		5AC637772FC28E29002EDA6F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ImageProcessing.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953729CC810C00F8E227 /* SYLU-EOA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SYLU-EOA.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
+			A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
+			A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongShotScreenshotDelegate.swift; sourceTree = "<group>"; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A93A954129CC810D00F8E227 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -142,6 +144,7 @@
 			children = (
 				5A3311852F10883300B8BC53 /* iosApp.entitlements */,
 				A93A953A29CC810C00F8E227 /* iosApp.swift */,
+				A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */,
 				A93A953E29CC810D00F8E227 /* Assets.xcassets */,
 				A93A954029CC810D00F8E227 /* Preview Content */,
 			);
@@ -372,6 +375,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */,
+				A93A955029CC810C00F8E227 /* LongShotScreenshotDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -702,6 +706,8 @@
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "需要使用此权限来导出日历";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我们需要您的同意才能将图片保存到您的相册。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我们需要访问您的相册以供您选择照片进行编辑。";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -739,6 +745,8 @@
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = iosApp/Info.plist;
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "需要使用此权限来导出日历";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我们需要您的同意才能将图片保存到您的相册。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我们需要访问您的相册以供您选择照片进行编辑。";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
 				LD_RUNPATH_SEARCH_PATHS = (
