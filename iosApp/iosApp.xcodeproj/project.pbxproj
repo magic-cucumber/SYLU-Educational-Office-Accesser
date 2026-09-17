@@ -417,7 +417,7 @@
 				INFOPLIST_FILE = TodayCourseWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TodayCourseWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -461,7 +461,7 @@
 				INFOPLIST_FILE = TodayCourseWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TodayCourseWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -503,7 +503,7 @@
 				INFOPLIST_FILE = ImageProcessing/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ImageProcessing;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -546,7 +546,7 @@
 				INFOPLIST_FILE = ImageProcessing/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ImageProcessing;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -709,7 +709,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我们需要您的同意才能将图片保存到您的相册。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我们需要访问您的相册以供您选择照片进行编辑。";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -748,7 +748,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我们需要您的同意才能将图片保存到您的相册。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我们需要访问您的相册以供您选择照片进行编辑。";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

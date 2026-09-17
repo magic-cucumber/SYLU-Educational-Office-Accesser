@@ -228,6 +228,7 @@ private extension Kotlinx_datetimeLocalDateTime {
     }
 }
 
+@available(iOS 17.0, *)
 struct RefreshTodayCourseWidgetIntent: AppIntent {
     static var title: LocalizedStringResource = "刷新今日课程"
 
@@ -265,13 +266,15 @@ struct TodayCourseWidgetEntryView: View {
 
             Spacer()
 
-            Button(intent: RefreshTodayCourseWidgetIntent()) {
-                Image(systemName: "arrow.clockwise")
-                    .font(.caption.bold())
-                    .frame(width: 28, height: 28)
+            if #available(iOS 17.0, *) {
+                Button(intent: RefreshTodayCourseWidgetIntent()) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.caption.bold())
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("刷新今日课程")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("刷新今日课程")
         }
     }
 }
@@ -396,11 +399,4 @@ struct TodayCourseWidget: Widget {
         .supportedFamilies([.systemSmall])
         .contentMarginsDisabled()
     }
-}
-
-#Preview(as: .systemSmall) {
-    TodayCourseWidget()
-} timeline: {
-    CourseEntry(date: .now, state: .loading)
-    CourseEntry(date: .now, state: .courses(TodayClass.samples))
 }
