@@ -18,13 +18,18 @@
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSExceptionDomains</key>
-        <dict>
-            <key>xg.sylu.edu.cn</key>
-            <dict>
-                <key>NSExceptionAllowsInsecureHTTPLoads</key>
-                <true/>
-            </dict>
-        </dict>
-    </dict>
+		<dict>
+			<key>xg.sylu.edu.cn</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>jxw.sylu.edu.cn</key>
+			<dict>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
