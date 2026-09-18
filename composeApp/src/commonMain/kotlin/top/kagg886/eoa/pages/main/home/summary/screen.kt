@@ -717,6 +717,7 @@ private fun CourseItem(
                     key = key
                 ),
                 animatedVisibilityScope = LocalAnimatedContentScope.current,
+                resizeMode = RemeasureToBounds,
                 clipInOverlayDuringTransition = OverlayClip(cardShape)
             )
         }

@@ -91,6 +91,7 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
                 key = "exam-card-to-detail-${route.examId}"
             ),
             animatedVisibilityScope = LocalAnimatedContentScope.current,
+            resizeMode = RemeasureToBounds,
             clipInOverlayDuringTransition = OverlayClip(CardDefaults.shape)
         )
     )
