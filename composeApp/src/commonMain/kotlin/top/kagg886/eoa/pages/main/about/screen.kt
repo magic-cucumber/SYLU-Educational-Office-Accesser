@@ -327,7 +327,8 @@ private fun PolicyBottomSheet(onDismissRequest: () -> Unit) {
                         )
                         Spacer(
                             modifier = Modifier.height(
-                                BottomSheetDefaults.modalWindowInsets
+                                //BottomSheetDefaults.modalWindowInsets 在 android 中 不可用
+                                WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Top)
                                     .asPaddingValues()
                                     .calculateBottomPadding()
                             )
