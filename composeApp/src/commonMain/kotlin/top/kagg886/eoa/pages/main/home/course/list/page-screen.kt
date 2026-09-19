@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -59,6 +60,8 @@ import top.kagg886.eoa.component.course.CourseComponentHeader
 import top.kagg886.eoa.component.course.CourseLayout
 import top.kagg886.eoa.component.course.CourseTimelineScope
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.course.conflict.CourseConflictRoute
 import top.kagg886.eoa.pages.main.home.course.detail.CourseDetailRoute
@@ -443,6 +446,9 @@ private fun CourseTimelineScope.TimeAxis(
     val periodMode = showPeriods && period.isNotEmpty()
     Box(
         modifier = Modifier
+            .revealableAutoMeasured(3, ContainerArrow.End) {
+                Text("此处支持单击切换。\n单击卡片可以切换到时间轴模式，再次单击以回到节次模式")
+            }
             .fillMaxSize()
             .clickable(
                 interactionSource = null,
@@ -652,7 +658,7 @@ private fun CourseCalendarCard(
                 key = key
             ), animatedVisibilityScope = LocalAnimatedContentScope.current
         )
-    }.clip(shape).clickable(onClick = onClick)
+    }.clip(shape).clickable(onClick = onClick, interactionSource = MutableInteractionSource())
 
     Card(
         modifier = cardModifier, shape = shape, colors = CardDefaults.cardColors(

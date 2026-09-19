@@ -55,7 +55,7 @@ data object CourseListRoute
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun CourseListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCourseList) {
+fun CourseListScreen() = RevealContainer(4, AppInitializeMMKV::tutorialCourseList) {
     val nav = LocalNavController.current
     val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
