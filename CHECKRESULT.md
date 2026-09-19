@@ -158,16 +158,29 @@ Confidence: judgment-call
 
 Evidence:
 
-- `composeApp/src/commonMain/kotlin/top/kagg886/eoa/pages/main/about/screen.kt:126` 提供“赞赏我”，第 209 行弹窗显示 `Res.drawable.good`。
+- `composeApp/src/commonMain/kotlin/top/kagg886/eoa/pages/main/about/screen.kt:143` 提供“赞赏我”，第 251 行弹窗显示 `Res.drawable.good`。
 - `composeApp/src/commonMain/kotlin/top/kagg886/eoa/pages/welcome/done/screen.kt:167` 提供“捐赠作者”“支持项目持续更新”，也展示同一图片。
 - 已查看 `composeApp/src/commonMain/composeResources/drawable/good.jpg`，确为站外赞赏码；上述代码没有 iOS 排除条件。未发现 IAP 实现，也未发现赞赏后解锁权益。
 
 Why it matters: [3.1.1、3.2.1(vii)](https://developer.apple.com/app-store/review/guidelines/#business)区分开发者打赏、数字服务与纯个人赠与。此入口与应用维护相联系，能否适用个人赠与例外存在判断空间；不能仅因有二维码就断言违反 IAP。
 
-Fix: 最直接的提审方案是从 iOS 移除两个入口，或实现合适的 IAP 打赏。若保留，先核实收款主体、全部款项归属、无数字权益关联及目标商店适用规则，并在审核备注解释；本次未核实地区支付资格或实际交易。
+Fix: 最低风险方案是从 iOS 移除两个入口。若保留，须先核实收款人为个人、全部款项 100% 归该个人、打赏完全自愿且不解锁或关联任何数字内容/服务，并在审核备注解释；不满足这些条件时应改用合适的 IAP 或移除入口。
 
 > ## 处理进度：
-> 当前已完成风险审计与适用性分析，尚未移除 iOS 赞赏入口、实现 IAP 或完成例外适用性核实；问题未修复。
+>
+> 已完成风险审计，并准备在 App Review 备注中追加以下说明。注意：仅在提交前确认二维码收款人确为个人开发者、每笔款项 100% 归该个人且不提供任何数字权益时，才应使用该声明。
+>
+> **Additional App Review Remark (English):**
+>
+> This app includes an optional “Donate to the author” entry that displays a personal WeChat appreciation QR code. This is a completely voluntary person-to-person monetary gift to the individual developer. It is not a purchase, subscription, or payment for digital content or services. Donating does not unlock or enable any feature, content, functionality, account status, badge, priority, or other benefit; all app features remain available without donating. No digital content or service is provided in exchange for a gift, and 100% of each gift goes to the individual recipient. We understand Guideline 3.2.1(vii) to permit optional monetary gifts from one individual to another without In-App Purchase under these conditions. If App Review determines that this flow is not covered by that guideline, we will remove the donation entries from the iOS build.
+>
+> **中文翻译：**
+>
+> 本 App 提供一个可选的“捐赠作者”入口，显示作者个人的微信赞赏二维码。这是用户自愿向个人开发者进行的个人间货币赠与，不是购买、订阅，也不是购买数字内容或数字服务。捐赠不会解锁或启用任何功能、内容、账户状态、徽章、优先权或其他权益；不捐赠时，App 的全部功能仍然可用。捐赠不会换取任何数字内容或服务，且每笔赠与金额的 100% 均归个人收款人所有。我们理解，按照审核指南 3.2.1(vii)，在满足这些条件时，个人之间的自愿货币赠与无需使用 App 内购买项目。如果 App Review 认为该流程不属于该条款的适用范围，我们将从 iOS 版本中移除赞赏入口。
+>
+> **处理结果：**
+>
+> 已追加审核备注草案；代码尚未移除 iOS 入口，也未实现 IAP。当前结论不是“二维码必然违规”，而是“可能适用 3.2.1(vii)，但收款主体、100% 到账及无数字权益关联仍需提交前核实”；在 Apple 明确接受前，审核风险仍保留。
 
 ### 7. [5.1.2(i)] 后续从设置启用 AI 时，数据共享告知不足
 
@@ -186,7 +199,13 @@ Why it matters: [5.1.2(i)](https://developer.apple.com/app-store/review/guidelin
 Fix: 在后续首次启用/首次向新服务发送前，明确展示接收方域名及将发送的文字、图片和学期信息，提供明确同意/取消；保留撤回入口，在执行请求处检查授权状态。固定测试请求与真实个人数据请求分开说明，无需每次都重复弹窗。
 
 > ## 处理进度：
-> 当前已完成风险审计与问题定位，尚未补充后续启用 AI 及首次发送前的数据共享告知和确认；问题未修复。
+> 已完成后续从设置启用 AI 时的数据共享告知与明确确认：
+>
+> - `composeApp/src/commonMain/kotlin/top/kagg886/eoa/pages/main/settings/ai/summary/screen.kt:97-179` 使用 `BasicAlertDialog` 展示启用前说明，明确告知由用户配置的第三方 AI 服务商处理，并说明会上传图片、输入文本和本学期起止日期；同时说明 EOA 不存储数据及可随时关闭 AI。
+> - `screen.kt:87-94` 在对话框打开后执行 3 秒倒计时；`screen.kt:184-200` 倒计时期间确认按钮 disabled，结束后才显示“我已了解，启用 AI”。
+> - `screen.kt:184-189` 仅在用户点击确认后调用 `onEnableAIChanged(true)`；取消、返回或关闭对话框不会启用 AI。`screen.kt:236-245` 仅在开关从关闭切换为开启时弹窗，关闭 AI 则直接撤回启用状态。
+>
+> 根据当前 [Apple App Review Guidelines 5.1.2(i)](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing)，要求是在向第三方（包括第三方 AI）共享个人数据前，清楚披露共享对象和用途并取得明确许可；没有要求每次 AI 请求前重复弹窗。现有首次引导说明与本次“启用时”确认共同覆盖该风险，后续每次生成无需重复确认。
 
 ## 已检查但不新增拒审结论
 
