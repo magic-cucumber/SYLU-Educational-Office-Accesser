@@ -195,6 +195,7 @@ private fun CoursePageScreenContent(
                 initialScale = initialScale,
                 useNightMode = useNightMode,
                 hideWeekendCourse = hideWeekendCourse,
+                isCurrentPage = isCurrentPage,
                 longShotEnabled = isCurrentPage,
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
@@ -216,6 +217,7 @@ private fun CoursePageScreenSuccess(
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
+    isCurrentPage: Boolean,
     longShotEnabled: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
@@ -385,6 +387,7 @@ private fun CoursePageScreenSuccess(
                     timeline {
                         TimeAxis(
                             period = period,
+                            isCurrentPage = isCurrentPage,
                             tickIntervalMinutes = tickIntervalMinutes,
                             showPeriods = showPeriods,
                             onShowPeriodsChanged = { showPeriods = it })
@@ -438,6 +441,7 @@ private fun CoursePageScreenSuccess(
 
 @Composable
 private fun CourseTimelineScope.TimeAxis(
+    isCurrentPage: Boolean,
     showPeriods: Boolean,
     onShowPeriodsChanged: (Boolean) -> Unit,
     period: Map<Int, Pair<LocalTime, LocalTime>>,
@@ -446,8 +450,10 @@ private fun CourseTimelineScope.TimeAxis(
     val periodMode = showPeriods && period.isNotEmpty()
     Box(
         modifier = Modifier
-            .revealableAutoMeasured(3, ContainerArrow.End) {
-                Text("此处支持单击切换。\n单击卡片可以切换到时间轴模式，再次单击以回到节次模式")
+            .applyIf(isCurrentPage) {
+                revealableAutoMeasured(3, ContainerArrow.End) {
+                    Text("此处支持单击切换。\n单击卡片可以切换到时间轴模式，再次单击以回到节次模式")
+                }
             }
             .fillMaxSize()
             .clickable(

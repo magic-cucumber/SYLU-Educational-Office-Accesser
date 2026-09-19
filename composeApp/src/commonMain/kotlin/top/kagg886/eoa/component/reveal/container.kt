@@ -44,6 +44,7 @@ private val LocalRevealKeyRegistry =
 private typealias RevealOverlayContentFunction = @Composable (anchorBounds: IntRect) -> Unit
 
 private data class RevealOverlayRegistration(
+    val owner: Any? = null,
     val content: RevealOverlayContentFunction? = null,
     val anchorBounds: IntRect? = null,
 )
@@ -64,8 +65,11 @@ fun Modifier.revealableAutoMeasured(
     composed {
         val registry = LocalRevealKeyRegistry.current
         val state = LocalRevealState.current
+        val owner = remember(step, registry, state) { Any() }
+        val currentContent by rememberUpdatedState(content)
+        val currentArrow by rememberUpdatedState(arrow)
 
-        DisposableEffect(step, content, registry, arrow) {
+        DisposableEffect(step, registry, state, owner) {
             require(step >= 0) {
                 "step $step is not less than 0"
             }
@@ -74,40 +78,34 @@ fun Modifier.revealableAutoMeasured(
                 "step $step is not less than ${registry.size}"
             }
 
-            require(registry[step]?.content == null) {
-                "step $step is already registered revealable"
-            }
-
             val overlayContent: RevealOverlayContentFunction = { anchorBounds ->
                 MeasuredRevealBalloon(
                     anchorBounds = anchorBounds,
-                    arrow = arrow,
+                    arrow = currentArrow,
                     content = {
                         Box(
                             modifier = Modifier.padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            content()
+                            currentContent()
                         }
                     },
                 )
             }
 
-            registry[step] = registry.getValue(step).copy(content = overlayContent)
+            // Pager 的新页可能先注册，旧页随后才销毁；由新 owner 接管该步骤。
+            state.removeRevealable(step)
+            registry[step] = RevealOverlayRegistration(owner = owner, content = overlayContent)
             onDispose {
-                //此时registry[step].content不可控，如果仍为原对象就移除。
-                registry[step] = with(registry.getValue(step)) {
-                    if (this.content != overlayContent) return@onDispose
-                    this.copy(content = null)
-                }
+                if (registry[step]?.owner !== owner) return@onDispose
+                registry[step] = RevealOverlayRegistration()
+                state.removeRevealable(step)
             }
         }
 
-        DisposableEffect(step, state) {
-            onDispose { state.removeRevealable(step) }
-        }
-
         Modifier.onGloballyPositioned { coordinates ->
+            val registration = registry[step] ?: return@onGloballyPositioned
+            if (registration.owner !== owner) return@onGloballyPositioned
             // boundsInRoot 包含滚动容器等祖先的裁剪，再限制到根视口内。
             val clipped = coordinates.boundsInRoot()
             val rootSize = coordinates.findRootCoordinates().size
@@ -120,7 +118,7 @@ fun Modifier.revealableAutoMeasured(
             // 气泡位于 Popup 中，使用窗口坐标；高亮注册仍使用根坐标。
             val windowBounds =
                 bounds.translate(coordinates.findRootCoordinates().positionInWindow())
-            registry[step] = registry.getValue(step).copy(
+            registry[step] = registration.copy(
                 anchorBounds = if (bounds.isEmpty) null else IntRect(
                     left = windowBounds.left.roundToInt(),
                     top = windowBounds.top.roundToInt(),
