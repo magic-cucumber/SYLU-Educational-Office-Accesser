@@ -34,8 +34,9 @@ import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.DialogHost
 import androidx.navigation.compose.DialogNavigator
 import androidx.navigation.compose.LocalOwnersProvider
-import androidx.navigation.compose.internal.PredictiveBackHandler
 import kotlinx.coroutines.launch
+import top.kagg886.eoa.util.BackHandler
+import top.kagg886.eoa.util.PredictiveBackHandler
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmMultifileClass
 import kotlin.jvm.JvmName
@@ -347,55 +348,121 @@ internal fun NavHost(
 
     var progress by remember { mutableFloatStateOf(0f) }
     var inPredictiveBack by remember { mutableStateOf(false) }
-    PredictiveBackHandler(currentBackStack.size > 1) { backEvent ->
-        // This block handles the three phases of a predictive back gesture:
-        // 1. OnStarted: When the gesture begins.
-        // 2. OnProgressed: As the user drags their finger.
-        // 3. OnCompleted or OnCancelled: When the gesture finishes or is cancelled.
-        //
-        // Always guard with `currentBackStack.size > 1`:
-        // If `enabled` becomes stale (set false mid-frame while a gesture is in-flight),
-        // these checks prevent IndexOutOfBounds when accessing the stack.
 
-        var currentBackStackEntry: NavBackStackEntry? = null
+    var currentBackStackEntry by remember {
+        mutableStateOf<NavBackStackEntry?>(null)
+    }
+
+    var acceptPredictiveBack by remember {
+        mutableStateOf(false)
+    }
+
+    PredictiveBackHandler(
+        enabled = currentBackStack.size > 1,
 
         // --- OnStarted ---
-        if (currentBackStack.size > 1) {
-            progress = 0f
-            currentBackStackEntry = currentBackStack.lastOrNull()
-            composeNavigator.prepareForTransition(currentBackStackEntry!!)
-            val previousEntry = currentBackStack[currentBackStack.size - 2]
-            composeNavigator.prepareForTransition(previousEntry)
-        }
-        try {
-            backEvent.collect {
-                val goodEdge =
-                    limitBackGestureSwipeEdge == null || it.swipeEdge == limitBackGestureSwipeEdge
+        onBackStarted = { event ->
+            acceptPredictiveBack =
+                limitBackGestureSwipeEdge == null ||
+                        event.swipeEdge == limitBackGestureSwipeEdge
 
-                // --- OnProgressed ---
-                if (currentBackStack.size > 1) {
-                    inPredictiveBack = true
-                    if (goodEdge) {
-                        progress = it.progress
-                    } else {
-                        throw CancellationException(
-                            "The current edge is not allowed to perform back gesture."
-                        )
-                    }
+            if (acceptPredictiveBack && currentBackStack.size > 1) {
+                progress = 0f
+
+                currentBackStackEntry = currentBackStack.lastOrNull()
+
+                currentBackStackEntry?.let {
+                    composeNavigator.prepareForTransition(it)
+                }
+
+                composeNavigator.prepareForTransition(
+                    currentBackStack[currentBackStack.size - 2]
+                )
+            }
+        },
+
+        // --- OnProgressed ---
+        onBackProgressed = { event ->
+            if (acceptPredictiveBack && currentBackStack.size > 1) {
+                inPredictiveBack = true
+                progress = event.progress
+            }
+        },
+
+        // --- OnCancelled ---
+        onBackCancelled = {
+            if (currentBackStack.size > 1) {
+                inPredictiveBack = false
+            }
+
+            acceptPredictiveBack = false
+            currentBackStackEntry = null
+        },
+
+        // --- OnCompleted ---
+        onBack = {
+            if (acceptPredictiveBack && currentBackStack.size > 1) {
+                inPredictiveBack = false
+
+                currentBackStackEntry?.let {
+                    composeNavigator.popBackStack(it, false)
                 }
             }
-            // --- OnCompleted ---
-            if (currentBackStack.size > 1) {
-                inPredictiveBack = false
-                composeNavigator.popBackStack(currentBackStackEntry!!, false)
-            }
-        } catch (_: CancellationException) {
-            // --- OnCancelled ---
-            if (currentBackStack.size > 1) {
-                inPredictiveBack = false
-            }
+
+            acceptPredictiveBack = false
+            currentBackStackEntry = null
         }
-    }
+    )
+
+//    PredictiveBackHandler(currentBackStack.size > 1) { backEvent ->
+//        // This block handles the three phases of a predictive back gesture:
+//        // 1. OnStarted: When the gesture begins.
+//        // 2. OnProgressed: As the user drags their finger.
+//        // 3. OnCompleted or OnCancelled: When the gesture finishes or is cancelled.
+//        //
+//        // Always guard with `currentBackStack.size > 1`:
+//        // If `enabled` becomes stale (set false mid-frame while a gesture is in-flight),
+//        // these checks prevent IndexOutOfBounds when accessing the stack.
+//
+//        var currentBackStackEntry: NavBackStackEntry? = null
+//
+//        // --- OnStarted ---
+//        if (currentBackStack.size > 1) {
+//            progress = 0f
+//            currentBackStackEntry = currentBackStack.lastOrNull()
+//            composeNavigator.prepareForTransition(currentBackStackEntry!!)
+//            val previousEntry = currentBackStack[currentBackStack.size - 2]
+//            composeNavigator.prepareForTransition(previousEntry)
+//        }
+//        try {
+//            backEvent.collect {
+//                val goodEdge =
+//                    limitBackGestureSwipeEdge == null || it.swipeEdge == limitBackGestureSwipeEdge
+//
+//                // --- OnProgressed ---
+//                if (currentBackStack.size > 1) {
+//                    inPredictiveBack = true
+//                    if (goodEdge) {
+//                        progress = it.progress
+//                    } else {
+//                        throw CancellationException(
+//                            "The current edge is not allowed to perform back gesture."
+//                        )
+//                    }
+//                }
+//            }
+//            // --- OnCompleted ---
+//            if (currentBackStack.size > 1) {
+//                inPredictiveBack = false
+//                composeNavigator.popBackStack(currentBackStackEntry!!, false)
+//            }
+//        } catch (_: CancellationException) {
+//            // --- OnCancelled ---
+//            if (currentBackStack.size > 1) {
+//                inPredictiveBack = false
+//            }
+//        }
+//    }
 
     DisposableEffect(lifecycleOwner) {
         // Setup the navController with proper owners
