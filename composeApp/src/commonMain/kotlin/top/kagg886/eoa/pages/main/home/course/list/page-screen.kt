@@ -356,26 +356,35 @@ private fun CoursePageScreenSuccess(
                 timelineWidth = timeAxisWidth,
             )
             // Label centering belongs to this UI, not the reusable time coordinates.
+
+            var showPeriods by remember { mutableStateOf(true) }
             Box(Modifier.padding(top = timelineDividerOffset)) {
                 CourseLayout(
                     startTime = timelineRange.start,
                     endTime = timelineRange.end,
                     allowIsoWeekNumber = days,
                     timelineWidth = timeAxisWidth,
-                    modifier = Modifier.fillMaxWidth().height(timelineHeight).drawBehind {
-                        for (minute in timelineRange.marks(tickIntervalMinutes)) {
-                            val y = (minute - timelineRange.start.toSecondOfDay() / 60f) / timelineRange.durationMinutes * size.height
-                            drawLine(
-                                color = gridColor.copy(alpha = if (minute % MinutesPerHour == 0) 0.5f else 0.25f),
-                                start = Offset(timeAxisWidth.toPx(), y),
-                                end = Offset(size.width, y),
-                                strokeWidth = 1.dp.toPx(),
-                            )
+                    modifier = Modifier.fillMaxWidth().height(timelineHeight).applyIf(showPeriods) {
+                        drawBehind {
+                            for (minute in timelineRange.marks(tickIntervalMinutes)) {
+                                val y =
+                                    (minute - timelineRange.start.toSecondOfDay() / 60f) / timelineRange.durationMinutes * size.height
+                                drawLine(
+                                    color = gridColor.copy(alpha = if (minute % MinutesPerHour == 0) 0.5f else 0.25f),
+                                    start = Offset(timeAxisWidth.toPx(), y),
+                                    end = Offset(size.width, y),
+                                    strokeWidth = 1.dp.toPx(),
+                                )
+                            }
                         }
                     },
                 ) {
                     timeline {
-                        TimeAxis(period = period, tickIntervalMinutes = tickIntervalMinutes)
+                        TimeAxis(
+                            period = period,
+                            tickIntervalMinutes = tickIntervalMinutes,
+                            showPeriods = showPeriods,
+                            onShowPeriodsChanged = { showPeriods = it })
                     }
                     for (day in days) {
                         for (course in currentWeekCourse[day].orEmpty()) {
@@ -426,13 +435,12 @@ private fun CoursePageScreenSuccess(
 
 @Composable
 private fun CourseTimelineScope.TimeAxis(
+    showPeriods: Boolean,
+    onShowPeriodsChanged: (Boolean) -> Unit,
     period: Map<Int, Pair<LocalTime, LocalTime>>,
     tickIntervalMinutes: Int,
 ) {
-    //period为空（未同步过节次信息）时固定为时钟刻度视图，且不允许切换
-    var showPeriods by rememberSaveable { mutableStateOf(true) }
     val periodMode = showPeriods && period.isNotEmpty()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -440,7 +448,7 @@ private fun CourseTimelineScope.TimeAxis(
                 interactionSource = null,
                 indication = null,
                 enabled = period.isNotEmpty(),
-            ) { showPeriods = !showPeriods },
+            ) { onShowPeriodsChanged(!showPeriods) },
     ) {
         AnimatedContent(
             targetState = periodMode,
