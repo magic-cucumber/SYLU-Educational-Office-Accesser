@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.zip
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
@@ -179,7 +180,8 @@ class CoursePageViewModel(
                             DateTimeUnit.WEEK
                         ),
                         currentWeekCourse = data,
-                        currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
+                        currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+                        period = AppSyncMMKV.period
                     )
                 }
             }
@@ -212,7 +214,8 @@ sealed interface CoursePageState {
     data class Success(
         val thisWeekStartDate: LocalDate,
         val currentDate: LocalDate,
-        val currentWeekCourse: Map<Int, List<TodayClass>> //key为星期几，值为 该天的所有课程
+        val currentWeekCourse: Map<Int, List<TodayClass>>, //key为星期几，值为 该天的所有课程
+        val period: Map<Int, Pair<LocalTime, LocalTime>>, //节次信息
     ) : CoursePageState
 }
 

@@ -475,6 +475,21 @@ internal class EOAGraduateClient : EOAClient {
         )
     }
 
+    override suspend fun getDayPeriod(): Map<Int, Pair<LocalTime, LocalTime>> = mapOf(
+        1 to (LocalTime.parse("08:00") to LocalTime.parse("08:45")),
+        2 to (LocalTime.parse("08:55") to LocalTime.parse("09:40")),
+        3 to (LocalTime.parse("10:00") to LocalTime.parse("10:45")),
+        4 to (LocalTime.parse("10:55") to LocalTime.parse("11:40")),
+        5 to (LocalTime.parse("13:00") to LocalTime.parse("13:45")),
+        6 to (LocalTime.parse("13:55") to LocalTime.parse("14:40")),
+        7 to (LocalTime.parse("14:50") to LocalTime.parse("15:35")),
+        8 to (LocalTime.parse("15:45") to LocalTime.parse("16:30")),
+        9 to (LocalTime.parse("16:40") to LocalTime.parse("17:25")),
+        10 to (LocalTime.parse("17:35") to LocalTime.parse("18:20")),
+        11 to (LocalTime.parse("19:30") to LocalTime.parse("20:15")),
+        12 to (LocalTime.parse("20:25") to LocalTime.parse("21:10")),
+    )
+
     override suspend fun getExamList(picker: TermPicker): List<ExamItem> = listOf()
 
     override suspend fun getExamInfo(examItem: ExamItem): List<List<String>> = listOf()

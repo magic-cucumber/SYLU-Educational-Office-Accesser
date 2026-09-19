@@ -313,6 +313,7 @@ class MainRouteViewModel(val database: AppDatabase) :
             if (session.checkpoint.termSuccess) return@runOn
             reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingTermData) }
             AppSyncMMKV.picker = session.client.getAllAvailableTerms()
+            AppSyncMMKV.period = session.client.getDayPeriod()
             session.commit({ it.copy(termSuccess = true) })
             logger.i("成功同步学期信息")
         }

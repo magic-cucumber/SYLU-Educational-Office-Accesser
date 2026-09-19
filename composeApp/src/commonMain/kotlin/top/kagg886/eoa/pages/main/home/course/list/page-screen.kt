@@ -1,8 +1,15 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -17,6 +24,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -180,6 +188,7 @@ private fun CoursePageScreenContent(
                 thisWeekStartDate = state.thisWeekStartDate,
                 currentDate = state.currentDate,
                 currentWeekCourse = state.currentWeekCourse,
+                period = state.period,
                 initialScale = initialScale,
                 useNightMode = useNightMode,
                 hideWeekendCourse = hideWeekendCourse,
@@ -199,6 +208,7 @@ private fun CoursePageScreenSuccess(
     thisWeekStartDate: LocalDate,
     currentDate: LocalDate,
     currentWeekCourse: Map<Int, List<TodayClass>>,
+    period: Map<Int, Pair<LocalTime, LocalTime>>,
     initialScale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
@@ -325,51 +335,10 @@ private fun CoursePageScreenSuccess(
             }
         }
 
-        val timelineRange = remember(currentWeekCourse) {
-            val courses = currentWeekCourse.values.flatten()
-            val defaultStart = LocalTime(8, 0)
-            val defaultEnd = LocalTime(22, 0)
-
-            //保护课程为空的情况下使用minOf会crash的bug，这种情况为一周都没有课程
-            if (courses.isEmpty()) {
-                return@remember TimelineRange(
-                    defaultStart,defaultEnd
-                )
-            }
-
-            val earliest = courses.minOf { course ->
-                when (course) {
-                    is TodayClass.Single -> minOf(
-                        course.date.first.time,
-                        course.fullDate.first.time,
-                    )
-
-                    else -> course.date.first.time
-                }
-            }
-
-            val latest = courses.maxOf { course ->
-                when (course) {
-                    is TodayClass.Single -> maxOf(
-                        course.date.second.time,
-                        course.fullDate.second.time,
-                    )
-
-                    else -> course.date.second.time
-                }
-            }
-
-            //对最早课程和最晚课程取约束
-            val start = minOf(defaultStart, earliest)
-            val end = maxOf(defaultEnd, latest)
-
-            TimelineRange(
-                start = start,
-                end = end
-            )
-        }
+        val timelineRange = remember(currentWeekCourse) { timelineRangeOf(currentWeekCourse) }
 
         val scale = zoomState.scale
+        //网格线横跨所有日期列，只能画在 CourseLayout 上；刻度间隔在此算好，同时用于网格与 TimeAxis
         val tickIntervalMinutes = when {
             scale >= zoomState.maxScale -> 15
             scale >= 1f -> 30
@@ -406,7 +375,7 @@ private fun CoursePageScreenSuccess(
                     },
                 ) {
                     timeline {
-                        TimeAxis(timelineRange, tickIntervalMinutes)
+                        TimeAxis(period = period, tickIntervalMinutes = tickIntervalMinutes)
                     }
                     for (day in days) {
                         for (course in currentWeekCourse[day].orEmpty()) {
@@ -456,7 +425,100 @@ private fun CoursePageScreenSuccess(
 }
 
 @Composable
-private fun CourseTimelineScope.TimeAxis(range: TimelineRange, tickIntervalMinutes: Int) {
+private fun CourseTimelineScope.TimeAxis(
+    period: Map<Int, Pair<LocalTime, LocalTime>>,
+    tickIntervalMinutes: Int,
+) {
+    //period为空（未同步过节次信息）时固定为时钟刻度视图，且不允许切换
+    var showPeriods by rememberSaveable { mutableStateOf(true) }
+    val periodMode = showPeriods && period.isNotEmpty()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                enabled = period.isNotEmpty(),
+            ) { showPeriods = !showPeriods },
+    ) {
+        AnimatedContent(
+            targetState = periodMode,
+            modifier = Modifier.fillMaxSize(),
+            transitionSpec = {
+                (slideInHorizontally(tween(280)) { -it / 4 } + fadeIn(tween(280)))
+                    .togetherWith(slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280)))
+            },
+            label = "TimeAxisMode",
+        ) { isPeriodMode ->
+            //内部Box填满整个轴列，与外层Box同边界，子组件的align/offset语义不变
+            Box(Modifier.fillMaxSize()) {
+                //嵌套lambda的receiver遮蔽了外层CourseTimelineScope，需显式取回
+                with(this@TimeAxis) {
+                    if (isPeriodMode) {
+                        PeriodLabels(period)
+                    } else {
+                        ClockTickLabels(TimelineRange(startTime, endTime), tickIntervalMinutes)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 节次视图（默认）：每个节次一个块，显示节次号与起止时间。 */
+@Composable
+private fun CourseTimelineScope.PeriodLabels(
+    period: Map<Int, Pair<LocalTime, LocalTime>>,
+) {
+    //沿用MonthHeader的filled tonal风格，略降alpha让层级低于列头
+    val containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+    val contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    for ((index, time) in period) {
+        val (start, end) = time
+        //只渲染完整落在可视区间内的节次；区间外的offsetOf会越界
+        if (start < startTime || end > endTime) continue
+        val top = offsetOf(start)
+        val height = offsetOf(end) - top
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = top)
+                .fillMaxWidth()
+                .height(height)
+                .background(containerColor, RoundedCornerShape(10.dp)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = index.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = contentColor,
+                maxLines = 1,
+            )
+            //缩放过矮时只显示节次号，避免时间文字溢出到相邻块
+            if (height >= 56.dp) {
+                Text(
+                    text = start.toTimeLabel(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor.copy(alpha = 0.75f),
+                    maxLines = 1,
+                )
+                Text(
+                    text = end.toTimeLabel(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor.copy(alpha = 0.75f),
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+}
+
+/** 时钟刻度视图：原 TimeAxis 逻辑。 */
+@Composable
+private fun CourseTimelineScope.ClockTickLabels(range: TimelineRange, tickIntervalMinutes: Int) {
     val halfLabelHeight = with(LocalDensity.current) {
         MaterialTheme.typography.labelSmall.lineHeight.toDp() / 2
     }
@@ -474,6 +536,48 @@ private fun CourseTimelineScope.TimeAxis(range: TimelineRange, tickIntervalMinut
             textAlign = TextAlign.Center,
         )
     }
+}
+
+private fun timelineRangeOf(currentWeekCourse: Map<Int, List<TodayClass>>): TimelineRange {
+    val courses = currentWeekCourse.values.flatten()
+    val defaultStart = LocalTime(8, 0)
+    val defaultEnd = LocalTime(22, 0)
+
+    //保护课程为空的情况下使用minOf会crash的bug，这种情况为一周都没有课程
+    if (courses.isEmpty()) {
+        return TimelineRange(defaultStart, defaultEnd)
+    }
+
+    val earliest = courses.minOf { course ->
+        when (course) {
+            is TodayClass.Single -> minOf(
+                course.date.first.time,
+                course.fullDate.first.time,
+            )
+
+            else -> course.date.first.time
+        }
+    }
+
+    val latest = courses.maxOf { course ->
+        when (course) {
+            is TodayClass.Single -> maxOf(
+                course.date.second.time,
+                course.fullDate.second.time,
+            )
+
+            else -> course.date.second.time
+        }
+    }
+
+    //对最早课程和最晚课程取约束
+    val start = minOf(defaultStart, earliest)
+    val end = maxOf(defaultEnd, latest)
+
+    return TimelineRange(
+        start = start,
+        end = end
+    )
 }
 
 private fun interpolateTime(start: LocalTime, end: LocalTime, progress: Float): LocalTime {
@@ -816,6 +920,14 @@ private fun Int.toTimeLabel(): String {
     val hour = this / MinutesPerHour
     val minute = this % MinutesPerHour
 
+    return buildString {
+        append(hour.toString().padStart(2, '0'))
+        append(':')
+        append(minute.toString().padStart(2, '0'))
+    }
+}
+
+private fun LocalTime.toTimeLabel(): String {
     return buildString {
         append(hour.toString().padStart(2, '0'))
         append(':')
