@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.top.kagg886.eoa.iosApp.shared</string>
+		<string>group.top.kagg886.eoa.ios.shared</string>
 	</array>
 </dict>
 </plist>

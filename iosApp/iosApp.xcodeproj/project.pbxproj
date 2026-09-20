@@ -11,10 +11,10 @@
 		5AC637782FC28E29002EDA6F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5AC637772FC28E29002EDA6F /* SwiftUI.framework */; };
 		5AC637832FC28E2A002EDA6F /* TodayCourseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5ADD07962F0F819700668CD4 /* ImageProcessing.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-			A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
-			A93A955029CC810C00F8E227 /* LongShotScreenshotDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */; };
+		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 		A93A954229CC810D00F8E227 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A954129CC810D00F8E227 /* Preview Assets.xcassets */; };
+		A93A955029CC810C00F8E227 /* LongShotScreenshotDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,10 +63,10 @@
 		5AC637772FC28E29002EDA6F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ImageProcessing.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953729CC810C00F8E227 /* SYLU-EOA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SYLU-EOA.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-			A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
-			A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongShotScreenshotDelegate.swift; sourceTree = "<group>"; };
+		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A93A954129CC810D00F8E227 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongShotScreenshotDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -407,9 +407,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TodayCourseWidget/TodayCourseWidget.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "${TEAM_ID}";
+				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -431,8 +432,9 @@
 					"\"ComposeAppBackend\"",
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp.TodayCourseWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.ios.TodayCourseWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -451,9 +453,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TodayCourseWidget/TodayCourseWidget.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../composeApp-backend/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -475,8 +478,9 @@
 					"\"ComposeAppBackend\"",
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp.TodayCourseWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.ios.TodayCourseWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -494,7 +498,7 @@
 				CODE_SIGN_ENTITLEMENTS = ImageProcessing/ImageProcessing.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../widgetApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -517,7 +521,7 @@
 					"\"WidgetApp\"",
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp.ImageProcessing;
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.ios.ImageProcessing;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -537,7 +541,7 @@
 				CODE_SIGN_ENTITLEMENTS = ImageProcessing/ImageProcessing.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../widgetApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -560,7 +564,7 @@
 					"\"WidgetApp\"",
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp.ImageProcessing;
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.ios.ImageProcessing;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -699,12 +703,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
-				DEVELOPMENT_TEAM = "${TEAM_ID}";
+				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "需要读取和写入日历，以清除并导出课程安排";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "需要使用此权限来导出日历";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我们需要您的同意才能将图片保存到您的相册。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我们需要访问您的相册以供您选择照片进行编辑。";
@@ -721,7 +726,7 @@
 					"\"ComposeApp\"",
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp;
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.ios;
 				PRODUCT_NAME = "SYLU-EOA";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -738,12 +743,13 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "\"$(SRCROOT)/../composeApp/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)\"";
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "需要读取和写入日历，以清除并导出课程安排";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "需要使用此权限来导出日历";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "我们需要您的同意才能将图片保存到您的相册。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "我们需要访问您的相册以供您选择照片进行编辑。";
@@ -760,7 +766,7 @@
 					"\"ComposeApp\"",
 					"-lsqlite3",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.iosApp;
+				PRODUCT_BUNDLE_IDENTIFIER = top.kagg886.eoa.ios;
 				PRODUCT_NAME = "SYLU-EOA";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
