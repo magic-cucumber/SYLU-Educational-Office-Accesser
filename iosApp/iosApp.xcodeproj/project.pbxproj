@@ -12,10 +12,10 @@
 		5AC637832FC28E2A002EDA6F /* TodayCourseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5AC637742FC28E29002EDA6F /* TodayCourseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5ADD07962F0F819700668CD4 /* ImageProcessing.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
-		B7D2F4E00000000000000003 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B7D2F4E00000000000000002 /* PrivacyInfo.xcprivacy */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 		A93A954229CC810D00F8E227 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A954129CC810D00F8E227 /* Preview Assets.xcassets */; };
 		A93A955029CC810C00F8E227 /* LongShotScreenshotDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */; };
+		B7D2F4E00000000000000003 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B7D2F4E00000000000000002 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,11 +65,11 @@
 		5ADD078C2F0F819700668CD4 /* ImageProcessing.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ImageProcessing.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953729CC810C00F8E227 /* SYLU-EOA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SYLU-EOA.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
-		B7D2F4E00000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A93A954129CC810D00F8E227 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongShotScreenshotDelegate.swift; sourceTree = "<group>"; };
 		B7D2F4E00000000000000001 /* Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Generated.xcconfig; sourceTree = "<group>"; };
+		B7D2F4E00000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
