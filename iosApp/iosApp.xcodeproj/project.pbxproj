@@ -67,6 +67,7 @@
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A93A954129CC810D00F8E227 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A93A955129CC810C00F8E227 /* LongShotScreenshotDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongShotScreenshotDelegate.swift; sourceTree = "<group>"; };
+		B7D2F4E00000000000000001 /* Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Generated.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -122,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				A93A953929CC810C00F8E227 /* iosApp */,
+				B7D2F4E00000000000000001 /* Generated.xcconfig */,
 				5ADD078D2F0F819700668CD4 /* ImageProcessing */,
 				5AC637792FC28E29002EDA6F /* TodayCourseWidget */,
 				A93A953829CC810C00F8E227 /* Products */,
@@ -696,12 +698,12 @@
 		};
 		A93A954629CC810D00F8E227 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B7D2F4E00000000000000001 /* Generated.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_PREVIEWS = YES;
@@ -719,7 +721,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
@@ -736,12 +737,12 @@
 		};
 		A93A954729CC810D00F8E227 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B7D2F4E00000000000000001 /* Generated.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = P8ALPJP4KH;
 				ENABLE_PREVIEWS = YES;
@@ -759,7 +760,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",

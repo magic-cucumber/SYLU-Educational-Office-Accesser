@@ -12,6 +12,7 @@ captures
 local.properties
 xcuserdata/
 Pods/
+iosApp/Generated.xcconfig
 *.gpg
 *yarn.lock
 .ace-tool/

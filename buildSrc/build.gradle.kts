@@ -26,3 +26,12 @@ dependencies {
     api(libs.compose.multiplatfrom.gradle.plugin)
     api(libs.kotlin.compose.compiler.gradle.plugin)
 }
+
+gradlePlugin {
+    plugins {
+        create("iosXcconfig") {
+            id = "top.kagg886.ios-xcconfig"
+            implementationClass = "top.kagg886.build.IosXcconfigPlugin"
+        }
+    }
+}

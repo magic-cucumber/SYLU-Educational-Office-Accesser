@@ -1,4 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import top.kagg886.build.GenerateIosXcconfigTask
+import top.kagg886.build.IosXcconfigExtension
 import java.io.BufferedOutputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -12,8 +14,16 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
     id("com.android.kotlin.multiplatform.library")
+    id("top.kagg886.ios-xcconfig")
     alias(libs.plugins.kotlinx.serialization)
     id("com.google.osdetector") version "1.7.3"
+}
+
+val iosXcconfig = extensions.getByType<IosXcconfigExtension>()
+val generateIosAppXcconfig = tasks.register<GenerateIosXcconfigTask>("generateIosAppXcconfig") {
+    marketingVersion.set(appVersion)
+    currentProjectVersion.set(appVersionCode)
+    outputFile.set(iosXcconfig.outputFile)
 }
 
 kotlin {
@@ -216,6 +226,7 @@ fun ipaArguments(
 val buildReleaseArchive = tasks.register("buildReleaseArchive", Exec::class) {
     group = "build"
     description = "Builds the iOS framework for Release"
+    dependsOn(generateIosAppXcconfig)
     workingDir(rootProject.file("iosApp"))
 
     val output = layout.buildDirectory.dir("archives/release/iosApp.xcarchive")
