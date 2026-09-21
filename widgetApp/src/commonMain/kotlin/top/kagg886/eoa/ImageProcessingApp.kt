@@ -34,6 +34,7 @@ import io.github.vinceglb.filekit.saveImageToGallery
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
+import top.kagg886.backend.config.AppLoginPropertiesInternalMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
@@ -115,7 +116,7 @@ fun ImageProcessingApp(
                                     )
                                     return@ProvideTextStyle
                                 }
-                                Text(AppLoginPropertiesMMKV.username)
+                                Text(AppLoginPropertiesInternalMMKV.username)
                                 Text(AppSyncMMKV.profile!!.name)
                             }
                         }
