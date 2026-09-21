@@ -26,6 +26,12 @@ val generateIosAppXcconfig = tasks.register<GenerateIosXcconfigTask>("generateIo
     outputFile.set(iosXcconfig.outputFile)
 }
 
+tasks.configureEach {
+    if (name == "embedAndSignAppleFrameworkForXcode") {
+        dependsOn(generateIosAppXcconfig)
+    }
+}
+
 kotlin {
     library(
         module = "eoa",
