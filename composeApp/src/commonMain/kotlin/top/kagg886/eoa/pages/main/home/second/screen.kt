@@ -456,7 +456,7 @@ private fun SecondClassScreenContent(
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 val (_, value) = entries[page]
                 val state = rememberLazyListState()
-                LazyColumn(state = state, modifier = Modifier.miuiLongShotSupport(state)) {
+                LazyColumn(state = state, modifier = Modifier.fillMaxSize().miuiLongShotSupport(state)) {
                     items(value) { item ->
                         ListItem(
                             headlineContent = { Text(item.name) },

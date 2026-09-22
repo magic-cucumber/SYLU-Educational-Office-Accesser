@@ -110,10 +110,6 @@ class RootViewModel(database: AppDatabase) :
                                 EOAHomeModule.GPA, EOAHomeModule.SECOND, EOAHomeModule.EXAM,
                             )
 
-                            "top.kagg886.sylu_eoa.api.test.EOATestClientProvider" -> setOf(
-                                EOAHomeModule.SECOND
-                            )
-
                             else -> setOf()
                         }
                     )
