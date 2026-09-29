@@ -1,11 +1,11 @@
 # 安装
 
-EOA 目前提供 Android 和 iOS 两种安装方式。Android 可以直接安装，iOS 需要多走几步。
+EOA 支持 Android 和 iOS。Android 可以直接安装；iPhone 推荐通过 TestFlight 安装。
 
 ::: tip 版本支持
 本应用支持 Android 6 及以上版本，以及 iOS 16.2 及以上版本。
 
-Android 需要按照自己的系统版本选择不同的安装包；iOS 只需要下载 `ios.ipa`，再按照[下面的教程](#ios)安装。
+Android 需要按照自己的系统版本选择安装包；iPhone 可以按照[下面的步骤](#ios)安装。
 :::
 
 ::: danger 旧系统无法使用
@@ -50,10 +50,25 @@ Android 可以直接下载安装包。安装前先确认自己的系统版本，
 打开“设置”，进入“通用”，再进入“关于本机”，查看“iOS 版本”。
 :::
 
-1. 下载 [`ios.ipa`](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/ios.ipa)。
-2. 打开这个教程：<https://livecontainer.github.io/zh-CN/docs/installation/lc_sidestore#%E6%96%B9%E6%B3%95-2iloader>
-3. 按照教程里的“方法 2：iLoader”步骤，把 `ios.ipa` 安装到手机上。
+### 使用 TestFlight（推荐）
 
-::: tip 提示
-iOS 目前需要通过侧载方式安装。苹果开发者账号年费为 688 RMB，之后会考虑上架 App Store。上架后，大家就可以直接在 App Store 搜索本应用并下载安装。
-:::
+1. 在 iPhone 上打开 [EOA 的 TestFlight 邀请页面](https://testflight.apple.com/join/PpvGHsA6)。
+2. 如果还没有 TestFlight，先到 App Store 搜索并安装 **TestFlight**，再回到邀请页面。
+
+   ![App Store 中的 TestFlight](./install.assets/IMG_5264.png)
+
+3. 在邀请页面点击“在 TestFlight 中查看”。
+
+   ![邀请页面中的查看按钮](./install.assets/IMG_5263.png)
+
+4. 打开 TestFlight 后，找到 **SYLU - EOA**，点击“安装”。装好后就可以打开使用了。
+
+   ![TestFlight 中的 EOA 安装页面](./install.assets/IMG_5262.png)
+
+### 自签安装
+
+如果无法使用 TestFlight，也可以自行安装：
+
+1. 下载 [`ios.ipa`](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/ios.ipa)。
+2. 打开[安装教程](https://livecontainer.github.io/zh-CN/docs/installation/lc_sidestore#%E6%96%B9%E6%B3%95-2iloader)。
+3. 按照教程中的“方法 2：iLoader”，把 `ios.ipa` 安装到 iPhone 上。
