@@ -1,6 +1,7 @@
 package top.kagg886.eoa.component.drawer
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
@@ -9,6 +10,7 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
@@ -33,6 +35,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,8 +48,12 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -54,7 +61,8 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.util.BackHandler
+import top.kagg886.eoa.util.PredictiveBackHandler
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -72,10 +80,19 @@ fun DrawerSheetPageScaffold(
 ) {
     Box(Modifier.fillMaxSize()) {
         val navigation = LocalNavController.current
+        val owner = LocalLifecycleOwner.current
+        val entry = remember(navigation, owner) {
+            owner as? NavBackStackEntry ?: navigation.currentBackStackEntry
+        }
+        val currentEntry by navigation.currentBackStackEntryAsState()
         val scope = rememberCoroutineScope()
         var closeRequested by remember { mutableStateOf(false) }
+        var predictiveBackOffset by remember { mutableStateOf<Float?>(null) }
+        var predictiveBackStartOffset by remember { mutableFloatStateOf(0f) }
+        var predictiveBackInProgress by remember { mutableStateOf(false) }
+        var predictiveBackAnimationJob by remember { mutableStateOf<Job?>(null) }
         fun requestClose(): Boolean {
-            if (closeRequested) return false
+            if (closeRequested || entry == null || navigation.currentBackStackEntry != entry) return false
             closeRequested = true
             navigation.popBackStack()
             return true
@@ -102,7 +119,7 @@ fun DrawerSheetPageScaffold(
             var hasBeenVisible = false
             snapshotFlow {
                 Triple(
-                    isDragging,
+                    isDragging || predictiveBackInProgress,
                     draggableState.targetValue,
                     draggableState.settledValue
                 )
@@ -120,6 +137,7 @@ fun DrawerSheetPageScaffold(
 
         val onClose: () -> Unit = {
             if (
+                !predictiveBackInProgress &&
                 draggableState.settledValue != DrawerPosition.Closed &&
                 requestClose()
             ) {
@@ -129,8 +147,57 @@ fun DrawerSheetPageScaffold(
             }
         }
 
-        BackHandler(enabled = draggableState.settledValue != DrawerPosition.Closed) {
-            onClose()
+        fun updatePredictiveBack(progress: Float) {
+            val closedOffset = draggableState.anchors.positionOf(DrawerPosition.Closed)
+            if (closedOffset.isNaN()) return
+            predictiveBackOffset = predictiveBackStartOffset +
+                    (closedOffset - predictiveBackStartOffset) * progress.coerceIn(0f, 1f)
+        }
+
+        fun finishPredictiveBack(commit: Boolean) {
+            if (!predictiveBackInProgress) return
+            predictiveBackAnimationJob?.cancel()
+            predictiveBackAnimationJob = scope.launch {
+                val closedOffset = draggableState.anchors.positionOf(DrawerPosition.Closed)
+                val startOffset = predictiveBackOffset ?: draggableState.requireOffset()
+                val endOffset = if (commit) closedOffset else draggableState.requireOffset()
+                val fullDistance = abs(closedOffset - predictiveBackStartOffset)
+                val remainingFraction = if (fullDistance > 0f) {
+                    (abs(endOffset - startOffset) / fullDistance).coerceIn(0f, 1f)
+                } else 1f
+                animate(
+                    startOffset,
+                    endOffset,
+                    animationSpec = tween(
+                        durationMillis = (320 * remainingFraction).roundToInt().coerceAtLeast(1),
+                        easing = FastOutSlowInEasing
+                    )
+                ) { value, _ -> predictiveBackOffset = value }
+                if (commit) {
+                    draggableState.snapTo(DrawerPosition.Closed)
+                    // Retain the closed preview until the host removes this destination.
+                    requestClose()
+                } else {
+                    predictiveBackOffset = null
+                }
+                predictiveBackInProgress = false
+            }
+        }
+
+        PredictiveBackHandler(
+            enabled = draggableState.settledValue != DrawerPosition.Closed &&
+                    !closeRequested && entry != null && currentEntry == entry,
+            onBackStarted = { event ->
+                predictiveBackAnimationJob?.cancel()
+                predictiveBackStartOffset = predictiveBackOffset ?: draggableState.requireOffset()
+                predictiveBackInProgress = true
+                predictiveBackOffset = predictiveBackStartOffset
+                updatePredictiveBack(event.progress)
+            },
+            onBackProgressed = { event -> updatePredictiveBack(event.progress) },
+            onBackCancelled = { finishPredictiveBack(commit = false) }
+        ) {
+            if (predictiveBackInProgress) finishPredictiveBack(commit = true) else onClose()
         }
 
         val navigationMenu = "导航菜单"
@@ -160,6 +227,7 @@ fun DrawerSheetPageScaffold(
                     .fillMaxSize()
                     .anchoredDraggable(
                         state = draggableState,
+                        enabled = !predictiveBackInProgress && !closeRequested,
                         orientation = Orientation.Horizontal,
                         interactionSource = draggableInteractionSource,
                         flingBehavior = flingBehavior
@@ -179,7 +247,7 @@ fun DrawerSheetPageScaffold(
                         .fillMaxHeight()
                         .offset {
                             IntOffset(
-                                x = draggableState.offset
+                                x = (predictiveBackOffset ?: draggableState.offset)
                                     .takeUnless(Float::isNaN)
                                     ?.roundToInt()
                                     // Before the anchors are initialized keep the sheet fully

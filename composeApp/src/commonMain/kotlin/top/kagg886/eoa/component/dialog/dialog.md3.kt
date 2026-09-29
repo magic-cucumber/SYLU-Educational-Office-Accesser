@@ -2,6 +2,9 @@
 
 package top.kagg886.eoa.component.dialog
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -23,8 +26,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.paneTitle
@@ -32,16 +41,26 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.takeOrElse
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.compose.DialogNavigator
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSettingsMMKVType
+import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.rootViewModel
+import top.kagg886.eoa.util.PredictiveBackHandler
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.util.Platform
 import top.kagg886.util.current
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * ================================================
@@ -65,11 +84,71 @@ fun DialogPageScaffold(
 ) = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
     val dialogPaneDescription = "对话框"
+    val navigation = LocalNavController.current
+    val owner = LocalLifecycleOwner.current
+    val entry = remember(navigation, owner) {
+        owner as? NavBackStackEntry ?: navigation.currentBackStackEntry
+    }
+    val currentEntry by navigation.currentBackStackEntryAsState()
+    val dismissOnBackPress =
+        (entry?.destination as? DialogNavigator.Destination)?.dialogProperties?.dismissOnBackPress != false
+    val scope = rememberCoroutineScope()
+    var backProgress by remember { mutableFloatStateOf(0f) }
+    var backStartProgress by remember { mutableFloatStateOf(0f) }
+    var backInProgress by remember { mutableStateOf(false) }
+    var closeRequested by remember { mutableStateOf(false) }
+    var backAnimationJob by remember { mutableStateOf<Job?>(null) }
+
+    fun dismiss() {
+        // An external button or another destination may already have changed the back stack.
+        if (!closeRequested && entry != null && navigation.currentBackStackEntry == entry) {
+            closeRequested = true
+            navigation.popBackStack()
+        }
+    }
+
+    fun updateBackProgress(progress: Float) {
+        backProgress = backStartProgress + (1f - backStartProgress) * progress.coerceIn(0f, 1f)
+    }
+
+    fun finishBack(commit: Boolean) {
+        if (!backInProgress) return
+        backAnimationJob?.cancel()
+        backAnimationJob = scope.launch {
+            val target = if (commit) 1f else 0f
+            animate(
+                backProgress,
+                target,
+                animationSpec = tween(
+                    durationMillis = (320 * abs(target - backProgress)).roundToInt().coerceAtLeast(1),
+                    easing = FastOutSlowInEasing
+                )
+            ) { value, _ -> backProgress = value }
+            backInProgress = false
+            // Keep alpha at zero throughout the host's exit transition.
+            if (commit) dismiss()
+        }
+    }
+
+    PredictiveBackHandler(
+        enabled = entry != null && currentEntry == entry && dismissOnBackPress && !closeRequested,
+        onBackStarted = { event ->
+            backAnimationJob?.cancel()
+            backStartProgress = backProgress
+            backInProgress = true
+            updateBackProgress(event.progress)
+        },
+        onBackProgressed = { event -> updateBackProgress(event.progress) },
+        onBackCancelled = { finishBack(commit = false) }
+    ) {
+        if (backInProgress) finishBack(commit = true) else dismiss()
+    }
 
     CompositionLocalProvider(LocalSnackBarHost provides snack) {
         Box(
             modifier =
                 modifier
+                    .graphicsLayer { alpha = 1f - backProgress }
                     .sizeIn(
                         minWidth = DialogMinWidth,
                         maxWidth = with(LocalDensity.current) {

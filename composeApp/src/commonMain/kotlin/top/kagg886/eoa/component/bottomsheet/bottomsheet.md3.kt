@@ -1,6 +1,7 @@
 package top.kagg886.eoa.component.bottomsheet
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.dokar.sonner.ToasterState
 import com.dokar.sonner.rememberToasterState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSettingsMMKVType
@@ -29,7 +31,8 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.rootViewModel
-import top.kagg886.eoa.util.BackHandler
+import top.kagg886.eoa.util.PredictiveBackHandler
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -73,6 +76,11 @@ fun BottomSheetPageScaffold(
             RoundedCornerShape(topStart = SheetCornerRadius, topEnd = SheetCornerRadius)
         val allowProgrammaticTransition = remember { mutableStateOf(false) }
         var closeRequested by remember { mutableStateOf(false) }
+        var predictiveBackOffset by remember { mutableStateOf<Float?>(null) }
+        var predictiveBackStartOffset by remember { mutableFloatStateOf(0f) }
+        var predictiveBackTarget by remember { mutableStateOf<SheetPosition?>(null) }
+        var predictiveBackInProgress by remember { mutableStateOf(false) }
+        var predictiveBackAnimationJob by remember { mutableStateOf<Job?>(null) }
         val popupTypeChangeRequestState = rememberUpdatedState(popupTypeChangeRequest)
         lateinit var draggableState: AnchoredDraggableState<SheetPosition>
 
@@ -83,9 +91,7 @@ fun BottomSheetPageScaffold(
             return true
         }
 
-        fun onClose(): Boolean {
-            if (closeRequested) return false
-
+        fun closeTarget(): SheetPosition? {
             val target = when (draggableState.settledValue) {
                 SheetPosition.Expanded -> when {
                     draggableState.anchors.hasPositionFor(SheetPosition.PartiallyExpanded) ->
@@ -106,8 +112,12 @@ fun BottomSheetPageScaffold(
 
                 SheetPosition.Hidden -> null
             }
-            target ?: return false
-            if (!popupTypeChangeRequestState.value(target)) return false
+            return target?.takeIf { popupTypeChangeRequestState.value(it) }
+        }
+
+        fun onClose(): Boolean {
+            if (closeRequested || predictiveBackInProgress) return false
+            val target = closeTarget() ?: return false
 
             if (target == SheetPosition.Hidden) {
                 requestRouteDismiss()
@@ -122,6 +132,57 @@ fun BottomSheetPageScaffold(
                 }
             }
             return true
+        }
+
+        fun updatePredictiveBack(progress: Float) {
+            val target = predictiveBackTarget ?: return
+            val targetOffset = draggableState.anchors.positionOf(target)
+            if (targetOffset.isNaN()) return
+            predictiveBackOffset = predictiveBackStartOffset +
+                    (targetOffset - predictiveBackStartOffset) * progress.coerceIn(0f, 1f)
+        }
+
+        fun finishPredictiveBack(commit: Boolean) {
+            predictiveBackAnimationJob?.cancel()
+            predictiveBackAnimationJob = scope.launch {
+                val target = predictiveBackTarget?.takeIf {
+                    commit && draggableState.anchors.hasPositionFor(it) &&
+                            popupTypeChangeRequestState.value(it)
+                }
+                val endOffset = if (target != null) {
+                    draggableState.anchors.positionOf(target)
+                } else {
+                    draggableState.requireOffset()
+                }
+                val startOffset = predictiveBackOffset ?: draggableState.requireOffset()
+                val fullDistance = predictiveBackTarget?.let {
+                    abs(draggableState.anchors.positionOf(it) - predictiveBackStartOffset)
+                } ?: 0f
+                val remainingFraction = if (fullDistance > 0f) {
+                    (abs(endOffset - startOffset) / fullDistance).coerceIn(0f, 1f)
+                } else 1f
+                animate(
+                    startOffset,
+                    endOffset,
+                    animationSpec = tween(
+                        durationMillis = (320 * remainingFraction).roundToInt().coerceAtLeast(1),
+                        easing = FastOutSlowInEasing
+                    )
+                ) { value, _ -> predictiveBackOffset = value }
+                if (target != null) {
+                    allowProgrammaticTransition.value = true
+                    try {
+                        draggableState.snapTo(target)
+                    } finally {
+                        allowProgrammaticTransition.value = false
+                    }
+                }
+                predictiveBackOffset = null
+                predictiveBackInProgress = false
+                predictiveBackTarget = null
+                // Pop only after the interactive closing animation has finished.
+                if (target == SheetPosition.Hidden) requestRouteDismiss()
+            }
         }
 
         @Suppress("DEPRECATION")
@@ -166,7 +227,7 @@ fun BottomSheetPageScaffold(
             var hasBeenVisible = false
             snapshotFlow {
                 Triple(
-                    isDragging,
+                    isDragging || predictiveBackInProgress,
                     draggableState.targetValue,
                     draggableState.settledValue
                 )
@@ -182,8 +243,26 @@ fun BottomSheetPageScaffold(
             }
         }
 
-        BackHandler(enabled = draggableState.settledValue != SheetPosition.Hidden) {
-            onClose()
+        PredictiveBackHandler(
+            enabled = draggableState.settledValue != SheetPosition.Hidden && !closeRequested,
+            onBackStarted = { event ->
+                predictiveBackAnimationJob?.cancel()
+                predictiveBackStartOffset = predictiveBackOffset ?: draggableState.requireOffset()
+                predictiveBackTarget = closeTarget()
+                predictiveBackInProgress = true
+                predictiveBackOffset = predictiveBackStartOffset
+                // The first observed event may already have non-zero progress.
+                updatePredictiveBack(event.progress)
+            },
+            onBackProgressed = { event -> updatePredictiveBack(event.progress) },
+            onBackCancelled = { finishPredictiveBack(commit = false) }
+        ) {
+            if (predictiveBackInProgress) {
+                finishPredictiveBack(commit = true)
+            } else {
+                // Button/keyboard back has no predictive gesture events.
+                onClose()
+            }
         }
 
         CompositionLocalProvider(LocalSnackBarHost provides snack) {
@@ -222,7 +301,7 @@ fun BottomSheetPageScaffold(
                     BottomSheetPageScaffoldScopeImpl(
                         minimumContentHeight = initialContentHeight,
                         visibleContentHeight = {
-                            val sheetOffset = draggableState.offset
+                            val sheetOffset = predictiveBackOffset ?: draggableState.offset
                                 .takeUnless(Float::isNaN)
                                 ?: fullHeightPx
                             (fullHeightPx - sheetOffset - dragHandleHeightPx - bottomInsetPx)
@@ -241,7 +320,7 @@ fun BottomSheetPageScaffold(
                         .offset {
                             IntOffset(
                                 x = 0,
-                                y = draggableState.offset
+                                y = (predictiveBackOffset ?: draggableState.offset)
                                     .takeUnless(Float::isNaN)
                                     ?.roundToInt()
                                     ?: constraints.maxHeight
@@ -312,6 +391,7 @@ fun BottomSheetPageScaffold(
                                 .fillMaxWidth()
                                 .anchoredDraggable(
                                     state = draggableState,
+                                    enabled = !predictiveBackInProgress && !closeRequested,
                                     orientation = Orientation.Vertical,
                                     interactionSource = draggableInteractionSource,
                                     flingBehavior = flingBehavior
