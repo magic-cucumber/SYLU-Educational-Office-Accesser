@@ -369,7 +369,7 @@ private fun CoursePageScreenSuccess(
                     endTime = timelineRange.end,
                     allowIsoWeekNumber = days,
                     timelineWidth = timeAxisWidth,
-                    modifier = Modifier.fillMaxWidth().height(timelineHeight).applyIf(showPeriods) {
+                    modifier = Modifier.fillMaxWidth().height(timelineHeight).applyIf(!showPeriods) {
                         drawBehind {
                             for (minute in timelineRange.marks(tickIntervalMinutes)) {
                                 val y =
