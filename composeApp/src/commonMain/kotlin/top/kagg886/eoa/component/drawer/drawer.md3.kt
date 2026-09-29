@@ -59,6 +59,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.backend.config.AppSettingsMMKVType
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.LocalSnackBarHost
+import top.kagg886.eoa.component.dialog.LocalDialogHostState
 import top.kagg886.eoa.component.snack.EOAToaster
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.PredictiveBackHandler
@@ -79,6 +80,7 @@ fun DrawerSheetPageScaffold(
     content: @Composable DrawerSheetPageScaffoldScope.() -> Unit = {}
 ) {
     Box(Modifier.fillMaxSize()) {
+        val dialogHostState = LocalDialogHostState.current
         val navigation = LocalNavController.current
         val owner = LocalLifecycleOwner.current
         val entry = remember(navigation, owner) {
@@ -89,6 +91,7 @@ fun DrawerSheetPageScaffold(
         var closeRequested by remember { mutableStateOf(false) }
         var predictiveBackOffset by remember { mutableStateOf<Float?>(null) }
         var predictiveBackStartOffset by remember { mutableFloatStateOf(0f) }
+        var predictiveBackStartMaskProgress by remember { mutableFloatStateOf(0f) }
         var predictiveBackInProgress by remember { mutableStateOf(false) }
         var predictiveBackAnimationJob by remember { mutableStateOf<Job?>(null) }
         fun requestClose(): Boolean {
@@ -152,6 +155,10 @@ fun DrawerSheetPageScaffold(
             if (closedOffset.isNaN()) return
             predictiveBackOffset = predictiveBackStartOffset +
                     (closedOffset - predictiveBackStartOffset) * progress.coerceIn(0f, 1f)
+            dialogHostState?.syncBackground(
+                predictiveBackStartMaskProgress +
+                        (1f - predictiveBackStartMaskProgress) * progress.coerceIn(0f, 1f)
+            )
         }
 
         fun finishPredictiveBack(commit: Boolean) {
@@ -165,14 +172,21 @@ fun DrawerSheetPageScaffold(
                 val remainingFraction = if (fullDistance > 0f) {
                     (abs(endOffset - startOffset) / fullDistance).coerceIn(0f, 1f)
                 } else 1f
+                val startMaskProgress = dialogHostState?.dismissProgress ?: 0f
+                val endMaskProgress = if (commit) 1f else 0f
                 animate(
-                    startOffset,
-                    endOffset,
+                    0f,
+                    1f,
                     animationSpec = tween(
                         durationMillis = (320 * remainingFraction).roundToInt().coerceAtLeast(1),
                         easing = FastOutSlowInEasing
                     )
-                ) { value, _ -> predictiveBackOffset = value }
+                ) { fraction, _ ->
+                    predictiveBackOffset = startOffset + (endOffset - startOffset) * fraction
+                    dialogHostState?.syncBackground(
+                        startMaskProgress + (endMaskProgress - startMaskProgress) * fraction
+                    )
+                }
                 if (commit) {
                     draggableState.snapTo(DrawerPosition.Closed)
                     // Retain the closed preview until the host removes this destination.
@@ -190,6 +204,7 @@ fun DrawerSheetPageScaffold(
             onBackStarted = { event ->
                 predictiveBackAnimationJob?.cancel()
                 predictiveBackStartOffset = predictiveBackOffset ?: draggableState.requireOffset()
+                predictiveBackStartMaskProgress = dialogHostState?.dismissProgress ?: 0f
                 predictiveBackInProgress = true
                 predictiveBackOffset = predictiveBackStartOffset
                 updatePredictiveBack(event.progress)

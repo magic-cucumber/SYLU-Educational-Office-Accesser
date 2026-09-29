@@ -84,6 +84,7 @@ fun DialogPageScaffold(
 ) = Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 
     val dialogPaneDescription = "对话框"
+    val dialogHostState = LocalDialogHostState.current
     val navigation = LocalNavController.current
     val owner = LocalLifecycleOwner.current
     val entry = remember(navigation, owner) {
@@ -109,6 +110,7 @@ fun DialogPageScaffold(
 
     fun updateBackProgress(progress: Float) {
         backProgress = backStartProgress + (1f - backStartProgress) * progress.coerceIn(0f, 1f)
+        dialogHostState?.syncBackground(backProgress)
     }
 
     fun finishBack(commit: Boolean) {
@@ -123,7 +125,10 @@ fun DialogPageScaffold(
                     durationMillis = (320 * abs(target - backProgress)).roundToInt().coerceAtLeast(1),
                     easing = FastOutSlowInEasing
                 )
-            ) { value, _ -> backProgress = value }
+            ) { value, _ ->
+                backProgress = value
+                dialogHostState?.syncBackground(value)
+            }
             backInProgress = false
             // Keep alpha at zero throughout the host's exit transition.
             if (commit) dismiss()

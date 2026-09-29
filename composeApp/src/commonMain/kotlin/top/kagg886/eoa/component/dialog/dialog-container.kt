@@ -34,6 +34,25 @@ import androidx.navigation.compose.NavHost
 import top.kagg886.eoa.util.BackHandler
 import top.kagg886.util.asTaggedLogger
 
+/** Controls only this destination's background, independently of its content animation. */
+@Stable
+class DialogHostState {
+    var dismissProgress by mutableFloatStateOf(0f)
+        private set
+
+    val backgroundAlpha: Float
+        get() = 0.618f * (1f - dismissProgress)
+
+    /** 0 keeps the original mask; 1 makes it transparent. */
+    fun syncBackground(progress: Float) {
+        require(progress.isFinite()) { "Background progress must be finite." }
+        dismissProgress = progress.coerceIn(0f, 1f)
+    }
+}
+
+// Scaffolds can also be composed without a DialogHost (for example in previews).
+val LocalDialogHostState = staticCompositionLocalOf<DialogHostState?> { null }
+
 
 /**
  * Show each [Destination] on the [DialogNavigator]'s back stack as a [Dialog].
@@ -82,6 +101,7 @@ public fun DialogHost(
 
     renderingEntries.forEach { backStackEntry ->
         val destination = backStackEntry.destination as Destination
+        val dialogHostState = remember(backStackEntry) { DialogHostState() }
         val transitionState = remember(backStackEntry) {
             entryTransitionStates.getValue(backStackEntry)
         }
@@ -116,7 +136,7 @@ public fun DialogHost(
 
             Box(
                 Modifier.fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.618f))
+                    .background(Color.Black.copy(alpha = dialogHostState.backgroundAlpha))
                     .clickable(
                         enabled = destination.dialogProperties.dismissOnClickOutside,
                         interactionSource = null,
@@ -127,7 +147,9 @@ public fun DialogHost(
                     )
             ) {
                 backStackEntry.LocalOwnersProvider(saveableStateHolder) {
-                    destination.content.invoke(backStackEntry)
+                    CompositionLocalProvider(LocalDialogHostState provides dialogHostState) {
+                        destination.content.invoke(backStackEntry)
+                    }
                 }
             }
         }
