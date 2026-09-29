@@ -354,7 +354,8 @@ internal fun NavHost(
     }
 
     var acceptPredictiveBack by remember {
-        mutableStateOf(false)
+        // null means no gesture started (e.g. three-button navigation).
+        mutableStateOf<Boolean?>(null)
     }
 
     PredictiveBackHandler(
@@ -366,7 +367,7 @@ internal fun NavHost(
                 limitBackGestureSwipeEdge == null ||
                         event.swipeEdge == limitBackGestureSwipeEdge
 
-            if (acceptPredictiveBack && currentBackStack.size > 1) {
+            if (acceptPredictiveBack == true && currentBackStack.size > 1) {
                 progress = 0f
 
                 currentBackStackEntry = currentBackStack.lastOrNull()
@@ -383,7 +384,7 @@ internal fun NavHost(
 
         // --- OnProgressed ---
         onBackProgressed = { event ->
-            if (acceptPredictiveBack && currentBackStack.size > 1) {
+            if (acceptPredictiveBack == true && currentBackStack.size > 1) {
                 inPredictiveBack = true
                 progress = event.progress
             }
@@ -395,21 +396,24 @@ internal fun NavHost(
                 inPredictiveBack = false
             }
 
-            acceptPredictiveBack = false
+            acceptPredictiveBack = null
             currentBackStackEntry = null
         },
 
         // --- OnCompleted ---
         onBack = {
-            if (acceptPredictiveBack && currentBackStack.size > 1) {
+            // Button back can complete without started/progressed callbacks. Only reject
+            // gestures explicitly disallowed by the swipe-edge restriction.
+            if (acceptPredictiveBack != false && currentBackStack.size > 1) {
                 inPredictiveBack = false
 
-                currentBackStackEntry?.let {
-                    composeNavigator.popBackStack(it, false)
-                }
+                val entry = currentBackStackEntry ?: currentBackStack.last()
+                // popBackStack starts the regular pop transition for button back;
+                // predictive back continues the transition from its current progress.
+                composeNavigator.popBackStack(entry, false)
             }
 
-            acceptPredictiveBack = false
+            acceptPredictiveBack = null
             currentBackStackEntry = null
         }
     )
