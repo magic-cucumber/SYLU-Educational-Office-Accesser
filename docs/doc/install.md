@@ -2,45 +2,22 @@
 
 EOA 支持 Android 和 iOS。Android 可以直接安装；iPhone 推荐通过 TestFlight 安装。
 
-::: tip 版本支持
-本应用支持 Android 6 及以上版本，以及 iOS 16.2 及以上版本。
-
-Android 需要按照自己的系统版本选择安装包；iPhone 可以按照[下面的步骤](#ios)安装。
-:::
-
-::: danger 旧系统无法使用
-Android 5 及以下、iOS 16.1 及以下无法正常安装或使用本应用。遇到这种情况，只能升级系统或换一台系统版本更高的设备。
-:::
+本应用最新版支持 Android 9 及以上版本，以及 iOS 16.2 及以上版本。
 
 ## Android
 
-Android 可以直接下载安装包。安装前先确认自己的系统版本，再选择对应的文件。
+安装前，在手机“设置”中打开“关于手机”或“我的设备”，查看“Android 版本”。也可以直接在设置中搜索“Android 版本”。
 
-1. 先看一下手机的 Android 版本。
+::: warning 为什么我找不到安卓6-8的兼容版了呢？
+由于应用后续更新所需的一些调整，我们无法继续支持安卓 6–8。这些设备可以使用的最后一个版本是 [4.5.5](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/tag/4.5.5)，之后不再更新，也不再为其修复bug。
 
-::: tip 如何查看 Android 版本
-一般可以在手机的“设置”里找到：
-
-1. 打开“设置”。
-2. 找到“关于手机”或“我的设备”。
-3. 查看“Android 版本”。
-
-不同品牌的入口名字可能不完全一样。如果找不到，可以在设置顶部的搜索框里搜索“Android 版本”。
+如果继续使用当前设备，请点击上面的链接下载旧版，并且不要升级应用；如果想使用新版，请更换安卓 9 及以上的设备。
 :::
 
-2. Android 9 及以上，下载 [`app-release.apk`](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/app-release.apk)。
-3. Android 6 到 Android 8，下载 [`app-release-6.apk`](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/app-release-6.apk)。
-4. 下载完成后，点击这个文件开始安装。
+1. 点击[**下载安装文件**](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/app-release.apk)。
+2. 下载完成后，点击文件开始安装。
 
-::: warning 安装风险提示
-国产手机系统经常会对不是应用商店下载的安装包弹出“有风险”“未知来源”或类似提醒。只要安装包来自本项目的发布页面，就可以选择继续安装。
-:::
-
-::: warning 黑边问题
-如果打开软件后发现底部有一大块黑边，说明你可能在 Android 6 到 Android 8 的手机上安装了 Android 9 及以上使用的安装包。
-
-遇到这种情况，重新安装 [`app-release-6.apk`](https://gitee.com/kagg886/sylu-educational-office-accesser/releases/download/latest/app-release-6.apk) 这个特供版本即可。
-:::
+安装时，如果手机提示“有风险”或“未知来源”，请确认文件来自本项目的发布页面，再选择继续安装。
 
 ## iOS
 
