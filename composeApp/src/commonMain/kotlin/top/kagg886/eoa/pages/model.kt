@@ -173,8 +173,16 @@ class RootViewModel(database: AppDatabase) :
             }
         }
 
-        checkUpdate()
-        checkAnnouncement()
+        viewModelScope.launch {
+            AppInitializeMMKV.initializeFlow.collect {
+                if (!it) {
+                    return@collect
+                }
+                checkUpdate()
+                checkAnnouncement()
+            }
+        }
+
     }
 
     fun postNewColorSetting(color: Color) = intent {
