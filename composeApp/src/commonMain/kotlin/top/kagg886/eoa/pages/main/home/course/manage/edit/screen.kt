@@ -102,14 +102,8 @@ fun CourseEditScreen(route: CourseEditRoute) {
     val state by model.collectAsState()
 
     val stack = rememberToasterState()
-    model.collectSideEffect {
-        when (it) {
-            is CourseEditSideEffect.Toast -> stack.showSnackBar(it.type, it.message)
-            CourseEditSideEffect.NavigateBack -> Unit
-        }
-    }
-
     CourseEditScreenContent(
+        stack = stack,
         model = model,
         state = state,
         snack = stack,
@@ -131,6 +125,7 @@ fun CourseEditScreen(route: CourseEditRoute) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseEditScreenContent(
+    stack: ToasterState,
     model: CourseEditModel,
     state: CourseEditState,
     snack: ToasterState,
@@ -154,7 +149,7 @@ private fun CourseEditScreenContent(
         model.collectSideEffect {
             when (it) {
                 is CourseEditSideEffect.NavigateBack -> close()
-                else -> Unit
+                is CourseEditSideEffect.Toast -> stack.showSnackBar(it.type, it.message)
             }
         }
         Column(modifier = Modifier.fillMaxSize()) {
