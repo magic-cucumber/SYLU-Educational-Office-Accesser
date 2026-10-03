@@ -6,8 +6,6 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-sdk tools:overrideLibrary="
         com.mohamedrejeb.compose.dnd,
-        top.kagg886.mkmb,
-        top.kagg886.mkmb.android,
         com.dokar.sonner.core,
         ai.koog.agents.core,
         ai.koog.agents.features.event.handler,

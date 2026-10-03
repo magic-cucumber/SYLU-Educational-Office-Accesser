@@ -94,7 +94,10 @@ kotlin {
             implementation(libs.compose.placeholder.material3)
             implementation(libs.filekit.dialog)
             implementation(libs.compose.dnd)
-            implementation(libs.koog.agents)
+            implementation(libs.koog.agents.get().copy()) {
+                // Structured output uses kotlinx.serialization; Jackson requires Android API 26.
+                exclude(group = "ai.koog", module = "serialization-jackson")
+            }
             implementation(libs.reveal.core)
             implementation(libs.reveal.shapes)
             implementation(libs.richeditor)
