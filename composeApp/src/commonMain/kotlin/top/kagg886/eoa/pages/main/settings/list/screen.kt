@@ -127,7 +127,6 @@ private fun SettingScreenContent(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer
                             )
@@ -135,7 +134,7 @@ private fun SettingScreenContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 16.dp),
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -173,12 +172,7 @@ private fun SettingScreenContent(
 
                     is SettingsState.Loading -> {
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier
@@ -186,11 +180,7 @@ private fun SettingScreenContent(
                                     .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(48.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 4.dp
-                                )
+                                CircularProgressIndicator()
 
                                 Spacer(modifier = Modifier.width(16.dp))
 
@@ -200,9 +190,7 @@ private fun SettingScreenContent(
                                 ) {
                                     Text(
                                         text = "加载中",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        style = MaterialTheme.typography.titleLarge
                                     )
 
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -210,9 +198,7 @@ private fun SettingScreenContent(
                                     Text(
                                         text = "正在同步用户信息...",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.7f
-                                        )
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -220,54 +206,13 @@ private fun SettingScreenContent(
                     }
 
                     is SettingsState.Success -> {
-                        Column {
-                            ProfileCard(
-                                it.profile.avatar,
-                                it.profile.name,
-                                it.profile.studyName
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                // 详细信息按钮
-                                OutlinedButton(
-                                    onClick = onDetailButtonClicked,
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.outlinedButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = "详细信息",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("详细信息")
-                                }
-
-                                // 登出按钮
-                                Button(
-                                    onClick = onLogoutButtonClicked,
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.error,
-                                        contentColor = MaterialTheme.colorScheme.onError
-                                    )
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Logout,
-                                        contentDescription = "登出",
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("登出")
-                                }
-                            }
-                        }
+                        ProfileCard(
+                            byteArray = it.profile.avatar,
+                            name = it.profile.name,
+                            grade = it.profile.studyName,
+                            onClick = onDetailButtonClicked,
+                            onLogoutClick = onLogoutButtonClicked
+                        )
                     }
                 }
             }
@@ -383,19 +328,18 @@ private fun SettingScreenContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProfileCard(
     byteArray: ByteArray,
     name: String,
     grade: String,
+    onClick: () -> Unit,
+    onLogoutClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
@@ -408,7 +352,7 @@ private fun ProfileCard(
                 model = byteArray,
                 contentDescription = "用户头像",
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(56.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
@@ -422,9 +366,7 @@ private fun ProfileCard(
             ) {
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -432,7 +374,16 @@ private fun ProfileCard(
                 Text(
                     text = grade,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // 登出
+            IconButton(onClick = onLogoutClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = "登出",
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }
