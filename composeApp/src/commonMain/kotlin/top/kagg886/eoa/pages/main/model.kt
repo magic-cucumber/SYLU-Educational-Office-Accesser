@@ -132,8 +132,8 @@ class MainRouteViewModel(val database: AppDatabase) :
     }
 
     fun startSyncForce() = intent {
-        val lastSyncTime = try {
-            syncDao.getLastSyncTime()
+        val (lastSyncTime, lastSyncSuccessTime) = try {
+            syncDao.getLastSyncTime() to syncDao.getLastSyncSuccessTime()
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
 
@@ -153,9 +153,12 @@ class MainRouteViewModel(val database: AppDatabase) :
             return@intent
         }
 
+        // 失败的首次同步也会留下记录，只有完整同步成功过才有可用的旧数据。
+        val haveDirtyData = lastSyncSuccessTime != null
+
         reduce {
             MainRouteViewState.SyncProcess(
-                haveDirtyData = lastSyncTime != null,
+                haveDirtyData = haveDirtyData,
                 progress = MainRouteViewState.SyncProcessProgress.ProcessingSchoolCalendar
             )
         }
@@ -257,8 +260,8 @@ class MainRouteViewModel(val database: AppDatabase) :
 
             reduce {
                 MainRouteViewState.SyncFailed(
-                    lastSyncTime != null,
-                    ex.message ?: "未知错误"
+                    haveDirtyData = haveDirtyData,
+                    message = ex.message ?: "未知错误"
                 )
             }
             postSideEffect(MainRouteViewEffect.SyncErrorToast)
@@ -610,7 +613,7 @@ sealed interface MainRouteViewState {
 
     /**
      * 正在同步
-     * @param haveDirtyData 是否在之前同步过
+     * @param haveDirtyData 是否有之前完整同步成功的旧数据可用
      */
     data class SyncProcess(val haveDirtyData: Boolean = false, val progress: SyncProcessProgress) :
         MainRouteViewState
@@ -622,7 +625,7 @@ sealed interface MainRouteViewState {
 
     /**
      * 同步失败
-     * @param haveDirtyData 是否在之前同步过
+     * @param haveDirtyData 是否有之前完整同步成功的旧数据可用
      * @param message 失败信息
      */
     data class SyncFailed(val haveDirtyData: Boolean = false, val message: String) :

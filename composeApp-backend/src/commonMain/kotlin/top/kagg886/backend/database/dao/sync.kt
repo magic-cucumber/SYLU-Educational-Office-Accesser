@@ -134,6 +134,17 @@ interface SyncRecordDao {
 
     @Query(
         """
+            SELECT updatedStamp 
+            FROM `sync-overviews`
+            WHERE success = 1
+            ORDER BY id DESC 
+            LIMIT 1
+        """
+    )
+    suspend fun getLastSyncSuccessTime(): Instant?
+
+    @Query(
+        """
             SELECT success
             FROM `sync-overviews`
             ORDER BY id DESC
