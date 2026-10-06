@@ -7,6 +7,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.style.TextAlign
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.LocalNavController
@@ -22,12 +26,14 @@ data object LogoutConfirmRoute
 fun LogoutConfirmScreen() = MainScreen {
     val model = mainViewModelOrNull()
     val nav = LocalNavController.current
+    var enable by remember { mutableStateOf(true) }
     DialogPageScaffold(
         title = { Text("退出登录") },
         icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
         confirmButton = {
             TextButton(
-                onClick = { model?.logout() },
+                onClick = { model?.logout();enable = false },
+                enabled = enable
             ) {
                 Text("确认")
             }
@@ -36,13 +42,14 @@ fun LogoutConfirmScreen() = MainScreen {
         dismissButton = {
             TextButton(
                 onClick = { nav.popBackStack() },
+                enabled = enable
             ) {
                 Text("取消")
             }
         }
     ) {
         Text(
-            text = "退出登录后，自定义课程将会清除，且无法回复。\n是否真的退出？",
+            text = "退出登录后，自定义课程将会清除，且无法恢复。\n确认退出登录？",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant

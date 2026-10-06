@@ -1,6 +1,7 @@
 package top.kagg886.eoa.pages.main.settings.list
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,11 +16,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.eygraber.compose.placeholder.PlaceholderHighlight
+import com.eygraber.compose.placeholder.material3.placeholder
+import com.eygraber.compose.placeholder.material3.shimmer
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -101,7 +106,7 @@ private fun SettingScreenContent(
     onAISettingsClicked: () -> Unit,
     onAdvancedSettingsClicked: () -> Unit,
     onFeedbackClicked: () -> Unit,
-    onUpdateChecked: ()-> Unit,
+    onUpdateChecked: () -> Unit,
     onAboutClicked: () -> Unit,
 ) {
     Scaffold(
@@ -118,104 +123,64 @@ private fun SettingScreenContent(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            AnimatedContent(
-                targetState = state,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                when (it) {
-                    is SettingsState.Failed -> {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+            SettingScreenProfile(
+                title = when (state) {
+                    is SettingsState.Success -> state.profile.name
+                    is SettingsState.Failed -> "同步错误"
+                    SettingsState.Loading -> null
+                },
+                subTitle = when (state) {
+                    is SettingsState.Success -> state.profile.studyName
+                    is SettingsState.Failed -> state.msg
+                    SettingsState.Loading -> null
+                },
+                containerColor = when (state) {
+                    is SettingsState.Failed -> MaterialTheme.colorScheme.errorContainer
+                    else -> CardDefaults.cardColors().containerColor
+                },
+                titleColor = when (state) {
+                    is SettingsState.Failed -> MaterialTheme.colorScheme.onErrorContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
+                subTitleColor = when (state) {
+                    is SettingsState.Failed -> MaterialTheme.colorScheme.onErrorContainer
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                icon = {
+                    AnimatedContent(targetState = state) { s ->
+                        when (s) {
+                            is SettingsState.Success -> AsyncImage(
+                                model = s.profile.avatar,
+                                contentDescription = "用户头像",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
-                        ) {
-                            Row(
+
+                            is SettingsState.Failed -> Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = "错误",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+
+                            SettingsState.Loading -> Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Error,
-                                    contentDescription = "错误",
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = "同步错误",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    .size(56.dp)
+                                    .placeholder(
+                                        visible = true,
+                                        shape = CircleShape,
+                                        highlight = PlaceholderHighlight.shimmer()
                                     )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Text(
-                                        text = it.msg,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onErrorContainer.copy(
-                                            alpha = 0.8f
-                                        )
-                                    )
-                                }
-                            }
+                            )
                         }
                     }
-
-                    is SettingsState.Loading -> {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator()
-
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "加载中",
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Text(
-                                        text = "正在同步用户信息...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    is SettingsState.Success -> {
-                        ProfileCard(
-                            byteArray = it.profile.avatar,
-                            name = it.profile.name,
-                            grade = it.profile.studyName,
-                            onClick = onDetailButtonClicked,
-                            onLogoutClick = onLogoutButtonClicked
-                        )
-                    }
-                }
-            }
+                },
+                onDetailClicked = { if (state is SettingsState.Success) onDetailButtonClicked() },
+                onLogoutButtonClicked = onLogoutButtonClicked,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -330,16 +295,23 @@ private fun SettingScreenContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileCard(
-    byteArray: ByteArray,
-    name: String,
-    grade: String,
-    onClick: () -> Unit,
-    onLogoutClick: () -> Unit,
+private fun SettingScreenProfile(
+    title: String?,
+    subTitle: String?,
+    icon: @Composable () -> Unit,
+    onDetailClicked: () -> Unit,
+    onLogoutButtonClicked: () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = CardDefaults.cardColors().containerColor,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
+    subTitleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
+    val animatedContainerColor by animateColorAsState(containerColor)
+
     Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        onClick = onDetailClicked,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = animatedContainerColor)
     ) {
         Row(
             modifier = Modifier
@@ -347,15 +319,13 @@ private fun ProfileCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 头像
-            AsyncImage(
-                model = byteArray,
-                contentDescription = "用户头像",
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
+            // 头像 / 状态图标
+            Box(
+                modifier = Modifier.size(56.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                icon()
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -365,21 +335,34 @@ private fun ProfileCard(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleLarge
+                    text = title ?: "名称加载中",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = titleColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.placeholder(
+                        visible = title == null,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = grade,
+                    text = subTitle ?: "学年正在加载中",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = subTitleColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.placeholder(
+                        visible = subTitle == null,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
                 )
             }
 
             // 登出
-            IconButton(onClick = onLogoutClick) {
+            IconButton(onClick = onLogoutButtonClicked) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Logout,
                     contentDescription = "登出",

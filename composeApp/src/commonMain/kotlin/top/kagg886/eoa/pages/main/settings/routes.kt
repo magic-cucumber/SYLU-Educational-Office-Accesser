@@ -34,6 +34,6 @@ val installSettingsGraph: NavGraphBuilder.() -> Unit = {
     composable<SyncSettingsRoute> { SyncSettingsScreen() }
     composable<AdvancedSettingsRoute> { AdvancedSettingsScreen() }
     dialog<SettingsProfile>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SettingsProfileScreen() }
-    dialog<LogoutConfirmRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { LogoutConfirmScreen() }
+    dialog<LogoutConfirmRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false,dismissOnClickOutside = false, dismissOnBackPress = false)) { LogoutConfirmScreen() }
     dialog<FeedbackRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { FeedbackScreen() }
 }
