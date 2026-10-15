@@ -85,8 +85,14 @@ class RootViewModel(database: AppDatabase) :
     val appLogDao = database.appLogDao()
 
     override suspend fun Syntax<RootState, RootEffect>.init() {
-        val count = appLogDao.clear((Clock.System.now() - 1.days).toEpochMilliseconds())
-        logger.i("清理了 $count 条数据。")
+        val currentVersion = "${BuildConfig.APP_VERSION_NAME}:${BuildConfig.APP_VERSION_CODE}"
+        if (currentVersion == AppInitializeMMKV.currentVersion) {
+            appLogDao.clear()
+            logger.i("版本不一致，清空log。")
+        } else {
+            val count = appLogDao.clear((Clock.System.now() - 1.days).toEpochMilliseconds())
+            logger.i("清理了 $count 条数据。")
+        }
 
         viewModelScope.launch {
             state.theme.collect {

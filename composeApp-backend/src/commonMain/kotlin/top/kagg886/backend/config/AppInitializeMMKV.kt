@@ -2,6 +2,7 @@ package top.kagg886.backend.config
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.mkmb.MMKV
 import top.kagg886.mkmb.MMKVMode
 import top.kagg886.mkmb.mmkvWithID
@@ -25,6 +26,7 @@ object AppInitializeMMKV :
     val initializeFlow: StateFlow<Boolean>
         field: MutableStateFlow<Boolean> = MutableStateFlow(initialize)
 
+    override var currentVersion: String by string("current-app-version", "")
     override var calendarId: String by string("calendarId", "")
     override var size: Pair<Int, Int> by json("size", 800 to 600)
     override var offset: Pair<Int, Int>? by jsonOrNull("offset")
@@ -41,6 +43,7 @@ object AppInitializeMMKV :
 
 sealed interface AppInitializeMMKVType {
     var initialize: Boolean
+    var currentVersion: String
     var calendarId: String
     var size: Pair<Int, Int>
     var offset: Pair<Int, Int>?
