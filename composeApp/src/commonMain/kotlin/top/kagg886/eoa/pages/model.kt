@@ -86,9 +86,10 @@ class RootViewModel(database: AppDatabase) :
 
     override suspend fun Syntax<RootState, RootEffect>.init() {
         val currentVersion = "${BuildConfig.APP_VERSION_NAME}:${BuildConfig.APP_VERSION_CODE}"
-        if (currentVersion == AppInitializeMMKV.currentVersion) {
+        if (currentVersion != AppInitializeMMKV.currentVersion) {
             appLogDao.clear()
             logger.i("版本不一致，清空log。")
+            AppInitializeMMKV.currentVersion = currentVersion
         } else {
             val count = appLogDao.clear((Clock.System.now() - 1.days).toEpochMilliseconds())
             logger.i("清理了 $count 条数据。")

@@ -4,6 +4,7 @@ on:
     branches:
       - master-4.0
     paths:
+      - gradle.properties
       - buildSrc/**
       - androidApp/**
       - composeApp/**
@@ -17,6 +18,7 @@ on:
       - .github/workflows/CI.yaml
   pull_request:
     paths:
+      - gradle.properties
       - buildSrc/**
       - androidApp/**
       - composeApp/**
