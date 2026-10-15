@@ -125,12 +125,12 @@ private fun SettingScreenContent(
         ) {
             SettingScreenProfile(
                 title = when (state) {
-                    is SettingsState.Success -> state.profile.name
+                    is SettingsState.Success -> state.profile?.name
                     is SettingsState.Failed -> "同步错误"
                     SettingsState.Loading -> null
                 },
                 subTitle = when (state) {
-                    is SettingsState.Success -> state.profile.studyName
+                    is SettingsState.Success -> state.profile?.studyName
                     is SettingsState.Failed -> state.msg
                     SettingsState.Loading -> null
                 },
@@ -150,7 +150,7 @@ private fun SettingScreenContent(
                     AnimatedContent(targetState = state) { s ->
                         when (s) {
                             is SettingsState.Success -> AsyncImage(
-                                model = s.profile.avatar,
+                                model = s.profile?.avatar,
                                 contentDescription = "用户头像",
                                 modifier = Modifier
                                     .size(56.dp)

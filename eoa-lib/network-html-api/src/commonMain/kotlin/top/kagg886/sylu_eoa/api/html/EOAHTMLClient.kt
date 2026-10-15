@@ -414,7 +414,7 @@ internal class EOAHTMLClient : EOAClient {
                 ((ls[0]).toInt()..(ls[1]).toInt()).toList()
             }
 
-            //7周,9-11周(单),12-16周, 一定大于1。
+            //7周,9-11周(单),12-16周,第1周 一定大于1。
             val rangeAllTerm by lazy {
                 weekEachLesson.convertToWeekNumberArray()
             }
@@ -623,7 +623,8 @@ private class StorageCookieStorage(
 private fun String.convertToWeekNumberArray() = replace("周", "").split(",").map {
     val a = it.substring(0, it.length)
     if (!a.contains("-")) {
-        return@map listOf(a.toInt())
+        //可能是 第1周 的 格式
+        return@map listOf(a.toIntOrNull() ?: a.substring(1).toInt())
     }
     val range = a.split("-")
 

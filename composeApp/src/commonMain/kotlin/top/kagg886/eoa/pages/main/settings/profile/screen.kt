@@ -79,56 +79,56 @@ private val items = listOf<@Composable (SettingsState.Success, Modifier) -> Unit
     @Composable { profile, modifier ->
         ProfileItem(
             label = "姓名",
-            value = profile.profile.name,
+            value = profile.profile?.name,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "学院",
-            value = profile.profile.collegeName,
+            value = profile.profile?.collegeName,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "专业",
-            value = profile.profile.studyName,
+            value = profile.profile?.studyName,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "邮箱",
-            value = profile.profile.email,
+            value = profile.profile?.email,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "电话",
-            value = profile.profile.phone,
+            value = profile.profile?.phone,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "身份证号",
-            value = profile.profile.id,
+            value = profile.profile?.id,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "政策",
-            value = profile.profile.policy,
+            value = profile.profile?.policy,
             modifier = modifier
         )
     },
     @Composable { profile, modifier ->
         ProfileItem(
             label = "语言",
-            value = profile.profile.language,
+            value = profile.profile?.language,
             modifier = modifier
         )
     }
@@ -160,13 +160,13 @@ private fun ProfileSuccess(
 @Composable
 private fun ProfileItem(
     label: String,
-    value: String,
+    value: String? = null,
     modifier: Modifier = Modifier
 ) {
     ListItem(
         modifier = modifier,
         headlineContent = { Text(text = label) },
-        supportingContent = { Text(text = value) },
+        supportingContent = { Text(text = value ?: "") },
         colors = ListItemDefaults.colors(
             containerColor = AlertDialogDefaults.containerColor,
         )

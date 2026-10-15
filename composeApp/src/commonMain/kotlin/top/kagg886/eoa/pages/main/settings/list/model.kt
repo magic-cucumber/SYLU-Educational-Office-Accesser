@@ -50,7 +50,7 @@ class SettingsModel(
     }
 
     private fun setDataUnsafe() = intent {
-        val profile = AppSyncMMKV.profile!!
+        val profile = AppSyncMMKV.profile
         val last = syncDao.getLastSyncTime() ?: Instant.DISTANT_PAST
         reduce {
             SettingsState.Success(
@@ -67,7 +67,7 @@ sealed interface SettingsState {
     data class Failed(val msg: String) : SettingsState
     data class Success(
         val stuId: String,
-        val profile: UserProfile,
+        val profile: UserProfile?,
         val lastUpdateTime: Instant,
     ) : SettingsState
 }
