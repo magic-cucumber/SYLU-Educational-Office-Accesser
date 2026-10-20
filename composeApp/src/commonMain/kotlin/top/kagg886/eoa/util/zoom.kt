@@ -5,7 +5,6 @@ import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculateCentroidSize
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -13,18 +12,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isCtrlPressed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val DefaultMinZoomScale = 0.5f
 private const val DefaultMaxZoomScale = 2f
-private const val ScaleThresholdEpsilon = 0.001f
 private const val MouseWheelZoomStep = 1.05f
 
 /**
@@ -81,11 +81,13 @@ class VerticalZoomState(
         return effectiveZoomChange
     }
 
-    internal fun finishScrollCompensation() {
-        scrollCompensatedScale = scale
+    internal fun finishScrollCompensation(appliedScale: Float) {
+        scrollCompensatedScale = appliedScale
 
         val pending = pendingScale
-        if (pending != null && abs(pending - scale) <= ScaleThresholdEpsilon) {
+        // A newer gesture may already be pending while an older composition is measured.
+        // Only acknowledge the scale whose content has actually been measured.
+        if (pending == appliedScale) {
             pendingScale = null
             zoomAnchorY = null
         }
@@ -111,34 +113,18 @@ fun rememberVerticalZoomState(
  * The zoom anchor is expressed in this modifier's coordinates. [scaleOriginPx]
  * is the unscaled vertical origin of the content, used to keep the content
  * under the pointer/centroid stable while the [scrollState] is compensated.
+ * [contentScale] must be the same captured scale used to size the content.
  */
 fun Modifier.verticalZoom(
     state: VerticalZoomState,
     scrollState: ScrollState,
     enabled: Boolean = true,
     scaleOriginPx: Float = 0f,
+    contentScale: Float = state.scale,
     onZoomChange: (Float) -> Unit = {},
 ): Modifier = composed {
     val currentOnZoomChange by rememberUpdatedState(onZoomChange)
     val currentScaleState = rememberUpdatedState(state.scale)
-
-    LaunchedEffect(state, state.scale, scrollState, scaleOriginPx) {
-        val anchorY = state.zoomAnchorY
-        val pendingScale = state.pendingScale
-        val previousScale = state.scrollCompensatedScale
-        val currentScale = state.scale
-
-        if (anchorY != null && pendingScale != null && currentScale != previousScale) {
-            val scaleChange = currentScale / previousScale
-            val currentScroll = scrollState.value.toFloat()
-            val targetScroll =
-                scaleOriginPx + (currentScroll + anchorY - scaleOriginPx) * scaleChange - anchorY
-
-            scrollState.scrollTo(targetScroll.roundToInt())
-        }
-
-        state.finishScrollCompensation()
-    }
 
     fun applyZoom(zoomChange: Float, anchorY: Float?) {
         val effectiveZoomChange = state.zoomBy(zoomChange, anchorY)
@@ -235,6 +221,38 @@ fun Modifier.verticalZoom(
                         event = awaitPointerEvent(pass = PointerEventPass.Initial)
                     } while (true)
                 }
+            }
+        }
+        .layout { measurable, constraints ->
+            // Read the old offset BEFORE verticalScroll measures and clamps it to the
+            // new range. Ordinary scrolling must not invalidate measurement here.
+            val (previousScale, previousOffset, anchorY) = Snapshot.withoutReadObservation {
+                Triple(
+                    state.scrollCompensatedScale,
+                    scrollState.value,
+                    state.zoomAnchorY.takeIf { state.pendingScale != null },
+                )
+            }
+            val targetOffset = if (anchorY != null && contentScale != previousScale) {
+                scaleOriginPx + (previousOffset + anchorY - scaleOriginPx) *
+                    (contentScale / previousScale) - anchorY
+            } else {
+                null
+            }
+
+            // The inner verticalScroll now establishes the range for contentScale.
+            val placeable = measurable.measure(constraints)
+            Snapshot.withoutReadObservation {
+                if (targetOffset != null) {
+                    val target = targetOffset.roundToInt().coerceIn(0, scrollState.maxValue)
+                    // Synchronous layout correction: placement below must see the new
+                    // offset in this same pass, without a coroutine or another frame.
+                    scrollState.dispatchRawDelta((target - scrollState.value).toFloat())
+                }
+                state.finishScrollCompensation(contentScale)
+            }
+            layout(placeable.width, placeable.height) {
+                placeable.placeRelative(0, 0)
             }
         }
         .verticalScroll(scrollState)

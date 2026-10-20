@@ -324,7 +324,8 @@ private fun CoursePageScreenSuccess(
 
 
     val timelineRange = remember(currentWeekCourse) { timelineRangeOf(currentWeekCourse) }
-    val minuteHeight = 2.4.dp * zoomState.scale
+    val layoutScale = zoomState.scale
+    val minuteHeight = 2.4.dp * layoutScale
     val scrollState = remember(thisWeekStartDate) {
         ScrollState(initial = initialScrollOffset)
     }
@@ -359,6 +360,7 @@ private fun CoursePageScreenSuccess(
                 scrollState = scrollState,
                 enabled = zoomEnabled,
                 scaleOriginPx = timelineScaleOriginPx,
+                contentScale = layoutScale,
                 onZoomChange = onZoomChange,
             )
 
