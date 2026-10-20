@@ -19,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eygraber.compose.placeholder.PlaceholderHighlight
@@ -40,6 +41,7 @@ import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.course.manage.list.CourseManageListRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
+import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
@@ -59,8 +61,10 @@ fun CourseListScreen() = RevealContainer(4, AppInitializeMMKV::tutorialCourseLis
     val nav = LocalNavController.current
     val mainViewModel = mainViewModelOrNull() ?: return@RevealContainer
     val syncState by mainViewModel.collectAsState()
+    val rootState by rootViewModel().collectAsState()
+    val minuteHeightPx = with(LocalDensity.current) { 2.4.dp.toPx() }
     val model = viewModel<CourseListViewModel>(key = syncState.toViewModelKey()) {
-        CourseListViewModel(syncState)
+        CourseListViewModel(syncState, mainViewModel.database, minuteHeightPx, rootState.showHolidayCourse)
     }
 
     val state by model.collectAsState()
@@ -257,6 +261,7 @@ fun CourseListScreen() = RevealContainer(4, AppInitializeMMKV::tutorialCourseLis
                 }
             },
             onZoomChange = model::scaleBy,
+            onScrollOffsetChange = model::setScrollOffset,
         )
     }
 
@@ -267,6 +272,7 @@ private fun CourseListScreenContent(
     state: CourseListState,
     modifier: Modifier = Modifier,
     onZoomChange: (Float) -> Unit,
+    onScrollOffsetChange: (Int) -> Unit,
 ) = when (state) {
     is CourseListState.Loading -> {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -280,12 +286,15 @@ private fun CourseListScreenContent(
 
     is CourseListState.DataAccessible -> {
         val scale by state.scale.collectAsState()
+        val scrollOffset by state.scrollOffset.collectAsState()
 
         CourseDrawerContent(
             modifier = modifier,
             pagerState = state.state,
             scale = scale,
+            scrollOffset = scrollOffset,
             onZoomChange = onZoomChange,
+            onScrollOffsetChange = onScrollOffsetChange,
         )
     }
 
@@ -326,7 +335,9 @@ private fun CourseListScreenContent(
 private fun CourseDrawerContent(
     pagerState: PagerState,
     scale: Float,
+    scrollOffset: Int,
     onZoomChange: (Float) -> Unit,
+    onScrollOffsetChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     HorizontalPager(
@@ -337,7 +348,9 @@ private fun CourseDrawerContent(
             index = it,
             isCurrentPage = pagerState.currentPage == it,
             scale = scale,
+            scrollOffset = scrollOffset,
             onZoomChange = onZoomChange,
+            onScrollOffsetChange = onScrollOffsetChange,
         )
     }
 }

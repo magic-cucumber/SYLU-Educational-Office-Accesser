@@ -4,19 +4,28 @@ import androidx.compose.foundation.pager.PagerState
 import top.kagg886.eoa.util.BaseViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.atTime
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSyncMMKV
+import top.kagg886.backend.database.AppDatabase
 import top.kagg886.eoa.pages.main.MainRouteViewState
 import top.kagg886.util.calculateWeekNumber
 import kotlin.time.Clock
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
 
 class CourseListViewModel(
     private val syncState: MainRouteViewState,
+    private val database: AppDatabase,
+    private val minuteHeightPx: Float,
+    private val showHolidayCourseFlow: MutableStateFlow<Boolean>,
 ) : BaseViewModel<CourseListState, CourseListSideEffect>(
     name = "CourseListViewModel",
     initial = CourseListState.Loading
@@ -48,6 +57,11 @@ class CourseListViewModel(
     fun setDataUnsafe() = intent {
         val (isInHoliday, isBeforeInTerm, currentWeek) = AppSyncMMKV.calender!!.calculateWeekNumber()
         val allWeek = AppSyncMMKV.calender!!.count()
+        val scrollOffset = if (isBeforeInTerm || currentWeek != -1) {
+            initialScrollOffset(if (isBeforeInTerm) 0 else currentWeek - 1)
+        } else {
+            0
+        }
         if (currentWeek == -1) {
             when {
                 isInHoliday -> reduce {
@@ -58,7 +72,8 @@ class CourseListViewModel(
                     CourseListState.BeforeTerm(
                         state = PagerState(currentPage = 0) { allWeek },
                         allWeek = allWeek,
-                        scale = MutableStateFlow(1f)
+                        scale = MutableStateFlow(1f),
+                        scrollOffset = MutableStateFlow(scrollOffset),
                     )
                 }
             }
@@ -70,9 +85,26 @@ class CourseListViewModel(
                 allWeek = allWeek,
                 //currentPage是index，从0开始
                 state = PagerState(currentPage = currentWeek - 1) { allWeek },
-                scale = MutableStateFlow(1f)
+                scale = MutableStateFlow(1f),
+                scrollOffset = MutableStateFlow(scrollOffset),
             )
         }
+    }
+
+    private suspend fun initialScrollOffset(page: Int): Int {
+        val calendar = AppSyncMMKV.calender!!
+        val weekStart = calendar.start.plus(page, DateTimeUnit.WEEK).atTime(0, 0)
+        val weekEnd = calendar.start.plus(page + 1, DateTimeUnit.WEEK).atTime(0, 0)
+        val courses = database.courseRecordDao()
+            .getCoursesWithRecordInfoFlow(weekStart, weekEnd)
+            .first()
+            .filter { it.record.startTime.date !in calendar.holidays || showHolidayCourseFlow.value }
+        val range = timelineRangeOf(courses.map { it.record.startTime.time to it.record.endTime.time })
+        val currentTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+        val elapsedMinutes = (
+            (currentTime.toSecondOfDay() - 20.minutes.inWholeSeconds - range.start.toSecondOfDay()) / 60f
+        ).coerceIn(0f, range.durationMinutes.toFloat())
+        return (minuteHeightPx * elapsedMinutes).roundToInt()
     }
 
     fun selectToWeek(data: Int? = null) = intent {
@@ -94,6 +126,12 @@ class CourseListViewModel(
         runOn<CourseListState.DataAccessible> {
             state.scale.value = (state.scale.value * zoomChange)
                 .coerceIn(0.5f, 2f)
+        }
+    }
+
+    fun setScrollOffset(offset: Int) = intent {
+        runOn<CourseListState.DataAccessible> {
+            state.scrollOffset.value = offset
         }
     }
 
@@ -143,18 +181,44 @@ sealed interface CourseListState {
         val currentWeek: Int, //当前周数
         override val allWeek: Int, //总周数
         override val scale: MutableStateFlow<Float>, //缩放倍数
+        override val scrollOffset: MutableStateFlow<Int>,
     ) : DataAccessible
 
     data object AfterTerm : CourseListState
-    data class BeforeTerm(override val state: PagerState, override val allWeek: Int, override val scale: MutableStateFlow<Float>) :
-        DataAccessible
+    data class BeforeTerm(
+        override val state: PagerState,
+        override val allWeek: Int,
+        override val scale: MutableStateFlow<Float>,
+        override val scrollOffset: MutableStateFlow<Int>,
+    ) : DataAccessible
 
     interface DataAccessible : CourseListState {
         val state: PagerState
         val allWeek: Int
 
         val scale: MutableStateFlow<Float>
+        val scrollOffset: MutableStateFlow<Int>
     }
+}
+
+internal fun timelineRangeOf(courseTimes: List<Pair<LocalTime, LocalTime>>): TimelineRange {
+    val defaultStart = LocalTime(8, 0)
+    val defaultEnd = LocalTime(22, 0)
+    return TimelineRange(
+        start = minOf(defaultStart, courseTimes.minOfOrNull { it.first } ?: defaultStart),
+        end = maxOf(defaultEnd, courseTimes.maxOfOrNull { it.second } ?: defaultEnd),
+    )
+}
+
+internal data class TimelineRange(
+    val start: LocalTime,
+    val end: LocalTime,
+) {
+    val durationMinutes: Int
+        get() = (end.toSecondOfDay() - start.toSecondOfDay()) / 60
+
+    fun marks(stepMinutes: Int): IntProgression =
+        (start.toSecondOfDay() / 60) until (end.toSecondOfDay() / 60) step stepMinutes
 }
 
 sealed interface CourseListSideEffect {

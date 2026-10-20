@@ -25,8 +25,10 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -80,14 +82,15 @@ import top.kagg886.eoa.util.verticalZoom
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToLong
-import kotlin.time.Duration.Companion.minutes
 
 @Composable
 fun CoursePageListScreen(
     index: Int,
     isCurrentPage: Boolean,
     scale: Float,
+    scrollOffset: Int,
     onZoomChange: (Float) -> Unit,
+    onScrollOffsetChange: (Int) -> Unit,
 ) {
     val nav = LocalNavController.current
 
@@ -131,6 +134,7 @@ fun CoursePageListScreen(
         state = state,
         isCurrentPage = isCurrentPage,
         initialScale = scale,
+        initialScrollOffset = scrollOffset,
         useNightMode = useNightMode,
         hideWeekendCourse = hideWeekendCourse,
         onCourseItemClicked = {
@@ -139,7 +143,8 @@ fun CoursePageListScreen(
         onCourseConflictClicked = { startTime, endTime ->
             model.navigateToConflictDetail(startTime, endTime)
         },
-        onZoomChange = onZoomChange
+        onZoomChange = onZoomChange,
+        onScrollOffsetChange = onScrollOffsetChange,
     )
 }
 
@@ -148,11 +153,13 @@ private fun CoursePageScreenContent(
     state: CoursePageState,
     isCurrentPage: Boolean,
     initialScale: Float,
+    initialScrollOffset: Int,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
     onZoomChange: (Float) -> Unit,
+    onScrollOffsetChange: (Int) -> Unit,
 ) {
     when (state) {
         is CoursePageState.Failed -> {
@@ -193,6 +200,7 @@ private fun CoursePageScreenContent(
                 currentWeekCourse = state.currentWeekCourse,
                 period = state.period,
                 initialScale = initialScale,
+                initialScrollOffset = initialScrollOffset,
                 useNightMode = useNightMode,
                 hideWeekendCourse = hideWeekendCourse,
                 isCurrentPage = isCurrentPage,
@@ -200,6 +208,7 @@ private fun CoursePageScreenContent(
                 onCourseItemClicked = onCourseItemClicked,
                 onCourseConflictClicked = onCourseConflictClicked,
                 onZoomChange = onZoomChange,
+                onScrollOffsetChange = onScrollOffsetChange,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -214,6 +223,7 @@ private fun CoursePageScreenSuccess(
     currentWeekCourse: Map<Int, List<TodayClass>>,
     period: Map<Int, Pair<LocalTime, LocalTime>>,
     initialScale: Float,
+    initialScrollOffset: Int,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
     isCurrentPage: Boolean,
@@ -221,6 +231,7 @@ private fun CoursePageScreenSuccess(
     onCourseItemClicked: (TodayClass.Single) -> Unit,
     onCourseConflictClicked: (LocalDateTime, LocalDateTime) -> Unit,
     onZoomChange: (Float) -> Unit,
+    onScrollOffsetChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expandedCourseKey by remember {
@@ -231,6 +242,13 @@ private fun CoursePageScreenSuccess(
     }
 
     val zoomState = rememberVerticalZoomState(initialScale = initialScale)
+
+    LaunchedEffect(initialScale, isCurrentPage) {
+        // 缓存页跟随外部缩放；当前页保留本地手势状态，避免异步回传覆盖。
+        if (!isCurrentPage) {
+            zoomState.snapTo(initialScale)
+        }
+    }
 
     val coroutineScope = rememberCoroutineScope()
     val zoomEnabled = expandedCourseKey == null
@@ -307,9 +325,24 @@ private fun CoursePageScreenSuccess(
 
     val timelineRange = remember(currentWeekCourse) { timelineRangeOf(currentWeekCourse) }
     val minuteHeight = 2.4.dp * zoomState.scale
-    val scrollState = remember(thisWeekStartDate) { //-20分钟留白
-        val elapsedMinutes = ((currentDate.time.toSecondOfDay() - 20.minutes.inWholeSeconds - timelineRange.start.toSecondOfDay()) / 60f).coerceIn(0f, timelineRange.durationMinutes.toFloat())
-        ScrollState(initial = with(density) { (minuteHeight * elapsedMinutes).roundToPx() })
+    val scrollState = remember(thisWeekStartDate) {
+        ScrollState(initial = initialScrollOffset)
+    }
+
+    val currentOnScrollOffsetChange by rememberUpdatedState(onScrollOffsetChange)
+    LaunchedEffect(scrollState, isCurrentPage) {
+        if (isCurrentPage) {
+            snapshotFlow { scrollState.value }.collect { offset ->
+                currentOnScrollOffsetChange(offset)
+            }
+        }
+    }
+
+    LaunchedEffect(initialScrollOffset, isCurrentPage, scrollState.maxValue) {
+        // 缓存页同步偏移；滚动范围随缩放更新后，再按新范围对齐。
+        if (!isCurrentPage) {
+            scrollState.scrollTo(initialScrollOffset)
+        }
     }
 
     BoxWithConstraints(
@@ -565,45 +598,16 @@ private fun CourseTimelineScope.ClockTickLabels(range: TimelineRange, tickInterv
 }
 
 private fun timelineRangeOf(currentWeekCourse: Map<Int, List<TodayClass>>): TimelineRange {
-    val courses = currentWeekCourse.values.flatten()
-    val defaultStart = LocalTime(8, 0)
-    val defaultEnd = LocalTime(22, 0)
-
-    //保护课程为空的情况下使用minOf会crash的bug，这种情况为一周都没有课程
-    if (courses.isEmpty()) {
-        return TimelineRange(defaultStart, defaultEnd)
-    }
-
-    val earliest = courses.minOf { course ->
+    val courseTimes = currentWeekCourse.values.flatten().map { course ->
         when (course) {
-            is TodayClass.Single -> minOf(
-                course.date.first.time,
-                course.fullDate.first.time,
+            is TodayClass.Single -> (
+                minOf(course.date.first.time, course.fullDate.first.time) to
+                    maxOf(course.date.second.time, course.fullDate.second.time)
             )
-
-            else -> course.date.first.time
+            else -> course.date.first.time to course.date.second.time
         }
     }
-
-    val latest = courses.maxOf { course ->
-        when (course) {
-            is TodayClass.Single -> maxOf(
-                course.date.second.time,
-                course.fullDate.second.time,
-            )
-
-            else -> course.date.second.time
-        }
-    }
-
-    //对最早课程和最晚课程取约束
-    val start = minOf(defaultStart, earliest)
-    val end = maxOf(defaultEnd, latest)
-
-    return TimelineRange(
-        start = start,
-        end = end
-    )
+    return timelineRangeOf(courseTimes)
 }
 
 private fun interpolateTime(start: LocalTime, end: LocalTime, progress: Float): LocalTime {
@@ -921,17 +925,6 @@ private fun coursePastelOf(
     }
 
     return palette[(seed and Int.MAX_VALUE) % palette.size]
-}
-
-private data class TimelineRange(
-    val start: LocalTime,
-    val end: LocalTime
-) {
-    val durationMinutes: Int
-        get() = (end.toSecondOfDay() - start.toSecondOfDay()) / 60
-
-    fun marks(stepMinutes: Int): IntProgression =
-        (start.toSecondOfDay() / 60) until (end.toSecondOfDay() / 60) step stepMinutes
 }
 
 private val TodayClass.segmentKey: CourseSegmentKey

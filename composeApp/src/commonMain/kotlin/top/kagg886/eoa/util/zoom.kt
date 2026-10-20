@@ -52,6 +52,18 @@ class VerticalZoomState(
     internal var pendingScale by mutableStateOf<Float?>(null)
     internal var scrollCompensatedScale by mutableFloatStateOf(scale)
 
+    /** Updates an inactive surface without emitting a gesture or retaining its anchor. */
+    fun snapTo(scale: Float) {
+        if (!scale.isFinite()) {
+            return
+        }
+
+        this.scale = scale.coerceIn(minScale, maxScale)
+        zoomAnchorY = null
+        pendingScale = null
+        scrollCompensatedScale = this.scale
+    }
+
     internal fun zoomBy(zoomChange: Float, anchorY: Float?): Float {
         if (!zoomChange.isFinite() || zoomChange <= 0f) {
             return 1f
