@@ -167,7 +167,7 @@ class MainRouteViewModel(val database: AppDatabase) :
         postSideEffect(
             MainRouteViewEffect.Toast(
                 type = SnackBarType.Info,
-                message = "开始同步"
+                message = "开始同步，请勿退出App。"
             )
         )
 
