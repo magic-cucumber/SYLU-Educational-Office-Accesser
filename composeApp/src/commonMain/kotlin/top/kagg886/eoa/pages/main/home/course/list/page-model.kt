@@ -15,6 +15,7 @@ import kotlinx.datetime.atTime
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -180,7 +181,7 @@ class CoursePageViewModel(
                             DateTimeUnit.WEEK
                         ),
                         currentWeekCourse = data,
-                        currentDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+                        currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()),
                         period = AppSyncMMKV.period
                     )
                 }
@@ -213,7 +214,7 @@ sealed interface CoursePageState {
     data class Failed(val msg: String) : CoursePageState
     data class Success(
         val thisWeekStartDate: LocalDate,
-        val currentDate: LocalDate,
+        val currentDate: LocalDateTime,
         val currentWeekCourse: Map<Int, List<TodayClass>>, //key为星期几，值为 该天的所有课程
         val period: Map<Int, Pair<LocalTime, LocalTime>>, //节次信息
     ) : CoursePageState

@@ -9,12 +9,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -210,13 +210,12 @@ private fun CoursePageScreenContent(
 @Composable
 private fun CoursePageScreenSuccess(
     thisWeekStartDate: LocalDate,
-    currentDate: LocalDate,
+    currentDate: LocalDateTime,
     currentWeekCourse: Map<Int, List<TodayClass>>,
     period: Map<Int, Pair<LocalTime, LocalTime>>,
     initialScale: Float,
     useNightMode: Boolean,
     hideWeekendCourse: Boolean,
-    scrollState: androidx.compose.foundation.ScrollState = rememberScrollState(),
     isCurrentPage: Boolean,
     longShotEnabled: Boolean,
     onCourseItemClicked: (TodayClass.Single) -> Unit,
@@ -305,6 +304,14 @@ private fun CoursePageScreenSuccess(
         }
     }
 
+
+    val timelineRange = remember(currentWeekCourse) { timelineRangeOf(currentWeekCourse) }
+    val minuteHeight = 2.4.dp * zoomState.scale
+    val scrollState = remember(thisWeekStartDate) { //-20分钟留白
+        val elapsedMinutes = ((currentDate.time.toSecondOfDay() - 20.minutes.inWholeSeconds - timelineRange.start.toSecondOfDay()) / 60f).coerceIn(0f, timelineRange.durationMinutes.toFloat())
+        ScrollState(initial = with(density) { (minuteHeight * elapsedMinutes).roundToPx() })
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .clickable(
@@ -340,7 +347,6 @@ private fun CoursePageScreenSuccess(
             }
         }
 
-        val timelineRange = remember(currentWeekCourse) { timelineRangeOf(currentWeekCourse) }
 
         val scale = zoomState.scale
         //网格线横跨所有日期列，只能画在 CourseLayout 上；刻度间隔在此算好，同时用于网格与 TimeAxis
@@ -349,14 +355,14 @@ private fun CoursePageScreenSuccess(
             scale >= 1f -> 30
             else -> 60
         }
-        val timelineHeight = timelineRange.durationMinutes * 2.4.dp * scale
+        val timelineHeight = timelineRange.durationMinutes * minuteHeight
         val gridColor = MaterialTheme.colorScheme.outlineVariant
         val days = visibleDays.toList()
 
         Column {
             CourseComponentHeader(
                 weekStartDate = thisWeekStartDate,
-                currentDate = currentDate,
+                currentDate = currentDate.date,
                 allowIsoWeekNumber = days,
                 timelineWidth = timeAxisWidth,
             )
