@@ -38,6 +38,7 @@ import top.kagg886.eoa.App
 import top.kagg886.eoa.ImageProcessingApp
 import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.installCoilConfig
+import top.kagg886.eoa.worker.installLightSyncTask
 import top.kagg886.eoa.rememberDeepLinkController
 import top.kagg886.eoa.util.longshot.ProvideLongShot
 import top.kagg886.report.CrashApp
@@ -64,6 +65,11 @@ private fun handleObjectiveCException(exception: NSException?) {
     logger.a { error }
     CrashConfig.hasUnResolveCrash = true
     CrashConfig.crashText = error
+}
+
+/** Called from AppDelegate before application launch finishes, including background launches. */
+fun initializeLightSyncTask(database: AppDatabase) {
+    installLightSyncTask(database)
 }
 
 fun createEmptyFlow(): MutableSharedFlow<String?> = MutableSharedFlow(

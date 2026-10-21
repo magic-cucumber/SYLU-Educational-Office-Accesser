@@ -37,6 +37,7 @@ import top.kagg886.eoa.pages.login.LoginViewModelState
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.worker.LightSyncTask
+import top.kagg886.eoa.worker.canRegister
 import top.kagg886.eoa.worker.isRegister
 import top.kagg886.eoa.worker.register
 import top.kagg886.eoa.worker.unregister
@@ -229,7 +230,7 @@ class MainRouteViewModel(val database: AppDatabase) :
                 )
             }
 
-            if (!LightSyncTask.isRegister) {
+            if (!LightSyncTask.isRegister() && LightSyncTask.canRegister()) {
                 LightSyncTask.register()
             }
 

@@ -161,6 +161,7 @@ object LightSyncTask : AutoCloseable {
     override fun close() = scope.cancel()
 }
 
-internal expect val LightSyncTask.isRegister: Boolean
-internal expect fun LightSyncTask.register()
-internal expect fun LightSyncTask.unregister()
+internal expect suspend fun LightSyncTask.isRegister(): Boolean
+internal expect suspend fun LightSyncTask.canRegister(): Boolean
+internal expect suspend fun LightSyncTask.register()
+internal expect suspend fun LightSyncTask.unregister()

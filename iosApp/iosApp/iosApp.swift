@@ -5,6 +5,14 @@ import ComposeApp
 final class AppDelegate: NSObject, UIApplicationDelegate {
     let database: AppDatabase
 
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        MainKt.initializeLightSyncTask(database: database)
+        return true
+    }
+
     override init() {
         Mmkv_iosKt.initializeMMKV()
         database = DatabaseKt.databaseBuilder(path: DatabaseKt.databasePath).build()

@@ -23,13 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 import kotlin.time.Clock
 
-class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.UncaughtExceptionHandler {
+class EOAApplication : Application(), EOAApplicationLike, SingletonImageLoader.Factory, Thread.UncaughtExceptionHandler {
     private val databaseDelegate = lazy {
         val db = databaseBuilder().build()
         registerKermitLoggerIfExists(db.appLogDao())
         db
     }
-    val database: AppDatabase by databaseDelegate
+    override val database: AppDatabase by databaseDelegate
 
     private val handlingCrash = AtomicBoolean(false)
     private var systemCrashHandler: Thread.UncaughtExceptionHandler? = null

@@ -134,6 +134,7 @@ kotlin {
         }
 
         androidMain.dependencies {
+            implementation(libs.androidx.work.runtime.ktx)
             implementation(libs.androidx.activityCompose)
             implementation(libs.kotlinx.coroutines.android)
         }
