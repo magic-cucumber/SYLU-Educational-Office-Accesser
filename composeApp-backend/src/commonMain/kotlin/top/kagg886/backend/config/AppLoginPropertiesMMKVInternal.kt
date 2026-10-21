@@ -16,8 +16,10 @@ private val mmkv = MMKV.mmkvWithID("login-properties", mode = MMKVMode.MULTI_PRO
 //不能在 扩展中 使用 AppLoginPropertiesMMKV 访问数据，因为此MMKV会根据SPI配置启用client
 object AppLoginPropertiesInternalMMKV : MMKV by mmkv, AppLoginPropertiesInternalMMKVType {
     override var username: String by string("username", "")
+    override var password: String by string("password", "")
 }
 
 sealed interface AppLoginPropertiesInternalMMKVType {
     var username: String
+    var password: String
 }

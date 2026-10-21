@@ -34,13 +34,11 @@ import platform.UIKit.UIWindowScene
 import platform.UniformTypeIdentifiers.UTTypeImage
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.database.AppDatabase
-import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.App
 import top.kagg886.eoa.ImageProcessingApp
 import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.installCoilConfig
 import top.kagg886.eoa.rememberDeepLinkController
-import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.eoa.util.longshot.ProvideLongShot
 import top.kagg886.report.CrashApp
 import top.kagg886.report.CrashConfig
@@ -75,12 +73,7 @@ fun createEmptyFlow(): MutableSharedFlow<String?> = MutableSharedFlow(
 
 @OptIn(ExperimentalNativeApi::class, ExperimentalForeignApi::class)
 @Suppress("unused")
-fun MainViewController(deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlow()): UIViewController {
-    val database: AppDatabase = databaseBuilder().build()
-    registerKermitLoggerIfExists(database.appLogDao())
-
-    initializeMMKV()
-
+fun MainViewController(database: AppDatabase, deepLinkFlow: MutableSharedFlow<String?> = createEmptyFlow()): UIViewController {
     setUnhandledExceptionHook {
         logger.a(it) { "App crashed" }
         CrashConfig.hasUnResolveCrash = true

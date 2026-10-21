@@ -36,6 +36,10 @@ import top.kagg886.eoa.pages.login.LoginSideEffect
 import top.kagg886.eoa.pages.login.LoginViewModelState
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
+import top.kagg886.eoa.worker.LightSyncTask
+import top.kagg886.eoa.worker.isRegister
+import top.kagg886.eoa.worker.register
+import top.kagg886.eoa.worker.unregister
 import top.kagg886.sylu_eoa.api.v2.BadCredentialsException
 import top.kagg886.sylu_eoa.api.v2.EOAClient
 import top.kagg886.sylu_eoa.api.v2.InvalidCredentialsException
@@ -44,6 +48,7 @@ import top.kagg886.sylu_eoa.api.v2.RetryLimitException
 import top.kagg886.util.asKtorLogger
 import top.kagg886.util.http.HttpClient
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -127,6 +132,8 @@ class MainRouteViewModel(val database: AppDatabase) :
         if ((Clock.System.now() - lastSyncTime > AppSettingsMMKV.syncDuration) || lastSyncFailed) {
             startSyncForce()
         } else {
+            //对course增量同步
+
             reduce { MainRouteViewState.SyncSuccess(lastSyncTime) }
         }
     }
@@ -191,10 +198,10 @@ class MainRouteViewModel(val database: AppDatabase) :
             client.captchaHandler = {
                 logger.w("发现验证码")
                 val defer = CompletableDeferred<String?>(viewModelScope.coroutineContext[Job])
-                postSideEffect(MainRouteViewEffect.NavigateToCaptcha(it,defer))
+                postSideEffect(MainRouteViewEffect.NavigateToCaptcha(it, defer))
                 defer.await() ?: throw NeedCaptchaException()
             }
-            val session = SyncSession(client,checkpoint)
+            val session = SyncSession(client, checkpoint)
 
             syncCalendar(session)
             syncTerms(session)
@@ -220,6 +227,10 @@ class MainRouteViewModel(val database: AppDatabase) :
                         success = true
                     )
                 )
+            }
+
+            if (!LightSyncTask.isRegister) {
+                LightSyncTask.register()
             }
 
             reduce { MainRouteViewState.SyncSuccess(completedAt) }
@@ -284,7 +295,7 @@ class MainRouteViewModel(val database: AppDatabase) :
          * - 将已写入的检查点重新作为内存值
          */
         suspend fun commit(
-            update: (SyncCheckpointEntity) -> SyncCheckpointEntity,
+            update: suspend (SyncCheckpointEntity) -> SyncCheckpointEntity,
             write: suspend () -> Unit = {}
         ) {
             val pending = update(checkpoint)
@@ -326,6 +337,12 @@ class MainRouteViewModel(val database: AppDatabase) :
         runOn<MainRouteViewState.SyncProcess> {
             if (session.checkpoint.courseSuccess) return@runOn
             reduce { state.copy(progress = MainRouteViewState.SyncProcessProgress.ProcessingCourseData) }
+
+            val light = LightSyncTask.store.data.first()
+            if (Clock.System.now() - light.bgSyncSuccessTime < 4.hours) { //如果后台写库时间<4h则跳过课程同步
+                session.commit({ it.copy(courseSuccess = true) })
+                return@runOn
+            }
 
             val picker = checkNotNull(AppSyncMMKV.picker) { "缺少学期信息" }
             val calendar = checkNotNull(AppSyncMMKV.calender) { "缺少校历信息" }
@@ -374,6 +391,8 @@ class MainRouteViewModel(val database: AppDatabase) :
                         )
                     })
                 }
+
+                LightSyncTask.store.updateData { it.copy(appSyncSuccessTime = Clock.System.now()) }
             }
             logger.i("成功同步课程信息")
         }
@@ -582,6 +601,8 @@ class MainRouteViewModel(val database: AppDatabase) :
         database.examDao().clear()
         database.secondClassDao().clear()
         syncDao.clear()
+
+        LightSyncTask.unregister()
     }
 
     fun logout() = intent {
@@ -684,7 +705,8 @@ sealed interface MainRouteViewEffect {
         val action: TextToastAction? = null,
     ) : MainRouteViewEffect
 
-    data class NavigateToCaptcha(val byte: ByteArray,val deferred: CompletableDeferred<String?>) : MainRouteViewEffect {
+    data class NavigateToCaptcha(val byte: ByteArray, val deferred: CompletableDeferred<String?>) :
+        MainRouteViewEffect {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false

@@ -3,6 +3,7 @@ adaptive = "1.2.0"
 adaptive-suite = "1.9.0"
 agp = "9.2.1"
 androidx-activityCompose = "1.13.0"
+androidx-datastore = "1.2.1"
 androidx-lifecycle = "2.11.0"
 androidx-navigation = "2.9.2"
 androidx-navigationevent = "1.1.0"
@@ -34,6 +35,7 @@ materialIconsExtended = "1.7.3"
 materialKolor = "5.0.0"
 mkmb-core = "1.3.2"
 mkmb-platform = "1.3.2"
+multiprocess-datastore = "1.0.0"
 okio = "3.18.1"
 orbitViewmodel = "12.0.0"
 paging = "3.5.1"
@@ -54,6 +56,7 @@ android-application-gradle-plugin = { module = "com.android.application:com.andr
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 android-library-gradle-plugin = { module = "com.android.library:com.android.library.gradle.plugin", version.ref = "agp" }
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
+androidx-datastore-core = { module = "androidx.datastore:datastore-core-okio", version.ref = "androidx-datastore" }
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 androidx-lifecycle-runtime = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
@@ -108,6 +111,10 @@ mkmb-core = { module = "top.kagg886.mkmb:core", version.ref = "mkmb-core" }
 mkmb-platform-linux = { module = "top.kagg886.mkmb:platform-linux", version.ref = "mkmb-platform" }
 mkmb-platform-macos = { module = "top.kagg886.mkmb:platform-macos", version.ref = "mkmb-platform" }
 mkmb-platform-windows = { module = "top.kagg886.mkmb:platform-windows", version.ref = "mkmb-platform" }
+multiprocess-datastore-core = { module = "top.kagg886.datastore.multiprocess:core", version.ref = "multiprocess-datastore" }
+multiprocess-datastore-platform-linux = { module = "top.kagg886.datastore.multiprocess:platform-linux", version.ref = "multiprocess-datastore" }
+multiprocess-datastore-platform-macos = { module = "top.kagg886.datastore.multiprocess:platform-macos", version.ref = "multiprocess-datastore" }
+multiprocess-datastore-platform-windows = { module = "top.kagg886.datastore.multiprocess:platform-windows", version.ref = "multiprocess-datastore" }
 multiplatform-markdown-renderer-coil3 = { module = "com.mikepenz:multiplatform-markdown-renderer-coil3", version.ref = "markdown" }
 multiplatform-markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdown" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }

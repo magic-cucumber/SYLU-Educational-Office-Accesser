@@ -40,6 +40,8 @@ kotlin {
             binaries.framework {
                 baseName = "ComposeApp"
                 isStatic = true
+                export(project(":composeApp-backend"))
+                export(project(":util"))
                 linkerOpts += "-lsqlite3"
             }
         }
@@ -59,6 +61,8 @@ kotlin {
 
             implementation(libs.kermit)
             implementation(libs.okio)
+            // implementation(libs.multiprocess.datastore.core)
+            implementation(libs.androidx.datastore.core)
             implementation(libs.multiplatform.markdown.renderer.m3)
             implementation(libs.multiplatform.markdown.renderer.coil3)
 
@@ -106,10 +110,10 @@ kotlin {
             implementation(libs.cryptography.provider.base)
             implementation(libs.cryptography.provider.optimal)
 
-            implementation(project.dependencies.project(":composeApp-backend"))
+            api(project.dependencies.project(":composeApp-backend"))
             implementation(project.dependencies.project(":widgetApp"))
             implementation(project.dependencies.project(":crashApp"))
-            implementation(project.dependencies.project(":util"))
+            api(project.dependencies.project(":util"))
             //方便切换到闭源后端
             implementation(project.dependencies.project(":eoa-lib:network-html-api"))
             implementation(project.dependencies.project(":eoa-lib:network-graduate-api"))
@@ -142,6 +146,9 @@ kotlin {
             implementation(libs.mkmb.platform.windows)
             implementation(libs.mkmb.platform.linux)
             implementation(libs.mkmb.platform.macos)
+//            implementation(libs.multiprocess.datastore.platform.windows)
+//            implementation(libs.multiprocess.datastore.platform.linux)
+//            implementation(libs.multiprocess.datastore.platform.macos)
         }
     }
 }

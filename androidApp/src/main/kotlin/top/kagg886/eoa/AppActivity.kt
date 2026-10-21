@@ -16,7 +16,6 @@ import io.github.vinceglb.filekit.dialogs.init
 import kotlinx.coroutines.flow.MutableStateFlow
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.eoa.util.longshot.setContent
-import top.kagg886.util.initializeMMKV
 
 class AppActivity : ComponentActivity() {
     private val deepLinkFlow = MutableStateFlow<String?>(null)
@@ -25,7 +24,6 @@ class AppActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        initializeMMKV()
         FileKit.init(this)
 
         WindowRecomposerPolicy.setFactory { rootView ->

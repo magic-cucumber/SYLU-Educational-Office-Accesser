@@ -18,6 +18,7 @@ import top.kagg886.backend.database.AppDatabase
 import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.backend.database.dao.AppLog
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
+import top.kagg886.util.initializeMMKV
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 import kotlin.time.Clock
@@ -40,6 +41,7 @@ class EOAApplication : Application(), SingletonImageLoader.Factory, Thread.Uncau
         // the crashed process has closed its own Room instance.
         if (isCrashProcess()) return
 
+        initializeMMKV()
         database
         systemCrashHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(this)

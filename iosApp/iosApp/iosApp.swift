@@ -1,13 +1,26 @@
 import SwiftUI
+import UIKit
 import ComposeApp
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    let database: AppDatabase
+
+    override init() {
+        Mmkv_iosKt.initializeMMKV()
+        database = DatabaseKt.databaseBuilder(path: DatabaseKt.databasePath).build()
+        super.init()
+        LoggerKt.registerKermitLoggerIfExists(appLogDao: database.appLogDao())
+    }
+}
 
 @main
 struct ComposeApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     let deepLinks = MainKt.createEmptyFlow()
 
     var body: some Scene {
         WindowGroup {
-            ContentView(deepLinks: deepLinks).ignoresSafeArea(.all).onOpenURL { url in
+            ContentView(database: appDelegate.database, deepLinks: deepLinks).ignoresSafeArea(.all).onOpenURL { url in
                 let result = deepLinks.tryEmit(value: url.absoluteString)
                 print("detect deeplinks: \(url), jump result is \(result)")
             }
@@ -16,6 +29,7 @@ struct ComposeApp: App {
 }
 
 struct ContentView: UIViewControllerRepresentable {
+    let database: AppDatabase
     let deepLinks: Kotlinx_coroutines_coreMutableSharedFlow
 
     func makeCoordinator() -> LongShotScreenshotServiceHolder {
@@ -23,7 +37,7 @@ struct ContentView: UIViewControllerRepresentable {
     }
     
     func makeUIViewController(context: Context) -> UIViewController {
-        let viewController = MainKt.MainViewController(deepLinkFlow: deepLinks)
+        let viewController = MainKt.MainViewController(database: database, deepLinkFlow: deepLinks)
         context.coordinator.install(for: viewController)
         return viewController
     }

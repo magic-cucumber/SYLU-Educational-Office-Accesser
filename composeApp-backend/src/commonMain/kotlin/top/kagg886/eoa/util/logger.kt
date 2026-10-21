@@ -29,7 +29,7 @@ fun registerKermitLoggerIfExists(appLogDao: AppLogDao): Unit = lock.withLock {
     Logger.addLogWriter(DatabaseLogger(appLogDao))
 }
 
-private class DatabaseLogger(private val appLogDao: AppLogDao) : LogWriter() {
+class DatabaseLogger(private val appLogDao: AppLogDao) : LogWriter() {
     private val scope = CoroutineScope(Dispatchers.IO)
     override fun log(
         severity: Severity,
