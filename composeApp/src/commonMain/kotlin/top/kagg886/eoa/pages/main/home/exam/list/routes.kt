@@ -2,6 +2,7 @@ package top.kagg886.eoa.pages.main.home.exam.list
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.dialog
+import androidx.navigation.navDeepLink
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.component.nav.transition
 import top.kagg886.eoa.pages.main.home.exam.list.content.ExamListContentRoute
@@ -20,6 +21,8 @@ import top.kagg886.eoa.pages.main.home.exam.list.filter.ExamListFilterScreen
 data object ExamListRoute
 
 val installExamListRoute: NavGraphBuilder.() -> Unit = {
-    transition<ExamListContentRoute> { ExamListContentScreen() }
+    transition<ExamListContentRoute>(
+        deepLinks = listOf(navDeepLink<ExamListContentRoute>(basePath = "eoa://exam/list"))
+    ) { ExamListContentScreen() }
     dialog<ExamListFilterRoute> { ExamListFilterScreen() }
 }

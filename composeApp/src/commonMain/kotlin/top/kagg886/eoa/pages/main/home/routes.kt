@@ -7,6 +7,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.navigation
+import androidx.navigation.navDeepLink
 import kotlinx.serialization.Serializable
 import top.kagg886.eoa.component.nav.transition
 import top.kagg886.eoa.pages.main.home.course.CourseRoute
@@ -31,12 +32,18 @@ import top.kagg886.eoa.pages.main.home.summary.SummaryScreen
 data object HomeRoute
 
 val installHomeGraph: NavGraphBuilder.() -> Unit = {
-    transition<SummaryRoute>{ SummaryScreen() }
+    transition<SummaryRoute>(
+        deepLinks = listOf(navDeepLink<SummaryRoute>(basePath = "eoa://home/summary"))
+    ) { SummaryScreen() }
     dialog<SystemNoticeRoute>(dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) { SystemNoticeScreen() }
     navigation<CourseRoute>(startDestination = CourseListRoute, builder = installCourseGraph)
     navigation<ExamRoute>(startDestination = ExamListRoute, builder = installExamGraph)
-    transition<GPARoute> { GPAScreen() }
+    transition<GPARoute>(
+        deepLinks = listOf(navDeepLink<GPARoute>(basePath = "eoa://gpa/list"))
+    ) { GPAScreen() }
 
     navigation<LinkRoute>(startDestination = LinkListRoute, builder = installLinkGraph)
-    transition<SecondClassRoute> { SecondClassScreen() }
+    transition<SecondClassRoute>(
+        deepLinks = listOf(navDeepLink<SecondClassRoute>(basePath = "eoa://home/second-class"))
+    ) { SecondClassScreen() }
 }

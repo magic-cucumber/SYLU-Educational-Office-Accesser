@@ -2,6 +2,51 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Use built-in icon types (iOS 9.1+), avoiding unavailable SF Symbol names. -->
+	<!-- The system decides how many actions fit; earlier entries have priority. -->
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>eoa://home/summary</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>今日课程</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeDate</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>eoa://course/list</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>本周课程</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeTime</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>eoa://home/second-class</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>第二课堂</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeContact</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>eoa://exam/list</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>考试成绩</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeTask</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>eoa://gpa/list</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>绩点列表</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeFavorite</string>
+		</dict>
+	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>top.kagg886.eoa.light-sync</string>

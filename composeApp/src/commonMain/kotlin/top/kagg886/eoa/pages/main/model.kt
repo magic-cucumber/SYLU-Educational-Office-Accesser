@@ -24,6 +24,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.atTime
 import kotlinx.datetime.plus
 import org.orbitmvi.orbit.syntax.Syntax
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
@@ -35,6 +36,7 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.login.LoginSideEffect
 import top.kagg886.eoa.pages.login.LoginViewModelState
 import top.kagg886.eoa.pages.rootViewModel
+import top.kagg886.eoa.pages.welcome.WelcomeSideEffect
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.worker.LightSyncTask
 import top.kagg886.eoa.worker.canRegister
@@ -112,6 +114,15 @@ class MainRouteViewModel(val database: AppDatabase) :
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     override suspend fun Syntax<MainRouteViewState, MainRouteViewEffect>.init() {
+        if (!AppInitializeMMKV.initialize) {
+            postSideEffect(MainRouteViewEffect.NavigateToWelcome)
+        }
+        if (AppLoginPropertiesMMKV.username.isEmpty() || AppLoginPropertiesMMKV.password.isEmpty()) {
+            postSideEffect(MainRouteViewEffect.NavigateToLogin)
+            return
+        }
+
+
         val time = try {
             syncDao.getLastSyncTime()
         } catch (e: Exception) {
@@ -723,4 +734,5 @@ sealed interface MainRouteViewEffect {
     }
 
     data object SyncErrorToast : MainRouteViewEffect
+    data object NavigateToWelcome : MainRouteViewEffect
 }

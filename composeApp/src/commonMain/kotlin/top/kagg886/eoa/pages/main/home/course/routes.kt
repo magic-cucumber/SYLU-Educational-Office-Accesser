@@ -29,7 +29,9 @@ data object CourseRoute
 
 
 val installCourseGraph: NavGraphBuilder.() -> Unit = {
-    transition<CourseListRoute> { CourseListScreen() }
+    transition<CourseListRoute>(
+        deepLinks = listOf(navDeepLink<CourseListRoute>(basePath = "eoa://course/list"))
+    ) { CourseListScreen() }
     transition<CourseDetailRoute>(
         deepLinks = listOf(
             navDeepLink<CourseDetailRoute>(basePath = "eoa://course/profile")

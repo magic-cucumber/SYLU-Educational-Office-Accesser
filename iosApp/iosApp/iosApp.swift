@@ -2,6 +2,47 @@ import SwiftUI
 import UIKit
 import ComposeApp
 
+private enum AppDeepLinks {
+    // Share the same buffered flow between Scene callbacks, URLs, and Compose.
+    static let flow = MainKt.createEmptyFlow()
+
+    static func handleShortcut(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
+        switch shortcutItem.type {
+        case "eoa://home/summary", "eoa://course/list", "eoa://home/second-class",
+             "eoa://exam/list", "eoa://gpa/list":
+            return flow.tryEmit(value: shortcutItem.type)
+        default:
+            return false
+        }
+    }
+}
+
+final class ShortcutSceneDelegate: NSObject, UIWindowSceneDelegate {
+    private var pendingShortcut: UIApplicationShortcutItem?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        pendingShortcut = connectionOptions.shortcutItem
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        guard let shortcutItem = pendingShortcut else { return }
+        pendingShortcut = nil
+        _ = AppDeepLinks.handleShortcut(shortcutItem)
+    }
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        performActionFor shortcutItem: UIApplicationShortcutItem,
+        completionHandler: @escaping (Bool) -> Void
+    ) {
+        completionHandler(AppDeepLinks.handleShortcut(shortcutItem))
+    }
+}
+
 final class AppDelegate: NSObject, UIApplicationDelegate {
     let database: AppDatabase
 
@@ -11,6 +52,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         MainKt.initializeLightSyncTask(database: database)
         return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(
+            name: nil,
+            sessionRole: connectingSceneSession.role
+        )
+        configuration.delegateClass = ShortcutSceneDelegate.self
+        return configuration
     }
 
     override init() {
@@ -24,7 +78,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct ComposeApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    let deepLinks = MainKt.createEmptyFlow()
+    let deepLinks = AppDeepLinks.flow
 
     var body: some Scene {
         WindowGroup {

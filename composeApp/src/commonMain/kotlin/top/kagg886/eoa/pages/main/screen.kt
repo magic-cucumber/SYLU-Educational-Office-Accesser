@@ -23,6 +23,7 @@ import top.kagg886.eoa.LocalSnackBarHost
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.pages.captcha.CaptchaRoute
 import top.kagg886.eoa.pages.login.LoginRoute
+import top.kagg886.eoa.pages.welcome.WelcomeRoute
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.SnackBarType.*
 import top.kagg886.eoa.util.showSnackBar
@@ -84,6 +85,13 @@ fun MainScreen(content: @Composable () -> Unit) {
             is MainRouteViewEffect.NavigateToCaptcha -> {
                 defer = effect.deferred
                 nav.navigate(CaptchaRoute(effect.byte))
+            }
+
+            is MainRouteViewEffect.NavigateToWelcome -> nav.navigate(WelcomeRoute) {
+                popUpTo(nav.graph.id) {
+                    inclusive = true
+                }
+                launchSingleTop = true
             }
         }
     }

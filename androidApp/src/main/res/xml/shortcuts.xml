@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Public framework drawables available since API 1; no vendor/private icon names. -->
+    <!-- Order is the display priority when a launcher cannot display all five shortcuts. -->
+    <shortcut
+        android:shortcutId="today_courses"
+        android:icon="@android:drawable/ic_menu_today"
+        android:shortcutShortLabel="@string/shortcut_today_courses">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="top.kagg886.eoa.androidApp"
+            android:targetClass="top.kagg886.eoa.AppActivity"
+            android:data="eoa://home/summary"/>
+    </shortcut>
+    <shortcut
+        android:shortcutId="week_courses"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:shortcutShortLabel="@string/shortcut_week_courses">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="top.kagg886.eoa.androidApp"
+            android:targetClass="top.kagg886.eoa.AppActivity"
+            android:data="eoa://course/list"/>
+    </shortcut>
+    <shortcut
+        android:shortcutId="second_class"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:shortcutShortLabel="@string/shortcut_second_class">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="top.kagg886.eoa.androidApp"
+            android:targetClass="top.kagg886.eoa.AppActivity"
+            android:data="eoa://home/second-class"/>
+    </shortcut>
+    <shortcut
+        android:shortcutId="exam_results"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:shortcutShortLabel="@string/shortcut_exam_results">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="top.kagg886.eoa.androidApp"
+            android:targetClass="top.kagg886.eoa.AppActivity"
+            android:data="eoa://exam/list"/>
+    </shortcut>
+    <shortcut
+        android:shortcutId="gpa_list"
+        android:icon="@android:drawable/star_big_on"
+        android:shortcutShortLabel="@string/shortcut_gpa_list">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="top.kagg886.eoa.androidApp"
+            android:targetClass="top.kagg886.eoa.AppActivity"
+            android:data="eoa://gpa/list"/>
+    </shortcut>
+</shortcuts>
