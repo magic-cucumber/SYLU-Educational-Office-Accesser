@@ -238,7 +238,10 @@ private fun SyncSettingsContent(
                 onPauseOrDispose { }
             }
             // 0 = 检测中, 1 = 不可用(canRegister=false), 2 = 未注册(isRegister=false), 3 = 运行中
-            val bgSyncStatus by produceState(0, bgSyncRefreshKey) {
+            val bgSyncStatus by produceState(0, bgSyncRefreshKey, state) {
+                value = 0
+                // 初始化或前台同步期间暂不诊断；同步结束后重新查询注册状态。
+                if (!syncButtonEnabled) return@produceState
                 value = when {
                     !LightSyncTask.canRegister() -> 1
                     !LightSyncTask.isRegister() -> 2

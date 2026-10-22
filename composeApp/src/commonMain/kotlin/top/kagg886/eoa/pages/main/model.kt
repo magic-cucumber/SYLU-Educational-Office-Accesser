@@ -39,6 +39,7 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.pages.welcome.WelcomeSideEffect
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.worker.LightSyncTask
+import top.kagg886.eoa.worker.LightSyncTaskConfig
 import top.kagg886.eoa.worker.canRegister
 import top.kagg886.eoa.worker.isRegister
 import top.kagg886.eoa.worker.register
@@ -614,6 +615,7 @@ class MainRouteViewModel(val database: AppDatabase) :
         database.secondClassDao().clear()
         syncDao.clear()
 
+        LightSyncTask.store.updateData { LightSyncTaskConfig() }
         LightSyncTask.unregister()
     }
 
