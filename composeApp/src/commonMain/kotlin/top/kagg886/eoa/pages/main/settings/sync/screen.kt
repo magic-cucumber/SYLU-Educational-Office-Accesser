@@ -15,15 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ViewTimeline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
@@ -37,6 +41,13 @@ import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.showSnackBar
+import top.kagg886.eoa.worker.LightSyncTask
+import top.kagg886.eoa.worker.canRegister
+import top.kagg886.eoa.worker.isRegister
+import top.kagg886.eoa.worker.register
+import top.kagg886.util.Platform
+import top.kagg886.util.current
+import top.kagg886.util.openAppSystemSettings
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -218,6 +229,104 @@ private fun SyncSettingsContent(
                 modifier = Modifier.clickable(
                     enabled = syncButtonEnabled,
                     onClick = { onSyncActionStarted() }
+                )
+            )
+
+            var bgSyncRefreshKey by remember { mutableIntStateOf(0) }
+            LifecycleResumeEffect(Unit) {
+                bgSyncRefreshKey++
+                onPauseOrDispose { }
+            }
+            // 0 = 检测中, 1 = 不可用(canRegister=false), 2 = 未注册(isRegister=false), 3 = 运行中
+            val bgSyncStatus by produceState(0, bgSyncRefreshKey) {
+                value = when {
+                    !LightSyncTask.canRegister() -> 1
+                    !LightSyncTask.isRegister() -> 2
+                    else -> 3
+                }
+            }
+            val bgSyncScope = rememberCoroutineScope()
+
+            val bgSyncStatusColor: Color? = when (bgSyncStatus) {
+                1 -> MaterialTheme.colorScheme.error
+                2 -> Color(0xFFFFA726)
+                else -> null
+            }
+
+            val bgSyncHeadline = when (bgSyncStatus) {
+                1 -> "后台同步不可用"
+                2 -> "后台同步存在问题"
+                3 -> "后台同步运行中"
+                else -> "后台同步诊断"
+            }
+
+            val bgSyncSupporting = when {
+                !syncButtonEnabled -> "请等待同步成功后查看"
+                bgSyncStatus == 0 -> "正在检测后台同步状态..."
+                bgSyncStatus == 1 -> when (Platform.current) {
+                    is Platform.Android -> "后台同步被系统禁用，点击前往系统设置放行后台权限"
+                    is Platform.Apple -> "后台同步不可用，请确保「后台App刷新」功能打开且允许本App在后台运行，点击前往设置"
+                    is Platform.Desktop -> "当前平台不支持后台同步"
+                }
+
+                bgSyncStatus == 2 -> "当前后台任务未运行，单击以运行"
+                else -> "后台任务运行中，点击刷新状态"
+            }
+
+            ListItem(
+                colors = if (!syncButtonEnabled) {
+                    ListItemDefaults.colors(
+                        headlineColor = disabledContentColor,
+                        leadingIconColor = disabledContentColor,
+                        supportingColor = disabledSupportingColor,
+                    )
+                } else if (bgSyncStatusColor != null) {
+                    ListItemDefaults.colors(
+                        headlineColor = bgSyncStatusColor,
+                        leadingIconColor = bgSyncStatusColor,
+                    )
+                } else {
+                    ListItemDefaults.colors()
+                },
+                headlineContent = {
+                    AnimatedContent(
+                        targetState = bgSyncHeadline,
+                        transitionSpec = {
+                            slideInVertically { height -> height } + fadeIn() togetherWith slideOutVertically { height -> -height } + fadeOut()
+                        }
+                    ) {
+                        Text(it)
+                    }
+                },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.CloudSync,
+                        contentDescription = "后台同步",
+                    )
+                },
+                supportingContent = {
+                    AnimatedContent(
+                        targetState = bgSyncSupporting,
+                        transitionSpec = {
+                            slideInVertically { height -> height } + fadeIn() togetherWith slideOutVertically { height -> -height } + fadeOut()
+                        }
+                    ) {
+                        Text(it)
+                    }
+                },
+                modifier = Modifier.clickable(
+                    enabled = syncButtonEnabled && bgSyncStatus != 0,
+                    onClick = {
+                        when (bgSyncStatus) {
+                            1 -> openAppSystemSettings()
+                            2 -> bgSyncScope.launch {
+                                LightSyncTask.register()
+                                bgSyncRefreshKey++
+                            }
+
+                            else -> bgSyncRefreshKey++
+                        }
+                    }
                 )
             )
         }
