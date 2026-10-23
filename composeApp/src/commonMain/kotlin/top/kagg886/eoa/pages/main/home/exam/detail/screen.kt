@@ -4,8 +4,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -49,10 +47,8 @@ import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
-import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
 import top.kagg886.eoa.util.shared.shareBoundsComposed
-import top.kagg886.eoa.util.shared.shareElementComposed
 import top.kagg886.sylu_eoa.api.v2.bean.ExamStatus
 import top.kagg886.util.toFixed
 
@@ -79,28 +75,38 @@ fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
             is ExamDetailSideEffect.ShowToast -> {
                 mainViewModel.toast(type = SnackBarType.Info, it.message)
             }
+
             ExamDetailSideEffect.NavigateBack -> {
                 nav.popBackStack()
+            }
+
+            is ExamDetailSideEffect.NavigateToExamDetailRoute -> {
+                nav.navigate(ExamDetailRoute(it.id))
             }
         }
     }
 
     ExamDetailScreenContent(
-        state, Modifier.shareBoundsComposed(
+        state = state,
+        modifier = Modifier.shareBoundsComposed(
             sharedContentState = rememberSharedContentState(
                 key = "exam-card-to-detail-${route.examId}"
             ),
             animatedVisibilityScope = LocalAnimatedContentScope.current,
             resizeMode = RemeasureToBounds,
             clipInOverlayDuringTransition = OverlayClip(CardDefaults.shape)
-        )
+        ),
+        onExamHistoryNavigate = {
+            model.navigateToExamDetailRoute(it)
+        }
     )
 }
 
 @Composable
 private fun ExamDetailScreenContent(
     state: ExamDetailState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExamHistoryNavigate: (ExamEntity) -> Unit,
 ) {
     when (state) {
         is ExamDetailState.Failed -> {
@@ -112,11 +118,11 @@ private fun ExamDetailScreenContent(
         }
 
         is ExamDetailState.Loading -> {
-            ExamDetailScreenSuccess(null, modifier)
+            ExamDetailScreenSuccess(null, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
 
         is ExamDetailState.Success -> {
-            ExamDetailScreenSuccess(state, modifier)
+            ExamDetailScreenSuccess(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
     }
 }
@@ -124,20 +130,21 @@ private fun ExamDetailScreenContent(
 @Composable
 private fun ExamDetailScreenSuccess(
     state: ExamDetailState.Success?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExamHistoryNavigate: (ExamEntity) -> Unit
 ) {
     val design = currentLayoutType()
     when (design) {
         NavigationSuiteType.NavigationBar -> {
-            ExamDetailPanelPhone(state, modifier)
+            ExamDetailPanelPhone(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
 
         NavigationSuiteType.NavigationRail -> {
-            ExamDetailPanelTablet(state, modifier)
+            ExamDetailPanelTablet(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
 
         NavigationSuiteType.NavigationDrawer -> {
-            ExamDetailPanelTablet(state, modifier)
+            ExamDetailPanelTablet(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
     }
 }
@@ -145,7 +152,8 @@ private fun ExamDetailScreenSuccess(
 @Composable
 private fun ExamDetailPanelPhone(
     state: ExamDetailState.Success?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExamHistoryNavigate: (ExamEntity) -> Unit,
 ) {
     val lazyListState = rememberScrollState()
     Column(
@@ -165,7 +173,7 @@ private fun ExamDetailPanelPhone(
         // 考试详细表格
         ExamDetailTable(state?.records?.detail)
 
-        ExamDetailTimeLine(state?.timeline)
+        ExamDetailTimeLine(state?.timeline, onExamHistoryNavigate = onExamHistoryNavigate)
 
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -174,7 +182,8 @@ private fun ExamDetailPanelPhone(
 @Composable
 private fun ExamDetailPanelTablet(
     state: ExamDetailState.Success?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExamHistoryNavigate: (ExamEntity) -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -204,7 +213,7 @@ private fun ExamDetailPanelTablet(
         // 考试详细表格
         ExamDetailTable(state?.records?.detail)
 
-        ExamDetailTimeLine(state?.timeline)
+        ExamDetailTimeLine(state?.timeline, onExamHistoryNavigate = onExamHistoryNavigate)
     }
 }
 
@@ -578,7 +587,8 @@ private fun ExamDetailTable(
 @Composable
 private fun ExamDetailTimeLine(
     entity: List<ExamEntity>?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExamHistoryNavigate: (ExamEntity) -> Unit,
 ) {
     val visible by remember(entity) {
         derivedStateOf {
@@ -618,7 +628,7 @@ private fun ExamDetailTimeLine(
                         exam = null,
                         isFirst = it == 0,
                         isLast = it == 2,
-                        visible = visible
+                        visible = visible,
                     )
                 }
             } else {
@@ -628,7 +638,8 @@ private fun ExamDetailTimeLine(
                         exam = exam,
                         isFirst = index == 0,
                         isLast = index == entity.size - 1,
-                        visible = false
+                        visible = false,
+                        onExamHistoryNavigate = { onExamHistoryNavigate(exam) }
                     )
                 }
             }
@@ -642,10 +653,9 @@ private fun TimeLineItem(
     isFirst: Boolean,
     isLast: Boolean,
     visible: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onExamHistoryNavigate: () -> Unit = {},
 ) {
-    val nav = LocalNavController.current
-
     Row(
         modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -738,11 +748,7 @@ private fun TimeLineItem(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(enabled = !visible && exam != null) {
-                    exam?.id?.let { examId ->
-                        nav.navigate(ExamDetailRoute(examId))
-                    }
-                }
+                .clickable(enabled = !visible && exam != null, onClick = onExamHistoryNavigate)
                 .placeholder(
                     visible = visible,
                     highlight = PlaceholderHighlight.shimmer()

@@ -1,7 +1,5 @@
 package top.kagg886.eoa.pages.main.home.exam.detail
 
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.lazy.LazyListState
 import kotlinx.coroutines.delay
 import top.kagg886.eoa.util.BaseViewModel
 import org.orbitmvi.orbit.syntax.Syntax
@@ -15,43 +13,46 @@ class ExamDetailViewModel(
     private val recordId: Long,
     private val syncState: MainRouteViewState,
     database: AppDatabase
-) : BaseViewModel<ExamDetailState, ExamDetailSideEffect>(name = "ExamDetailViewModel", initial = ExamDetailState.Loading) {
+) : BaseViewModel<ExamDetailState, ExamDetailSideEffect>(
+    name = "ExamDetailViewModel",
+    initial = ExamDetailState.Loading
+) {
     private val examDao = database.examDao()
 
 
     override suspend fun Syntax<ExamDetailState, ExamDetailSideEffect>.init() {
-            if (syncState is MainRouteViewState.SyncFailed) {
-                // 非首次同步则展示脏数据
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return
-                }
-                // 否则提示同步失败
-                reduce {
-                    ExamDetailState.Failed(syncState.message)
-                }
-                return
-            }
-
-            // 正在同步则展示加载中
-            if (syncState is MainRouteViewState.SyncProcess) {
-                // 如果有脏数据则展示
-                if (syncState.haveDirtyData) {
-                    setDataUnsafe().join()
-                    return
-                }
-                // 否则展示加载中
-                reduce {
-                    ExamDetailState.Loading
-                }
-                return
-            }
-
-            // 同步成功则展示数据
-            if (syncState is MainRouteViewState.SyncSuccess) {
+        if (syncState is MainRouteViewState.SyncFailed) {
+            // 非首次同步则展示脏数据
+            if (syncState.haveDirtyData) {
                 setDataUnsafe().join()
                 return
             }
+            // 否则提示同步失败
+            reduce {
+                ExamDetailState.Failed(syncState.message)
+            }
+            return
+        }
+
+        // 正在同步则展示加载中
+        if (syncState is MainRouteViewState.SyncProcess) {
+            // 如果有脏数据则展示
+            if (syncState.haveDirtyData) {
+                setDataUnsafe().join()
+                return
+            }
+            // 否则展示加载中
+            reduce {
+                ExamDetailState.Loading
+            }
+            return
+        }
+
+        // 同步成功则展示数据
+        if (syncState is MainRouteViewState.SyncSuccess) {
+            setDataUnsafe().join()
+            return
+        }
     }
 
     fun setDataUnsafe() = intent {
@@ -93,6 +94,16 @@ class ExamDetailViewModel(
         }
     }
 
+    fun navigateToExamDetailRoute(entity: ExamEntity) = intent {
+        runOn<ExamDetailState.Success> {
+            if (entity.id == state.records.id) {
+                postSideEffect(ExamDetailSideEffect.ShowToast("当前页面为此考试历程，无需跳转。"))
+                return@runOn
+            }
+            postSideEffect(ExamDetailSideEffect.NavigateToExamDetailRoute(entity.id!!))
+        }
+    }
+
 }
 
 
@@ -109,4 +120,5 @@ sealed interface ExamDetailState {
 sealed interface ExamDetailSideEffect {
     data class ShowToast(val message: String) : ExamDetailSideEffect
     data object NavigateBack : ExamDetailSideEffect
+    data class NavigateToExamDetailRoute(val id: Long) : ExamDetailSideEffect
 }
