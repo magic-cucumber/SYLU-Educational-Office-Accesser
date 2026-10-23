@@ -4,17 +4,37 @@ import UIKit
 @MainActor
 final class LongShotScreenshotDelegate: NSObject, UIScreenshotServiceDelegate {
     private let bridge: LongShotBridge
+    private weak var view: UIView?
+    private var snapshot: UIView?
 
-    init(bridge: LongShotBridge) {
+    init(bridge: LongShotBridge, view: UIView) {
         self.bridge = bridge
+        self.view = view
     }
 
     func screenshotService(
         _ screenshotService: UIScreenshotService,
         generatePDFRepresentationWithCompletion completionHandler: @escaping (Data?, Int, CGRect) -> Void
     ) {
+        // Freeze the visible UIKit surface before Compose changes its screenshot layout.
+        // PDF strips come from the Compose GraphicsLayer, which excludes this native overlay.
+        guard snapshot == nil, let view, view.window != nil,
+              let snapshot = view.snapshotView(afterScreenUpdates: false) else {
+            completionHandler(nil, 0, .zero)
+            return
+        }
+        snapshot.frame = view.bounds
+        snapshot.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        snapshot.isUserInteractionEnabled = true
+        snapshot.accessibilityElementsHidden = true
+        self.snapshot = snapshot
+        view.addSubview(snapshot)
+
         bridge.generatePdf { data in
             DispatchQueue.main.async {
+                // The bridge waits for the restored Compose frame before completing.
+                snapshot.removeFromSuperview()
+                self.snapshot = nil
                 completionHandler(data, 0, .zero)
             }
         }
@@ -36,7 +56,7 @@ final class LongShotScreenshotServiceHolder {
             return
         }
 
-        let delegate = LongShotScreenshotDelegate(bridge: bridge)
+        let delegate = LongShotScreenshotDelegate(bridge: bridge, view: viewController.view)
         self.service = service
         self.delegate = delegate
         service.delegate = delegate

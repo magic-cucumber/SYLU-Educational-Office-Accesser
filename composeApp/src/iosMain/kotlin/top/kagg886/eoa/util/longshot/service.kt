@@ -43,8 +43,18 @@ public class LongShotBridge internal constructor(
                 "LongShot".asTaggedLogger.w(e) { "iOS 整页截图失败" }
             } finally {
                 onLongShotEnabledChange(false)
-                complete(data)
-                job = null
+                try {
+                    // Keep UIKit's snapshot overlay until scroll restoration and sticky text
+                    // have reached a new frame, including on timeout or cancellation.
+                    withContext(NonCancellable) {
+                        withTimeoutOrNull(1.seconds) { controller.awaitRestoredFrame() }
+                    }
+                } catch (e: Exception) {
+                    "LongShot".asTaggedLogger.w(e) { "iOS 截图后画面刷新失败" }
+                } finally {
+                    job = null
+                    complete(data)
+                }
             }
         }
     }

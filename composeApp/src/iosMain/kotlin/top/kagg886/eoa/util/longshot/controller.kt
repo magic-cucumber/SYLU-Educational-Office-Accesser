@@ -26,6 +26,10 @@ internal class LongShotController(
     private val registry: LongShotTargetRegistry,
     private val view: UIView,
 ) {
+    suspend fun awaitRestoredFrame() {
+        root.awaitDraw()
+    }
+
     suspend fun generate(): NSData? {
         val target = registry.target() ?: return null
         val size = root.size

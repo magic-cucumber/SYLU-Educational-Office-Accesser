@@ -61,11 +61,15 @@ internal class LongShotRoot(val layer: GraphicsLayer) {
     var request by mutableIntStateOf(0)
     val completed = MutableStateFlow(-1)
 
-    suspend fun capture() = withTimeout(3.seconds) {
+    suspend fun awaitDraw() = withTimeout(3.seconds) {
         // Let scroll-triggered layout run, then explicitly invalidate our capture layer.
         withFrameNanos { }
         val generation = ++request
         completed.first { it >= generation }
+    }
+
+    suspend fun capture() = withTimeout(3.seconds) {
+        awaitDraw()
         layer.toImageBitmap()
     }
 }
