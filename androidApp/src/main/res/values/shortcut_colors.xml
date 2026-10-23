@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="shortcut_icon_foreground">#4285F4</color>
+    <color name="shortcut_icon_background">#F8F9FF</color>
+    <color name="shortcut_icon_outline">#E1E3EB</color>
+</resources>
