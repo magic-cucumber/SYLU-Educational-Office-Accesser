@@ -1,13 +1,18 @@
 package top.kagg886.eoa.pages.main.home.course.list
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -18,6 +23,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -547,7 +553,8 @@ private fun CourseTimelineScope.PeriodLabels(
                 .offset(y = top)
                 .fillMaxWidth()
                 .height(height)
-                .background(containerColor, RoundedCornerShape(10.dp)),
+                .clip(RoundedCornerShape(10.dp))
+                .background(containerColor),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -558,20 +565,30 @@ private fun CourseTimelineScope.PeriodLabels(
                 color = contentColor,
                 maxLines = 1,
             )
-            //缩放过矮时只显示节次号，避免时间文字溢出到相邻块
-            if (height >= 56.dp) {
-                Text(
-                    text = start.toTimeLabel(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.75f),
-                    maxLines = 1,
-                )
-                Text(
-                    text = end.toTimeLabel(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.75f),
-                    maxLines = 1,
-                )
+
+            AnimatedVisibility(
+                visible = height >= 56.dp,
+                enter = fadeIn(tween(220)) +
+                    slideInVertically(tween(220)) { it / 2 } +
+                    expandVertically(tween(220), expandFrom = Alignment.Top, clip = false),
+                exit = fadeOut(tween(220)) +
+                    slideOutVertically(tween(220)) { it / 2 } +
+                    shrinkVertically(tween(220), shrinkTowards = Alignment.Top, clip = false),
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = start.toTimeLabel(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.75f),
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = end.toTimeLabel(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.75f),
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
