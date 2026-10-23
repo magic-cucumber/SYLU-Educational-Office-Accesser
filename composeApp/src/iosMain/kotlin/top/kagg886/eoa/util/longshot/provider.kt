@@ -27,17 +27,22 @@ fun ProvideLongShot(content: @Composable () -> Unit) {
     val layer = rememberGraphicsLayer()
     val root = remember(layer) { LongShotRoot(layer) }
     val registry = remember { LongShotTargetRegistry() }
+    val longShotEnabled = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     DisposableEffect(root, registry, viewController) {
         val bridge = LongShotBridge(
             scope, LongShotController(root, registry, viewController.view),
+            onLongShotEnabledChange = { longShotEnabled.value = it },
         )
         installLongShotBridge(bridge)
         onDispose {
             bridge.dispose()
         }
     }
-    CompositionLocalProvider(LocalLongShotTargetRegistry provides registry) {
+    CompositionLocalProvider(
+        LocalLongShotTargetRegistry provides registry,
+        LocalLongShotEnabled provides longShotEnabled.value,
+    ) {
         Box(Modifier.fillMaxSize().onGloballyPositioned {
             root.bounds = it.boundsInRoot()
             root.size = it.size

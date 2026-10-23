@@ -1,5 +1,6 @@
 package top.kagg886.eoa.util.longshot
 
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.*
 import platform.Foundation.NSData
 import top.kagg886.util.asTaggedLogger
@@ -11,6 +12,7 @@ private var activeLongShotBridge: LongShotBridge? = null
 public class LongShotBridge internal constructor(
     private val scope: CoroutineScope,
     private val controller: LongShotController,
+    private val onLongShotEnabledChange: (Boolean) -> Unit,
 ) {
     private var job: Job? = null
     private var disposed = false
@@ -29,12 +31,18 @@ public class LongShotBridge internal constructor(
         job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             var data: NSData? = null
             try {
-                data = withTimeout(3.seconds) { controller.generate() }
+                onLongShotEnabledChange(true)
+                data = withTimeout(3.seconds) {
+                    // Let consumers apply their screenshot layout before reading its bounds.
+                    withFrameNanos { }
+                    controller.generate()
+                }
             } catch (_: CancellationException) {
                 // Cancellation is reported as a failed PDF, but must still complete UIKit.
             } catch (e: Exception) {
                 "LongShot".asTaggedLogger.w(e) { "iOS 整页截图失败" }
             } finally {
+                onLongShotEnabledChange(false)
                 complete(data)
                 job = null
             }

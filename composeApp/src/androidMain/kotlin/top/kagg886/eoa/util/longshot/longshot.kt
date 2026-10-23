@@ -12,6 +12,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.CompositionContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
@@ -75,6 +78,7 @@ private class LongShotRootView(
     activity: ComponentActivity,
 ) : FrameLayout(activity) {
     private val registry = LongShotTargetRegistry()
+    private var longShotEnabled by mutableStateOf(false)
     private val composeView = ComposeView(activity).apply {
         layoutParams = LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -85,6 +89,7 @@ private class LongShotRootView(
         context = activity,
         registry = registry,
         contentView = composeView,
+        onLongShotEnabledChange = { longShotEnabled = it },
     ).apply {
         layoutParams = LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -107,7 +112,10 @@ private class LongShotRootView(
     ) {
         composeView.setParentCompositionContext(parent)
         composeView.setContent {
-            CompositionLocalProvider(LocalLongShotTargetRegistry provides registry) {
+            CompositionLocalProvider(
+                LocalLongShotTargetRegistry provides registry,
+                LocalLongShotEnabled provides longShotEnabled,
+            ) {
                 content()
             }
         }
@@ -119,14 +127,19 @@ private class MiuiLongShotControlView(
     context: Context,
     private val registry: LongShotTargetRegistry,
     private val contentView: View,
+    private val onLongShotEnabledChange: (Boolean) -> Unit,
 ) : ScrollView(context) {
     private val fillerView = View(context)
+    private var initialized = false
 
     init {
         logger.d("创建 MIUI 长截屏代理 View")
         alpha = 0f
         isFillViewport = true
-        isVerticalScrollBarEnabled = false
+        // MIUI disables fading in ContentPort.start() and restores it in finish().
+        // Both flags must be enabled to enter that branch. This proxy stays transparent.
+        isVerticalScrollBarEnabled = true
+        super.setScrollbarFadingEnabled(true)
         overScrollMode = OVER_SCROLL_NEVER
 
         val wrapper = LinearLayout(context).apply {
@@ -146,6 +159,16 @@ private class MiuiLongShotControlView(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ),
         )
+        initialized = true
+    }
+
+    override fun setScrollbarFadingEnabled(fadeScrollbars: Boolean) {
+        super.setScrollbarFadingEnabled(fadeScrollbars)
+        // View construction can invoke overrides before our constructor has completed.
+        if (initialized) {
+            logger.d("MIUI 长截图状态：enabled=${!fadeScrollbars}")
+            onLongShotEnabledChange(!fadeScrollbars)
+        }
     }
 
     override fun onAttachedToWindow() {
@@ -154,6 +177,8 @@ private class MiuiLongShotControlView(
     }
 
     override fun onDetachedFromWindow() {
+        super.setScrollbarFadingEnabled(true)
+        onLongShotEnabledChange(false)
         logger.d("MIUI 长截屏代理 View 已卸载")
         super.onDetachedFromWindow()
     }
