@@ -281,6 +281,7 @@ private fun ExamItem(
                     clipInOverlayDuringTransition = OverlayClip(CardDefaults.shape)
                 )
             }
+            .clip(CardDefaults.outlinedShape)
             .clickable(enabled = !showPlaceHolder) {
                 exam?.let { onExamItemClicked(it) }
             },
