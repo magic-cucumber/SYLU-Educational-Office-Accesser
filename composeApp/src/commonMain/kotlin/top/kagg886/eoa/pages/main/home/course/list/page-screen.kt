@@ -42,6 +42,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -79,6 +82,7 @@ import top.kagg886.eoa.pages.main.home.summary.hasCourseConflict
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
+import top.kagg886.eoa.util.longshot.LocalLongShotEnabled
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.eoa.util.shared.rememberSharedContentState
@@ -88,6 +92,7 @@ import top.kagg886.eoa.util.verticalZoom
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToLong
+import kotlin.math.roundToInt
 
 @Composable
 fun CoursePageListScreen(
@@ -335,6 +340,7 @@ private fun CoursePageScreenSuccess(
     val scrollState = remember(thisWeekStartDate) {
         ScrollState(initial = initialScrollOffset)
     }
+    var viewportCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     val currentOnScrollOffsetChange by rememberUpdatedState(onScrollOffsetChange)
     LaunchedEffect(scrollState, isCurrentPage) {
@@ -354,6 +360,8 @@ private fun CoursePageScreenSuccess(
 
     BoxWithConstraints(
         modifier = modifier
+            // Keep the viewport outside verticalZoom's internal verticalScroll.
+            .onPlaced { viewportCoordinates = it }
             .clickable(
                 interactionSource = null,
                 indication = null,
@@ -474,6 +482,7 @@ private fun CoursePageScreenSuccess(
                                         course = course,
                                         useNightMode = useNightMode,
                                         onClick = { handleCourseClicked(course) },
+                                        viewportCoordinates = { viewportCoordinates },
                                         modifier = Modifier.fillMaxSize(),
                                     )
                                 }
@@ -638,7 +647,11 @@ private fun interpolateTime(start: LocalTime, end: LocalTime, progress: Float): 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CourseCalendarCard(
-    course: TodayClass, useNightMode: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
+    course: TodayClass,
+    useNightMode: Boolean,
+    onClick: () -> Unit,
+    viewportCoordinates: () -> LayoutCoordinates?,
+    modifier: Modifier = Modifier,
 ) {
     val single = course as? TodayClass.Single
 
@@ -721,17 +734,23 @@ private fun CourseCalendarCard(
             title = title,
             location = location,
             contentColor = contentColor,
+            viewportCoordinates = viewportCoordinates,
             modifier = Modifier.weight(1f).fillMaxWidth().padding(
-                horizontal = 5.dp, vertical = 4.dp
+                horizontal = 5.dp, vertical = CourseCardVerticalPadding
             )
         )
     }
 }
 
 @Composable
-private fun CourseCardText(
-    title: String, location: String?, contentColor: Color, modifier: Modifier = Modifier
+internal fun CourseCardText(
+    title: String,
+    location: String?,
+    contentColor: Color,
+    viewportCoordinates: () -> LayoutCoordinates?,
+    modifier: Modifier = Modifier,
 ) {
+    val longShotEnabled = LocalLongShotEnabled.current
     BoxWithConstraints(modifier = modifier) {
         val typographyMetrics = courseCardTypographyMetrics(maxWidth)
         val titleStyle = MaterialTheme.typography.labelMedium.copy(
@@ -841,9 +860,22 @@ private fun CourseCardText(
             layout(
                 width = layoutWidth, height = layoutHeight
             ) {
-                titlePlaceable?.placeRelative(0, 0)
+                val viewport = viewportCoordinates()
+                val textCoordinates = coordinates
+                // Reading coordinates here reruns placement as ancestors scroll or resize.
+                // Move the selected text as one block, bounded by its padded card content.
+                val textOffset = if (!longShotEnabled && viewport?.isAttached == true &&
+                    textCoordinates?.isAttached == true
+                ) {
+                    (viewport.positionInRoot().y + CourseCardVerticalPadding.toPx() -
+                        textCoordinates.positionInRoot().y).roundToInt()
+                        .coerceIn(0, (layoutHeight - contentHeight).coerceAtLeast(0))
+                } else {
+                    0
+                }
+                titlePlaceable?.placeRelative(0, textOffset)
                 locationPlaceable?.placeRelative(
-                    x = 0, y = titlePlaceable?.height ?: 0
+                    x = 0, y = textOffset + (titlePlaceable?.height ?: 0)
                 )
             }
         }
@@ -974,6 +1006,8 @@ private fun LocalTime.toTimeLabel(): String {
 }
 
 private const val MinutesPerHour = 60
+
+private val CourseCardVerticalPadding = 4.dp
 
 private val CourseExpansionAnimationSpec = tween<Float>(
     durationMillis = 280
