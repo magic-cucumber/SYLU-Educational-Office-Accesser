@@ -4,6 +4,11 @@ package top.kagg886.eoa.component.snack
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,13 +26,18 @@ import com.dokar.sonner.*
 
 @Composable
 fun EOAToaster(
+    modifier: Modifier = Modifier,
     state: ToasterState = rememberToasterState(),
     dark: Boolean = false,
-    modifier: Modifier = Modifier
 ) {
+    val navigationPadding = WindowInsets.navigationBars
+        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+        .asPaddingValues()
+
     Toaster(
         state = state,
         modifier = modifier,
+        containerPadding = navigationPadding,
         richColors = true,
         darkTheme = dark,
         actionSlot = { toast ->
