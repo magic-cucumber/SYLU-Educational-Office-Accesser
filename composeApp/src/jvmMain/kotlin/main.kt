@@ -20,6 +20,7 @@ import top.kagg886.backend.database.databaseBuilder
 import top.kagg886.eoa.App
 import top.kagg886.eoa.LocalDatabase
 import top.kagg886.eoa.installCoilConfig
+import top.kagg886.eoa.util.longshot.LocalLongShotEnabled
 import top.kagg886.eoa.util.registerKermitLoggerIfExists
 import top.kagg886.report.CrashApp
 import top.kagg886.util.asTaggedLogger
@@ -104,7 +105,7 @@ fun main() {
                 icon = painterResource(Res.drawable.icon),
                 onCloseRequest = ::exitApplication,
                 content = {
-                    CompositionLocalProvider(LocalDatabase provides database) {
+                    CompositionLocalProvider(LocalDatabase provides database, LocalLongShotEnabled provides false) {
                         App()
                     }
                 }
