@@ -1,6 +1,6 @@
 # 更新日志
 
-## 4.5.7 (2026-10-25)
+## 4.6.0 (2026-10-25)
 
 #### 错误修复
 
@@ -22,7 +22,7 @@
 - 在考试历程中点击当前正在查看的考试时，显示避免重复打开相同页面的提示。
 - 开始前台同步时，提醒同步期间不要退出应用。
 
-**完整的更新日志**: https://gitee.com/kagg886/sylu-educational-office-accesser/compare/4.5.6...HEAD
+**完整的更新日志**: https://gitee.com/kagg886/sylu-educational-office-accesser/compare/4.5.6...4.6.0
 
 ## 4.5.6 (2026-10-15)
 
@@ -35,7 +35,7 @@
 - 修复部分实验课周次格式无法识别，导致课程同步失败的问题。
 - 修复部分情况下退出登录时闪退的问题。
 
-**完整的更新日志**: https://gitee.com/kagg886/sylu-educational-office-accesser/compare/4.5.5...HEAD
+**完整的更新日志**: https://gitee.com/kagg886/sylu-educational-office-accesser/compare/4.5.5...4.5.6
 
 ## 4.5.5 (2026-10-07)
 
