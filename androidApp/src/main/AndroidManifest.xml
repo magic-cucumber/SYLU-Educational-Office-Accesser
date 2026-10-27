@@ -5,6 +5,19 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-sdk tools:overrideLibrary="
+        androidx.datastore.core,
+        androidx.datastore.datastore,
+        androidx.datastore.preferences,
+        androidx.datastore.preferences.core,
+        androidx.work,
+        androidx.work.ktx,
+        androidx.navigation,
+        androidx.navigation.compose,
+        androidx.navigation.common,
+        org.jetbrains.androidx.navigation.compose,
+        org.jetbrains.androidx.navigation.common,
+        org.jetbrains.androidx.navigation,
+        org.jetbrains.androidx.compose.material3.adaptive,
         com.mohamedrejeb.compose.dnd,
         com.dokar.sonner.core,
         ai.koog.agents.core,

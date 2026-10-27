@@ -9,6 +9,10 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+kotlin {
+    compilerOptions.jvmTarget.set(JvmTarget.JVM_22)
+}
+
 extensions.configure<ApplicationExtension>("android") {
     namespace = "top.kagg886.eoa.androidApp"
     compileSdk = 37
@@ -29,10 +33,6 @@ extensions.configure<ApplicationExtension>("android") {
         sourceCompatibility = JavaVersion.VERSION_22
         targetCompatibility = JavaVersion.VERSION_22
         isCoreLibraryDesugaringEnabled = useDesugarApi
-    }
-
-    kotlin {
-        compilerOptions.jvmTarget.set(JvmTarget.JVM_22)
     }
 
     signingConfigs {

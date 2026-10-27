@@ -3,8 +3,10 @@ package top.kagg886.eoa.worker
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Build
+import android.os.PowerManager
 import android.os.Process
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -45,7 +47,8 @@ internal actual suspend fun LightSyncTask.register() {
         .setInitialDelay(2, TimeUnit.HOURS)
         .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
         .build()
-    WorkManager.getInstance(currentApplication()).enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request).await()
+    WorkManager.getInstance(currentApplication())
+        .enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request).await()
 }
 
 internal actual suspend fun LightSyncTask.unregister() {
@@ -79,7 +82,7 @@ internal actual suspend fun LightSyncTask.canRegister(): Boolean = withContext(D
                 mode == AppOpsManager.MODE_ALLOWED
             }
             // Android 6 has no AOSP background-execution restriction app-op.
-            else -> false
+            else -> true
         }
     } catch (e: Exception) {
         logger.e(
