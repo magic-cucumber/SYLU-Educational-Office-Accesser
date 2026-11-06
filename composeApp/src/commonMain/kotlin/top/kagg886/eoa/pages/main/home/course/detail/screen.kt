@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,7 +32,6 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
@@ -40,6 +40,7 @@ import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.isNavigationBar
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.applyIf
@@ -69,11 +70,13 @@ val CourseDetailRoute.sharedBoundsKey: String?
 
 @Composable
 fun CourseDetailScreen(route: CourseDetailRoute) = HomeScreen(
-    EOAHomeModule.COURSE,
-    title = { Text("课程详情") },
-    back = {
-        BackIconButton()
-    }
+    route = EOAHomeModule.COURSE,
+    suite = {
+        title { Text("课程详情") }
+        back {
+            BackIconButton()
+        }
+    },
 ) {
     val rootModel = rootViewModel()
     val rootState by rootModel.collectAsState()
@@ -142,14 +145,18 @@ private fun CourseDetailScreenSuccess(
 ) {
     val design = currentLayoutType()
     when (design) {
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium,
         NavigationSuiteType.NavigationBar -> {
             CourseDetailPanelPhone(state, modifier)
         }
 
+        NavigationSuiteType.WideNavigationRailCollapsed,
         NavigationSuiteType.NavigationRail -> {
             CourseDetailPanelTablet(state, modifier)
         }
 
+        NavigationSuiteType.WideNavigationRailExpanded,
         NavigationSuiteType.NavigationDrawer -> {
             CourseDetailPanelTablet(state, modifier)
         }
@@ -421,7 +428,7 @@ private fun ClassSchedule(
             )
         )
 
-        if (currentLayoutType() != NavigationSuiteType.NavigationBar) {
+        if (!currentLayoutType().isNavigationBar) {
             for (record in (state?.records ?: List(6) { null }).chunked(2)) {
                 Row(
                     modifier,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +29,6 @@ import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
@@ -39,6 +39,7 @@ import top.kagg886.eoa.pages.main.home.exam.list.ExamListState
 import top.kagg886.eoa.pages.main.home.exam.list.examListViewModelOrNull
 import top.kagg886.eoa.util.createMenuButtonAnim
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.isNavigationBar
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
@@ -59,93 +60,100 @@ fun ExamListContentScreen() = RevealContainer(3, AppInitializeMMKV::tutorialExam
         val model = examListViewModelOrNull()
         val state = model?.collectAsState()
         val fabArrow = when (currentLayoutType()) {
+            NavigationSuiteType.ShortNavigationBarCompact,
+            NavigationSuiteType.ShortNavigationBarMedium,
             NavigationSuiteType.NavigationBar -> ContainerArrow.Top
             else -> ContainerArrow.Bottom
         }
 
+        val homeFabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+            Text("点这里查看本地统计的总绩点。")
+        }
+
         HomeScreen(
             route = EOAHomeModule.EXAM,
-            title = {
-                Text("考试列表")
-            },
-            menu = {
-                var expanded by remember { mutableStateOf(false) }
-                IconButton(
-                    onClick = { expanded = !expanded },
-                    modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
-                        Text("点这里可以打开筛选抽屉，也可以导出当前考试数据。")
-                    }
-                ) {
-                    AnimatedContent(
-                        targetState = expanded,
-                        transitionSpec = createMenuButtonAnim { expanded }
+            suite = {
+                title {
+                    Text("考试列表")
+                }
+                menu {
+                    var expanded by remember { mutableStateOf(false) }
+                    IconButton(
+                        onClick = { expanded = !expanded },
+                        modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
+                            Text("点这里可以打开筛选抽屉，也可以导出当前考试数据。")
+                        }
                     ) {
-                        when (it) {
-                            true -> Icon(
-                                Icons.Default.Close,
-                                contentDescription = "菜单"
-                            )
+                        AnimatedContent(
+                            targetState = expanded,
+                            transitionSpec = createMenuButtonAnim { expanded }
+                        ) {
+                            when (it) {
+                                true -> Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "菜单"
+                                )
 
-                            false -> Icon(
-                                Icons.Default.Menu,
-                                contentDescription = "关闭"
-                            )
+                                false -> Icon(
+                                    Icons.Default.Menu,
+                                    contentDescription = "关闭"
+                                )
+                            }
                         }
                     }
-                }
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    DropdownMenuItem(
-                        onClick = {
-                            model?.navigateToFilter()
-                            expanded = false
-                        },
-                        text = {
-                            Text("开启筛选")
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.FilterList,
-                                contentDescription = "open",
-                            )
-                        },
-                        enabled = state?.value is ExamListState.Success
-                    )
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            onClick = {
+                                model?.navigateToFilter()
+                                expanded = false
+                            },
+                            text = {
+                                Text("开启筛选")
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.FilterList,
+                                    contentDescription = "open",
+                                )
+                            },
+                            enabled = state?.value is ExamListState.Success
+                        )
 
-                    DropdownMenuItem(
-                        onClick = {
-                            model?.navigateToExport()
-                            expanded = false
-                        },
-                        text = {
-                            Text("导出")
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.FileDownload,
-                                contentDescription = "export"
-                            )
-                        },
-                        enabled = state?.value is ExamListState.Success
-                    )
+                        DropdownMenuItem(
+                            onClick = {
+                                model?.navigateToExport()
+                                expanded = false
+                            },
+                            text = {
+                                Text("导出")
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.FileDownload,
+                                    contentDescription = "export"
+                                )
+                            },
+                            enabled = state?.value is ExamListState.Success
+                        )
+                    }
+                }
+                fab(modifier = homeFabModifier) {
+                    text {
+                        Text("绩点统计")
+                    }
+                    icon {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null
+                        )
+                    }
+                    onClick {model?.navigateToStatistic()}
                 }
             },
-            fabIcon = {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null
-                )
-            },
-            fabText = {
-                Text("绩点统计")
-            },
-            fabOnClick = {model?.navigateToStatistic()},
-            fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
-                Text("点这里查看本地统计的总绩点。")
-            }
         ) {
             ExamListScreenContent(
                 state?.value ?: ExamListState.Loading,
@@ -219,7 +227,7 @@ fun ExamListContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(16.dp)
     ) {
-        if (layoutType == NavigationSuiteType.NavigationBar) {
+        if (layoutType.isNavigationBar) {
             items(state?.entity ?: List(6) { null }) { exam ->
                 ExamItem(
                     exam = exam,

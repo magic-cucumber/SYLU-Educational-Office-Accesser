@@ -42,10 +42,14 @@ fun LinkListScreen() {
     val nav = LocalNavController.current
     HomeScreen(
         route = EOAHomeModule.LINK,
-        fabIcon = { Icon(Icons.Default.Edit, "") },
-        fabText = { Text("编辑友链") },
-        fabOnClick = { nav.navigate(LinkTipsRoute) },
-        title = { Text("友链") }
+        suite = {
+            title { Text("友链") }
+            fab {
+                text { Text("编辑友链") }
+                icon { Icon(Icons.Default.Edit, "") }
+                onClick { nav.navigate(LinkTipsRoute) }
+            }
+        },
     ) {
         val model = viewModel {
             LinkListModel()

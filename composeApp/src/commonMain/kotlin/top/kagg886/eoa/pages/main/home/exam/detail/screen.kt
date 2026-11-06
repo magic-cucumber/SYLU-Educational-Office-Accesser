@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -37,7 +38,6 @@ import top.kagg886.backend.database.dao.ExamEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
 import top.kagg886.eoa.pages.main.home.HomeScreen
@@ -58,9 +58,11 @@ data class ExamDetailRoute(val examId: Long)
 @Composable
 fun ExamDetailScreen(route: ExamDetailRoute) = HomeScreen(
     route = EOAHomeModule.EXAM,
-    title = { Text("考试详情") },
-    menu = null,
-    back = { BackIconButton() }
+    suite = {
+        title { Text("考试详情") }
+        back { BackIconButton() }
+        menu(null)
+    },
 ) {
     val mainViewModel = mainViewModelOrNull() ?: return@HomeScreen
     val nav = LocalNavController.current
@@ -135,14 +137,18 @@ private fun ExamDetailScreenSuccess(
 ) {
     val design = currentLayoutType()
     when (design) {
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium,
         NavigationSuiteType.NavigationBar -> {
             ExamDetailPanelPhone(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
 
+        NavigationSuiteType.WideNavigationRailCollapsed,
         NavigationSuiteType.NavigationRail -> {
             ExamDetailPanelTablet(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }
 
+        NavigationSuiteType.WideNavigationRailExpanded,
         NavigationSuiteType.NavigationDrawer -> {
             ExamDetailPanelTablet(state, modifier, onExamHistoryNavigate = onExamHistoryNavigate)
         }

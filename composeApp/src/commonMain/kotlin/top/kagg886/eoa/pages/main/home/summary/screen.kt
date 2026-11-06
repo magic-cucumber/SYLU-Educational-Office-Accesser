@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.More
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +44,6 @@ import top.kagg886.backend.config.AppLoginPropertiesMMKV
 import top.kagg886.backend.database.dao.CourseExtendEntity
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
@@ -60,6 +60,7 @@ import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
 import top.kagg886.eoa.pages.rootViewModel
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.isNavigationBar
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
@@ -82,11 +83,15 @@ fun SummaryScreen() {
         val nav = LocalNavController.current
 
         val suiteArrow = when (currentLayoutType()) {
+            NavigationSuiteType.ShortNavigationBarCompact,
+            NavigationSuiteType.ShortNavigationBarMedium,
             NavigationSuiteType.NavigationBar -> ContainerArrow.Top
             else -> ContainerArrow.End
         }
 
         val fabArrow = when (currentLayoutType()) {
+            NavigationSuiteType.ShortNavigationBarCompact,
+            NavigationSuiteType.ShortNavigationBarMedium,
             NavigationSuiteType.NavigationBar -> ContainerArrow.Top
             else -> ContainerArrow.Bottom
         }
@@ -120,54 +125,66 @@ fun SummaryScreen() {
         val state by model.collectAsState()
         val noticeState by noticeModel.collectAsState()
 
+        val homeFabModifier = Modifier.applyIf(currentClient != "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") {
+            revealableAutoMeasured(2, fabArrow) {
+                Text("点这里查看学校通知，重要消息会集中放在这里。")
+            }
+        }
+        val homeNavigationModifier = Modifier.revealableAutoMeasured(0, suiteArrow) {
+            Text("这里是主导航。可以在概要、课表、考试等页面之间切换。")
+        }
+
         HomeScreen(
             route = EOAHomeModule.SUMMARY,
-            title = {
-                Text("概要")
-            },
-            fabIcon = if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") null else {
-                {
-                    Icon(Icons.Default.Mail, "mail")
+            suite = {
+                title {
+                    Text("概要")
                 }
-            },
-            fabText = if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") null else {
-                {
-                    Text("通知")
-                }
-            },
-            fabModifier = Modifier.applyIf(currentClient != "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") {
-                revealableAutoMeasured(2, fabArrow) {
-                    Text("点这里查看学校通知，重要消息会集中放在这里。")
-                }
-            },
-            fabOnClick = {
-                nav.navigate(SystemNoticeRoute)
-            },
-            suiteModifier = Modifier.revealableAutoMeasured(0, suiteArrow) {
-                Text("这里是主导航。可以在概要、课表、考试等页面之间切换。")
-            },
-            fabBadge = {
-                when (val state = noticeState) {
-                    is SystemNoticeState.Success if (state.notices.count { !it.isRead } != 0) -> {
-                        Badge(containerColor = MaterialTheme.colorScheme.error) {
-                            Text("${state.notices.count { !it.isRead }}")
-                        }
+                menu {
+                    val nav = LocalNavController.current
+                    IconButton(
+                        onClick = {
+                            nav.navigate(SettingsRoute)
+                        },
+                        modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Bottom) {
+                            Text("这里可以打开设置，修改账号、同步和显示相关选项。")
+                        },
+                    ) {
+                        Icon(Icons.Default.AccountBox, contentDescription = "返回")
                     }
-
-                    else -> Unit
                 }
-            },
-            menu = {
-                val nav = LocalNavController.current
-                IconButton(
-                    onClick = {
-                        nav.navigate(SettingsRoute)
+                navigationModifier(homeNavigationModifier)
+                fab(
+                    badge = {
+                        when (val state = noticeState) {
+                            is SystemNoticeState.Success if (state.notices.count { !it.isRead } != 0) -> {
+                                Badge(containerColor = MaterialTheme.colorScheme.error) {
+                                    Text("${state.notices.count { !it.isRead }}")
+                                }
+                            }
+
+                            else -> Unit
+                        }
                     },
-                    modifier = Modifier.revealableAutoMeasured(1, ContainerArrow.Bottom) {
-                        Text("这里可以打开设置，修改账号、同步和显示相关选项。")
-                    },
+                    modifier = homeFabModifier,
                 ) {
-                    Icon(Icons.Default.AccountBox, contentDescription = "返回")
+                    text(
+                        if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") null else {
+                            {
+                                Text("通知")
+                            }
+                        }
+                    )
+                    icon(
+                        if (currentClient == "top.kagg886.sylu_eoa.api.graduate.EOAGraduateClientProvider") null else {
+                            {
+                                Icon(Icons.Default.Mail, "mail")
+                            }
+                        }
+                    )
+                    onClick {
+                        nav.navigate(SystemNoticeRoute)
+                    }
                 }
             },
         ) {
@@ -188,7 +205,7 @@ private fun SummaryContentV2(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val suiteType = currentLayoutType()
-        val expandedContent = suiteType != NavigationSuiteType.NavigationBar && maxWidth >= 720.dp
+        val expandedContent = !suiteType.isNavigationBar && maxWidth >= 720.dp
         val horizontalContentPadding = if (expandedContent) 32.dp else 16.dp
         val contentPadding = if (expandedContent) {
             PaddingValues(

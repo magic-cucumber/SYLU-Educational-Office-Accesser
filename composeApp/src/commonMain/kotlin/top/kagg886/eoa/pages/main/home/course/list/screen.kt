@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -32,7 +33,6 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.ErrorPage
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
@@ -74,165 +74,173 @@ fun CourseListScreen() = RevealContainer(4, AppInitializeMMKV::tutorialCourseLis
     val allWeek = dataAccessibleState?.allWeek
     val isCurrentTerm = state is CourseListState.Success
     val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium,
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
     }
     val fabShape = when (currentLayoutType()) {
+        NavigationSuiteType.WideNavigationRailExpanded,
         NavigationSuiteType.NavigationDrawer -> FloatingActionButtonDefaults.extendedFabShape
         else -> FloatingActionButtonDefaults.shape
     }
+    val homeFabModifier = Modifier
+        .shareBoundsComposed(
+            sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
+            animatedVisibilityScope = LocalAnimatedContentScope.current,
+            resizeMode = RemeasureToBounds,
+            clipInOverlayDuringTransition = OverlayClip(fabShape)
+        )
+        .revealableAutoMeasured(1, fabArrow) {
+            Text("点这里管理课表，可以添加、修改课程，也可以导出课表。")
+        }
+
     HomeScreen(
         route = EOAHomeModule.COURSE,
-        title = {
-            if (currentPage != null) {
-                AnimatedContent(
-                    targetState = currentPage,
-                    transitionSpec = createMenuButtonAnim { initialState > targetState }
-                ) {
-                    Text(
-                        text = "第 ${it + 1} 周",
-                        modifier = Modifier.placeholder(
-                            visible = it == -1,
-                            highlight = PlaceholderHighlight.shimmer()
+        suite = {
+            title {
+                if (currentPage != null) {
+                    AnimatedContent(
+                        targetState = currentPage,
+                        transitionSpec = createMenuButtonAnim { initialState > targetState }
+                    ) {
+                        Text(
+                            text = "第 ${it + 1} 周",
+                            modifier = Modifier.placeholder(
+                                visible = it == -1,
+                                highlight = PlaceholderHighlight.shimmer()
+                            )
                         )
+                    }
+                } else {
+                    Text("课程表")
+                }
+            }
+            menu {
+                var iconExpanded by remember {
+                    mutableStateOf(false)
+                }
+
+                IconButton(
+                    onClick = {
+                        iconExpanded = true
+                    },
+                    enabled = pagerState != null,
+                    modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
+                        Text("点这里可以刷新课表、回到本周，也可以快速跳到其他周。")
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Menu,
+                        contentDescription = "Menu",
                     )
                 }
-            } else {
-                Text("课程表")
-            }
-        },
-        menu = {
-            var iconExpanded by remember {
-                mutableStateOf(false)
-            }
 
-            IconButton(
-                onClick = {
-                    iconExpanded = true
-                },
-                enabled = pagerState != null,
-                modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
-                    Text("点这里可以刷新课表、回到本周，也可以快速跳到其他周。")
+                var jumpModal by rememberSaveable {
+                    mutableStateOf(false)
                 }
-            ) {
-                Icon(
-                    Icons.Default.Menu,
-                    contentDescription = "Menu",
-                )
-            }
 
-            var jumpModal by rememberSaveable {
-                mutableStateOf(false)
-            }
-
-            if (jumpModal) {
-                ModalBottomSheet(
-                    onDismissRequest = { jumpModal = false }
-                ) {
-                    val weeks = allWeek ?: -1
-                    if (weeks == -1) {
-                        return@ModalBottomSheet
-                    }
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 48.dp),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                if (jumpModal) {
+                    ModalBottomSheet(
+                        onDismissRequest = { jumpModal = false }
                     ) {
-                        items((1..weeks).toList()) { week ->
-                            val isCurrent = currentPage != null && currentPage + 1 == week
-                            Surface(
-                                onClick = {
-                                    model.selectToWeek(week - 1)
-                                    jumpModal = false
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f),
-                                shape = MaterialTheme.shapes.medium,
-                                color = if (isCurrent) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surface,
-                                contentColor = if (isCurrent) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onSurface,
-                                border = if (isCurrent) null
-                                else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center,
+                        val weeks = allWeek ?: -1
+                        if (weeks == -1) {
+                            return@ModalBottomSheet
+                        }
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 48.dp),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            items((1..weeks).toList()) { week ->
+                                val isCurrent = currentPage != null && currentPage + 1 == week
+                                Surface(
+                                    onClick = {
+                                        model.selectToWeek(week - 1)
+                                        jumpModal = false
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(1f),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = if (isCurrent) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surface,
+                                    contentColor = if (isCurrent) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurface,
+                                    border = if (isCurrent) null
+                                    else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                                 ) {
-                                    Text(
-                                        text = "$week",
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = "$week",
+                                            style = MaterialTheme.typography.titleMedium,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            DropdownMenu(
-                expanded = iconExpanded,
-                onDismissRequest = {
-                    iconExpanded = false
-                }
-            ) {
-                DropdownMenuItem(
-                    text = {
-                        Text("刷新")
-                    },
-                    onClick = {
-                        model.refresh()
+                DropdownMenu(
+                    expanded = iconExpanded,
+                    onDismissRequest = {
                         iconExpanded = false
                     }
-                )
-
-                if (isCurrentTerm) {
+                ) {
                     DropdownMenuItem(
                         text = {
-                            Text("回到本周")
+                            Text("刷新")
                         },
                         onClick = {
-                            model.selectToWeek()
+                            model.refresh()
+                            iconExpanded = false
+                        }
+                    )
+
+                    if (isCurrentTerm) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("回到本周")
+                            },
+                            onClick = {
+                                model.selectToWeek()
+                                iconExpanded = false
+                            }
+                        )
+                    }
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("跳转到...")
+                        },
+                        onClick = {
+                            jumpModal = true
                             iconExpanded = false
                         }
                     )
                 }
-
-                DropdownMenuItem(
-                    text = {
-                        Text("跳转到...")
-                    },
-                    onClick = {
-                        jumpModal = true
-                        iconExpanded = false
-                    }
-                )
+            }
+            fab(modifier = homeFabModifier) {
+                text {
+                    Text("管理课表")
+                }
+                icon {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ViewList,
+                        contentDescription = "ViewList",
+                    )
+                }
+                onClick {
+                    nav.navigate(CourseManageListRoute)
+                }
             }
         },
-        fabIcon = {
-            Icon(
-                Icons.AutoMirrored.Filled.ViewList,
-                contentDescription = "ViewList",
-            )
-        },
-        fabText = {
-            Text("管理课表")
-        },
-        fabOnClick = {
-            nav.navigate(CourseManageListRoute)
-        },
-        fabModifier = Modifier
-            .shareBoundsComposed(
-                sharedContentState = rememberSharedContentState(key = "list-course-to-manage-course"),
-                animatedVisibilityScope = LocalAnimatedContentScope.current,
-                resizeMode = RemeasureToBounds,
-                clipInOverlayDuringTransition = OverlayClip(fabShape)
-            )
-            .revealableAutoMeasured(1, fabArrow) {
-                Text("点这里管理课表，可以添加、修改课程，也可以导出课表。")
-            }
     ) {
         val scope = rememberCoroutineScope()
         model.collectSideEffect {

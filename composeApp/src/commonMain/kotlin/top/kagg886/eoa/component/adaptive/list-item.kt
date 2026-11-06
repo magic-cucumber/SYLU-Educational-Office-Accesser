@@ -13,6 +13,7 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -48,6 +49,8 @@ fun AdaptiveListItem(
     val actionsState by rememberAdaptiveListItemActions(actions)
 
     when (layout) {
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium,
         NavigationSuiteType.NavigationBar -> {
 
             val swipeState = rememberSwipeToDismissBoxState()

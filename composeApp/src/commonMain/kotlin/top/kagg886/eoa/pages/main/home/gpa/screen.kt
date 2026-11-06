@@ -38,7 +38,9 @@ data object GPARoute
 @Composable
 fun GPAScreen() = HomeScreen(
     route = EOAHomeModule.GPA,
-    title = { Text(text = "绩点") },
+    suite = {
+        title { Text(text = "绩点") }
+    },
 ) {
     val mainModel = mainViewModelOrNull() ?: return@HomeScreen
     val syncState by mainModel.collectAsState()

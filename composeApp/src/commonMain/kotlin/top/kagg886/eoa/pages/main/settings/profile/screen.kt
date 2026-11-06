@@ -15,7 +15,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.serialization.Serializable
 import org.orbitmvi.orbit.compose.collectAsState
 import top.kagg886.eoa.LocalNavController
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.dialog.DialogPageScaffold
 import top.kagg886.eoa.pages.main.MainScreen
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
@@ -23,6 +22,7 @@ import top.kagg886.eoa.pages.main.settings.list.SettingListRoute
 import top.kagg886.eoa.pages.main.settings.list.SettingsModel
 import top.kagg886.eoa.pages.main.settings.list.SettingsState
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.isNavigationBar
 
 @Serializable
 data object SettingsProfile
@@ -140,7 +140,7 @@ private fun ProfileSuccess(
 ) {
     val scope = currentLayoutType()
 
-    if (scope == NavigationSuiteType.NavigationBar) {
+    if (scope.isNavigationBar) {
         items.forEach { item ->
             item(profile, Modifier.fillMaxWidth())
         }

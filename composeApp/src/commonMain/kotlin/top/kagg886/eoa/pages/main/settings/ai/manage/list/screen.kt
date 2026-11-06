@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -23,7 +24,6 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.AdaptiveListItem
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.config.BuildConfig
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
@@ -33,6 +33,7 @@ import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.pages.main.settings.ai.manage.edit.AISettingsManagerEditRoute
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.isNavigationBar
 
 /**
  * ================================================
@@ -73,6 +74,8 @@ private fun AISettingsContent(
 ) {
     val nav = LocalNavController.current
     val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium,
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
     }
@@ -114,7 +117,7 @@ private fun AISettingsContent(
                 .padding(paddingValues)
                 .revealableAutoMeasured(0, ContainerArrow.Top) {
                     Text(
-                        if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
+                        if (currentLayoutType().isNavigationBar) {
                             "这里会显示已经保存的模型。左右滑动模型，可以编辑或删除配置。"
                         } else {
                             "这里会显示已经保存的模型。点击铅笔按钮编辑，点击垃圾桶按钮删除。"

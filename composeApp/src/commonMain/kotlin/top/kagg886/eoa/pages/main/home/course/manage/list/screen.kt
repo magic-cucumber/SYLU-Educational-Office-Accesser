@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,7 +28,6 @@ import top.kagg886.eoa.LocalNavController
 import top.kagg886.eoa.component.BackIconButton
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.component.adaptive.AdaptiveListItem
-import top.kagg886.eoa.component.adaptive.NavigationSuiteType
 import top.kagg886.eoa.component.reveal.ContainerArrow
 import top.kagg886.eoa.component.reveal.RevealContainer
 import top.kagg886.eoa.component.reveal.revealableAutoMeasured
@@ -39,6 +39,7 @@ import top.kagg886.eoa.pages.main.home.course.manage.edit.CourseEditRoute
 import top.kagg886.eoa.pages.main.mainViewModelOrNull
 import top.kagg886.eoa.util.SnackBarType
 import top.kagg886.eoa.util.currentLayoutType
+import top.kagg886.eoa.util.isNavigationBar
 import top.kagg886.eoa.util.shared.LocalAnimatedContentScope
 import top.kagg886.eoa.util.shared.OverlayClip
 import top.kagg886.eoa.util.shared.rememberSharedContentState
@@ -60,69 +61,76 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
     val menuArrow = ContainerArrow.Bottom
     val surfaceArrow = ContainerArrow.Top
     val fabArrow = when (currentLayoutType()) {
+        NavigationSuiteType.ShortNavigationBarCompact,
+        NavigationSuiteType.ShortNavigationBarMedium,
         NavigationSuiteType.NavigationBar -> ContainerArrow.Top
         else -> ContainerArrow.Bottom
     }
     val surfaceShape = MaterialTheme.shapes.extraLarge
 
+    val homeFabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+        Text("点这里添加一门自己的课程，适合补充临时课。")
+    }
+
     HomeScreen(
         route = EOAHomeModule.COURSE,
-        back = { BackIconButton() },
-        title = { Text("管理课程") },
-        menu = {
-            var showDropdownMenu by remember { mutableStateOf(false) }
-            IconButton(
-                onClick = { showDropdownMenu = true },
-                enabled = state is CourseManageState.Success,
-                modifier = Modifier.revealableAutoMeasured(0, menuArrow) {
-                    Text("点这里可以隐藏系统课程，也可以把课表保存成文件或写入系统日历。")
+        suite = {
+            title { Text("管理课程") }
+            back { BackIconButton() }
+            menu {
+                var showDropdownMenu by remember { mutableStateOf(false) }
+                IconButton(
+                    onClick = { showDropdownMenu = true },
+                    enabled = state is CourseManageState.Success,
+                    modifier = Modifier.revealableAutoMeasured(0, menuArrow) {
+                        Text("点这里可以隐藏系统课程，也可以把课表保存成文件或写入系统日历。")
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Menu"
+                    )
                 }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu"
-                )
+                DropdownMenu(
+                    expanded = showDropdownMenu,
+                    onDismissRequest = { showDropdownMenu = false },
+                ) {
+                    DropdownMenuItem(
+                        onClick = {
+                            model.toggleSystemCourseVisible()
+                            showDropdownMenu = false
+                        },
+                        text = { Text("${if ((state as? CourseManageState.Success)?.onlyShowUserCourse == true) "显示" else "隐藏"}系统课程") },
+                    )
+
+                    DropdownMenuItem(
+                        onClick = {
+                            showDropdownMenu = false
+                            model.startExportICS()
+                        },
+                        text = { Text("保存为ICS文件") }
+                    )
+
+                    DropdownMenuItem(
+                        onClick = {
+                            showDropdownMenu = false
+                            model.startExportCalender()
+                        },
+                        text = { Text("写入系统日历") }
+                    )
+                }
             }
-            DropdownMenu(
-                expanded = showDropdownMenu,
-                onDismissRequest = { showDropdownMenu = false },
-            ) {
-                DropdownMenuItem(
-                    onClick = {
-                        model.toggleSystemCourseVisible()
-                        showDropdownMenu = false
-                    },
-                    text = { Text("${if ((state as? CourseManageState.Success)?.onlyShowUserCourse == true) "显示" else "隐藏"}系统课程") },
-                )
-
-                DropdownMenuItem(
-                    onClick = {
-                        showDropdownMenu = false
-                        model.startExportICS()
-                    },
-                    text = { Text("保存为ICS文件") }
-                )
-
-                DropdownMenuItem(
-                    onClick = {
-                        showDropdownMenu = false
-                        model.startExportCalender()
-                    },
-                    text = { Text("写入系统日历") }
-                )
+            fab(modifier = homeFabModifier) {
+                text { Text("添加课程") }
+                icon {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add"
+                    )
+                }
+                onClick { model.openAddOrEditCourse(null) }
             }
         },
-        fabIcon = {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add"
-            )
-        },
-        fabText = { Text("添加课程") },
-        fabOnClick = { model.openAddOrEditCourse(null) },
-        fabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
-            Text("点这里添加一门自己的课程，适合补充临时课。")
-        }
     ) {
         model.collectSideEffect {
             when (it) {
@@ -156,7 +164,7 @@ fun CourseManageListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialCou
                 .clip(surfaceShape)
                 .revealableAutoMeasured(1, surfaceArrow) {
                     Text(
-                        if (currentLayoutType() == NavigationSuiteType.NavigationBar) {
+                        if (currentLayoutType().isNavigationBar) {
                             "这里是课程管理列表。左右滑动课程，可以编辑或删除。"
                         } else {
                             "这里是课程管理列表。点击铅笔按钮编辑课程，点击垃圾桶按钮删除课程。"
