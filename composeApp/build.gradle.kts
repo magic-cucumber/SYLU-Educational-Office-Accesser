@@ -124,6 +124,7 @@ kotlin {
             implementation(project.dependencies.project(":lib:ics-generator"))
             implementation(project.dependencies.project(":lib:calender-exporter-v2"))
             implementation(project.dependencies.project(":second-class"))
+            implementation(project.dependencies.project(":gym"))
         }
 
         commonTest.dependencies {
