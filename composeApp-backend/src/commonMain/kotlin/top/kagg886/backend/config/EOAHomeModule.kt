@@ -9,5 +9,6 @@ enum class EOAHomeModule {
     EXAM,
     GPA,
     SECOND,
-    LINK
+    LINK,
+    GYM
 }

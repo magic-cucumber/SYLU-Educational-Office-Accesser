@@ -80,14 +80,17 @@ data class GymDetail(
     /** id */
     @SerialName("subject_id")
     val id: String,
+    /** 名字。 */
+    @SerialName("sub_name")
+    val name: String,
     /** 测试数据。 */
-    val result: String,
+    val result: String? = null,
     /** 评分。 */
-    val score: Float,
+    val score: Float? = null,
     /** 单位。 */
     val unit: String,
     /** 评级。 */
-    val grade: String,
+    val grade: String? = null,
     /** 比例。 */
     @SerialName("sub_ratio")
     val ratio: String,

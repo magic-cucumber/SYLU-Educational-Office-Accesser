@@ -59,6 +59,7 @@ kotlin {
             api(project.dependencies.project(":eoa-lib:network-core"))
             api(project.dependencies.project(":util"))
             api(project.dependencies.project(":second-class"))
+            api(project.dependencies.project(":gym"))
         }
 
         commonTest.dependencies {

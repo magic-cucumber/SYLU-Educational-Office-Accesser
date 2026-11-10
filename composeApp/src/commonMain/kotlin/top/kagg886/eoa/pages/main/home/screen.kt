@@ -21,6 +21,7 @@ import top.kagg886.eoa.pages.main.home.course.CourseRoute
 import top.kagg886.eoa.pages.main.home.exam.ExamRoute
 import top.kagg886.eoa.pages.main.home.gpa.GPARoute
 import top.kagg886.eoa.pages.main.home.link.list.LinkListRoute
+import top.kagg886.eoa.pages.main.home.gym.GymRoute
 import top.kagg886.eoa.pages.main.home.second.SecondClassRoute
 import top.kagg886.eoa.pages.main.home.summary.SummaryRoute
 import top.kagg886.eoa.pages.main.settings.SettingsRoute
@@ -136,6 +137,7 @@ val EOAHomeModule.target: Any
         EOAHomeModule.EXAM -> ExamRoute
         EOAHomeModule.GPA -> GPARoute
         EOAHomeModule.SECOND -> SecondClassRoute
+        EOAHomeModule.GYM -> GymRoute
         EOAHomeModule.LINK -> LinkListRoute
     }
 
@@ -146,6 +148,7 @@ val EOAHomeModule.display: String
         EOAHomeModule.EXAM -> "考试"
         EOAHomeModule.GPA -> "绩点"
         EOAHomeModule.SECOND -> "二课"
+        EOAHomeModule.GYM -> "体测"
         EOAHomeModule.LINK -> "友链"
     }
 
@@ -156,5 +159,6 @@ val EOAHomeModule.icon: ImageVector
         EOAHomeModule.EXAM -> Icons.Default.Bookmark
         EOAHomeModule.GPA -> Icons.Default.Star
         EOAHomeModule.SECOND -> Icons.Default.Accessibility
+        EOAHomeModule.GYM -> Icons.Default.FitnessCenter
         EOAHomeModule.LINK -> Icons.Default.Link
     }

@@ -26,6 +26,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 import top.kagg886.backend.database.dao.GPAEntity
 import top.kagg886.backend.database.dao.GPASummaryEntity
+import top.kagg886.eoa.component.CollapseListItem
 import top.kagg886.eoa.component.ErrorPage
 import top.kagg886.eoa.pages.main.MainRouteViewState.Empty.toViewModelKey
 import top.kagg886.eoa.pages.main.home.EOAHomeModule
@@ -96,6 +97,7 @@ private fun GPAScreenContent(
             }
         )
     }
+
     else -> {
         GPAContent(state as? GPAState.Success)
     }
@@ -135,7 +137,7 @@ private fun GPAContent(
                 )
             }
         )
-     }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -161,16 +163,12 @@ private fun GPASummaryGroup(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // 汇总头部，整行可点击展开/收起
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+    CollapseListItem(
+        modifier = Modifier.fillMaxWidth(),
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        title = {
+            Column(Modifier.padding(vertical = 12.dp)) {
                 Text(
                     text = summary.name,
                     style = MaterialTheme.typography.titleMedium
@@ -181,32 +179,8 @@ private fun GPASummaryGroup(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-
-            val rotate by animateFloatAsState(
-                targetValue = if (expanded) 180f else 0f,
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "expand-arrow"
-            )
-            Icon(
-                imageVector = Icons.Default.ExpandMore,
-                contentDescription = if (expanded) "收起" else "展开",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.rotate(rotate)
-            )
-        }
-
-        // 明细条目，展开/收起与箭头旋转使用同一弹性曲线
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                expandFrom = Alignment.Top
-            ) + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
-            exit = shrinkVertically(
-                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                shrinkTowards = Alignment.Top
-            ) + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
-        ) {
+        },
+        support = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -247,7 +221,6 @@ private fun GPASummaryGroup(
                 }
             }
         }
-
-        HorizontalDivider()
-    }
+    )
+    HorizontalDivider()
 }

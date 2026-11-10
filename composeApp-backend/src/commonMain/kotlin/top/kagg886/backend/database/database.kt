@@ -25,6 +25,9 @@ import top.kagg886.util.dataPath
         SystemNoticeEntity::class,
         SecondClassSummaryEntity::class,
         SecondClassDataEntity::class,
+        GymSummaryEntity::class,
+        GymDetailEntity::class,
+        GymEntity::class,
         LLMProviderEntity::class
     ],
     version = BuildConfig.DATABASE_VERSION,
@@ -36,6 +39,7 @@ import top.kagg886.util.dataPath
         AutoMigration(from = 11, to = 12),
         // 低版本Android不支持TRUE/FALSE字面量
         AutoMigration(from = 13, to = 14),
+        AutoMigration(from = 14, to = 15),
     ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -48,6 +52,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun courseRecordDao(): CourseRecordDao
     abstract fun noticeDao(): SystemNoticeDao
     abstract fun secondClassDao(): SecondClassDao
+    abstract fun gymDao(): GymDao
+    abstract fun gymSummaryDao(): GymSummaryDao
+    abstract fun gymDetailDao(): GymDetailDao
     abstract fun llmProviderDao(): LLMProviderDao
 
     abstract fun syncRecordDao(): SyncRecordDao

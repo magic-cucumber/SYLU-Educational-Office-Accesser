@@ -13,6 +13,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import okio.ByteString.Companion.encodeUtf8
 import top.kagg886.eoa.gym.internal.GymContext
@@ -22,8 +23,9 @@ import top.kagg886.util.http.HttpClient
 import top.kagg886.eoa.gym.internal.GymTransferPlugin
 import top.kagg886.util.asKtorLogger
 import kotlin.properties.Delegates
+import kotlin.time.Duration.Companion.milliseconds
 
-class GymClient(private val username: String) {
+class GymClient(private val username: String) : AutoCloseable {
     private var password: String? = null
 
     @VisibleForTesting
@@ -52,7 +54,7 @@ class GymClient(private val username: String) {
         }
 
         install(GymAuthPlugin) {
-            token = { context?.token }
+            token = { context.token }
             login = { this@GymClient.login(password ?: throw GymException("session expired.")) }
         }
         install(GymTransferPlugin) {
@@ -62,6 +64,12 @@ class GymClient(private val username: String) {
     }
 
     suspend fun login(pass: String = password ?: error("first login should be password.")) {
+        if (username == "test") {
+            if (pass != "test") throw GymException("密码错误")
+            delay(100.milliseconds)
+            password = pass
+            return
+        }
         context = client.post("login/mobile/check") {
             attributes.put(SkipGymAuth, Unit)
             contentType(ContentType.Application.Json)
@@ -76,6 +84,11 @@ class GymClient(private val username: String) {
     }
 
     suspend fun list(): List<GymSummary> {
+        if (username == "test") {
+            checkDemoLogin()
+            delay(100.milliseconds)
+            return GymDemo.summaries
+        }
         val resp = client.post("mobile/gymResult/selectUserPlanList") {
             contentType(ContentType.Application.Json)
             setBody(
@@ -89,6 +102,11 @@ class GymClient(private val username: String) {
     }
 
     suspend fun detail(id: String): List<GymDetail> {
+        if (username == "test") {
+            checkDemoLogin()
+            delay(100.milliseconds)
+            return GymDemo.details[id].orEmpty()
+        }
         val resp = client.post("mobile/gymResult/selectUserPlanScore") {
             contentType(ContentType.Application.Json)
             setBody(
@@ -108,6 +126,11 @@ class GymClient(private val username: String) {
         page: Int = 1,
         size: Int = 10
     ): HistoryResponse {
+        if (username == "test") {
+            checkDemoLogin()
+            delay(100.milliseconds)
+            return GymDemo.history(listId, detailId, page, size)
+        }
         val resp = client.post("mobile/gymResult/selectUserPlanSubjectScore") {
             contentType(ContentType.Application.Json)
             setBody(
@@ -122,6 +145,14 @@ class GymClient(private val username: String) {
         }.body<HistoryResponseOuter>()
 
         return resp.data
+    }
+
+    private fun checkDemoLogin() {
+        if (password == null) throw GymException("请先登录")
+    }
+
+    override fun close() {
+        client.close()
     }
 
     companion object {

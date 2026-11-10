@@ -26,6 +26,7 @@ import kotlinx.datetime.plus
 import org.orbitmvi.orbit.syntax.Syntax
 import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.backend.config.AppLoginPropertiesMMKV
+import top.kagg886.backend.config.AppGymMMKV
 import top.kagg886.backend.config.AppSecondClassMMKV
 import top.kagg886.backend.config.AppSettingsMMKV
 import top.kagg886.backend.config.AppSyncMMKV
@@ -605,6 +606,7 @@ class MainRouteViewModel(val database: AppDatabase) :
         AppLoginPropertiesMMKV.clear()
         AppSyncMMKV.clear()
         AppSecondClassMMKV.clear()
+        AppGymMMKV.clear()
 
         database.examDao().clear()
         database.gpaSummaryDao().clear()
@@ -613,6 +615,7 @@ class MainRouteViewModel(val database: AppDatabase) :
         database.courseExtendDao().clearAll()
         database.examDao().clear()
         database.secondClassDao().clear()
+        database.gymSummaryDao().clear()
         syncDao.clear()
 
         LightSyncTask.store.updateData { LightSyncTaskConfig() }
