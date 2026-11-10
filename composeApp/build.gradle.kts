@@ -154,6 +154,10 @@ kotlin {
     }
 }
 
+dependencies {
+    androidRuntimeClasspath(libs.compose.ui.tooling)
+}
+
 configurations.configureEach {
     exclude(group = "io.ktor", module = "ktor-client-cio")
     resolutionStrategy.eachDependency {

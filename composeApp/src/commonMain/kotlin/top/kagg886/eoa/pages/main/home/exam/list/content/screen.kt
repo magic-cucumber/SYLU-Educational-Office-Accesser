@@ -210,6 +210,14 @@ fun ExamListContent(
 ) {
     if (state?.entity?.isEmpty() == true) {
         ErrorPage(
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Info",
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
             title = { Text("没有考试") },
             message = { Text("点击菜单按钮以弹出筛选框") },
             modifier = modifier.fillMaxSize(),

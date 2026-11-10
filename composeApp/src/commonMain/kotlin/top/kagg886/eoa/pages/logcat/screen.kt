@@ -171,6 +171,14 @@ private fun LogcatScreenContent(
 
                     if (data.itemCount == 0 && data.loadState.isIdle) {
                         ErrorPage(
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Info",
+                                    modifier = Modifier.size(80.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
                             title = { Text("警告") },
                             message = { Text("暂无日志") },
                             modifier = Modifier.fillMaxWidth().weight(1f)

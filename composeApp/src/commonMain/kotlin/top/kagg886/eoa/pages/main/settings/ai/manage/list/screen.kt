@@ -138,6 +138,14 @@ private fun AISettingsContent(
                 is AISettingsListState.Success -> {
                     if (state.providers.isEmpty()) {
                         ErrorPage(
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Info",
+                                    modifier = Modifier.size(80.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
                             title = { Text("暂无AI配置") },
                             message = { Text("点击右下角添加模型配置") },
                             modifier = Modifier.fillMaxSize()
