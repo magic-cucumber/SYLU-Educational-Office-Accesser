@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,8 +27,12 @@ import com.eygraber.compose.placeholder.material3.shimmer
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.orbitmvi.orbit.compose.collectAsState
+import top.kagg886.backend.config.AppInitializeMMKV
 import top.kagg886.eoa.component.CollapseListItem
 import top.kagg886.eoa.component.ErrorPage
+import top.kagg886.eoa.component.reveal.ContainerArrow
+import top.kagg886.eoa.component.reveal.RevealContainer
+import top.kagg886.eoa.component.reveal.revealableAutoMeasured
 import top.kagg886.eoa.gym.GymDetail
 import top.kagg886.eoa.gym.GymDetailHistory
 import top.kagg886.eoa.gym.GymSummary
@@ -36,60 +41,82 @@ import top.kagg886.eoa.pages.main.home.HomeScreen
 import top.kagg886.eoa.pages.main.home.gym.GymScreen
 import top.kagg886.eoa.pages.main.home.gym.GymState
 import top.kagg886.eoa.pages.main.home.gym.gymViewModel
+import top.kagg886.eoa.util.currentLayoutType
 import top.kagg886.eoa.util.longshot.miuiLongShotSupport
+import top.kagg886.eoa.util.shared.applyIf
 import top.kagg886.util.toFixed
 
 @Composable
-fun GymListScreen() = GymScreen {
-    val model = gymViewModel() ?: return@GymScreen
-    val state by model.collectAsState()
-    val successState = state as? GymState.Success
+fun GymListScreen() = RevealContainer(3, AppInitializeMMKV::tutorialGymList) {
+    GymScreen {
+        val model = gymViewModel() ?: return@GymScreen
+        val state by model.collectAsState()
+        // 只有加载成功才展示顶栏刷新与筛选 FAB，加载中或失败时不展示。
+        val showAction = state is GymState.Success
+        val fabArrow = when (currentLayoutType()) {
+            NavigationSuiteType.ShortNavigationBarCompact,
+            NavigationSuiteType.ShortNavigationBarMedium,
+            NavigationSuiteType.NavigationBar -> ContainerArrow.Top
 
-    HomeScreen(
-        route = EOAHomeModule.GYM,
-        suite = {
-            title { Text("体育测试") }
-            menu {
-                if (state is GymState.Failed) return@menu
-                
-                val refreshRotation = if (successState?.loading == true) {
-                    val refreshTransition = rememberInfiniteTransition(label = "gym-refresh")
-                    val rotation by refreshTransition.animateFloat(
-                        initialValue = 0f,
-                        targetValue = 360f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(durationMillis = 1000, easing = LinearEasing),
-                            repeatMode = RepeatMode.Restart,
-                        ),
-                        label = "gym-refresh-rotation",
-                    )
-                    rotation
-                } else {
-                    0f
-                }
+            else -> ContainerArrow.Bottom
+        }
+
+        val homeFabModifier = Modifier.revealableAutoMeasured(2, fabArrow) {
+            Text("点这里可以切换学年，查看历年的体测成绩。")
+        }
+
+        HomeScreen(
+            route = EOAHomeModule.GYM,
+            suite = {
+                title { Text("体育测试") }
+                menu {
+                    val successState = state as? GymState.Success ?: return@menu
+
+                    val refreshRotation = if (successState.loading) {
+                        val refreshTransition = rememberInfiniteTransition(label = "gym-refresh")
+                        val rotation by refreshTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 360f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(durationMillis = 1000, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart,
+                            ),
+                            label = "gym-refresh-rotation",
+                        )
+                        rotation
+                    } else {
+                        0f
+                    }
 
 
-                IconButton(
-                    onClick = { model.refresh() },
-                    enabled = state !is GymState.Initial && successState?.loading != true && state.loginRequest == null,
-                ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "刷新",
-                        modifier = Modifier.rotate(refreshRotation),
-                    )
+                    IconButton(
+                        onClick = { model.refresh() },
+                        enabled = !successState.loading && successState.loginRequest == null,
+                        modifier = Modifier.revealableAutoMeasured(0, ContainerArrow.Bottom) {
+                            Text("点这里可以重新获取体测成绩。")
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "刷新",
+                            modifier = Modifier.rotate(refreshRotation),
+                        )
+                    }
                 }
-            }
-            if (successState?.value?.isNotEmpty() == true) {
-                fab {
-                    text { Text("筛选") }
-                    icon { Icon(Icons.Default.FilterList, contentDescription = null) }
-                    onClick { model.navigateToFilter() }
+                if (showAction) {
+                    fab(modifier = homeFabModifier) {
+                        text { Text("筛选") }
+                        icon { Icon(Icons.Default.FilterList, contentDescription = null) }
+                        onClick { model.navigateToFilter() }
+                    }
                 }
-            }
-        },
-    ) {
-        GymListScreenContent(state, onRetryLogin = { model.retryLogin() })
+            },
+        ) {
+            GymListScreenContent(
+                state,
+                onRetryLogin = { model.retryLogin() },
+            )
+        }
     }
 }
 
@@ -97,12 +124,13 @@ fun GymListScreen() = GymScreen {
 private fun GymListScreenContent(
     state: GymState,
     onRetryLogin: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     when (state) {
         is GymState.Failed -> ErrorPage(
             title = { Text("体育测试加载失败") },
             message = { Text(state.message) },
-            modifier = Modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize()
                 .clickable(
                     interactionSource = MutableInteractionSource(),
                     indication = null,
@@ -110,13 +138,13 @@ private fun GymListScreenContent(
                 ),
         )
 
-        is GymState.Initial -> GymListContent(null)
-        is GymState.Success -> GymListContent(state)
+        is GymState.Initial -> GymListContent(null, modifier)
+        is GymState.Success -> GymListContent(state, modifier)
     }
 }
 
 @Composable
-private fun GymListContent(state: GymState.Success?) {
+private fun GymListContent(state: GymState.Success?, modifier: Modifier = Modifier) {
     val entry = state?.value?.entries?.elementAtOrNull(state.currentSummaryIndex)
     if (state != null && entry == null) {
         ErrorPage(
@@ -129,14 +157,14 @@ private fun GymListContent(state: GymState.Success?) {
             },
             title = { Text("暂无体育测试数据") },
             message = { Text("轻点右上角刷新按钮重新获取") },
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         )
         return
     }
     val lazyListState = remember(state?.lazyListState) { state?.lazyListState ?: LazyListState() }
     LazyColumn(
         state = lazyListState,
-        modifier = Modifier.fillMaxSize().miuiLongShotSupport(lazyListState),
+        modifier = modifier.fillMaxSize().miuiLongShotSupport(lazyListState),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         item {
@@ -148,12 +176,17 @@ private fun GymListContent(state: GymState.Success?) {
         itemsIndexed(
             items = entry?.value ?: List(6) { null },
             key = { index, detail -> detail?.id ?: index },
-        ) { _, detail ->
+        ) { index, detail ->
             GymDetailItem(
                 detail = detail,
                 history = if (entry != null && detail != null) {
                     state.histories[GymState.QueryKey(entry.key.id, detail.id)].orEmpty()
                 } else emptyList(),
+                modifier = Modifier.applyIf(index == 0) {
+                    Modifier.revealableAutoMeasured(1, ContainerArrow.Top) {
+                        Text("这里是体测成绩列表。点击某个项目可以查看详情和历年成绩。")
+                    }
+                }
             )
         }
         item { Spacer(Modifier.height(8.dp)) }
@@ -216,7 +249,7 @@ private fun GymSummaryHeader(summary: GymSummary?) {
 }
 
 @Composable
-private fun GymDetailItem(detail: GymDetail?, history: List<GymDetailHistory>) {
+private fun GymDetailItem(detail: GymDetail?, history: List<GymDetailHistory>,modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     val enabled = detail == null || detail.isJoin == 1
     val disabledColor = ListItemDefaults.colors().disabledHeadlineColor
@@ -225,7 +258,7 @@ private fun GymDetailItem(detail: GymDetail?, history: List<GymDetailHistory>) {
     val supportingColor = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else disabledColor
 
     CollapseListItem(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         enabled = enabled,
         expanded = expanded,
         onExpandedChange = { if (detail != null) expanded = it },
@@ -236,31 +269,32 @@ private fun GymDetailItem(detail: GymDetail?, history: List<GymDetailHistory>) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (detail == null || !detail.grade.isNullOrBlank()) {
-                    AssistChip(
-                        modifier = Modifier.width(80.dp),
-                        enabled = false,
-                        onClick = {},
-                        label = {
+                    // 评价只是展示用的标签，用非交互的 Surface 实现，避免 AssistChip 消费点击导致父级无法展开。
+                    Surface(
+                        modifier = Modifier.width(48.dp).height(24.dp),
+                        shape = AssistChipDefaults.shape,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = if (enabled) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            disabledColor
+                        },
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 text = detail?.grade ?: "评价",
-                                modifier = Modifier.fillMaxWidth().placeholder(
-                                    visible = detail == null,
-                                    highlight = PlaceholderHighlight.shimmer(),
-                                ),
+                                style = MaterialTheme.typography.labelLarge,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                                    .placeholder(
+                                        visible = detail == null,
+                                        highlight = PlaceholderHighlight.shimmer(),
+                                    ),
                                 textAlign = TextAlign.Center,
                             )
-                        },
-                        colors = AssistChipDefaults.assistChipColors(
-                            disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            disabledLabelColor = if (enabled) {
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            } else {
-                                disabledColor
-                            },
-                        ),
-                    )
+                        }
+                    }
                 } else {
-                    Spacer(Modifier.width(80.dp))
+                    Spacer(Modifier.width(48.dp))
                 }
                 Text(
                     text = detail?.name ?: "体育测试项目",

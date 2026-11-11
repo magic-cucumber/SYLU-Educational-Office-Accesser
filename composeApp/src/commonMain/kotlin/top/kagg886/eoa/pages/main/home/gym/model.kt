@@ -92,9 +92,15 @@ class GymModel(
     fun retryLogin() = intent {
         if (!mutex.tryLock()) return@intent
         try {
-            if (state !is GymState.Failed) return@intent
-            val password = requestPassword() ?: return@intent
+            val failed = state as? GymState.Failed ?: return@intent
+            // 点击失败页即进入骨架页，避免密码弹窗背后仍停留在错误页。
             reduce { GymState.Initial() }
+            val password = requestPassword()
+            if (password == null) {
+                // 取消登录时恢复错误页，保留“点击页面重新登录”的入口。
+                reduce { failed }
+                return@intent
+            }
             refreshData(password)
         } finally {
             mutex.unlock()

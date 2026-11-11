@@ -57,6 +57,7 @@ class WelcomeViewModel : BaseViewModel<WelcomeViewModelState, WelcomeSideEffect>
         AppInitializeMMKV.tutorialCourseList = false
         AppInitializeMMKV.tutorialCourseManage = false
         AppInitializeMMKV.tutorialExamList = false
+        AppInitializeMMKV.tutorialGymList = false
         AppInitializeMMKV.tutorialSecondClassLogin = false
         AppInitializeMMKV.tutorialAISettings = false
         completeWelcome().join()

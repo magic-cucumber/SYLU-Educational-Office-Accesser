@@ -24,6 +24,7 @@ import top.kagg886.eoa.gym.internal.GymTransferPlugin
 import top.kagg886.util.asKtorLogger
 import kotlin.properties.Delegates
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class GymClient(private val username: String) : AutoCloseable {
     private var password: String? = null
@@ -65,8 +66,8 @@ class GymClient(private val username: String) : AutoCloseable {
 
     suspend fun login(pass: String = password ?: error("first login should be password.")) {
         if (username == "test") {
+            delay(3.seconds)
             if (pass != "test") throw GymException("密码错误")
-            delay(100.milliseconds)
             password = pass
             return
         }
@@ -86,7 +87,6 @@ class GymClient(private val username: String) : AutoCloseable {
     suspend fun list(): List<GymSummary> {
         if (username == "test") {
             checkDemoLogin()
-            delay(100.milliseconds)
             return GymDemo.summaries
         }
         val resp = client.post("mobile/gymResult/selectUserPlanList") {
@@ -104,7 +104,6 @@ class GymClient(private val username: String) : AutoCloseable {
     suspend fun detail(id: String): List<GymDetail> {
         if (username == "test") {
             checkDemoLogin()
-            delay(100.milliseconds)
             return GymDemo.details[id].orEmpty()
         }
         val resp = client.post("mobile/gymResult/selectUserPlanScore") {
@@ -128,7 +127,6 @@ class GymClient(private val username: String) : AutoCloseable {
     ): HistoryResponse {
         if (username == "test") {
             checkDemoLogin()
-            delay(100.milliseconds)
             return GymDemo.history(listId, detailId, page, size)
         }
         val resp = client.post("mobile/gymResult/selectUserPlanSubjectScore") {

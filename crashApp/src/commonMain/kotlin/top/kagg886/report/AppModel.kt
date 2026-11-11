@@ -83,6 +83,9 @@ private data class ReportDatabaseSnapshot(
     val gpaScores: List<GPAEntity>,
     val secondClassSummaries: List<SecondClassSummaryEntity>,
     val secondClassData: List<SecondClassDataEntity>,
+    val gymSummaries: List<GymSummaryEntity>,
+    val gymDetails: List<GymDetailEntity>,
+    val gymHistories: List<GymEntity>,
     val systemNotices: List<SystemNoticeEntity>,
     val syncOverviews: List<SyncOverviewEntity>,
     val syncCheckpoints: List<SyncCheckpointEntity>,
@@ -286,6 +289,7 @@ class AppModel(private val crash: String) : ViewModel(),
                                 appendLine("tutorial-course-list=${AppInitializeMMKV.tutorialCourseList}")
                                 appendLine("tutorial-course-manage=${AppInitializeMMKV.tutorialCourseManage}")
                                 appendLine("tutorial-exam-list=${AppInitializeMMKV.tutorialExamList}")
+                                appendLine("tutorial-gym-list=${AppInitializeMMKV.tutorialGymList}")
                                 appendLine("tutorial-second-class-login=${AppInitializeMMKV.tutorialSecondClassLogin}")
                                 appendLine("tutorial-ai-settings=${AppInitializeMMKV.tutorialAISettings}")
 
@@ -350,6 +354,9 @@ class AppModel(private val crash: String) : ViewModel(),
                                 secondClassData = secondClassSummaries.flatMap { summary ->
                                     srcDB.secondClassDao().allData(summary.id)
                                 },
+                                gymSummaries = srcDB.gymSummaryDao().all(),
+                                gymDetails = srcDB.gymDetailDao().all(),
+                                gymHistories = srcDB.gymDao().all(),
                                 systemNotices = srcDB.noticeDao().all(includeAll = true),
                                 syncOverviews = srcDB.syncRecordDao().allOverviews(),
                                 syncCheckpoints = srcDB.syncRecordDao().allCheckpoints(),
@@ -401,6 +408,22 @@ class AppModel(private val crash: String) : ViewModel(),
                                     name = anonymize(item.name),
                                     sponsor = anonymize(item.sponsor),
                                     actor = anonymize(item.actor),
+                                )
+                            })
+
+                            snapshot.gymSummaries.forEach { summary ->
+                                dstDB.gymSummaryDao().insert(summary)
+                            }
+                            dstDB.gymDetailDao().insertAll(snapshot.gymDetails.map { detail ->
+                                detail.copy(
+                                    name = anonymize(detail.name),
+                                    result = detail.result?.let(::anonymize),
+                                    grade = detail.grade?.let(::anonymize),
+                                )
+                            })
+                            dstDB.gymDao().insertAll(snapshot.gymHistories.map { history ->
+                                history.copy(
+                                    result = anonymize(history.result),
                                 )
                             })
 

@@ -37,6 +37,7 @@ object AppInitializeMMKV :
     override var tutorialCourseList: Boolean by boolean("tutorial-course-list", true)
     override var tutorialCourseManage: Boolean by boolean("tutorial-course-manage", true)
     override var tutorialExamList: Boolean by boolean("tutorial-exam-list", true)
+    override var tutorialGymList: Boolean by boolean("tutorial-gym-list", true)
     override var tutorialSecondClassLogin: Boolean by boolean("tutorial-second-class-login", true)
     override var tutorialAISettings: Boolean by boolean("tutorial-ai-settings", true)
 }
@@ -55,6 +56,7 @@ sealed interface AppInitializeMMKVType {
     var tutorialCourseList: Boolean
     var tutorialCourseManage: Boolean
     var tutorialExamList: Boolean
+    var tutorialGymList: Boolean
     var tutorialSecondClassLogin: Boolean
     var tutorialAISettings: Boolean
 
