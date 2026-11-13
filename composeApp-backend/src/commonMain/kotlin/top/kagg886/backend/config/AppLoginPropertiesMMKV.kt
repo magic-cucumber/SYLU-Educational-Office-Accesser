@@ -66,17 +66,9 @@ object AppLoginPropertiesMMKV : MMKV by mmkv,
         private set
 
     override fun clear() {
+        val previousClientId = clientId
         mmkv.clear()
-        client = EOAClientProvider.providers.first { it.id == clientId }.provide().apply {
-            init(
-                object : Storage {
-                    override fun get(): String = token
-                    override fun set(value: String) {
-                        token = value
-                    }
-                }
-            )
-        }
+        clientId = previousClientId
     }
 }
 
