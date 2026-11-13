@@ -29,6 +29,7 @@ export default defineConfig({
           { text: '考试', link: '/exam' },
           { text: 'GPA', link: '/gpa' },
           { text: '第二课堂(自4.4.3起)', link: '/second-class' },
+          { text: '体育测试(自4.6.1起)', link: '/gym' },
           { text: '小组件', link: '/widget' },
           { text: '图片标记', link: '/image-markup' },
           { text: '教务通知', link: '/academic-notice' },
