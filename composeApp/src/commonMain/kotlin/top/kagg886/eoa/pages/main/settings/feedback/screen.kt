@@ -315,7 +315,7 @@ private fun FeedbackSuccessContent(
                     },
                     style = MaterialTheme.typography.bodyLarge.copy(
                         lineHeight = TextUnit.Unspecified,
-                        color = MaterialTheme.typography.bodyLarge.color.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 )
             },
